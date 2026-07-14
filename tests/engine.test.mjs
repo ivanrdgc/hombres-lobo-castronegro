@@ -595,6 +595,14 @@ test('applyDeathsChain: el castigo del Anciano desarma al Cazador', () => {
   assert.ok(res2.pendings.some((pd) => pd.type === 'cazador'));
 });
 
+test('rotateKeyword: solo se usa cuando la palabra puede volver a sonar (gaitero repartido)', () => {
+  // La condición vive en actions.confirmLover: con gaitero repartido rota;
+  // sin él, la palabra queda fija. Aquí se comprueba el mecanismo puro.
+  const game = { keywordsActive: true, kwPool: ['Faro de Bruma'], kwIdx: 0, night: 1 };
+  const players = [{ id: 'p1', keyword: 'Luna de Plata' }];
+  assert.equal(rotateKeyword(game, players, 'p1').p1.keyword, 'Faro de Bruma');
+});
+
 test('rotateKeyword: renueva desde la reserva y avisa; sin reserva no rompe', () => {
   const game = { keywordsActive: true, kwPool: ['Faro de Bruma', 'Puente de Hielo'], kwIdx: 0, night: 2 };
   const players = [{ id: 'p1', keyword: 'Luna de Plata' }, { id: 'p2', keyword: 'Brasa de Otoño' }];

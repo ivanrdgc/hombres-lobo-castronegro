@@ -292,9 +292,13 @@ export function conductorTick() {
       const gaiteroDealt = (game.composition || {}).gaitero > 0 || players.some((p) => p.role === 'gaitero');
       if (game.keywordsActive && ((gaiteroDealt && !game.revealDead) || (!gaiteroDealt && game.fakeAllSelected))) {
         // Gaitero muerto con roles ocultos, o nunca repartido con composición
-        // secreta: llamada falsa para no delatarlo.
-        const alive = players.filter((p) => p.alive && p.keyword);
-        const fake = alive.slice().sort(() => Math.random() - 0.5).slice(0, 2).map((p) => p.keyword);
+        // secreta: llamada falsa con SEÑUELOS (palabras sin dueño, distintas
+        // cada noche), para no quemar la palabra de ningún jugador real.
+        const decoys = (game.kwDecoys || []).slice(2); // los 2 primeros son de Cupido
+        const base = ((game.night - 1) * 2) % Math.max(1, decoys.length);
+        const fake = decoys.length >= 2
+          ? [decoys[base], decoys[(base + 1) % decoys.length]]
+          : players.filter((p) => p.alive && p.keyword).slice(0, 2).map((p) => p.keyword);
         say(key, `${encIntro} Todos con los ojos cerrados. Si oyes tu palabra clave, la música te ha atrapado: abre los ojos con disimulo y mira tu pantalla. Las palabras son: … ${fake.join('… y ')}. Cuando lo hayáis visto, volved a cerrar los ojos.`);
         scheduleAfterSpeech(key, 6000, () => advanceGhostStep(game.stepIdx));
       } else {
@@ -317,8 +321,9 @@ export function conductorTick() {
     // finge también la llamada a los enamorados, con dos palabras clave falsas.
     if (stepId === 'enamorados' && game.fakeAllSelected && game.keywordsActive
       && !((game.composition || {}).cupido > 0) && !players.some((p) => p.lover)) {
-      const alive = players.filter((p) => p.alive && p.keyword);
-      const fake = alive.slice().sort(() => Math.random() - 0.5).slice(0, 2).map((p) => p.keyword);
+      // Señuelos: palabras nunca asignadas a nadie. Con los ojos cerrados, una
+      // llamada que nadie atiende es indistinguible de una real.
+      const fake = (game.kwDecoys || []).slice(0, 2);
       if (fake.length === 2) {
         say(key, `Cupido ha disparado sus flechas. Todos con los ojos cerrados y atentos. Si oyes tu palabra clave, abre los ojos con disimulo y mira tu pantalla: … ${fake.join('… y ')}. Enamorados, descubrid a vuestro amor en silencio… y volved a cerrar los ojos.`);
         scheduleAfterSpeech(key, 7000 + Math.random() * 3000, () => advanceGhostStep(game.stepIdx));

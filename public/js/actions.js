@@ -279,11 +279,14 @@ export async function startGame(mode, narratorId) {
     const fakeAllSelected = mode === 'auto' && !settings0.showComposition;
     const keywordsActive = mode === 'auto' && !!(composition.cupido || composition.gaitero
       || (fakeAllSelected && selectedRoles.some((r) => r === 'cupido' || r === 'gaitero')));
-    // Se generan de sobra: las pronunciadas se renuevan desde esta reserva.
-    const kws = keywordsActive ? generateKeywords(eligible.length + 20, seed + 7) : [];
+    // Se generan de sobra: una reserva para renovar las pronunciadas y un juego
+    // de SEÑUELOS que jamás se asignan a nadie (para las llamadas falsas: así
+    // no se quema la palabra de ningún jugador real).
+    const kws = keywordsActive ? generateKeywords(eligible.length + 32, seed + 7) : [];
     const kwOf = {};
     eligible.forEach((p, i) => { kwOf[p.id] = kws[i] || null; });
-    const kwPool = keywordsActive ? kws.slice(eligible.length) : [];
+    const kwPool = keywordsActive ? kws.slice(eligible.length, eligible.length + 20) : [];
+    const kwDecoys = keywordsActive ? kws.slice(eligible.length + 20) : [];
 
     // Mitades de la mesa para el Abominable Sectario.
     const sorted = eligible.slice().sort((a, b) => (a.order || 0) - (b.order || 0));
@@ -342,7 +345,7 @@ export async function startGame(mode, narratorId) {
         phase: mode === 'manual' ? 'manual' : 'reveal',
         stepIdx: 0, steps: [], acts: {},
         vote: null, votesLeft: 0, pending: [], winner: null, keywordsActive,
-        kwPool, kwIdx: 0,
+        kwPool, kwIdx: 0, kwDecoys,
         selectedRoles, fakeAllSelected, compositionPublic: !!settings0.showComposition,
         wolvesKnown: false, hermanasKnown: false, hermanosKnown: false,
         alguacilId: null, soloVoteId: null, juezArmed: null,
@@ -569,7 +572,12 @@ export const actCupido = (a, b) => nightAction('cupido', (game) => {
 
 export const confirmLover = () => nightAction('enamorados', (game, ps, myId) => {
   game.acts.loversSeen = { ...(game.acts.loversSeen || {}), [myId]: true };
-  return { playerPatches: rotateKeyword(game, ps, myId) }; // la palabra sonó: se renueva
+  // La palabra del enamorado solo debe renovarse si podrá volver a sonar: es
+  // decir, si el Gaitero está REALMENTE repartido (una llamada de encantamiento
+  // podría nombrarlo más adelante). Las llamadas falsas usan señuelos, y sin
+  // gaitero en juego nadie volverá a pronunciarla: se queda fija.
+  const gaiteroDealt = (game.composition || {}).gaitero > 0 || ps.some((p) => p.role === 'gaitero');
+  return { playerPatches: gaiteroDealt ? rotateKeyword(game, ps, myId) : {} };
 });
 
 export const actNinoSalvaje = (pid) => nightAction('nino_salvaje', (game, ps, myId) => ({
@@ -706,7 +714,9 @@ export const actGaitero = (targets) => nightAction('gaitero', (game) => {
 
 export const confirmEncantado = () => nightAction('encantados', (game, ps, myId) => {
   game.acts.encantadosSeen = { ...(game.acts.encantadosSeen || {}), [myId]: true };
-  return { playerPatches: rotateKeyword(game, ps, myId) }; // la palabra sonó: se renueva
+  // Sin renovación: el encantamiento es único por jugador y las llamadas falsas
+  // usan señuelos, así que la palabra de un encantado no volverá a sonar jamás.
+  return {};
 });
 
 export const actGitana = (qIdx) => nightAction('gitana', (game) => {
