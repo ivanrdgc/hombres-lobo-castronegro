@@ -909,6 +909,20 @@ function rolesModal() {
   const groups = EXPANSIONS.map((exp) => {
     const roles = Object.values(ROLES).filter((r) => r.expansion === exp.id);
     return `<div class="exp">${exp.emoji} ${exp.name.toUpperCase()}</div>` + roles.map((r) => {
+      if (r.id === 'hombre_lobo') {
+        const nJug = Math.max(1, state.players.length - 1);
+        const auto = !wc;
+        const shown = wc || wolfCountFor(nJug);
+        return `<div class="roletoggle locked on"><span class="remoji">${r.emoji}</span>
+          <div class="rinfo"><div class="rname">${r.name} <small>(siempre en juego)</small></div>
+          <div class="rdesc">${r.desc} La tabla oficial pone 2 con 8-11 jugadores, 3 con 12-17 y 4 con 18.</div>
+          <div class="btnrow" style="margin-top:6px">
+            ${btn('wolves-auto', auto ? `🎯 Auto · ${shown} 🐺` : '🎯 Auto', auto ? 'primary small' : 'ghost small')}
+            ${auto ? btn('wolves-manual', '✋ Elegir número', 'ghost small')
+    : `<span style="display:inline-flex;align-items:center;gap:10px">${btn('wolves-dec', '−', 'ghost small')}<b style="font-size:1.05rem">${wc} 🐺</b>${btn('wolves-inc', '+', 'ghost small')}</span>`}
+          </div></div>
+          <span class="state">🔒</span></div>`;
+      }
       if (r.always) {
         return `<div class="roletoggle locked on"><span class="remoji">${r.emoji}</span>
           <div class="rinfo"><div class="rname">${r.name} <small>(automático)</small></div><div class="rdesc">${r.desc}</div></div>
@@ -925,13 +939,9 @@ function rolesModal() {
     }).join('') + (exp.id === 'base' ? alguacilRow : '');
   }).join('');
   return `<h3>🎴 Roles de la partida</h3>
-    <div class="settingrow"><div class="sinfo"><div class="sname">🐺 Número de lobos</div>
-      <div class="sdesc">«Auto» sigue la tabla oficial (2 con 8-11, 3 con 12-17, 4 con 18). Fíjalo si queréis otra cosa, p. ej. 1 lobo con 8 jugadores.</div></div></div>
-    <div class="btnrow" style="margin-top:2px;margin-bottom:8px">
-      ${['auto', 1, 2, 3, 4].map((v) => btn('set-wolves', v === 'auto' ? '🎯 Auto' : `${v} 🐺`, (v === 'auto' ? !wc : wc === v) ? 'primary small' : 'ghost small', String(v))).join('')}
-    </div>
     <p class="small-note">Los aldeanos rellenan los huecos automáticamente. Activa los demás roles que quieras incluir; si hay más roles que sitios, se elegirá un subconjunto al azar.</p>
     ${groups}
+    ${btn('reset-roles', '↩️ Restaurar composición recomendada', 'ghost block')}
     ${btn('close-modal', '✔️ Listo', 'primary block')}`;
 }
 
@@ -947,6 +957,7 @@ function settingsModal() {
     ${row('videnteSoloBando', '🔮 La vidente solo ve el bando', 'En vez del rol exacto, la vidente solo descubre si el jugador es hombre lobo o no.')}
     ${row('ocultarCausas', '🌫️ Ocultar causas de muerte', 'Las muertes nocturnas no explican si fueron los lobos, la bruja u otra cosa: solo quién ha muerto.')}
     ${row('casual', '🎲 Modo casual', `Permite jugar con menos de ${OFFICIAL_MIN_PLAYERS} jugadores (mínimo 3), fuera de las reglas oficiales (8-18 + narrador).`)}
+    ${btn('reset-settings', '↩️ Restaurar ajustes por defecto', 'ghost block')}
     ${btn('close-modal', '✔️ Listo', 'primary block')}`;
 }
 

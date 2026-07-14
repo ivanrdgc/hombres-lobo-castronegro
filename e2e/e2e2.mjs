@@ -267,7 +267,7 @@ try {
   // Configurar roles: cupido, defensor, cuervo, tonto, cazador (y quitar vidente/bruja por defecto).
   await ana.click('[data-a=open-roles]');
   for (const r of ['vidente', 'bruja']) await ana.click(`.roletoggle.on[data-p=${r}]`);
-  for (const r of ['cupido', 'defensor', 'cuervo', 'tonto']) await ana.click(`.roletoggle[data-p=${r}]:not(.on)`);
+  for (const r of ['defensor', 'cuervo', 'tonto']) await ana.click(`.roletoggle[data-p=${r}]:not(.on)`); // cupido ya viene activo por defecto
   await ana.waitForSelector('.roletoggle.on[data-p=tonto]');
   await ana.click('button[data-a=close-modal]');
   ok('roles configurados: cazador, cupido, defensor, cuervo, tonto');

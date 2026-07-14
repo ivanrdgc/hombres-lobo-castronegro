@@ -132,6 +132,9 @@ try {
   await ana.click('.roletoggle.on[data-p=cuervo]'); // lo quitamos otra vez
   await ana.waitForSelector('.roletoggle[data-p=cuervo]:not(.on)');
   ok('activar/desactivar rol funciona y se sincroniza');
+  // Composición determinista para el resto del test: sin cupido (queda vidente+bruja+cazador).
+  await ana.click('.roletoggle.on[data-p=cupido]');
+  await ana.waitForSelector('.roletoggle[data-p=cupido]:not(.on)');
   await ana.click('button[data-a=close-modal]');
   const brunoSeesRoles = await pages.bruno.waitForSelector('text=La Vidente');
   check(!!brunoSeesRoles, 'los jugadores ven los roles activados');

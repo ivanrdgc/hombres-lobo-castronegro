@@ -4,7 +4,7 @@ import { render, esc, randomGroupName } from './ui.js';
 import * as A from './actions.js';
 import { conductorTick, conductorReset, initConductor, setMuted, isMuted } from './conductor.js';
 import { speak, setVoiceConfig } from './narration.js';
-import { aliveNeighbors, isWolfSide } from './roles.js';
+import { aliveNeighbors, isWolfSide, wolfCountFor } from './roles.js';
 
 function unlockSpeech() {
   try { speak('El pueblo de Castronegro abre sus puertas.'); } catch { /* sin voz */ }
@@ -152,7 +152,18 @@ const handlers = {
     return guard(() => A.setExtraRoles(next));
   },
   'toggle-setting': (key) => guard(() => A.setSettings({ [key]: !(state.group.settings || {})[key] })),
-  'set-wolves': (v) => guard(() => A.setSettings({ wolvesCount: v === 'auto' ? null : parseInt(v, 10) })),
+  'wolves-auto': () => guard(() => A.setSettings({ wolvesCount: null })),
+  'wolves-manual': () => guard(() => A.setSettings({ wolvesCount: wolfCountFor(Math.max(1, state.players.length - 1)) })),
+  'wolves-inc': () => {
+    const cur = (state.group.settings || {}).wolvesCount || 1;
+    return guard(() => A.setSettings({ wolvesCount: Math.min(4, cur + 1) }));
+  },
+  'wolves-dec': () => {
+    const cur = (state.group.settings || {}).wolvesCount || 1;
+    return guard(() => A.setSettings({ wolvesCount: Math.max(1, cur - 1) }));
+  },
+  'reset-roles': () => guard(() => A.resetRolesConfig()),
+  'reset-settings': () => guard(() => A.resetGameSettings()),
   'start-auto': () => guard(async () => {
     unlockSpeech(); // gesto del usuario: desbloquea la síntesis de voz (iOS/Android)
     await A.startGame('auto');

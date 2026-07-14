@@ -13,6 +13,9 @@ const sanitize = (x) => JSON.parse(JSON.stringify(x === undefined ? null : x));
 const gref = (slug) => doc(db, 'groups', slug);
 const pref = (slug, pid) => doc(db, 'groups', slug, 'players', pid);
 
+// Composición recomendada por el reglamento para una primera partida.
+export const DEFAULT_EXTRA_ROLES = ['vidente', 'bruja', 'cazador', 'cupido'];
+
 export const DEFAULT_SETTINGS = {
   revealDead: true, showComposition: true, alguacil: false, casual: false,
   primeraNocheTranquila: false, wolvesCount: null, // null = tabla oficial
@@ -37,7 +40,7 @@ export async function createGroup(userName, groupName) {
       masterId: pid,
       status: 'lobby',
       settings: DEFAULT_SETTINGS,
-      extraRoles: ['vidente', 'bruja', 'cazador'],
+      extraRoles: DEFAULT_EXTRA_ROLES,
       game: null,
     });
     tx.set(pref(slug, pid), basePlayer(userName, token));
@@ -150,6 +153,19 @@ export async function deleteGroup() {
 
 export async function setExtraRoles(roles) {
   await updateDoc(gref(state.route.slug), { extraRoles: roles });
+}
+
+// Restaura la composición recomendada (roles, lobos en auto, sin alguacil).
+export async function resetRolesConfig() {
+  const s = { ...DEFAULT_SETTINGS, ...(state.group.settings || {}), wolvesCount: null, alguacil: false };
+  await updateDoc(gref(state.route.slug), { extraRoles: DEFAULT_EXTRA_ROLES, settings: s });
+}
+
+// Restaura los ajustes de partida (sin tocar la composición del menú de roles).
+export async function resetGameSettings() {
+  const cur = state.group.settings || {};
+  const s = { ...DEFAULT_SETTINGS, wolvesCount: cur.wolvesCount ?? null, alguacil: !!cur.alguacil };
+  await updateDoc(gref(state.route.slug), { settings: s });
 }
 
 export async function setSettings(patch) {
