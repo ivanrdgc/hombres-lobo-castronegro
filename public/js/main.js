@@ -16,7 +16,7 @@ function contextSignature() {
   const g = state.group && state.group.game;
   if (!g) return state.group ? state.group.status : 'none';
   return [g.phase, g.night, g.stepIdx, g.dayNum, g.votesLeft, (g.pending || []).length,
-    ((g.pending || [])[0] || {}).type || '', g.roleRefresh ? 'rr' : '', g.refreshNonce || 0].join(':');
+    ((g.pending || [])[0] || {}).type || '', g.roleRefresh ? 'rr' : '', g.refreshNonce || 0, g.paused ? 'p' : ''].join(':');
 }
 
 onChange(() => {
@@ -314,6 +314,8 @@ const handlers = {
   'guided-next-night': () => guard(() => A.startNextNight()),
   'begin-night': () => guard(() => A.startNextNight()),
   'begin-first-night': () => guard(() => A.startFirstNight()),
+  'pause-game': () => guard(() => A.pauseGame()),
+  'resume-game': () => guard(() => A.resumeGame()),
   'guided-skip': () => guard(() => A.forceAdvance()),
 };
 

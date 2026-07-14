@@ -1,7 +1,7 @@
 // E2E: simula una partida completa con varios dispositivos (contextos) reales.
 import { chromium } from 'playwright';
 
-const BASE = process.env.BASE || 'https://castro-zui5sg.web.app';
+const BASE = process.env.BASE; if (!BASE) { console.error('Define BASE=https://tu-sitio.web.app'); process.exit(1); }
 const GROUP = 'E2E ' + Date.now().toString(36).slice(-5);
 let failures = 0;
 const ok = (msg) => console.log('  ✔', msg);

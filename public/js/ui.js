@@ -249,14 +249,24 @@ function autoScreen(g, my) {
   else if (game.phase === 'day') body = dayPhase(g, my);
   else if (game.phase === 'end') body = endPhase(g, my);
 
+  // Pausa global: se congela todo hasta que alguien reanude.
+  if (game.paused && game.phase !== 'end') {
+    body = `<div class="card" style="text-align:center;border-color:var(--accent)">
+      <h3>⏸️ Partida en pausa</h3>
+      <p class="small-note">La pausó <b>${esc(game.paused.name || 'alguien')}</b>. Narración, temporizadores y acciones quedan congelados.</p>
+      ${btn('resume-game', '▶️ Reanudar la partida', 'primary block')}</div>
+      ${playersGrid(state.players.filter((p) => p.inGame), { title: '🏘️ El pueblo', viewer: my })}`;
+  }
+
   return `
   <div class="topbar">
     <h2>${esc(g.name)}</h2>
     ${phaseChip(game)}
+    ${game.phase !== 'end' && !game.paused ? btn('pause-game', '⏸️', 'small ghost') : ''}
   </div>
   ${!alive && game.phase !== 'end' && my.inGame ? '<div class="flash">💀 Has muerto. Sigue mirando en silencio… y no desveles nada.</div>' : ''}
   ${flashHtml()}
-  ${!my.inGame && game.phase !== 'end' ? narratorPanel(g) : ''}
+  ${!my.inGame && game.phase !== 'end' && !game.paused ? narratorPanel(g) : ''}
   ${body}
   ${logPanel(game)}
   ${masterToolsBar(g)}

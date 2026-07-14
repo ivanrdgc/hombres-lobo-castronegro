@@ -1,7 +1,7 @@
 // E2E 2: modo manual + partida automática con roles complejos y conductor genérico.
 import { chromium } from 'playwright';
 
-const BASE = process.env.BASE || 'https://castro-zui5sg.web.app';
+const BASE = process.env.BASE; if (!BASE) { console.error('Define BASE=https://tu-sitio.web.app'); process.exit(1); }
 let failures = 0;
 const ok = (msg) => console.log('  ✔', msg);
 const bad = (msg) => { failures++; console.log('  ✖', msg); };

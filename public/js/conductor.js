@@ -152,6 +152,7 @@ export function conductorTick() {
     return;
   }
   requestWakeLock();
+  if (game.paused) { cancelTimer(); stopSpeech(); return; } // pausa global
   const players = state.players.filter((p) => p.inGame);
 
   if (game.phase === 'reveal') {

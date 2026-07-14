@@ -2,7 +2,7 @@
 
 Adaptación web del juego de mesa para jugar con amigos en la misma sala, cada uno desde su móvil.
 
-**Jugar:** https://castro-zui5sg.web.app
+*(La URL de la instancia no se publica aquí: despliega la tuya con `firebase deploy` sobre tu propio proyecto.)*
 
 ## Cómo funciona
 
@@ -65,9 +65,9 @@ public/
   js/ui.js           Renderizado
   js/main.js         Enrutado y eventos
 tests/engine.test.mjs  54 tests del motor (node --test tests/engine.test.mjs)
-e2e/                   Pruebas de extremo a extremo con Playwright contra producción:
+e2e/                   Pruebas de extremo a extremo con Playwright (URL por variable de entorno):
                        cd e2e && npm i playwright && npx playwright install chromium
-                       node e2e.mjs && node e2e2.mjs && node e2e-deadpeek.mjs
+                       BASE=https://TU-SITIO.web.app node e2e.mjs
 ```
 
 - **Firebase**: proyecto `castronegro-zui5sg`, Firestore (eur3) + Hosting. Deploy: `firebase deploy --project castronegro-zui5sg`.

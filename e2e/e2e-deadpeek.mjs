@@ -1,6 +1,6 @@
 // Mini-test: un jugador devorado revela roles tocando jugadores.
 import { chromium } from 'playwright';
-const BASE = 'https://castro-zui5sg.web.app';
+const BASE = process.env.BASE; if (!BASE) { console.error('Define BASE=https://tu-sitio.web.app'); process.exit(1); }
 const GROUP = 'DP ' + Date.now().toString(36).slice(-5);
 let fail = 0;
 const ok = (m) => console.log('  ✔', m);

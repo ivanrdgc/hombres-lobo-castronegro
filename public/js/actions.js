@@ -269,7 +269,7 @@ export async function startGame(mode) {
         noKillNight1: !!settings.primeraNocheTranquila,
         videnteBando: !!settings.videnteSoloBando,
         hideNightCauses: !!settings.ocultarCausas,
-        roleRefresh: null, refreshNonce: 0,
+        roleRefresh: null, refreshNonce: 0, paused: null,
         composition, centerCards: center, dropped, log,
       },
     }));
@@ -299,16 +299,17 @@ export async function endGameNow(winner) {
   await gameTx((game, players) => {
     game.winner = winner || checkWinner(players.filter((p) => p.inGame)) || 'nadie';
     game.phase = 'end';
+    game.paused = null;
     game.log.push({ kind: 'evento', txt: '🏁 El máster ha dado por terminada la partida.' });
     return { game };
-  });
+  }, { allowPaused: true });
 }
 
 // ——— Utilidades de transacción ———
 
 // Lee grupo + todos los jugadores, ejecuta fn(gameCopy, players) => {game, playerPatches}
 // y escribe el resultado. fn puede devolver null para abortar sin cambios.
-async function gameTx(fn) {
+async function gameTx(fn, opts = {}) {
   const slug = state.route.slug;
   const ids = state.players.map((p) => p.id);
   await runTransaction(db, async (tx) => {
@@ -316,8 +317,13 @@ async function gameTx(fn) {
     if (!gsnap.exists()) throw new Error('El grupo ya no existe');
     const g = gsnap.data();
     if (!g.game) throw new Error('No hay partida en curso');
-    const snaps = await Promise.all(ids.map((id) => tx.get(pref(slug, id))));
-    const players = snaps.filter((s) => s.exists()).map((s) => ({ id: s.id, ...s.data() }));
+    if (g.game.paused && !opts.allowPaused) return; // partida en pausa: todo congelado
+    // skipPlayers: transacciones que solo tocan el doc del grupo ahorran N lecturas
+    // (usan la caché local de jugadores solo para leer nombres/estados).
+    const players = opts.skipPlayers
+      ? state.players.map((p) => ({ ...p }))
+      : (await Promise.all(ids.map((id) => tx.get(pref(slug, id)))))
+        .filter((s) => s.exists()).map((s) => ({ id: s.id, ...s.data() }));
     const game = JSON.parse(JSON.stringify(g.game));
     const res = fn(game, players, g);
     if (!res) return;
@@ -371,7 +377,7 @@ export async function advanceGhostStep(expectedIdx) {
     if (game.steps[game.stepIdx] === 'amanecer') return null;
     game.stepIdx += 1;
     return { game };
-  });
+  }, { skipPlayers: true });
 }
 
 export async function runDawn() {
@@ -761,7 +767,7 @@ export async function pickAlguacil(pid) {
       game.log.push({ kind: 'evento', txt: `⭐ ${t.name} es ahora el Alguacil del pueblo: su voz vale por dos.` });
     }
     return { game };
-  });
+  }, { skipPlayers: true });
 }
 
 export async function cabezaPick(pid) {
@@ -776,7 +782,7 @@ export async function cabezaPick(pid) {
       if (t) game.log.push({ kind: 'evento', txt: `🐐 El Cabeza de Turco decide: mañana solo ${t.name} podrá registrar la decisión del pueblo.` });
     }
     return { game };
-  });
+  }, { skipPlayers: true });
 }
 
 export async function answerGitana(yes) {
@@ -787,7 +793,31 @@ export async function answerGitana(yes) {
     game.log.push({ kind: 'evento', txt: `🔯 Espiritismo — «${game.gitanaQ.q}» El espíritu responde: ${yes ? 'SÍ' : 'NO'}.` });
     game.gitanaQ = null;
     return { game };
-  });
+  }, { skipPlayers: true });
+}
+
+// ——— Pausa global (modo automático) ———
+
+export async function pauseGame() {
+  await gameTx((game, players) => {
+    if (game.mode !== 'auto' || game.phase === 'end' || game.paused) return null;
+    const who = players.find((p) => p.id === state.session.pid);
+    game.paused = { by: state.session.pid, name: who ? who.name : 'alguien', at: Date.now() };
+    game.log.push({ kind: 'evento', txt: `⏸️ ${who ? who.name : 'Alguien'} ha pausado la partida.` });
+    return { game };
+  }, { allowPaused: true, skipPlayers: true });
+}
+
+export async function resumeGame() {
+  await gameTx((game) => {
+    if (!game.paused) return null;
+    game.paused = null;
+    // La ventana de la Sirvienta no debe expirar durante la pausa.
+    const head = (game.pending || [])[0];
+    if (head && head.type === 'sirvienta') head.deadline = Date.now() + 25000;
+    game.log.push({ kind: 'evento', txt: '▶️ La partida continúa.' });
+    return { game };
+  }, { allowPaused: true, skipPlayers: true });
 }
 
 // ——— Repaso de roles: si alguien se atasca 2 minutos, todo el pueblo revisa ———
@@ -798,7 +828,7 @@ export async function startRoleRefresh() {
     game.roleRefresh = { confirmed: {}, startedAt: Date.now() };
     game.log.push({ kind: 'evento', txt: '👁️ Pausa: todo el pueblo revisa su rol y su palabra clave.' });
     return { game };
-  });
+  }, { skipPlayers: true });
 }
 
 export async function confirmRoleRefresh() {
