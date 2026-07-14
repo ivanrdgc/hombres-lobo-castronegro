@@ -845,6 +845,7 @@ function manualMasterPanel(g, players) {
       <div class="player selectable ${p.alive === false ? 'dead' : ''}" data-a="manual-player" data-p="${p.id}">
         <span>${ROLES[p.role]?.emoji || '❔'}</span>
         <span class="pname">${esc(p.name)}<br><small style="color:var(--muted)">${ROLES[p.role]?.name || ''}</small></span>
+        ${p.lover ? '<span>💘</span>' : ''}
         ${p.alive === false ? '<span>💀</span>' : ''}
       </div>`).join('')}
   </div></div>
