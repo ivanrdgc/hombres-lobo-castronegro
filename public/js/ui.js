@@ -709,6 +709,11 @@ function nightActionPanel(stepId, g, my, players) {
       return wrap('🎶 El Gaitero', `Encanta a ${maxSel} jugador${maxSel > 1 ? 'es' : ''} con tu música.`,
         pickList(targets, { max: maxSel, selKey: key }) + btn('act-gaitero', `🎶 Encantar${sel.length === maxSel ? '' : ` (elige ${maxSel})`}`, 'violet block'));
     }
+    case 'encantados': {
+      const all = players.filter((p) => p.charmed).map((p) => esc(p.name)).join(', ');
+      return wrap('🎶 La música te ha atrapado', `Ahora estás <b>encantado</b> por el Gaitero. Encantados hasta ahora: <b>${all}</b>. Confirma y vuelve a cerrar los ojos con disimulo.`,
+        btn('act-encantado-ok', '🎶 Entendido', 'violet block'));
+    }
     case 'gitana':
       if (game.powersLost) return wrap('🔯 La Gitana', 'La muerte del Anciano os arrebató los poderes. Que nadie lo note: espera un instante, disimula… y termina tu turno.', btn('act-gitana-skip', '🌙 Terminar mi turno', 'primary block'));
       return wrap('🔯 La Gitana', 'Escribe tu pregunta (de sí o no) o elige una sugerida: un espíritu (jugador muerto) la responderá al amanecer.',
@@ -728,11 +733,6 @@ function nightActionPanel(stepId, g, my, players) {
 function privateNightInfo(stepId, g, my, players) {
   const acts = g.game.acts || {};
   const bits = [];
-  if (stepId === 'encantados' && my.charmed && (acts.gaiteroTargets || []).includes(my.id) && !state.ui.encOk) {
-    const all = players.filter((p) => p.charmed).map((p) => esc(p.name)).join(', ');
-    bits.push(`🎶 ¡La música del Gaitero te ha atrapado! Ahora estás <b>encantado</b>. Encantados hasta ahora: ${all}.
-      <div style="margin-top:8px">${btn('enc-ok', '✔️ Entendido', 'small ghost')}</div>`);
-  }
   if (!bits.length) return '';
   return `<div class="actionpanel">${bits.map((b) => `<p>${b}</p>`).join('')}</div>`;
 }
@@ -1053,7 +1053,7 @@ function masterToolsBar(g) {
   // Todos los jugadores pueden forzar un paso atascado y terminar la partida;
   // el narrador-jugador tiene además la voz y la vista de roles.
   return `<div class="mastertools"><div class="inner">
-    ${narrator ? btn('voice-open', isMuted() ? '🔇 Voz' : '🗣️ Voz', 'ghost') : ''}
+    ${btn('voice-open', isMuted() ? '🔇 Voz' : '🗣️ Voz', 'ghost')}
     ${btn('repeat-last', '🔁 Repetir', 'ghost')}
     ${btn('force-advance', '⏭️ Forzar', 'ghost')}
     ${btn('end-game', '🏳️ Fin', 'ghost')}

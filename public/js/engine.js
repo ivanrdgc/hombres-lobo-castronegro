@@ -169,8 +169,13 @@ export function stepActors(stepId, game, players) {
       if (acts.gaiteroTargets) return null;
       return idsOf(aliveWithRole(players, 'gaitero'));
     }
-    case 'encantados':
-      return null; // paso informativo: lo temporiza el conductor con palabras clave
+    case 'encantados': {
+      // Los recién encantados deben reconocerse y confirmarlo: el juego espera.
+      const targets = acts.gaiteroTargets || [];
+      if (!targets.length) return null; // sin encantamiento (o gaitero inactivo)
+      const pend = players.filter((p) => p.alive && targets.includes(p.id) && !(acts.encantadosSeen || {})[p.id]);
+      return idsOf(pend);
+    }
     case 'durmiendo':
       return null; // nadie actúa: tiempo para que todos cierren los ojos
     case 'gitana': {
@@ -330,10 +335,12 @@ export function resolveDawn(game, playersIn) {
       logs.push({ kind: 'evento', txt: '🐻 Se oye un gruñido: el oso del Domador huele a un hombre lobo cerca.' });
     }
   }
-  // El cuervo señala públicamente.
+  // El cuervo señala públicamente (y la voz lo anuncia al amanecer).
+  let cuervoAnnounce = null;
   const markId = acts.cuervoTarget ?? ((acts.actor && acts.actor.power === 'cuervo') ? acts.actor.target : null);
   if (markId && byId[markId]) {
     logs.push({ kind: 'evento', txt: `🐦‍⬛ El Cuervo ha señalado a ${byId[markId].name}: carga con 2 votos extra en su contra.` });
+    cuervoAnnounce = `Sobre el tejado de ${byId[markId].name} han aparecido plumas negras: el Cuervo lo ha señalado, y hoy carga con dos votos extra en su contra.`;
   }
   // Pregunta de la gitana → la responderá un espíritu durante el día.
   // La pregunta de la Gitana se anuncia en voz alta al amanecer y un espíritu
@@ -353,7 +360,7 @@ export function resolveDawn(game, playersIn) {
     }
   }
 
-  return { players, logs, pendings: chain.pendings, gameUpdates, deaths: chain.deaths, gitanaAnnounce };
+  return { players, logs, pendings: chain.pendings, gameUpdates, deaths: chain.deaths, gitanaAnnounce, cuervoAnnounce };
 }
 
 // ——— Condiciones de victoria ———

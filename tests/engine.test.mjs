@@ -176,15 +176,27 @@ test('lobos_reconocen: primera noche, los lobos confirman y el paso se completa'
   assert.ok(!s2.includes('lobos_reconocen'));
 });
 
-test('encantados: el paso existe si hay gaitero y no requiere actores', () => {
+test('encantados: los recién encantados deben confirmar y el juego espera', () => {
   const players = mkPlayers(['hombre_lobo', 'gaitero', 'aldeano', 'aldeano']);
   const game = mkGame({ composition: { hombre_lobo: 1, gaitero: 1, aldeano: 2 } });
   const steps = computeNightSteps(game, players);
   assert.ok(steps.includes('encantados'));
   assert.ok(steps.indexOf('gaitero') < steps.indexOf('encantados'));
-  assert.equal(stepActors('encantados', game, players), null);
-  const sinGaitero = computeNightSteps(mkGame({ composition: { hombre_lobo: 1, aldeano: 3 } }), players.map((p) => ({ ...p, role: p.role === 'gaitero' ? 'aldeano' : p.role })));
-  assert.ok(!sinGaitero.includes('encantados'));
+  assert.equal(stepActors('encantados', game, players), null, 'sin objetivos aún');
+  game.acts.gaiteroTargets = ['p2', 'p3'];
+  assert.deepEqual(stepActors('encantados', game, players).sort(), ['p2', 'p3'], 'esperan confirmación');
+  game.acts.encantadosSeen = { p2: true };
+  assert.deepEqual(stepActors('encantados', game, players), ['p3']);
+  game.acts.encantadosSeen = { p2: true, p3: true };
+  assert.equal(stepActors('encantados', game, players), null, 'todos confirmados');
+});
+
+test('resolveDawn: la marca del cuervo se anuncia al amanecer', () => {
+  const players = mkPlayers(['hombre_lobo', 'cuervo', 'aldeano', 'aldeano']);
+  const game = mkGame({ acts: { cuervoTarget: 'p3' } });
+  const res = resolveDawn(game, players);
+  assert.ok(res.cuervoAnnounce.includes('J3'));
+  assert.ok(res.cuervoAnnounce.includes('dos votos'));
 });
 
 test('turno fantasma: disimula roles muertos (ocultos) y roles vivos sin poder', async () => {

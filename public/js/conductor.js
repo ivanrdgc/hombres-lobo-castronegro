@@ -69,6 +69,15 @@ function nagText(nagId, n) {
         : `Aún falta algún corazón por despertar… Atentos a las palabras: … ${kws}. Quien oiga la suya, que abra los ojos sin hacer ruido y confirme.`;
     }
   }
+  if (nagId === 'encantados') {
+    const g = state.group && state.group.game;
+    const targets = (g && g.acts && g.acts.gaiteroTargets) || [];
+    const ps = state.players.filter((p) => targets.includes(p.id) && p.keyword);
+    if (g && g.keywordsActive && ps.length) {
+      const kws = ps.map((p) => p.keyword).join('… y ');
+      return `La melodía del Gaitero sigue sonando… Repito las palabras clave: … ${kws}. Quien oiga la suya, que abra los ojos con disimulo, mire su pantalla y confirme.`;
+    }
+  }
   const pool = NAGS[nagId] || [];
   if (n % 2 === 0 && pool.length) return pool[Math.floor(n / 2) % pool.length];
   return NAG_GENERIC[n % NAG_GENERIC.length];
@@ -218,15 +227,23 @@ export function conductorTick() {
       schedule(key, 11000 + Math.random() * 3000, () => advanceGhostStep(game.stepIdx));
       return;
     }
-    // Encantados: paso informativo con palabras clave (el "toque en el hombro" del narrador).
+    // Encantados: se les llama por palabras clave y el juego ESPERA a que cada
+    // uno confirme haberse reconocido (como los enamorados).
     if (stepId === 'encantados') {
       const targets = (game.acts.gaiteroTargets || []).map((id) => players.find((p) => p.id === id)).filter(Boolean);
       const encIntro = narr('encantados', `${game.seed}:${key}`);
-      if (game.keywordsActive && targets.length) {
+      const actors = stepActors(stepId, game, players);
+      if (targets.length && actors && actors.length) {
         const kws = targets.map((p) => p.keyword).filter(Boolean);
-        say(key, `${encIntro} Todos con los ojos cerrados. Si oyes tu palabra clave, la música te ha atrapado: abre los ojos con disimulo y mira tu pantalla. Las palabras son: … ${kws.join('… y ')}. Cuando lo hayáis visto, volved a cerrar los ojos.`);
-        schedule(key, 14000, () => advanceGhostStep(game.stepIdx));
-      } else if (game.keywordsActive && !game.revealDead && players.some((p) => p.role === 'gaitero')) {
+        say(key, `${encIntro} Todos con los ojos cerrados. Si oyes tu palabra clave, la música te ha atrapado: abre los ojos con disimulo, mira tu pantalla y confirma. Las palabras son: … ${kws.join('… y ')}.`);
+        scheduleNag(key, 'encantados');
+        return;
+      }
+      if (targets.length) { // todos confirmados: despedida y sigue la noche
+        chainOutro(key, OUTROS.encantados, 900, game.stepIdx);
+        return;
+      }
+      if (game.keywordsActive && !game.revealDead && players.some((p) => p.role === 'gaitero')) {
         // El gaitero ya no actúa: llamada falsa para no delatar su muerte.
         const alive = players.filter((p) => p.alive && p.keyword);
         const fake = alive.slice().sort(() => Math.random() - 0.5).slice(0, 2).map((p) => p.keyword);
@@ -297,6 +314,7 @@ export function conductorTick() {
       } else {
         parts.push(narr('amanecer_sin_muertes', dawnSalt));
       }
+      if (game.lastDawn && game.lastDawn.cuervo) parts.push(game.lastDawn.cuervo);
       if (game.lastDawn && game.lastDawn.gitana) parts.push(game.lastDawn.gitana);
       if (Math.random() < 0.5) parts.push(improv('amanecer'));
       const aliveCount = players.filter((p) => p.alive).length;

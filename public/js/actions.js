@@ -443,6 +443,7 @@ export async function runDawn() {
       deaths: res.deaths.map((d) => ({ name: byId[d.pid].name, role: game.revealDead ? ROLES[d.role]?.name : null })),
       events: [...logs, ...res.logs].map((l) => l.txt),
       gitana: res.gitanaAnnounce || null,
+      cuervo: res.cuervoAnnounce || null,
     };
     if (winner) { game.phase = 'end'; game.winner = winner; }
     else game.phase = 'day';
@@ -649,6 +650,11 @@ export const actGaitero = (targets) => nightAction('gaitero', (game) => {
   const patches = {};
   for (const pid of targets || []) patches[pid] = { charmed: true };
   return { playerPatches: patches };
+});
+
+export const confirmEncantado = () => nightAction('encantados', (game, ps, myId) => {
+  game.acts.encantadosSeen = { ...(game.acts.encantadosSeen || {}), [myId]: true };
+  return {};
 });
 
 export const actGitana = (qIdx) => nightAction('gitana', (game) => {
@@ -903,7 +909,9 @@ const STEP_SKIP_DEFAULTS = {
     g.acts.lobosSeen = Object.fromEntries(ps.filter((p) => p.alive && isWolfSide(p)).map((p) => [p.id, true]));
     g.wolvesKnown = true;
   },
-  encantados: () => { /* paso informativo: basta con avanzar */ },
+  encantados: (g) => {
+    g.acts.encantadosSeen = Object.fromEntries((g.acts.gaiteroTargets || []).map((id) => [id, true]));
+  },
   actor: (g) => { g.acts.actor = { power: null, target: null }; g.acts.actorSeen = true; },
   defensor: (g) => { g.acts.defensorTarget = null; },
   vidente: (g) => { g.acts.videnteTarget = null; g.acts.videnteSeen = true; },

@@ -29,7 +29,6 @@ onChange(() => {
     state.ui.brujaHeal = false;
     state.ui.narratorWho = false; // el «¿quién es?» se oculta al cambiar de paso
     state.ui.refreshOpen = false;
-    state.ui.encOk = false;
     if (state.ui.modal && ['vote-confirm', 'view-roles', 'manual-player'].includes(state.ui.modal.type) === false
       && state.group && state.group.status === 'playing') {
       // los modales de lobby se cierran si empieza/acaba una partida
@@ -182,7 +181,6 @@ const handlers = {
   'confirm-role-seen': () => guard(() => A.confirmRoleSeen()),
   'confirm-role-refresh': () => guard(async () => { await A.confirmRoleRefresh(); state.ui.refreshOpen = false; }),
   'open-role-refresh': () => { state.ui.refreshOpen = true; render(); },
-  'enc-ok': () => { state.ui.encOk = true; render(); },
   'toggle-rolecard': () => {
     state.ui.roleOpen = !state.ui.roleOpen;
     clearTimeout(roleHideTimer);
@@ -265,6 +263,7 @@ const handlers = {
     if (sel().length !== maxSel) return needSel();
     return guard(() => A.actGaitero(sel()));
   },
+  'act-encantado-ok': () => guard(() => A.confirmEncantado()),
   'act-gitana': (idx) => guard(() => A.actGitana(parseInt(idx, 10))),
   'act-gitana-custom': () => {
     const q = val('gitana-q');
@@ -293,7 +292,7 @@ const handlers = {
     if (!isMuted()) speak('La voz del narrador está activada.');
     render();
   },
-  'voice-open': () => { if (isMaster()) { state.ui.modal = { type: 'voice' }; render(); } },
+  'voice-open': () => { state.ui.modal = { type: 'voice' }; render(); },
   'narrator-who': () => {
     state.ui.narratorWho = true;
     clearTimeout(narratorWhoTimer);

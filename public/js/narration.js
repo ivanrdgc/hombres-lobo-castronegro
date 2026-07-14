@@ -246,6 +246,7 @@ export const OUTROS = {
   lobo_albino: 'El Lobo Albino cierra los ojos, rumiando sus propios planes.',
   bruja: 'La Bruja tapa su caldero y vuelve a dormir.',
   gaitero: 'El Gaitero deja su instrumento y cierra los ojos.',
+  encantados: 'Los encantados vuelven a cerrar los ojos, con la melodía aún dando vueltas en su cabeza.',
   gitana: 'La Gitana apaga las velas y vuelve a dormir.',
 };
 
