@@ -29,6 +29,12 @@ onChange(() => {
     state.ui.brujaHeal = false;
     state.ui.narratorWho = false; // el «¿quién es?» se oculta al cambiar de paso
     state.ui.refreshOpen = false;
+    if (state.group && state.group.status === 'playing') {
+      // Los avisos tipo «selecciona primero a un jugador» caducan al cambiar
+      // de fase o de paso (fuera de partida se conservan: p. ej. «grupo eliminado»).
+      state.flash = null;
+      state.ui.formError = null;
+    }
     if (state.ui.modal && ['vote-confirm', 'view-roles', 'manual-player'].includes(state.ui.modal.type) === false
       && state.group && state.group.status === 'playing') {
       // los modales de lobby se cierran si empieza/acaba una partida
