@@ -1035,10 +1035,24 @@ function viewRolesModal() {
 }
 
 function endGameModal() {
+  const game = (state.group && state.group.game) || {};
+  const comp = game.composition || {};
+  const players = state.players.filter((p) => p.inGame);
+  const hasRole = (r) => (comp[r] || 0) > 0 || players.some((p) => p.role === r);
+  // Solo se ofrecen los desenlaces posibles con los roles de esta partida.
+  const relevant = {
+    pueblo: true,
+    lobos: true,
+    enamorados: hasRole('cupido') || players.some((p) => p.lover),
+    gaitero: hasRole('gaitero'),
+    lobo_albino: hasRole('lobo_albino'),
+    sectario: hasRole('sectario'),
+    angel: hasRole('angel'),
+  };
   return `<h3>🏳️ Terminar la partida</h3>
     <p class="small-note">Elige el resultado (o deja que la app lo calcule con los vivos actuales).</p>
     ${btn('end-game-confirm', '🧮 Calcular ganador automáticamente', 'primary block', '')}
-    ${Object.entries(WINNER_LABELS).filter(([k]) => k !== 'nadie').map(([k, v]) => btn('end-game-confirm', v, 'ghost block', k)).join('')}
+    ${Object.entries(WINNER_LABELS).filter(([k]) => k !== 'nadie' && relevant[k]).map(([k, v]) => btn('end-game-confirm', v, 'ghost block', k)).join('')}
     ${btn('close-modal', 'Cancelar', 'ghost block')}`;
 }
 
