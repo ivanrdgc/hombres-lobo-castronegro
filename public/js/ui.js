@@ -220,7 +220,7 @@ function lobbyScreen(g, my) {
     <p class="small-note">Con ${nJug} jugador${nJug === 1 ? '' : 'es'} (el máster narra y no juega): <b>${lobos} 🐺 lobo${lobos > 1 ? 's' : ''}</b>${wolvesFixed ? ' (fijado por el máster)' : ''} y el resto según los roles activados (los huecos se rellenan con 🧑‍🌾 aldeanos).</p>
     ${nJug < OFFICIAL_MIN_PLAYERS && !(g.settings || {}).casual ? `<p class="small-note">⚠️ Las reglas oficiales piden de ${OFFICIAL_MIN_PLAYERS} a 18 jugadores además del narrador. Para jugar con menos, el máster puede activar el <b>modo casual</b> en los ajustes.</p>` : ''}
     <div class="btnrow" style="margin-top:6px">
-      ${(extra.length ? extra.map((r) => ROLES[r] ? `<span class="chip">${ROLES[r].emoji} ${ROLES[r].name}</span>` : '').join('') : '<span class="chip">Solo lobos y aldeanos</span>')}
+      ${(extra.length ? extra.map((r) => ROLES[r] ? `<span class="chip">${ROLES[r].emoji} ${ROLES[r].name}</span>` : '').join('') : '<span class="chip">Solo lobos y aldeanos</span>')}${(g.settings || {}).alguacil ? '<span class="chip">⭐ Alguacil</span>' : ''}
     </div>
     ${master ? btn('open-roles', '⚙️ Elegir roles', 'block') : ''}
   </div>
@@ -900,6 +900,12 @@ function rolesModal() {
   const g = state.group;
   const extra = g.extraRoles || [];
   const wc = (g.settings || {}).wolvesCount || null;
+  const alguacilOn = !!(g.settings || {}).alguacil;
+  const alguacilRow = `<div class="roletoggle ${alguacilOn ? 'on' : ''}" data-a="toggle-setting" data-p="alguacil">
+      <span class="remoji">⭐</span>
+      <div class="rinfo"><div class="rname">El Alguacil <small>(cargo electo, no es una carta)</small></div>
+      <div class="rdesc">El primer día el pueblo elige a su Alguacil, cuya voz vale por dos. Al morir, señala a su sucesor.</div></div>
+      <span class="state">${alguacilOn ? '✅' : '⬜'}</span></div>`;
   const groups = EXPANSIONS.map((exp) => {
     const roles = Object.values(ROLES).filter((r) => r.expansion === exp.id);
     return `<div class="exp">${exp.emoji} ${exp.name.toUpperCase()}</div>` + roles.map((r) => {
@@ -916,7 +922,7 @@ function rolesModal() {
         <div class="rinfo"><div class="rname">${r.name}${r.multi ? ` <small>(×${r.multi} cartas)</small>` : ''}${r.minPlayers ? ` <small>(regla: ≥${r.minPlayers} jugadores)</small>` : ''}</div>
         <div class="rdesc">${r.desc}${minWarn && on ? ' <b>⚠️ Ahora mismo no hay jugadores suficientes: no se repartirá.</b>' : ''}</div></div>
         <span class="state">${on ? '✅' : '⬜'}</span></div>`;
-    }).join('');
+    }).join('') + (exp.id === 'base' ? alguacilRow : '');
   }).join('');
   return `<h3>🎴 Roles de la partida</h3>
     <div class="settingrow"><div class="sinfo"><div class="sname">🐺 Número de lobos</div>
@@ -937,7 +943,6 @@ function settingsModal() {
   return `<h3>🔧 Ajustes de partida</h3>
     ${row('revealDead', '💀 Revelar rol al morir', 'Al eliminar a alguien se anuncia qué rol tenía (regla oficial).')}
     ${row('showComposition', '🎴 Composición pública', 'Al empezar se anuncia qué cartas hay en juego (como en el juego de mesa).')}
-    ${row('alguacil', '⭐ Jugar con Alguacil', 'El primer día el pueblo elige un Alguacil cuyo voto vale doble.')}
     ${row('primeraNocheTranquila', '🌙 Primera noche sin sangre', 'La primera noche los lobos se reconocen y los roles actúan, pero nadie es devorado.')}
     ${row('videnteSoloBando', '🔮 La vidente solo ve el bando', 'En vez del rol exacto, la vidente solo descubre si el jugador es hombre lobo o no.')}
     ${row('ocultarCausas', '🌫️ Ocultar causas de muerte', 'Las muertes nocturnas no explican si fueron los lobos, la bruja u otra cosa: solo quién ha muerto.')}
