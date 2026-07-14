@@ -5,7 +5,7 @@ import { state, isMaster } from './store.js';
 import { stepActors, stepNeedsGhostAnnounce, NIGHT_STEPS, WINNER_LABELS } from './engine.js';
 import { ROLES } from './roles.js';
 import { EXPLANATIONS } from './explain.js';
-import { NARRATION, OUTROS, narr, deathLine, improv, speak, stopSpeech, initVoice, getVoiceConfig, isNarratorSpeaking } from './narration.js';
+import { NARRATION, narr, outro, deathLine, improv, speak, stopSpeech, initVoice, getVoiceConfig, isNarratorSpeaking } from './narration.js';
 import { ensureAmbience, stopAmbience } from './ambience.js';
 import {
   startFirstNight, advanceGhostStep, runDawn, startNextNight, resolveSirvienta, startRoleRefresh, finishRoleRefreshClose,
@@ -24,32 +24,54 @@ let lastSpokenText = ''; // última narración principal pronunciada
 // Frases de insistencia: si nadie actúa en ~30 s, la voz anima a seguir.
 // Admiten varias variantes para que cada aviso suene distinto.
 const NAGS = {
-  refresh: ['Aún faltan vecinos por revisar su carta… miradla en secreto y confirmad en el dispositivo.'],
-  ladron: ['Ladrón, las dos cartas del centro siguen esperándote…'],
+  refresh: ['Aún faltan vecinos por revisar su carta… miradla en secreto y confirmad en el dispositivo.',
+    'Castronegro espera: revisad vuestra carta en secreto y confirmad, que la noche quiere continuar.'],
+  ladron: ['Ladrón, las dos cartas del centro siguen esperándote…',
+    'Ladrón, decídete: ¿lo tuyo, o lo ajeno?',
+    'Ladrón, la noche no dura para siempre y los destinos tampoco…'],
   cupido: ['¡Cupido, abre los ojos! Tus flechas de amor esperan un destino.',
-    'Cupido, el amor no puede esperar toda la noche… tensa ese arco.'],
-  enamorados: ['Enamorados, abrid los ojos con disimulo, mirad vuestra pantalla y confirmad… el amor no puede esperar toda la noche.'],
-  nino_salvaje: ['Niño Salvaje, elige ya a tu modelo… la noche avanza.'],
-  perro_lobo: ['Perro Lobo, ¿pueblo o manada? Tu corazón debe decidir.'],
-  dos_hermanas: ['Hermanas, reconoceos y confirmadlo en vuestra pantalla.'],
-  tres_hermanos: ['Hermanos, reconoceos y confirmadlo en vuestra pantalla.'],
-  actor: ['Actor, el escenario espera tu interpretación…', 'Actor, el público se impacienta… elige tu papel.'],
-  defensor: ['Defensor, el pueblo necesita tu escudo esta noche…', 'Defensor, las puertas crujen… ¿cuál protegerás?'],
+    'Cupido, el amor no puede esperar toda la noche… tensa ese arco.',
+    'Cupido, dos corazones siguen sueltos por tu culpa… apunta de una vez.'],
+  enamorados: ['Enamorados, abrid los ojos con disimulo, mirad vuestra pantalla y confirmad… el amor no puede esperar toda la noche.',
+    'Enamorados, que el flechazo no os deje dormidos: mirad la pantalla con disimulo y confirmad.'],
+  nino_salvaje: ['Niño Salvaje, elige ya a tu modelo… la noche avanza.',
+    'Niño Salvaje, todo cachorro necesita un espejo: elígelo.'],
+  perro_lobo: ['Perro Lobo, ¿pueblo o manada? Tu corazón debe decidir.',
+    'Perro Lobo, decídete: ni el bosque ni el hogar esperan eternamente.'],
+  dos_hermanas: ['Hermanas, reconoceos y confirmadlo en vuestra pantalla.',
+    'Hermanas, la sangre os busca: miraos y confirmad.'],
+  tres_hermanos: ['Hermanos, reconoceos y confirmadlo en vuestra pantalla.',
+    'Hermanos, tres pares de ojos y ninguna confirmación… miraos y confirmad.'],
+  actor: ['Actor, el escenario espera tu interpretación…',
+    'Actor, el público se impacienta… elige tu papel.',
+    'Actor, sin miedo escénico: la noche es tu mejor función.'],
+  defensor: ['Defensor, el pueblo necesita tu escudo esta noche…',
+    'Defensor, las puertas crujen… ¿cuál protegerás?',
+    'Defensor, elige guardia: los colmillos no van a esperar mucho más.'],
   vidente: ['Vidente, tu bola de cristal se enfría… elige a quién descubrir.',
-    'Vidente, la niebla se disipa en tu bola de cristal… aprovecha antes de que vuelva.'],
-  zorro: ['Zorro, ¿olfatearás esta noche o descansarás?'],
-  cuervo: ['Cuervo, ¿sobre qué tejado dejarás caer tu sospecha?'],
+    'Vidente, la niebla se disipa en tu bola de cristal… aprovecha antes de que vuelva.',
+    'Vidente, la verdad tiene prisa esta noche: pregunta un nombre.'],
+  zorro: ['Zorro, ¿olfatearás esta noche o descansarás?',
+    'Zorro, el rastro se enfría… decide dónde husmear.'],
+  cuervo: ['Cuervo, ¿sobre qué tejado dejarás caer tu sospecha?',
+    'Cuervo, tus plumas pesan… suéltalas sobre algún tejado.'],
   lobos_reconocen: ['Lobos, abrid los ojos, reconoceos… y confirmadlo en vuestro dispositivo.',
     'La manada aún no se ha reconocido del todo… lobos, miraos y confirmad.'],
   lobos: ['Los hombres lobo se lo están pensando… la manada debe elegir a su víctima.',
     'Se oye a la manada deliberar… hombres lobo, el hambre no espera: elegid.',
-    'Los lobos afilan sus garras, indecisos… ¿quién caerá esta noche?'],
-  lobo_feroz: ['Gran Lobo Feroz, tu hambre espera una segunda víctima… ¿o la contendrás?'],
-  lobo_albino: ['Hombre Lobo Albino, ¿traicionarás a la manada esta noche?'],
+    'Los lobos afilan sus garras, indecisos… ¿quién caerá esta noche?',
+    'La manada discute en silencio… decidid, que la luna no espera.'],
+  lobo_feroz: ['Gran Lobo Feroz, tu hambre espera una segunda víctima… ¿o la contendrás?',
+    'Gran Lobo Feroz, el segundo plato se enfría…'],
+  lobo_albino: ['Hombre Lobo Albino, ¿traicionarás a la manada esta noche?',
+    'Hombre Lobo Albino, decide: lealtad… o un hermano menos.'],
   bruja: ['Bruja, el caldero humea… decide qué pociones usar y termina tu turno.',
-    'Bruja, tus frascos aguardan… vida, muerte o nada: pero decide.'],
-  gaitero: ['Gaitero, tu melodía aguarda… elige a quién encantar.'],
-  gitana: ['Gitana, los espíritus se impacientan… haz tu pregunta o déjalos descansar.'],
+    'Bruja, tus frascos aguardan… vida, muerte o nada: pero decide.',
+    'Bruja, la noche pregunta dos veces y tú aún no has contestado ninguna…'],
+  gaitero: ['Gaitero, tu melodía aguarda… elige a quién encantar.',
+    'Gaitero, dos oídos esperan tu música… elige de una vez.'],
+  gitana: ['Gitana, los espíritus se impacientan… haz tu pregunta o déjalos descansar.',
+    'Gitana, el velo se cierra pronto… pregunta ya.'],
 };
 
 const NAG_GENERIC = [
@@ -106,7 +128,7 @@ function scheduleNag(baseKey, nagId, delay = 30000) {
 // Se dice SIEMPRE, haya actuado alguien o no: es parte del disimulo.
 function outroFor(stepId, game) {
   if (stepId === 'lobos' && game.steps[game.stepIdx + 1] === 'infecto_decision') return null;
-  return OUTROS[stepId] || null;
+  return outro(stepId, `${game.seed}:n${game.night}:s${game.stepIdx}`);
 }
 
 function chainOutro(key, outroTxt, waitMs, stepIdx) {
@@ -286,7 +308,7 @@ export function conductorTick() {
         return;
       }
       if (targets.length) { // todos confirmados: despedida y sigue la noche
-        chainOutro(key, OUTROS.encantados, 900, game.stepIdx);
+        chainOutro(key, outro('encantados', `${game.seed}:n${game.night}`), 900, game.stepIdx);
         return;
       }
       const gaiteroDealt = (game.composition || {}).gaitero > 0 || players.some((p) => p.role === 'gaitero');
