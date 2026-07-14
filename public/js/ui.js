@@ -338,14 +338,22 @@ function phaseChip(game) {
 
 function revealPhase(g, my) {
   const pend = state.players.filter((p) => p.inGame && !p.roleSeen);
+  // Antes de confirmar: carta completa. Después: oculta al instante (los móviles
+  // suelen quedarse desbloqueados sobre la mesa) y pantalla uniforme para todos.
+  if (!my.roleSeen && my.inGame) {
+    return `
+    <div class="narration">📜 ${esc(narr('bienvenida', String(g.game.seed)))}</div>
+    ${roleCard(my, g)}
+    ${btn('confirm-role-seen', '✅ He visto mi rol', 'primary block')}
+    `;
+  }
   return `
   <div class="narration">📜 ${esc(narr('bienvenida', String(g.game.seed)))}</div>
-  ${roleCard(my, g)}
-  ${!my.roleSeen && my.inGame ? btn('confirm-role-seen', '✅ He visto mi rol', 'primary block')
-    : pend.length ? `<div class="waitlist">Esperando a que confirmen: ${pend.map((p) => esc(p.name)).join(', ')}</div>`
-      : `<div class="card"><h3>🌆 Todos listos</h3>
-        <p class="small-note">Cuando terminéis de memorizar cartas y palabras clave, que alguien mande al pueblo a dormir.</p>
-        ${btn('begin-first-night', '🌙 Empezar la noche', 'primary block')}</div>`}
+  ${my.inGame ? roleCard(my, g, true) : ''}
+  ${pend.length ? `<div class="waitlist">Esperando a que confirmen: ${pend.map((p) => esc(p.name)).join(', ')}</div>`
+    : `<div class="card"><h3>🌆 Todos listos</h3>
+      <p class="small-note">Cuando terminéis de memorizar cartas y palabras clave, que alguien mande al pueblo a dormir.</p>
+      ${btn('begin-first-night', '🌙 Empezar la noche', 'primary block')}</div>`}
   `;
 }
 
@@ -434,11 +442,19 @@ function nightPhase(g, my) {
     const conf = (game.roleRefresh.confirmed || {})[my.id];
     const players = state.players.filter((p) => p.inGame);
     const pend = players.filter((p) => p.alive && !(game.roleRefresh.confirmed || {})[p.id]).map((p) => esc(p.name));
+    // El rol solo se despliega bajo demanda (móviles desbloqueados sobre la mesa).
+    let panel;
+    if (my.alive && my.inGame && !conf) {
+      panel = state.ui.refreshOpen
+        ? `${roleCard(my, g)}${btn('confirm-role-refresh', '✅ Revisado, estoy listo', 'primary block')}`
+        : `<div class="card"><p class="small-note">Toca para desplegar tu carta y tu palabra clave, repásalas y confirma.</p>
+           ${btn('open-role-refresh', '🔑 Confirmar mi rol', 'primary block')}</div>`;
+    } else {
+      panel = `<div class="waitlist">Esperando a: ${pend.join(', ') || 'nadie, ¡seguimos!'}</div>`;
+    }
     return `
     <div class="narration">👁️ Pausa: todo Castronegro abre los ojos y revisa su rol y su palabra clave en secreto. La noche continuará donde estaba.</div>
-    ${my.alive && my.inGame ? roleCard(my, g) : ''}
-    ${my.alive && my.inGame && !conf ? btn('confirm-role-refresh', '✅ Revisado, estoy listo', 'primary block')
-    : `<div class="waitlist">Esperando a: ${pend.join(', ') || 'nadie, ¡seguimos!'}</div>`}
+    ${panel}
     ${playersGrid(players, { title: '🏘️ El pueblo', viewer: my })}`;
   }
 
@@ -661,15 +677,10 @@ function nightActionPanel(stepId, g, my, players) {
 function privateNightInfo(stepId, g, my, players) {
   const acts = g.game.acts || {};
   const bits = [];
-  // Los lobos ven la elección SOLO durante su paso (su momento de ojos abiertos);
-  // al avanzar la noche, desaparece de la pantalla.
-  if (stepId === 'lobos' && isWolfSide(my) && my.alive && acts.wolfVictim !== undefined) {
-    const v = players.find((p) => p.id === acts.wolfVictim);
-    bits.push(`🐺 La manada ha elegido a <b>${esc(v?.name || 'nadie')}</b>. Cerrad los ojos con disimulo.`);
-  }
-  if (stepId === 'encantados' && my.charmed && (acts.gaiteroTargets || []).includes(my.id)) {
+  if (stepId === 'encantados' && my.charmed && (acts.gaiteroTargets || []).includes(my.id) && !state.ui.encOk) {
     const all = players.filter((p) => p.charmed).map((p) => esc(p.name)).join(', ');
-    bits.push(`🎶 ¡La música del Gaitero te ha atrapado! Ahora estás <b>encantado</b>. Encantados hasta ahora: ${all}.`);
+    bits.push(`🎶 ¡La música del Gaitero te ha atrapado! Ahora estás <b>encantado</b>. Encantados hasta ahora: ${all}.
+      <div style="margin-top:8px">${btn('enc-ok', '✔️ Entendido', 'small ghost')}</div>`);
   }
   if (!bits.length) return '';
   return `<div class="actionpanel">${bits.map((b) => `<p>${b}</p>`).join('')}</div>`;

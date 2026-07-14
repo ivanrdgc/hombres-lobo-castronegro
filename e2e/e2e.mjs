@@ -11,6 +11,7 @@ const check = (cond, msg) => (cond ? ok(msg) : bad(msg));
 const browser = await chromium.launch();
 const pages = {};
 
+const pace = (p) => p.waitForTimeout(350);
 async function mk(label) {
   const ctx = await browser.newContext({ locale: 'es-ES' });
   const page = await ctx.newPage();
@@ -170,7 +171,7 @@ try {
   for (const label of ['bruno', 'carla', 'david', 'elsa']) {
     const p = pages[label];
     await p.waitForSelector('.rolecard .rname');
-    await p.click('[data-a=confirm-role-seen]');
+    await p.click('[data-a=confirm-role-seen]'); await pace(p);
   }
   ok('los 4 jugadores ven su carta y confirman');
   await pages.bruno.waitForSelector('button[data-a=begin-first-night]');
@@ -183,6 +184,14 @@ try {
   console.log('  roles:', st.players.map((p) => `${p.name}=${p.role}`).join(', '));
   const wolfPage = pages[roleOf.hombre_lobo];
   const wolfName = st.players.find((p) => p.role === 'hombre_lobo').name;
+
+  // Pausa global: cualquiera pausa, todo se congela, cualquiera reanuda.
+  await pages.david.click('button[data-a=pause-game]');
+  await pages.carla.waitForSelector('text=Partida en pausa');
+  ok('cualquier jugador puede pausar y todos lo ven');
+  await pages.elsa.click('button[data-a=resume-game]');
+  await pages.carla.waitForSelector('text=Partida en pausa', { state: 'detached' });
+  ok('reanudar funciona desde cualquier dispositivo');
 
   // Noche 1: vidente mira al lobo.
   await waitState(ana, (s) => s.steps[s.stepIdx] === 'vidente', 'turno de la vidente');

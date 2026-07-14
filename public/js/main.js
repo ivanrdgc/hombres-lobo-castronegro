@@ -27,6 +27,8 @@ onChange(() => {
     state.ui.actorPower = null;
     state.ui.brujaHeal = false;
     state.ui.narratorWho = false; // el «¿quién es?» se oculta al cambiar de paso
+    state.ui.refreshOpen = false;
+    state.ui.encOk = false;
     if (state.ui.modal && ['vote-confirm', 'view-roles', 'manual-player'].includes(state.ui.modal.type) === false
       && state.group && state.group.status === 'playing') {
       // los modales de lobby se cierran si empieza/acaba una partida
@@ -172,7 +174,9 @@ const handlers = {
   'start-guided': () => guard(() => A.startGame('guiado')),
 
   'confirm-role-seen': () => guard(() => A.confirmRoleSeen()),
-  'confirm-role-refresh': () => guard(() => A.confirmRoleRefresh()),
+  'confirm-role-refresh': () => guard(async () => { await A.confirmRoleRefresh(); state.ui.refreshOpen = false; }),
+  'open-role-refresh': () => { state.ui.refreshOpen = true; render(); },
+  'enc-ok': () => { state.ui.encOk = true; render(); },
   'toggle-rolecard': () => {
     state.ui.roleOpen = !state.ui.roleOpen;
     clearTimeout(roleHideTimer);

@@ -10,6 +10,7 @@ const check = (cond, msg) => (cond ? ok(msg) : bad(msg));
 const browser = await chromium.launch();
 const pages = {};
 
+const pace = (p) => p.waitForTimeout(350);
 async function mk(label) {
   const ctx = await browser.newContext({ locale: 'es-ES' });
   const page = await ctx.newPage();
@@ -54,8 +55,10 @@ const pageOf = (st, pred) => {
 async function clickFirstAnd(page, confirmSel, n = 1) {
   for (let i = 0; i < n; i++) {
     await page.click(`.actionpanel .player.selectable:not(.selected) >> nth=0`);
+    await page.waitForTimeout(200);
   }
   await page.click(confirmSel);
+  await page.waitForTimeout(350);
 }
 
 // Conduce un paso nocturno de forma genérica.
@@ -286,7 +289,7 @@ try {
       check(await pg.isVisible('text=/palabra clave/i'), 'la palabra clave aparece junto al rol');
       kwChecked = true;
     }
-    await pg.click('[data-a=confirm-role-seen]');
+    await pg.click('[data-a=confirm-role-seen]'); await pace(pg);
   }
   if (kwActive) ok('partida con palabras clave activas (cupido/gaitero en juego)');
   const firstP = st.players.find((x) => x.inGame);

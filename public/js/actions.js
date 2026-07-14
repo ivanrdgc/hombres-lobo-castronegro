@@ -10,6 +10,22 @@ import {
 } from './engine.js';
 
 const sanitize = (x) => JSON.parse(JSON.stringify(x === undefined ? null : x));
+
+// Firestore puede devolver «resource-exhausted» en ráfagas puntuales:
+// se reintenta con espera creciente en vez de enseñar un error al jugador.
+async function txWithRetry(body) {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await runTransaction(db, body);
+    } catch (e) {
+      if (e && e.code === 'resource-exhausted' && attempt < 3) {
+        await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
+        continue;
+      }
+      throw e;
+    }
+  }
+}
 const gref = (slug) => doc(db, 'groups', slug);
 const pref = (slug, pid) => doc(db, 'groups', slug, 'players', pid);
 
@@ -31,7 +47,7 @@ export async function createGroup(userName, groupName) {
   const pid = playerIdFor(userName);
   if (!pid) throw new Error('Nombre de jugador no válido.');
   const token = randomId('t');
-  await runTransaction(db, async (tx) => {
+  await txWithRetry(async (tx) => {
     const g = await tx.get(gref(slug));
     if (g.exists()) { const e = new Error('taken'); e.code = 'group-taken'; throw e; }
     tx.set(gref(slug), {
@@ -53,7 +69,7 @@ export async function joinGroup(slug, userName) {
   const pid = playerIdFor(userName);
   if (!pid) throw new Error('Nombre de jugador no válido.');
   const token = randomId('t');
-  await runTransaction(db, async (tx) => {
+  await txWithRetry(async (tx) => {
     const g = await tx.get(gref(slug));
     if (!g.exists()) { const e = new Error('no'); e.code = 'no-group'; throw e; }
     const p = await tx.get(pref(slug, pid));
@@ -84,7 +100,7 @@ export async function joinExistingGroup(groupName, userName, claimMaster) {
   if (!slug || !pid) throw new Error('Nombre no válido.');
   const token = randomId('t');
   let joinedName = userName.trim();
-  await runTransaction(db, async (tx) => {
+  await txWithRetry(async (tx) => {
     const g = await tx.get(gref(slug));
     if (!g.exists()) { const e = new Error('no'); e.code = 'no-group'; throw e; }
     const p = await tx.get(pref(slug, pid));
@@ -117,7 +133,7 @@ export async function leaveGroup() {
   const slug = state.route.slug;
   const myId = state.session?.pid;
   if (!slug || !myId) return;
-  await runTransaction(db, async (tx) => {
+  await txWithRetry(async (tx) => {
     const g = await tx.get(gref(slug));
     if (!g.exists()) return;
     const others = state.players.filter((p) => p.id !== myId);
@@ -186,7 +202,7 @@ export async function makeMaster(pid) {
 export async function startGame(mode) {
   const slug = state.route.slug;
   const ids = state.players.map((p) => p.id);
-  await runTransaction(db, async (tx) => {
+  await txWithRetry(async (tx) => {
     const gsnap = await tx.get(gref(slug));
     const g = gsnap.data();
     if (!g || g.status !== 'lobby') throw new Error('Estado no válido');
@@ -312,7 +328,7 @@ export async function endGameNow(winner) {
 async function gameTx(fn, opts = {}) {
   const slug = state.route.slug;
   const ids = state.players.map((p) => p.id);
-  await runTransaction(db, async (tx) => {
+  await txWithRetry(async (tx) => {
     const gsnap = await tx.get(gref(slug));
     if (!gsnap.exists()) throw new Error('El grupo ya no existe');
     const g = gsnap.data();
