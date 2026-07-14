@@ -72,6 +72,7 @@ export async function createGroup(userName, groupName) {
       name: groupName.trim(),
       createdAt: Date.now(),
       masterId: null, // en el lobby no hay máster: todos configuran e inician
+      lastNarratorId: pid, // el primer dispositivo narra por defecto (cambiable)
       currentGame: null, // la mesa elige juego después
       status: 'lobby',
       settings: DEFAULT_SETTINGS,

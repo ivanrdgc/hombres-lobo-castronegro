@@ -132,11 +132,22 @@ try {
   await pages.bruno.waitForSelector('[data-a=open-roles]', { timeout: 15000 });
   ok('elegir juego lleva a toda la mesa al lobby de Castronegro');
 
-  // Narrador elegido desde la lista de dispositivos + explicación del juego.
+  // Narrador: el creador lo es por defecto y solo se ofrece cambiarlo.
+  await ana.waitForSelector('.player:has-text("Ana"):has-text("🔊 narrador")');
+  ok('el primer dispositivo (creador) es el narrador por defecto');
+  await ana.click('.player[data-a=player-menu]:has-text("Ana")');
+  await ana.waitForSelector('text=Este dispositivo es el narrador');
+  check(!(await ana.isVisible('button[data-a=narrator-device]')), 'el narrador actual no puede «dejar de serlo», solo cambiarse');
+  await ana.click('button[data-a=close-modal]');
+  await pace(ana);
+  await ana.click('.player[data-a=player-menu]:has-text("Bruno")');
+  await ana.click('button[data-a=narrator-device]');
+  await ana.waitForSelector('.player:has-text("Bruno"):has-text("🔊 narrador")');
+  ok('el narrador se cambia eligiendo a otro dispositivo');
   await ana.click('.player[data-a=player-menu]:has-text("Ana")');
   await ana.click('button[data-a=narrator-device]');
   await ana.waitForSelector('.player:has-text("Ana"):has-text("🔊 narrador")');
-  ok('narrador configurado desde la mesa (recordado para los modos automáticos)');
+  ok('y vuelve a Ana para el resto de la batería');
   await ana.click('[data-a=open-explain]');
   await ana.waitForSelector('text=Cómo se juega');
   await ana.click('button[data-a=explain-speak]');

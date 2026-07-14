@@ -1306,7 +1306,8 @@ function playerMenuModal(m) {
   const isNarr = state.group.lastNarratorId === p.id;
   return `<h3>📱 ${esc(p.name)}${self ? ' (tú)' : ''}</h3>
     ${btn('toggle-player', active ? '📺 No jugará (solo pantalla o narrador)' : '🎮 Jugará la partida', active ? 'block' : 'violet block', p.id)}
-    ${btn('narrator-device', isNarr ? '🔇 Dejará de ser el narrador' : '🔊 Narrará en automático (pondrá la voz)', isNarr ? 'block' : 'violet block', p.id)}
+    ${isNarr ? '<p class="small-note">🔊 Este dispositivo es el narrador de los modos automáticos. Para cambiarlo, toca a otro dispositivo.</p>'
+    : btn('narrator-device', '🔊 Narrará en automático (pondrá la voz)', 'violet block', p.id)}
     ${self ? '' : btn('kick', '👢 Expulsar del grupo', 'danger block', p.id)}
     ${btn('close-modal', 'Cancelar', 'ghost block')}`;
 }

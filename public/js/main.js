@@ -168,7 +168,7 @@ const handlers = {
   'go-home': () => navigate('/'),
   'select-game': (p) => guard(() => A.selectGame(p)),
   'change-game': () => guard(() => A.selectGame(null)),
-  'narrator-device': (p) => { const cur = state.group.lastNarratorId; state.ui.modal = null; return guard(() => A.setNarratorDevice(cur === p ? null : p)); },
+  'narrator-device': (p) => { state.ui.modal = null; return guard(() => A.setNarratorDevice(p)); },
   'open-explain': () => { state.ui.modal = { type: 'explain' }; render(); },
   'explain-speak': () => guard(() => A.requestExplain()),
   'dismiss-flash': () => { state.flash = null; render(); },
