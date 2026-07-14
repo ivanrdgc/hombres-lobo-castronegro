@@ -47,7 +47,12 @@ try {
   // ——— 1. Creación de grupo ———
   console.log('— Creación de grupo —');
   const ana = await mk('ana');
+  // Menú principal en la raíz → tarjeta del juego
   await ana.goto(BASE + '/');
+  await ana.waitForSelector('text=Juegos digitales');
+  await ana.click('button[data-a=go-lobos]');
+  await ana.waitForSelector('#inp-group');
+  ok('menú principal con el juego como subpágina');
   await ana.fill('#inp-name', 'Ana');
   await ana.fill('#inp-group', GROUP);
   await ana.click('[data-a=create-group]');
@@ -59,7 +64,7 @@ try {
 
   // Nombre de grupo duplicado
   const dup = await mk('dup');
-  await dup.goto(BASE + '/');
+  await dup.goto(BASE + '/hombres_lobo');
   await dup.fill('#inp-name', 'Otro');
   await dup.fill('#inp-group', GROUP);
   await dup.click('[data-a=create-group]');
@@ -253,14 +258,14 @@ try {
   // Un jugador abandona.
   await pages.david.click('[data-a=leave]');
   await pages.david.click('[data-a=leave-confirm]');
-  await pages.david.waitForURL(BASE + '/');
+  await pages.david.waitForURL(BASE + '/hombres_lobo');
   await ana.waitForSelector('text=Dispositivos (4)');
   ok('abandonar grupo funciona');
 
   // El máster elimina el grupo.
   await ana.click('[data-a=confirm-delete-group]');
   await ana.click('[data-a=delete-group-confirm]');
-  await ana.waitForURL(BASE + '/');
+  await ana.waitForURL(BASE + '/hombres_lobo');
   await pages.bruno.waitForSelector('text=/grupo ha sido eliminado|grupo no existe/i', { timeout: 15000 });
   ok('grupo eliminado: los demás son expulsados y el nombre queda libre');
 
@@ -273,7 +278,7 @@ try {
 
   // Reclamar el rol de máster desde la portada (grupo ya existente).
   const paco = await mk('paco');
-  await paco.goto(BASE + '/');
+  await paco.goto(BASE + '/hombres_lobo');
   await paco.fill('#inp-name', 'Paco');
   await paco.fill('#inp-group', GROUP);
   await paco.click('[data-a=create-group]');
@@ -286,7 +291,7 @@ try {
   check(anaCanStart, 'cualquiera puede iniciar (Ana ve empezar sin ser máster)');
   await paco.click('[data-a=confirm-delete-group]');
   await paco.click('[data-a=delete-group-confirm]');
-  await paco.waitForURL(BASE + '/');
+  await paco.waitForURL(BASE + '/hombres_lobo');
   await paco.context().close();
   ok('limpieza final');
 } catch (e) {

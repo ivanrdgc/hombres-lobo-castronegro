@@ -62,7 +62,7 @@ export async function createGroup(userName, groupName) {
     tx.set(pref(slug, pid), basePlayer(userName, token));
   });
   saveSession(slug, { pid, token, name: userName.trim() });
-  navigate('/g/' + slug);
+  navigate('/hombres_lobo/g/' + slug);
 }
 
 export async function joinGroup(slug, userName) {
@@ -114,7 +114,7 @@ export async function joinExistingGroup(groupName, userName, claimMaster) {
     if (claimMaster) tx.update(gref(slug), { masterId: pid });
   });
   saveSession(slug, { pid, token, name: joinedName });
-  navigate('/g/' + slug);
+  navigate('/hombres_lobo/g/' + slug);
 }
 
 function playerIdFor(name) {
@@ -148,7 +148,7 @@ export async function leaveGroup() {
     tx.delete(pref(slug, myId));
   });
   clearSession(slug);
-  navigate('/');
+  navigate('/hombres_lobo');
 }
 
 export async function kickPlayer(pid) {
@@ -164,7 +164,7 @@ export async function deleteGroup() {
   batch.delete(gref(slug));
   await batch.commit();
   clearSession(slug);
-  navigate('/');
+  navigate('/hombres_lobo');
 }
 
 export async function setExtraRoles(roles) {

@@ -186,7 +186,7 @@ try {
   console.log('— Modo manual —');
   const GROUP_M = 'Man ' + Date.now().toString(36).slice(-5);
   const ana = await mk('ana');
-  await ana.goto(BASE + '/');
+  await ana.goto(BASE + '/hombres_lobo');
   await ana.fill('#inp-name', 'Ana');
   await ana.fill('#inp-group', GROUP_M);
   await ana.click('[data-a=create-group]');
@@ -244,7 +244,7 @@ try {
   await ana.waitForSelector('[data-a=open-start]');
   await ana.click('[data-a=confirm-delete-group]');
   await ana.click('button[data-a=delete-group-confirm]');
-  await ana.waitForURL(BASE + '/');
+  await ana.waitForURL(BASE + '/hombres_lobo');
   ok('limpieza del grupo manual');
 
   // ═══ PARTE B: AUTOMÁTICO CON ROLES COMPLEJOS ═══
@@ -378,7 +378,7 @@ try {
   await ana.waitForSelector('[data-a=open-start]', { timeout: 15000 });
   await ana.click('[data-a=confirm-delete-group]');
   await ana.click('button[data-a=delete-group-confirm]');
-  await ana.waitForURL(BASE + '/');
+  await ana.waitForURL(BASE + '/hombres_lobo');
   ok('limpieza final');
 } catch (e) {
   failures++;

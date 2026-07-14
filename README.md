@@ -1,8 +1,12 @@
-# 🐺 Los Hombres Lobo de Castronegro — versión interactiva
+# 🎲 Juegos digitales
 
-Adaptación web del juego de mesa para jugar con amigos en la misma sala, cada uno desde su móvil.
+Colección de juegos de mesa para jugar con amigos en la misma sala, cada uno desde su móvil. La portada (`/`) es un menú de juegos; de momento contiene uno:
 
-*(La URL de la instancia no se publica aquí: despliega la tuya con `firebase deploy` sobre tu propio proyecto.)*
+# 🐺 Los Hombres Lobo de Castronegro (`/hombres_lobo`)
+
+Adaptación web completa del juego de mesa.
+
+*(La URL de la instancia no se publica: el sitio vive en un subdominio aleatorio no indexable —`robots.txt`, meta `noindex` y cabecera `X-Robots-Tag`— para que solo el grupo de amigos lo conozca. Despliega la tuya con `firebase deploy` sobre tu propio proyecto.)*
 
 ## Cómo funciona
 

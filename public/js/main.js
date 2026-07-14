@@ -91,7 +91,9 @@ async function guard(fn) {
 // ——— Despacho de acciones ———
 const handlers = {
   'noop': () => {},
-  'go-home': () => navigate('/'),
+  'go-home': () => navigate('/hombres_lobo'),
+  'go-lobos': () => navigate('/hombres_lobo'),
+  'go-menu': () => navigate('/'),
   'dismiss-flash': () => { state.flash = null; render(); },
   'retry': () => location.reload(),
 
@@ -124,7 +126,7 @@ const handlers = {
   'takeover-confirm': (name) => { closeModal(); return guard(() => A.takeOverPlayer(state.route.slug, name)); },
 
   'copy-url': async () => {
-    const url = location.origin + '/g/' + state.route.slug;
+    const url = location.origin + '/hombres_lobo/g/' + state.route.slug;
     try { await navigator.clipboard.writeText(url); } catch {
       const inp = $('share-url'); if (inp) { inp.select(); document.execCommand('copy'); }
     }

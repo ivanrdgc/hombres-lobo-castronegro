@@ -51,9 +51,14 @@ export function clearSession(slug) {
 
 // ——— Rutas ———
 export function parseRoute() {
-  const m = location.pathname.match(/^\/g\/([a-z0-9-]+)\/?$/);
+  const path = location.pathname;
+  let m = path.match(/^\/hombres_lobo\/g\/([a-z0-9-]+)\/?$/);
   if (m) return { view: 'group', slug: m[1] };
-  return { view: 'landing', slug: null };
+  // Enlaces antiguos sin prefijo: redirigir en silencio.
+  m = path.match(/^\/g\/([a-z0-9-]+)\/?$/);
+  if (m) { history.replaceState(null, '', '/hombres_lobo/g/' + m[1]); return { view: 'group', slug: m[1] }; }
+  if (/^\/hombres_lobo\/?$/.test(path)) return { view: 'landing', slug: null };
+  return { view: 'menu', slug: null }; // portada: menú de juegos
 }
 
 export function navigate(path) {

@@ -26,8 +26,10 @@ let lastScreenKey = '';
 export function render() {
   const app = document.getElementById('app');
 
+  document.title = state.route.view === 'menu' ? 'Juegos digitales' : 'Los Hombres Lobo de Castronegro';
   let html = '';
-  if (state.route.view === 'landing') html = landingScreen();
+  if (state.route.view === 'menu') html = menuScreen();
+  else if (state.route.view === 'landing') html = landingScreen();
   else html = groupScreen();
   if (state.ui.modal) html += renderModal();
   document.body.classList.toggle('busy', !!state.ui.busy);
@@ -102,12 +104,28 @@ const flashHtml = () => state.flash
 
 // ——— Pantallas de entrada ———
 
+// Portada: menú de juegos (de momento, uno).
+function menuScreen() {
+  return `
+  <span class="moon">🎲</span>
+  <h1 class="title-hero">Juegos digitales</h1>
+  <p class="subtitle">Juegos de mesa para jugar con amigos, cada uno desde su móvil</p>
+  ${flashHtml()}
+  <div class="card selectable" data-a="go-lobos" style="cursor:pointer">
+    <h3>🐺 Los Hombres Lobo de Castronegro</h3>
+    <p class="small-note">El clásico de roles ocultos: lobos contra el pueblo, con narrador automático por voz, modo guiado y todas las expansiones.</p>
+    ${btn('go-lobos', '🌕 Jugar', 'primary block')}
+  </div>
+  <p class="small-note" style="text-align:center">Más juegos, próximamente…</p>`;
+}
+
 function landingScreen() {
   if (!state.ui.suggestedGroup) state.ui.suggestedGroup = randomGroupName();
   return `
   <span class="moon">🌕🐺</span>
   <h1 class="title-hero">Los Hombres Lobo de Castronegro</h1>
   <p class="subtitle">Crea una partida y comparte el enlace con tu grupo</p>
+  <p style="text-align:center;margin-bottom:10px">${btn('go-menu', '🎲 Otros juegos', 'small ghost')}</p>
   ${flashHtml()}
   <div class="card">
     <h3>🆕 Nueva partida</h3>
@@ -199,7 +217,7 @@ function lobbyScreen(g, my) {
   <div class="card">
     <h3>🔗 Invita a tu grupo</h3>
     <div class="linkbox">
-      <input type="text" id="share-url" value="${esc(location.origin + '/g/' + g.id)}" readonly>
+      <input type="text" id="share-url" value="${esc(location.origin + '/hombres_lobo/g/' + g.id)}" readonly>
       ${btn('copy-url', '📋 Copiar', 'small primary')}
     </div>
     <div id="copy-feedback"></div>

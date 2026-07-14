@@ -13,7 +13,7 @@ const wait = async (p, fn, what, t = 40000) => { const t0 = Date.now(); while (D
 
 try {
   const ana = await mk('ana');
-  await ana.goto(BASE + '/');
+  await ana.goto(BASE + '/hombres_lobo');
   await ana.fill('#inp-name', 'Ana');
   await ana.fill('#inp-group', GROUP);
   await ana.click('[data-a=create-group]');
@@ -89,7 +89,7 @@ try {
   await ana.waitForSelector('[data-a=confirm-delete-group]');
   await ana.click('[data-a=confirm-delete-group]');
   await ana.click('[data-a=delete-group-confirm]');
-  await ana.waitForURL(BASE + '/');
+  await ana.waitForURL(BASE + '/hombres_lobo');
   ok('limpieza');
 } catch (e) { fail++; console.log('✖ EXCEPCIÓN:', e.message); }
 await browser.close();

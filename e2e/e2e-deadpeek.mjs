@@ -12,7 +12,7 @@ const hlc = (p) => p.evaluate(() => { const s = window.__hlc; return { phase: s.
 const wait = async (p, fn, what, t = 40000) => { const t0 = Date.now(); while (Date.now() - t0 < t) { const s = await hlc(p); if (fn(s)) return s; await p.waitForTimeout(300); } throw new Error('timeout ' + what); };
 
 const ana = await mk('ana');
-await ana.goto(BASE + '/');
+await ana.goto(BASE + '/hombres_lobo');
 await ana.fill('#inp-name', 'Ana');
 await ana.fill('#inp-group', GROUP);
 await ana.click('[data-a=create-group]');
@@ -69,7 +69,7 @@ await ana.click('button[data-a=back-lobby]');
 await ana.waitForSelector('[data-a=confirm-delete-group]');
 await ana.click('[data-a=confirm-delete-group]');
 await ana.click('[data-a=delete-group-confirm]');
-await ana.waitForURL(BASE + '/');
+await ana.waitForURL(BASE + '/hombres_lobo');
 ok('limpieza');
 await browser.close();
 console.log(fail ? `✖ ${fail} fallos` : '✔ dead-peek OK');
