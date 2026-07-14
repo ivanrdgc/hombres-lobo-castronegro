@@ -37,6 +37,8 @@ await ana.click('[data-a=open-start]');
 await ana.click('[data-a=start-auto]');
 let st = await wait(ana, (s) => s.phase === 'reveal', 'reparto');
 for (const p of ['bea', 'coco', 'dani', 'enzo']) { await pages[p].waitForSelector('[data-a=confirm-role-seen]'); await pages[p].click('[data-a=confirm-role-seen]'); }
+await pages.bea.waitForSelector('button[data-a=begin-first-night]');
+await pages.bea.click('button[data-a=begin-first-night]');
 st = await wait(ana, (s) => s.phase === 'night', 'noche');
 const wolf = st.players.find((p) => p.role === 'hombre_lobo');
 const prey = st.players.find((p) => p.role === 'aldeano');

@@ -159,11 +159,9 @@ export function conductorTick() {
       ? ' Junto a vuestro rol encontraréis una palabra clave secreta: memorizadla. Si de noche la voz la pronuncia, abrid los ojos con disimulo y mirad vuestra pantalla: el mensaje irá por vosotros.'
       : '';
     say('reveal', narr('bienvenida', String(game.seed)) + kwNote);
-    if (players.length && players.every((p) => p.roleSeen)) {
-      schedule('toNight1', 1500, startFirstNight);
-    } else {
-      cancelTimer(); // sin prisas: la gente mira su carta y charla con los ojos abiertos
-    }
+    // Aunque todos hayan confirmado, la primera noche también espera al botón:
+    // la gente sigue mirando su carta y comentando con los ojos abiertos.
+    cancelTimer();
     return;
   }
 

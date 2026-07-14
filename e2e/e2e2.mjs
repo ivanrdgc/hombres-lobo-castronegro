@@ -289,6 +289,9 @@ try {
     await pg.click('[data-a=confirm-role-seen]');
   }
   if (kwActive) ok('partida con palabras clave activas (cupido/gaitero en juego)');
+  const firstP = st.players.find((x) => x.inGame);
+  await pages[firstP.name.toLowerCase()].waitForSelector('button[data-a=begin-first-night]');
+  await pages[firstP.name.toLowerCase()].click('button[data-a=begin-first-night]');
   st = await waitState(ana, (s) => s.phase === 'night', 'noche 1');
   console.log('  roles:', st.players.map((p) => `${p.name}=${p.role}`).join(', '));
 

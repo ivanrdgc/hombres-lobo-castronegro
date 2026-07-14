@@ -313,6 +313,7 @@ const handlers = {
   'guided-dawn': () => guard(() => A.runDawn()),
   'guided-next-night': () => guard(() => A.startNextNight()),
   'begin-night': () => guard(() => A.startNextNight()),
+  'begin-first-night': () => guard(() => A.startFirstNight()),
   'guided-skip': () => guard(() => A.forceAdvance()),
 };
 

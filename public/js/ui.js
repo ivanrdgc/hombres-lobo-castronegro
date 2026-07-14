@@ -331,8 +331,11 @@ function revealPhase(g, my) {
   return `
   <div class="narration">📜 ${esc(narr('bienvenida', String(g.game.seed)))}</div>
   ${roleCard(my, g)}
-  ${!my.roleSeen && my.inGame ? btn('confirm-role-seen', '✅ He visto mi rol', 'primary block') : `
-    <div class="waitlist">Esperando a que confirmen: ${pend.map((p) => esc(p.name)).join(', ') || 'nadie, ¡empezamos!'}</div>`}
+  ${!my.roleSeen && my.inGame ? btn('confirm-role-seen', '✅ He visto mi rol', 'primary block')
+    : pend.length ? `<div class="waitlist">Esperando a que confirmen: ${pend.map((p) => esc(p.name)).join(', ')}</div>`
+      : `<div class="card"><h3>🌆 Todos listos</h3>
+        <p class="small-note">Cuando terminéis de memorizar cartas y palabras clave, que alguien mande al pueblo a dormir.</p>
+        ${btn('begin-first-night', '🌙 Empezar la noche', 'primary block')}</div>`}
   `;
 }
 

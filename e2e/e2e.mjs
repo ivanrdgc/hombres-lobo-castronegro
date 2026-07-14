@@ -173,6 +173,9 @@ try {
     await p.click('[data-a=confirm-role-seen]');
   }
   ok('los 4 jugadores ven su carta y confirman');
+  await pages.bruno.waitForSelector('button[data-a=begin-first-night]');
+  await pages.bruno.click('button[data-a=begin-first-night]');
+  ok('la primera noche también espera al botón');
 
   let st = await waitState(ana, (s) => s.phase === 'night', 'noche 1');
   check(!st.players.find((p) => p.name === 'Ana').role, 'el máster no recibe rol en automático');
