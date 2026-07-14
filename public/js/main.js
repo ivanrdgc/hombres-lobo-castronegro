@@ -41,6 +41,20 @@ onChange(() => {
 });
 
 // ——— Utilidades ———
+function moveSeat(pid, dir) {
+  const g = state.group;
+  const saved = Array.isArray(g.seating) ? g.seating : [];
+  const ids = state.players.map((p) => p.id);
+  const order = saved.filter((id) => ids.includes(id))
+    .concat(state.players.filter((p) => !saved.includes(p.id))
+      .sort((a, b) => (a.order || 0) - (b.order || 0)).map((p) => p.id));
+  const i = order.indexOf(pid);
+  const j = i + dir;
+  if (i < 0 || j < 0 || j >= order.length) return;
+  [order[i], order[j]] = [order[j], order[i]];
+  return guard(() => A.setSeating(order));
+}
+
 let roleHideTimer = null;
 let narratorWhoTimer = null;
 const $ = (id) => document.getElementById(id);
@@ -147,7 +161,11 @@ const handlers = {
 
   'open-roles': () => { state.ui.modal = { type: 'roles' }; render(); },
   'open-settings': () => { state.ui.modal = { type: 'settings' }; render(); },
-  'open-start': () => { state.ui.modal = { type: 'start' }; render(); },
+  'open-start': () => { state.ui.seatingOk = false; state.ui.modal = { type: 'start' }; render(); },
+  'seating-ok': () => { state.ui.seatingOk = true; render(); },
+  'seating-edit': () => { state.ui.seatingOk = false; render(); },
+  'seat-up': (pid) => moveSeat(pid, -1),
+  'seat-down': (pid) => moveSeat(pid, +1),
   'close-modal': closeModal,
   'toggle-role': (roleId) => {
     const cur = state.group.extraRoles || [];

@@ -1,6 +1,6 @@
 // Renderizado de la interfaz. Genera HTML según el estado y delega eventos via data-a.
 import { state, me, isMaster } from './store.js';
-import { ROLES, TEAMS, EXPANSIONS, wolfCountFor, isWolfSide, isWolfTeamRole, OFFICIAL_MIN_PLAYERS } from './roles.js';
+import { ROLES, TEAMS, EXPANSIONS, wolfCountFor, isWolfSide, isWolfTeamRole, OFFICIAL_MIN_PLAYERS, NEIGHBOR_ROLES } from './roles.js';
 import { NIGHT_STEPS, stepActors, GITANA_QUESTIONS, WINNER_LABELS } from './engine.js';
 import { NARRATION, narr, listSpanishVoices, getVoiceConfig, CLOUD_VOICES, cloudAvailable } from './narration.js';
 import { isMuted } from './conductor.js';
@@ -484,6 +484,11 @@ function nightPhase(g, my) {
   const game = g.game;
 
   // Repaso de roles: la noche está en pausa y todos los vivos revisan su carta.
+  if (game.roleRefresh && game.roleRefresh.closing) {
+    return `
+    <div class="narration">😴 Todos habéis repasado vuestro rol. Cerrad los ojos de nuevo… la noche continúa donde estaba.</div>
+    ${playersGrid(state.players.filter((p) => p.inGame), { title: '🏘️ El pueblo', viewer: my })}`;
+  }
   if (game.roleRefresh) {
     const conf = (game.roleRefresh.confirmed || {})[my.id];
     const players = state.players.filter((p) => p.inGame);
@@ -842,18 +847,22 @@ function playersGrid(players, { title = 'Jugadores', showAlguacil = null, viewer
     && state.group?.game && state.group.game.phase !== 'end';
   const peeked = state.ui.deadPeek || {};
   const marks = (p) => `${p.infected ? ' 🧛' : ''}${p.transformed ? ' 🐾→🐺' : ''}${p.wolfSide ? ' →🐺' : ''}${p.lover ? ' 💘' : ''}${p.charmed ? ' 🎶' : ''}`;
+  const narratorId = (state.group || {}).masterId;
+  const narratorP = state.players.find((p) => p.id === narratorId);
   return `<div class="card"><h3>${title}</h3><div class="players">
     ${players.map((p) => `
       <div class="player ${p.alive === false ? 'dead' : ''} ${canPeek ? 'selectable' : ''}" ${canPeek ? `data-a="dead-peek" data-p="${p.id}"` : ''}>
         <span class="pname">${esc(p.name)}
           ${canPeek && peeked[p.id] ? `<br><small style="color:var(--accent)">${ROLES[p.role]?.emoji || '❔'} ${ROLES[p.role]?.name || '—'}${marks(p)}</small>` : ''}
         </span>
+        ${p.id === narratorId ? '<span class="badge">🔊</span>' : ''}
         ${showAlguacil === p.id ? '<span class="badge">⭐</span>' : ''}
         ${p.revealedTonto ? '<span class="badge">🤪</span>' : ''}
         ${p.id === (me() || {}).id ? '<span class="badge you">Tú</span>' : ''}
         ${p.alive === false ? '<span>💀</span>' : ''}
       </div>`).join('')}
   </div>
+  ${narratorP && !narratorP.inGame ? `<p class="small-note">🔊 Narra: ${esc(narratorP.name)}</p>` : ''}
   ${canPeek ? '<p class="small-note">💀 Estás muerto: toca un jugador para descubrir su rol (solo tú lo ves). Y recuerda: los muertos no hablan.</p>' : ''}
   </div>`;
 }
@@ -1159,7 +1168,33 @@ function settingsModal() {
     ${btn('close-modal', '✔️ Listo', 'primary block')}`;
 }
 
+// Orden de mesa efectivo: el guardado, más los nuevos al final.
+function seatingOrder(g) {
+  const saved = Array.isArray(g.seating) ? g.seating : [];
+  const ids = state.players.map((p) => p.id);
+  return saved.filter((id) => ids.includes(id))
+    .concat(state.players.filter((p) => !saved.includes(p.id))
+      .sort((a, b) => (a.order || 0) - (b.order || 0)).map((p) => p.id));
+}
+
 function startModal() {
+  const g = state.group;
+  const needsSeating = (g.extraRoles || []).some((r) => NEIGHBOR_ROLES.includes(r));
+  if (needsSeating && !state.ui.seatingOk) {
+    const order = seatingOrder(g);
+    const names = Object.fromEntries(state.players.map((p) => [p.id, p.name]));
+    return `<h3>🪑 Orden de la mesa</h3>
+      <p class="small-note">Hay roles que dependen de los vecinos de asiento (${(g.extraRoles || []).filter((r) => NEIGHBOR_ROLES.includes(r)).map((r) => ROLES[r].name).join(', ')}).
+      Ordena a los jugadores según estáis sentados, <b>en el sentido de las agujas del reloj</b>. El orden se recuerda para las próximas partidas.</p>
+      ${order.map((id, i) => `
+        <div class="settingrow"><div class="sinfo"><div class="sname">${i + 1}. ${esc(names[id] || '?')}</div></div>
+          <div class="btnrow" style="margin:0">
+            ${i > 0 ? btn('seat-up', '↑', 'ghost small', id) : ''}
+            ${i < order.length - 1 ? btn('seat-down', '↓', 'ghost small', id) : ''}
+          </div></div>`).join('')}
+      ${btn('seating-ok', '✅ El orden es correcto', 'primary block')}
+      ${btn('close-modal', 'Cancelar', 'ghost block')}`;
+  }
   const n = state.players.length;
   const meId = (me() || {}).id;
   const g0 = state.group || {};
@@ -1194,6 +1229,7 @@ function startModal() {
       <p class="small-note">Tú (este dispositivo) diriges sin guion: la app reparte los roles, te los muestra y marcas muertes, enamorados o el cambio del Ladrón. Tú no juegas.</p>
       ${btn('start-manual', '🎩 Narrar yo (manual)', 'ghost block')}
     </div>
+    ${needsSeating ? `<p class="small-note">🪑 Orden de mesa confirmado. ${btn('seating-edit', '✏️ Cambiarlo', 'small ghost')}</p>` : ''}
     <p class="small-note">El narrador no recibe rol. Reglas oficiales: de ${OFFICIAL_MIN_PLAYERS} a 18 jugadores además del narrador${(state.group.settings || {}).casual ? ' (modo casual activo: desde 3)' : ''}.</p>
     <div id="form-error">${state.ui.formError ? `<div class="flash error">${esc(state.ui.formError)}</div>` : ''}</div>
     ${btn('close-modal', 'Cancelar', 'ghost block')}`;

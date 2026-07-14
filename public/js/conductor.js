@@ -6,7 +6,7 @@ import { stepActors, stepNeedsGhostAnnounce, NIGHT_STEPS, WINNER_LABELS } from '
 import { NARRATION, OUTROS, narr, deathLine, improv, speak, stopSpeech, initVoice, getVoiceConfig } from './narration.js';
 import { ensureAmbience, stopAmbience } from './ambience.js';
 import {
-  startFirstNight, advanceGhostStep, runDawn, startNextNight, resolveSirvienta, startRoleRefresh,
+  startFirstNight, advanceGhostStep, runDawn, startNextNight, resolveSirvienta, startRoleRefresh, finishRoleRefreshClose,
 } from './actions.js';
 
 let spoken = new Set();
@@ -204,6 +204,12 @@ export function conductorTick() {
     if (!stepId) return;
 
     // Repaso de roles: la noche se pausa y todos los vivos revisan su carta.
+    if (game.roleRefresh && game.roleRefresh.closing) {
+      const ck = `refresh:close:${game.roleRefresh.at}`;
+      say(ck, 'Gracias, Castronegro. Volved a cerrar todos los ojos… la noche continúa justo donde estaba.');
+      schedule(ck, 9000 + Math.random() * 2000, finishRoleRefreshClose);
+      return;
+    }
     if (game.roleRefresh) {
       const rk = `refresh:${game.roleRefresh.startedAt}`;
       say(rk, 'Un momento… parece que alguien ha olvidado quién es. Todo Castronegro, abrid los ojos: revisad en secreto vuestro rol y vuestra palabra clave en el dispositivo, y confirmad. La noche continuará justo donde estaba.');

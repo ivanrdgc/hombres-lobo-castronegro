@@ -173,6 +173,11 @@ export async function deleteGroup() {
   navigate('/hombres_lobo');
 }
 
+// Orden de la mesa (sentido horario). Se guarda en el grupo y persiste entre partidas.
+export async function setSeating(order) {
+  await updateDoc(gref(state.route.slug), { seating: order });
+}
+
 export async function setExtraRoles(roles) {
   await updateDoc(gref(state.route.slug), { extraRoles: roles });
 }
@@ -224,6 +229,13 @@ export async function startGame(mode, narratorId) {
     // narrador puede además jugar (mismo móvil) o solo narrar (tele/altavoz);
     // en guiado/manual el narrador humano nunca juega.
     const isP = (p) => p.isPlayer !== false;
+    // Orden de mesa: el guardado en el grupo manda; los nuevos se añaden al final.
+    const savedSeating = Array.isArray(g.seating) ? g.seating : [];
+    const seatOrder = savedSeating.filter((id) => players.some((p) => p.id === id))
+      .concat(players.filter((p) => !savedSeating.includes(p.id))
+        .sort((a, b) => (a.order || 0) - (b.order || 0)).map((p) => p.id));
+    const seatIdx = Object.fromEntries(seatOrder.map((id, i) => [id, i]));
+    for (const p of players) p.order = seatIdx[p.id] ?? p.order;
     const eligible = players.filter((p) => isP(p) && (mode === 'auto' || p.id !== masterId));
     const settings0 = g.settings || DEFAULT_SETTINGS;
     // Reglas oficiales: de 8 a 18 jugadores además del narrador.
@@ -260,7 +272,7 @@ export async function startGame(mode, narratorId) {
         continue;
       }
       tx.update(pref(slug, p.id), sanitize({
-        inGame: true, role: roleId, alive: true, roleSeen: false,
+        inGame: true, role: roleId, alive: true, roleSeen: false, order: p.order,
         lover: false, charmed: false, infected: false, transformed: false,
         revealedTonto: false, ancianoHit: false, protectedLast: null,
         modelId: null, wolfSide: null, sect: sectOf[p.id], keyword: kwOf[p.id] || null,
@@ -288,6 +300,7 @@ export async function startGame(mode, narratorId) {
       status: 'playing',
       masterId,
       lastNarratorId: masterId, // recordado para partidas sucesivas
+      seating: seatOrder, // orden de mesa normalizado (recordado)
       game: {
         mode, startedAt: Date.now(), seed,
         night: 0, dayNum: 0,
@@ -881,6 +894,17 @@ export async function startRoleRefresh() {
   }, { skipPlayers: true });
 }
 
+// Fin de la fase de cierre tras el repaso: la noche sigue donde estaba.
+export async function finishRoleRefreshClose() {
+  await gameTx((game) => {
+    if (!game.roleRefresh || !game.roleRefresh.closing) return null;
+    game.roleRefresh = null;
+    game.refreshNonce = (game.refreshNonce || 0) + 1; // el paso pendiente se re-anuncia
+    game.log.push({ kind: 'evento', txt: '👁️ Roles repasados: la noche continúa donde estaba.' });
+    return { game };
+  }, { skipPlayers: true });
+}
+
 export async function confirmRoleRefresh() {
   await gameTx((game, players) => {
     if (!game.roleRefresh) return null;
@@ -889,9 +913,8 @@ export async function confirmRoleRefresh() {
     if (!alive.some((p) => p.id === myId)) return null;
     game.roleRefresh.confirmed = { ...(game.roleRefresh.confirmed || {}), [myId]: true };
     if (alive.every((p) => game.roleRefresh.confirmed[p.id])) {
-      game.roleRefresh = null;
-      game.refreshNonce = (game.refreshNonce || 0) + 1; // el paso pendiente se vuelve a anunciar
-      game.log.push({ kind: 'evento', txt: '👁️ Roles repasados: la noche continúa donde estaba.' });
+      // Antes de continuar, todos vuelven a cerrar los ojos (fase de cierre).
+      game.roleRefresh = { closing: true, at: Date.now() };
     }
     return { game };
   });

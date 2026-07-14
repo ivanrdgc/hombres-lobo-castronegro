@@ -162,6 +162,9 @@ export function wolfCountFor(n) {
   return 4;
 }
 
+// Roles cuya mecánica depende de quién se sienta al lado de quién.
+export const NEIGHBOR_ROLES = ['zorro', 'domador', 'caballero', 'sectario'];
+
 export const OFFICIAL_MIN_PLAYERS = 8; // jugadores repartidos, sin contar al narrador
 export const CASUAL_MIN_PLAYERS = 3;
 
