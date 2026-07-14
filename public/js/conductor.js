@@ -3,7 +3,7 @@
 // (roles muertos, pausas dramáticas, amanecer, transiciones de fase).
 import { state, isMaster } from './store.js';
 import { stepActors, stepNeedsGhostAnnounce, NIGHT_STEPS, WINNER_LABELS } from './engine.js';
-import { NARRATION, OUTROS, narr, deathLine, improv, speak, stopSpeech, initVoice, getVoiceConfig } from './narration.js';
+import { NARRATION, OUTROS, narr, deathLine, improv, speak, stopSpeech, initVoice, getVoiceConfig, isNarratorSpeaking } from './narration.js';
 import { ensureAmbience, stopAmbience } from './ambience.js';
 import {
   startFirstNight, advanceGhostStep, runDawn, startNextNight, resolveSirvienta, startRoleRefresh, finishRoleRefreshClose,
@@ -109,12 +109,13 @@ function outroFor(stepId, game) {
 
 function chainOutro(key, outroTxt, waitMs, stepIdx) {
   const adv = () => advanceGhostStep(stepIdx);
-  if (!outroTxt) { schedule(key + ':adv', 900, adv); return; }
+  if (!outroTxt) { scheduleAfterSpeech(key + ':adv', 900, adv); return; }
   const oKey = key + ':outro';
-  if (spoken.has(oKey)) { schedule(key + ':adv', 4800 + Math.random() * 800, adv); return; }
-  schedule(oKey + ':t', waitMs, async () => {
+  if (spoken.has(oKey)) { scheduleAfterSpeech(key + ':adv', 3200 + Math.random() * 800, adv); return; }
+  scheduleAfterSpeech(oKey + ':t', waitMs, async () => {
     say(oKey, outroTxt);
-    schedule(key + ':adv', 4800 + Math.random() * 800, adv);
+    // El «cerrad los ojos» debe SONAR entero antes de la espera de bloqueo.
+    scheduleAfterSpeech(key + ':adv', 3200 + Math.random() * 800, adv);
   });
 }
 
@@ -145,6 +146,18 @@ function schedule(key, ms, fn) {
 function cancelTimer() {
   clearTimeout(timer);
   timerKey = null;
+}
+
+// Programa fn para DESPUÉS de que la voz termine (más extraMs de margen).
+// La UI y el estado trabajan así al ritmo del audio: por muy rápido que la
+// gente pulse, el siguiente paso no se anuncia hasta que el narrador calla.
+// Tope de seguridad de 20 s por si el motor de voz se quedara colgado.
+function scheduleAfterSpeech(key, extraMs, fn, waited = 0) {
+  if (isNarratorSpeaking() && waited < 20000) {
+    schedule(key + ':w', 400, async () => scheduleAfterSpeech(key, extraMs, fn, waited + 400));
+    return;
+  }
+  schedule(key, extraMs, fn);
 }
 
 async function requestWakeLock() {
@@ -207,7 +220,7 @@ export function conductorTick() {
     if (game.roleRefresh && game.roleRefresh.closing) {
       const ck = `refresh:close:${game.roleRefresh.at}`;
       say(ck, 'Gracias, Castronegro. Volved a cerrar todos los ojos… la noche continúa justo donde estaba.');
-      schedule(ck, 9000 + Math.random() * 2000, finishRoleRefreshClose);
+      scheduleAfterSpeech(ck, 5000 + Math.random() * 2000, finishRoleRefreshClose);
       return;
     }
     if (game.roleRefresh) {
@@ -224,13 +237,13 @@ export function conductorTick() {
 
     if (stepId === 'amanecer') {
       say(key, '', null);
-      schedule(key, 2500, runDawn);
+      scheduleAfterSpeech(key, 1500, runDawn);
       return;
     }
     // Colchón inicial: la misma pantalla de sueño para todos mientras suena
     // «cae la noche»; el primer rol no despierta hasta que todos duermen.
     if (stepId === 'durmiendo') {
-      schedule(key, 11000 + Math.random() * 3000, () => advanceGhostStep(game.stepIdx));
+      scheduleAfterSpeech(key, 6000 + Math.random() * 3000, () => advanceGhostStep(game.stepIdx));
       return;
     }
     // Encantados: se les llama por palabras clave y el juego ESPERA a que cada
@@ -254,7 +267,7 @@ export function conductorTick() {
         const alive = players.filter((p) => p.alive && p.keyword);
         const fake = alive.slice().sort(() => Math.random() - 0.5).slice(0, 2).map((p) => p.keyword);
         say(key, `${encIntro} Todos con los ojos cerrados. Si oyes tu palabra clave, la música te ha atrapado: abre los ojos con disimulo y mira tu pantalla. Las palabras son: … ${fake.join('… y ')}. Cuando lo hayáis visto, volved a cerrar los ojos.`);
-        schedule(key, 14000, () => advanceGhostStep(game.stepIdx));
+        scheduleAfterSpeech(key, 6000, () => advanceGhostStep(game.stepIdx));
       } else {
         schedule(key, 1200, () => advanceGhostStep(game.stepIdx));
       }

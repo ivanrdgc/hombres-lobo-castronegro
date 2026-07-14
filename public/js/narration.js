@@ -356,10 +356,13 @@ function pumpCloud() {
   });
 }
 
-// ¿Está sonando la narración? (para atenuar el ambiente)
+// ¿Está sonando (o pendiente) la narración? Para atenuar el ambiente y para
+// que las transiciones del juego esperen a que la voz termine.
 export function isNarratorSpeaking() {
-  if (cloudBusy) return true;
-  try { return typeof speechSynthesis !== 'undefined' && speechSynthesis.speaking; } catch { return false; }
+  if (cloudBusy || cloudQueue.length > 0) return true;
+  try {
+    return typeof speechSynthesis !== 'undefined' && (speechSynthesis.speaking || speechSynthesis.pending);
+  } catch { return false; }
 }
 
 export function getVoiceConfig() { return { ...voiceCfg }; }
