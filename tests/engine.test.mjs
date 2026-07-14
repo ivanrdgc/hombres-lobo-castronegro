@@ -97,6 +97,28 @@ test('buildDeck: el máster puede fijar el número de lobos', () => {
   assert.equal(capped, 3, 'nunca más lobos que jugadores menos uno');
 });
 
+test('buildDeck: aldeanos fijados reservan asientos y los roles sobrantes se sortean', () => {
+  const extras = ['vidente', 'bruja', 'cazador', 'defensor'];
+  // 8 jugadores, 2 lobos de tabla, 4 aldeanos fijados → solo 2 asientos para 4 roles.
+  const { deck, dropped } = buildDeck(8, extras, 42, null, 4);
+  assert.equal(deck.length, 8);
+  assert.equal(deck.filter((r) => r === 'aldeano').length, 4, '4 aldeanos reservados');
+  assert.equal(deck.filter((r) => r === 'hombre_lobo').length, 2, 'los lobos no se tocan');
+  assert.equal(deck.filter((r) => extras.includes(r)).length, 2, 'entran 2 roles sorteados');
+  assert.equal(dropped.filter((d) => d.reason === 'sitio').length, 2, 'los otros 2 se anuncian');
+  // Pedir más aldeanos de los posibles: se capa y la partida sigue jugable.
+  const big = buildDeck(8, extras, 42, null, 20);
+  assert.equal(big.deck.filter((r) => r === 'hombre_lobo').length, 2);
+  assert.equal(big.deck.filter((r) => r === 'aldeano').length, 6);
+  // 0 aldeanos: los especiales llenan todos los asientos del pueblo.
+  const zero = buildDeck(5, extras, 7, null, 0);
+  assert.equal(zero.deck.filter((r) => r === 'aldeano').length, 0);
+  assert.equal(zero.deck.filter((r) => extras.includes(r)).length, 4);
+  // Auto (null): comportamiento clásico de relleno.
+  const auto = buildDeck(8, ['vidente'], 9, null, null);
+  assert.equal(auto.deck.filter((r) => r === 'aldeano').length, 5);
+});
+
 test('computeNightSteps: primera noche sin sangre — sin lobos ni feroz, con reconocimiento', () => {
   const players = mkPlayers(['hombre_lobo', 'lobo_feroz', 'vidente', 'bruja', 'aldeano']);
   const comp = { hombre_lobo: 1, lobo_feroz: 1, vidente: 1, bruja: 1, aldeano: 1 };

@@ -223,7 +223,7 @@ export function generateKeywords(n, seed) {
 // y, con el Ladrón, 2 cartas de Aldeano extra (las 2 sobrantes del reparto van
 // al centro y pueden ser cualquier carta, incluso lobos).
 // Devuelve { deck: [roleId x n], center: [], pool, dropped: [{id, reason}] }
-export function buildDeck(n, extraRoles, seed, wolvesOverride = null) {
+export function buildDeck(n, extraRoles, seed, wolvesOverride = null, villagersOverride = null) {
   const rnd = mulberry32(seed);
   // El máster puede fijar el número de lobos; «auto» sigue la tabla oficial.
   const wolves = Math.max(1, Math.min(n - 1, wolvesOverride || wolfCountFor(n)));
@@ -243,14 +243,19 @@ export function buildDeck(n, extraRoles, seed, wolvesOverride = null) {
 
   // Resto de especiales, en orden aleatorio, hasta llenar los asientos del pueblo.
   const villageSeats = n - wolves;
+  // Aldeanos fijados: se les reservan asientos (capado a los que haya, para que
+  // la partida siga siendo jugable con sus lobos). Con «auto» solo rellenan huecos.
+  const reserved = (villagersOverride === null || villagersOverride === undefined)
+    ? 0 : Math.max(0, Math.min(villageSeats, villagersOverride));
+  const specialSeats = villageSeats - reserved;
   const villageSpecials = shuffled(extras.filter((r) => !WOLF_EXTRAS.includes(r)), rnd);
   const villageDeck = [];
   for (const r of villageSpecials) {
     const copies = ROLES[r].multi || 1;
-    if (villageDeck.length + copies <= villageSeats) {
+    if (villageDeck.length + copies <= specialSeats) {
       for (let i = 0; i < copies; i++) villageDeck.push(r);
     } else {
-      dropped.push({ id: r, reason: 'sitio' });
+      dropped.push({ id: r, reason: 'sitio' }); // no cabe: sorteo implícito del barajado
     }
   }
   while (villageDeck.length < villageSeats) villageDeck.push('aldeano');
@@ -273,8 +278,8 @@ export function buildDeck(n, extraRoles, seed, wolvesOverride = null) {
 // Asigna roles: players = [{id, order}], devuelve { assignments: {pid: roleId}, center, composition, dropped }
 // La composición pública refleja todas las cartas en juego (incluidas las del
 // centro con el Ladrón), igual que en el juego físico.
-export function dealRoles(players, extraRoles, seed, wolvesOverride = null) {
-  const { deck, center, pool, dropped } = buildDeck(players.length, extraRoles, seed, wolvesOverride);
+export function dealRoles(players, extraRoles, seed, wolvesOverride = null, villagersOverride = null) {
+  const { deck, center, pool, dropped } = buildDeck(players.length, extraRoles, seed, wolvesOverride, villagersOverride);
   const sorted = players.slice().sort((a, b) => (a.order || 0) - (b.order || 0));
   const assignments = {};
   sorted.forEach((p, i) => { assignments[p.id] = deck[i]; });

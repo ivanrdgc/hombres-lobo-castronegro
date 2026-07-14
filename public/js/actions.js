@@ -35,6 +35,7 @@ export const DEFAULT_EXTRA_ROLES = ['vidente', 'bruja', 'cazador', 'cupido'];
 export const DEFAULT_SETTINGS = {
   revealDead: true, showComposition: true, alguacil: false, casual: false,
   primeraNocheTranquila: false, wolvesCount: null, // null = tabla oficial
+  villagersCount: null, // null = los aldeanos rellenan los huecos libres
   videnteSoloBando: false, // la vidente solo ve si es lobo o no
   ocultarCausas: false, // no anunciar la causa de las muertes nocturnas
 };
@@ -202,14 +203,14 @@ export async function setExtraRoles(roles) {
 
 // Restaura la composición recomendada (roles, lobos en auto, sin alguacil).
 export async function resetRolesConfig() {
-  const s = { ...DEFAULT_SETTINGS, ...(state.group.settings || {}), wolvesCount: null, alguacil: false };
+  const s = { ...DEFAULT_SETTINGS, ...(state.group.settings || {}), wolvesCount: null, villagersCount: null, alguacil: false };
   await updateDoc(gref(state.route.slug), { extraRoles: DEFAULT_EXTRA_ROLES, settings: s });
 }
 
 // Restaura los ajustes de partida (sin tocar la composición del menú de roles).
 export async function resetGameSettings() {
   const cur = state.group.settings || {};
-  const s = { ...DEFAULT_SETTINGS, wolvesCount: cur.wolvesCount ?? null, alguacil: !!cur.alguacil };
+  const s = { ...DEFAULT_SETTINGS, wolvesCount: cur.wolvesCount ?? null, villagersCount: cur.villagersCount ?? null, alguacil: !!cur.alguacil };
   await updateDoc(gref(state.route.slug), { settings: s });
 }
 
@@ -266,7 +267,8 @@ export async function startGame(mode, narratorId) {
 
     const seed = Math.floor(Date.now() % 2147483647);
     const { assignments, center, composition, dropped } = dealRoles(
-      eligible, g.extraRoles || [], seed, settings0.wolvesCount || null);
+      eligible, g.extraRoles || [], seed, settings0.wolvesCount || null,
+      settings0.villagersCount ?? null); // 0 aldeanos es un valor válido
 
     // Palabras clave: solo hacen falta si hay roles que designan jugadores en
     // secreto durante la noche (enamorados de Cupido, encantados del Gaitero).

@@ -246,6 +246,22 @@ const handlers = {
     const cur = (state.group.settings || {}).wolvesCount || 1;
     return guard(() => A.setSettings({ wolvesCount: Math.max(1, cur - 1) }));
   },
+  'villagers-auto': () => guard(() => A.setSettings({ villagersCount: null })),
+  'villagers-manual': () => {
+    // Punto de partida: los huecos que quedarían ahora mismo con el relleno auto.
+    const nJug = Math.max(1, state.players.filter((p) => p.isPlayer !== false).length);
+    const lobos = (state.group.settings || {}).wolvesCount || wolfCountFor(nJug);
+    const extras = (state.group.extraRoles || []).length;
+    return guard(() => A.setSettings({ villagersCount: Math.max(0, nJug - lobos - extras) }));
+  },
+  'villagers-inc': () => {
+    const cur = (state.group.settings || {}).villagersCount || 0;
+    return guard(() => A.setSettings({ villagersCount: Math.min(17, cur + 1) }));
+  },
+  'villagers-dec': () => {
+    const cur = (state.group.settings || {}).villagersCount || 0;
+    return guard(() => A.setSettings({ villagersCount: Math.max(0, cur - 1) }));
+  },
   'reset-roles': () => guard(() => A.resetRolesConfig()),
   'reset-settings': () => guard(() => A.resetGameSettings()),
   'set-narrator': (pid) => { state.ui.narratorPick = pid; render(); },

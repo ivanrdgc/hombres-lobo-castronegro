@@ -273,7 +273,7 @@ function lobbyScreen(g, my) {
   </div>
   <div class="card">
     <h3>🎴 Roles de la partida</h3>
-    <p class="small-note">Con ${nJug} jugador${nJug === 1 ? '' : 'es'} marcado${nJug === 1 ? '' : 's'}: <b>${lobos} 🐺 lobo${lobos > 1 ? 's' : ''}</b>${wolvesFixed ? ' (fijado)' : ''} y el resto según los roles activados (los huecos se rellenan con 🧑‍🌾 aldeanos). En guiado/manual el narrador no juega aunque esté marcado.</p>
+    <p class="small-note">Con ${nJug} jugador${nJug === 1 ? '' : 'es'} marcado${nJug === 1 ? '' : 's'}: <b>${lobos} 🐺 lobo${lobos > 1 ? 's' : ''}</b>${wolvesFixed ? ' (fijado)' : ''}${(g.settings || {}).villagersCount != null ? `, <b>${(g.settings || {}).villagersCount} 🧑‍🌾</b> reservados` : ''} y el resto según los roles activados (los huecos se rellenan con 🧑‍🌾 aldeanos; si sobran roles, se sortean). En guiado/manual el narrador no juega aunque esté marcado.</p>
     ${nJug < OFFICIAL_MIN_PLAYERS && !(g.settings || {}).casual ? `<p class="small-note">⚠️ Las reglas oficiales piden de ${OFFICIAL_MIN_PLAYERS} a 18 jugadores además del narrador. Para jugar con menos, activad el <b>modo casual</b> en los ajustes.</p>` : ''}
     <div class="btnrow" style="margin-top:6px">
       ${(extra.length ? extra.map((r) => ROLES[r] ? `<span class="chip">${ROLES[r].emoji} ${ROLES[r].name}</span>` : '').join('') : '<span class="chip">Solo lobos y aldeanos</span>')}${(g.settings || {}).alguacil ? '<span class="chip">⭐ Alguacil</span>' : ''}
@@ -1165,6 +1165,19 @@ function rolesModal() {
             ${btn('wolves-auto', auto ? `🎯 Auto · ${shown} 🐺` : '🎯 Auto', auto ? 'primary small' : 'ghost small')}
             ${auto ? btn('wolves-manual', '✋ Elegir número', 'ghost small')
     : `<span style="display:inline-flex;align-items:center;gap:10px">${btn('wolves-dec', '−', 'ghost small')}<b style="font-size:1.05rem">${wc} 🐺</b>${btn('wolves-inc', '+', 'ghost small')}</span>`}
+          </div></div>
+          <span class="state">🔒</span></div>`;
+      }
+      if (r.id === 'aldeano') {
+        const vc = (g.settings || {}).villagersCount;
+        const vAuto = vc === null || vc === undefined;
+        return `<div class="roletoggle locked on"><span class="remoji">${r.emoji}</span>
+          <div class="rinfo"><div class="rname">${r.name} <small>(relleno del pueblo)</small></div>
+          <div class="rdesc">${r.desc} Por defecto rellenan los huecos libres. Si fijas cuántos reservar y no caben todos los roles activados, se sortea cuáles entran: la partida siempre es jugable.</div>
+          <div class="btnrow" style="margin-top:6px">
+            ${btn('villagers-auto', vAuto ? '🎯 Auto · relleno' : '🎯 Auto', vAuto ? 'primary small' : 'ghost small')}
+            ${vAuto ? btn('villagers-manual', '✋ Fijar número', 'ghost small')
+    : `<span style="display:inline-flex;align-items:center;gap:10px">${btn('villagers-dec', '−', 'ghost small')}<b style="font-size:1.05rem">${vc} 🧑‍🌾</b>${btn('villagers-inc', '+', 'ghost small')}</span>`}
           </div></div>
           <span class="state">🔒</span></div>`;
       }
