@@ -2,7 +2,7 @@
 import { state, me, isMaster } from './store.js';
 import { ROLES, TEAMS, EXPANSIONS, wolfCountFor, isWolfSide, isWolfTeamRole, OFFICIAL_MIN_PLAYERS } from './roles.js';
 import { NIGHT_STEPS, stepActors, GITANA_QUESTIONS, WINNER_LABELS } from './engine.js';
-import { NARRATION, narr, listSpanishVoices, getVoiceConfig } from './narration.js';
+import { NARRATION, narr, listSpanishVoices, getVoiceConfig, CLOUD_VOICES, cloudAvailable } from './narration.js';
 import { isMuted } from './conductor.js';
 
 // Generador de nombres de grupo con sabor a Castronegro.
@@ -1233,23 +1233,37 @@ function groupExistsModal(m) {
 }
 
 function voiceModal() {
-  const voices = listSpanishVoices();
   const cfg = getVoiceConfig();
+  const cloud = cfg.engine !== 'device' && cloudAvailable();
+  const voices = listSpanishVoices();
   const current = cfg.voiceURI || (voices[0] && voices[0].voiceURI) || '';
   return `<h3>🗣️ Voz del narrador</h3>
     <div class="settingrow"><div class="sinfo"><div class="sname">🔊 Voz activada</div><div class="sdesc">Silencia la locución sin pausar la partida.</div></div>
       <div class="switch ${isMuted() ? '' : 'on'}" data-a="toggle-mute"></div></div>
-    <label for="voice-select">Voz (las «Natural», «Online» o de Google suenan mejor)</label>
-    ${voices.length ? `
-      <select id="voice-select" data-vs="voice" style="width:100%;padding:10px;border-radius:10px;background:var(--bg2);color:var(--text);border:1px solid var(--border)">
-        ${voices.map((v) => `<option value="${esc(v.voiceURI)}" ${v.voiceURI === current ? 'selected' : ''}>${esc(v.name)} (${esc(v.lang)})</option>`).join('')}
-      </select>` : '<p class="small-note">⚠️ Este navegador no ofrece voces en español. Prueba con Chrome (Android) o Edge, o instala voces de español en el sistema.</p>'}
+    <div class="settingrow"><div class="sinfo"><div class="sname">🎵 Ambiente de fondo</div><div class="sdesc">Viento, grillos y búhos de noche; pájaros de día. Se atenúa al hablar.</div></div>
+      <div class="switch ${cfg.ambience ? 'on' : ''}" data-a="toggle-ambience"></div></div>
+    <label>Motor de voz</label>
+    <div class="btnrow" style="margin-bottom:8px">
+      ${btn('voice-engine', '🌩️ Neuronal (muy humana)', cloud ? 'primary small' : 'ghost small', 'cloud')}
+      ${btn('voice-engine', '📱 Del dispositivo', cloud ? 'ghost small' : 'primary small', 'device')}
+    </div>
+    ${cloud ? `
+      <label for="cloud-voice">Voz neuronal</label>
+      <select id="cloud-voice" data-vs="cloudvoice" style="width:100%;padding:10px;border-radius:10px;background:var(--bg2);color:var(--text);border:1px solid var(--border)">
+        ${CLOUD_VOICES.map((v) => `<option value="${esc(v.id)}" ${v.id === cfg.cloudVoice ? 'selected' : ''}>${esc(v.label)}</option>`).join('')}
+      </select>` : `
+      <label for="voice-select">Voz del dispositivo</label>
+      ${voices.length ? `
+        <select id="voice-select" data-vs="voice" style="width:100%;padding:10px;border-radius:10px;background:var(--bg2);color:var(--text);border:1px solid var(--border)">
+          ${voices.map((v) => `<option value="${esc(v.voiceURI)}" ${v.voiceURI === current ? 'selected' : ''}>${esc(v.name)} (${esc(v.lang)})</option>`).join('')}
+        </select>` : '<p class="small-note">⚠️ Este navegador no ofrece voces en español.</p>'}`}
     <label for="voice-rate">Velocidad</label>
     <input type="range" id="voice-rate" data-vs="rate" min="0.6" max="1.3" step="0.05" value="${cfg.rate}" style="width:100%">
-    <label for="voice-pitch">Tono</label>
-    <input type="range" id="voice-pitch" data-vs="pitch" min="0.5" max="1.3" step="0.05" value="${cfg.pitch}" style="width:100%">
+    ${cloud ? '' : `<label for="voice-pitch">Tono</label>
+    <input type="range" id="voice-pitch" data-vs="pitch" min="0.5" max="1.3" step="0.05" value="${cfg.pitch}" style="width:100%">`}
     <div class="btnrow">${btn('voice-test', '▶️ Probar la voz', 'violet')}${btn('close-modal', '✔️ Listo', 'primary')}</div>
-    <p class="small-note">La voz depende de las que ofrezca este dispositivo. En Android (Chrome) y Edge suele haber voces muy naturales; en otros navegadores puede sonar más robótica.</p>`;
+    ${cloudAvailable() ? '' : '<p class="small-note">⚠️ Esta instancia no tiene clave de voz neuronal configurada (js/tts-key.js): se usa la voz del dispositivo.</p>'}
+    <p class="small-note">La voz neuronal suena en cuanto llega de la nube (usa caché: cada frase se descarga una sola vez). Si falla la red, cae automáticamente a la voz del dispositivo.</p>`;
 }
 
 function viewRolesModal() {

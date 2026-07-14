@@ -3,7 +3,8 @@ import { state, onChange, applyRoute, navigate, me, isMaster, setFlash } from '.
 import { render, esc, randomGroupName } from './ui.js';
 import * as A from './actions.js';
 import { conductorTick, conductorReset, initConductor, setMuted, isMuted } from './conductor.js';
-import { speak, setVoiceConfig } from './narration.js';
+import { speak, setVoiceConfig, getVoiceConfig } from './narration.js';
+import { kickAmbience, stopAmbience, ensureAmbience } from './ambience.js';
 import { aliveNeighbors, isWolfSide, wolfCountFor } from './roles.js';
 
 function unlockSpeech() {
@@ -171,10 +172,10 @@ const handlers = {
   'start-auto': () => {
     const narrator = state.ui.narratorPick || (me() || {}).id;
     // El gesto solo desbloquea el audio en el dispositivo que narra.
-    if (narrator === (me() || {}).id) { unlockSpeech(); state.ui.voiceUnlocked = true; }
+    if (narrator === (me() || {}).id) { unlockSpeech(); kickAmbience(); state.ui.voiceUnlocked = true; }
     return guard(() => A.startGame('auto', narrator));
   },
-  'unlock-voice': () => { unlockSpeech(); state.ui.voiceUnlocked = true; render(); },
+  'unlock-voice': () => { unlockSpeech(); kickAmbience(); state.ui.voiceUnlocked = true; render(); },
   'start-manual': () => guard(() => A.startGame('manual')),
   'start-guided': () => guard(() => A.startGame('guiado')),
 
@@ -300,6 +301,13 @@ const handlers = {
     render();
   },
   'voice-test': () => speak('Bienvenidos a Castronegro. Cae la noche y los lobos aúllan a lo lejos.', { muted: false }),
+  'voice-engine': (engine) => { setVoiceConfig({ engine }); render(); },
+  'toggle-ambience': () => {
+    const on = !getVoiceConfig().ambience;
+    setVoiceConfig({ ambience: on });
+    if (!on) stopAmbience(); else kickAmbience();
+    render();
+  },
   'view-roles': () => { if (isMaster()) { state.ui.modal = { type: 'view-roles' }; render(); } },
   'repeat-last': () => guard(() => A.requestRepeat()),
   'force-advance': () => guard(async () => {
@@ -348,6 +356,7 @@ document.addEventListener('input', (ev) => {
   if (!el) return;
   const kind = el.dataset.vs;
   if (kind === 'voice') setVoiceConfig({ voiceURI: el.value });
+  if (kind === 'cloudvoice') setVoiceConfig({ cloudVoice: el.value });
   if (kind === 'rate') setVoiceConfig({ rate: parseFloat(el.value) });
   if (kind === 'pitch') setVoiceConfig({ pitch: parseFloat(el.value) });
 });

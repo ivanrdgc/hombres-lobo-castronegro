@@ -3,7 +3,8 @@
 // (roles muertos, pausas dramáticas, amanecer, transiciones de fase).
 import { state, isMaster } from './store.js';
 import { stepActors, stepNeedsGhostAnnounce, NIGHT_STEPS, WINNER_LABELS } from './engine.js';
-import { NARRATION, OUTROS, narr, deathLine, improv, speak, stopSpeech, initVoice } from './narration.js';
+import { NARRATION, OUTROS, narr, deathLine, improv, speak, stopSpeech, initVoice, getVoiceConfig } from './narration.js';
+import { ensureAmbience, stopAmbience } from './ambience.js';
 import {
   startFirstNight, advanceGhostStep, runDawn, startNextNight, resolveSirvienta, startRoleRefresh,
 } from './actions.js';
@@ -152,8 +153,12 @@ export function conductorTick() {
   const game = g && g.game;
   if (!g || !game || game.mode !== 'auto' || !isMaster()) {
     cancelTimer();
+    stopAmbience();
     return;
   }
+  // Paisaje sonoro de fondo en el dispositivo narrador.
+  const wantAmbience = getVoiceConfig().ambience && !muted && !game.paused && game.phase !== 'end';
+  ensureAmbience(!wantAmbience ? null : (game.phase === 'day' ? 'day' : 'night'));
   requestWakeLock();
   // Repetición bajo demanda: se olvida lo dicho en el contexto actual y el
   // flujo normal vuelve a pronunciarlo (paso, amanecer, debate…).

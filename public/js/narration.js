@@ -271,8 +271,95 @@ export function deathLine(name, roleName, salt = '') {
 
 let watchdog = null;
 const VOICE_LS = 'hlc_voice_v1';
-let voiceCfg = { voiceURI: null, rate: 0.92, pitch: 0.9 };
+let voiceCfg = {
+  engine: 'cloud', // 'cloud' (neuronal, muy humana) o 'device' (la del móvil)
+  cloudVoice: 'es-ES-Chirp3-HD-Charon',
+  voiceURI: null, rate: 0.95, pitch: 0.9,
+  ambience: true, // paisaje sonoro de fondo en el narrador
+};
 try { Object.assign(voiceCfg, JSON.parse(localStorage.getItem(VOICE_LS)) || {}); } catch { /* valores por defecto */ }
+
+// Voz neuronal en la nube (Google TTS, Chirp3-HD). La clave está restringida a
+// esta API y al dominio del juego, y el audio se cachea en el dispositivo:
+// cada frase fija se sintetiza (y factura) una sola vez por narrador.
+const TTS_KEY = (typeof window !== 'undefined' && window.TTS_KEY) || null;
+export const CLOUD_VOICES = [
+  { id: 'es-ES-Chirp3-HD-Charon', label: 'Charon — masculina grave' },
+  { id: 'es-ES-Chirp3-HD-Enceladus', label: 'Enceladus — masculina serena' },
+  { id: 'es-ES-Chirp3-HD-Algieba', label: 'Algieba — masculina cálida' },
+  { id: 'es-ES-Chirp3-HD-Kore', label: 'Kore — femenina clara' },
+  { id: 'es-ES-Chirp3-HD-Gacrux', label: 'Gacrux — femenina madura' },
+  { id: 'es-ES-Chirp3-HD-Sulafat', label: 'Sulafat — femenina cálida' },
+];
+
+const memCache = new Map(); // texto|voz → objectURL
+let cloudQueue = [];
+let cloudAudio = null;
+let cloudBusy = false;
+
+export function cloudAvailable() { return !!TTS_KEY; }
+
+async function synthCloud(text) {
+  const k = voiceCfg.cloudVoice + '|' + text;
+  if (memCache.has(k)) return memCache.get(k);
+  const cacheUrl = 'https://tts.cache.local/' + voiceCfg.cloudVoice + '/' + encodeURIComponent(text).slice(0, 1500);
+  let blob = null;
+  try {
+    const store = await caches.open('tts-v1');
+    const hit = await store.match(cacheUrl);
+    if (hit) blob = await hit.blob();
+    if (!blob) {
+      const res = await fetch('https://texttospeech.googleapis.com/v1/text:synthesize?key=' + TTS_KEY, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          input: { text },
+          voice: { languageCode: 'es-ES', name: voiceCfg.cloudVoice },
+          audioConfig: { audioEncoding: 'MP3' },
+        }),
+      });
+      if (!res.ok) throw new Error('tts ' + res.status);
+      const data = await res.json();
+      const bytes = Uint8Array.from(atob(data.audioContent), (c) => c.charCodeAt(0));
+      blob = new Blob([bytes], { type: 'audio/mpeg' });
+      await store.put(cacheUrl, new Response(blob, { headers: { 'Content-Type': 'audio/mpeg' } }));
+    }
+  } catch (e) {
+    if (!blob) throw e;
+  }
+  const url = URL.createObjectURL(blob);
+  memCache.set(k, url);
+  return url;
+}
+
+function pumpCloud() {
+  if (cloudBusy || !cloudQueue.length) return;
+  const item = cloudQueue.shift();
+  cloudBusy = true;
+  const finish = () => {
+    cloudBusy = false;
+    if (item.onend) item.onend();
+    pumpCloud();
+  };
+  synthCloud(item.text).then((url) => {
+    cloudAudio = new Audio(url);
+    try { cloudAudio.preservesPitch = true; } catch { /* opcional */ }
+    cloudAudio.playbackRate = voiceCfg.rate || 1;
+    cloudAudio.onended = finish;
+    cloudAudio.onerror = finish;
+    cloudAudio.play().catch(() => { speakDevice(item.text, {}); finish(); });
+  }).catch(() => {
+    // Sin red o sin cuota: cae a la voz del dispositivo y la cola sigue.
+    speakDevice(item.text, {});
+    finish();
+  });
+}
+
+// ¿Está sonando la narración? (para atenuar el ambiente)
+export function isNarratorSpeaking() {
+  if (cloudBusy) return true;
+  try { return typeof speechSynthesis !== 'undefined' && speechSynthesis.speaking; } catch { return false; }
+}
 
 export function getVoiceConfig() { return { ...voiceCfg }; }
 export function setVoiceConfig(patch) {
@@ -328,12 +415,28 @@ export function initVoice() {
 }
 
 // Habla un texto. Las locuciones se encolan (no se interrumpen entre sí).
-// priority 'low' (murmullos, recordatorios): si la voz está ocupada, se omite
-// sin tocar la cola — un relleno JAMÁS debe cancelar una narración principal.
-// priority normal: solo descarta backlog si ya hay retraso real acumulado
-// (algo sonando Y algo más en cola), para que el audio nunca frene la partida.
+// priority 'low' (murmullos, recordatorios): si la voz está ocupada, se omite.
 // onend se llama también si la síntesis no está disponible.
-export function speak(text, { muted = false, onend = null, priority = 'normal' } = {}) {
+export function speak(text, opts = {}) {
+  const { muted = false, onend = null, priority = 'normal' } = opts;
+  if (muted || !text) {
+    if (onend) setTimeout(onend, 800);
+    return;
+  }
+  if (voiceCfg.engine === 'cloud' && TTS_KEY) {
+    if (priority === 'low' && (cloudBusy || cloudQueue.length)) {
+      if (onend) setTimeout(onend, 400);
+      return;
+    }
+    if (cloudBusy && cloudQueue.length) cloudQueue = []; // suelta el backlog atrasado
+    cloudQueue.push({ text, onend });
+    pumpCloud();
+    return;
+  }
+  speakDevice(text, opts);
+}
+
+function speakDevice(text, { muted = false, onend = null, priority = 'normal' } = {}) {
   if (muted || typeof speechSynthesis === 'undefined' || !text) {
     if (onend) setTimeout(onend, 800);
     return;
@@ -365,4 +468,7 @@ export function speak(text, { muted = false, onend = null, priority = 'normal' }
 
 export function stopSpeech() {
   if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel();
+  cloudQueue = [];
+  cloudBusy = false;
+  if (cloudAudio) { try { cloudAudio.pause(); } catch { /* nada */ } cloudAudio = null; }
 }
