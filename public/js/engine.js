@@ -44,6 +44,9 @@ const roleDealt = (game, roleId) => (game.composition && game.composition[roleId
 // Pasos que componen la noche `night` para esta partida.
 export function computeNightSteps(game, players) {
   const steps = [];
+  // Composición secreta: los roles activados pero NO repartidos también tienen
+  // su paso (fantasma), para que la voz finja que juegan de verdad.
+  const fakeSel = (r) => game.fakeAllSelected && (game.selectedRoles || []).includes(r);
   for (const s of NIGHT_STEPS) {
     if (s.firstNight && game.night !== 1) continue;
     if (s.evenNights && game.night % 2 !== 0) continue;
@@ -58,15 +61,16 @@ export function computeNightSteps(game, players) {
       continue;
     }
     if (s.id === 'enamorados') {
-      if (roleDealt(game, 'cupido')) steps.push(s.id);
+      if (roleDealt(game, 'cupido') || fakeSel('cupido')) steps.push(s.id);
       continue;
     }
     if (s.id === 'encantados') {
-      if (roleDealt(game, 'gaitero')) steps.push(s.id);
+      if (roleDealt(game, 'gaitero') || fakeSel('gaitero')) steps.push(s.id);
       continue;
     }
     // Se incluye si el rol se repartió o si alguien lo tiene ahora (ladrón/sirvienta pueden cambiar cartas).
-    if (s.roles.some((r) => roleDealt(game, r)) || players.some((p) => s.roles.includes(p.role))) {
+    if (s.roles.some((r) => roleDealt(game, r)) || players.some((p) => s.roles.includes(p.role))
+      || s.roles.some(fakeSel)) {
       steps.push(s.id);
     }
   }
@@ -204,6 +208,10 @@ export function stepNeedsGhostAnnounce(stepId, game, players) {
   // poderes perdidos por el Anciano…): disimular SIEMPRE, o se delataría.
   const anyAlive = players.some((p) => p.alive && def.roles.includes(p.role));
   if (anyAlive) return true;
+  // Rol activado pero nunca repartido (composición secreta): fingirlo SIEMPRE,
+  // se revelen o no los roles al morir — nadie ha visto morir a ese rol.
+  const dealt = def.roles.some((r) => roleDealt(game, r)) || players.some((p) => def.roles.includes(p.role));
+  if (!dealt && game.fakeAllSelected) return true;
   // Rol muerto (o en el centro): solo hace falta fingir si los roles no se revelan.
   return !game.revealDead;
 }

@@ -289,8 +289,10 @@ export function conductorTick() {
         chainOutro(key, OUTROS.encantados, 900, game.stepIdx);
         return;
       }
-      if (game.keywordsActive && !game.revealDead && players.some((p) => p.role === 'gaitero')) {
-        // El gaitero ya no actúa: llamada falsa para no delatar su muerte.
+      const gaiteroDealt = (game.composition || {}).gaitero > 0 || players.some((p) => p.role === 'gaitero');
+      if (game.keywordsActive && ((gaiteroDealt && !game.revealDead) || (!gaiteroDealt && game.fakeAllSelected))) {
+        // Gaitero muerto con roles ocultos, o nunca repartido con composición
+        // secreta: llamada falsa para no delatarlo.
         const alive = players.filter((p) => p.alive && p.keyword);
         const fake = alive.slice().sort(() => Math.random() - 0.5).slice(0, 2).map((p) => p.keyword);
         say(key, `${encIntro} Todos con los ojos cerrados. Si oyes tu palabra clave, la música te ha atrapado: abre los ojos con disimulo y mira tu pantalla. Las palabras son: … ${fake.join('… y ')}. Cuando lo hayáis visto, volved a cerrar los ojos.`);
@@ -310,6 +312,18 @@ export function conductorTick() {
     let text = narr(stepId, `${game.seed}:n${game.night}:s${game.stepIdx}:${stepId}`);
     if (stepId === 'lobos' && game.night === 1 && !game.noKillNight1) {
       text = narr('lobos_noche1', `${game.seed}:n1:lobos`);
+    }
+    // Cupido activado pero no repartido (composición secreta): la noche 1 se
+    // finge también la llamada a los enamorados, con dos palabras clave falsas.
+    if (stepId === 'enamorados' && game.fakeAllSelected && game.keywordsActive
+      && !((game.composition || {}).cupido > 0) && !players.some((p) => p.lover)) {
+      const alive = players.filter((p) => p.alive && p.keyword);
+      const fake = alive.slice().sort(() => Math.random() - 0.5).slice(0, 2).map((p) => p.keyword);
+      if (fake.length === 2) {
+        say(key, `Cupido ha disparado sus flechas. Todos con los ojos cerrados y atentos. Si oyes tu palabra clave, abre los ojos con disimulo y mira tu pantalla: … ${fake.join('… y ')}. Enamorados, descubrid a vuestro amor en silencio… y volved a cerrar los ojos.`);
+        scheduleAfterSpeech(key, 7000 + Math.random() * 3000, () => advanceGhostStep(game.stepIdx));
+        return;
+      }
     }
     // Enamorados: se les llama por sus palabras clave secretas.
     if (stepId === 'enamorados' && game.keywordsActive) {

@@ -177,6 +177,7 @@ const handlers = {
   'change-game': () => guard(() => A.selectGame(null)),
   'narrator-device': (p) => { state.ui.modal = null; return guard(() => A.setNarratorDevice(p)); },
   'open-explain': () => { state.ui.modal = { type: 'explain' }; render(); },
+  'open-game-roles': () => { state.ui.modal = { type: 'game-roles' }; render(); },
   'explain-speak': () => guard(() => A.requestExplain()),
   'dismiss-flash': () => { state.flash = null; render(); },
   'retry': () => location.reload(),

@@ -6,7 +6,7 @@ import {
 } from '../public/js/roles.js';
 import {
   computeNightSteps, stepActors, resolveDawn, resolveVote, applyDeathsChain, checkWinner,
-  rotateKeyword,
+  rotateKeyword, stepNeedsGhostAnnounce,
 } from '../public/js/engine.js';
 
 const mkPlayers = (roles) => roles.map((role, i) => ({
@@ -544,6 +544,26 @@ test('checkWinner: el perro lobo que elige lobos cuenta como lobo', () => {
   ps[1].alive = false;
   assert.equal(checkWinner(ps), 'lobos');
   assert.equal(effectiveTeam(ps[0]), 'lobos');
+});
+
+test('composición secreta: los roles activados no repartidos se fingen', () => {
+  const players = mkPlayers(['hombre_lobo', 'vidente', 'aldeano', 'aldeano']);
+  const comp = { hombre_lobo: 1, vidente: 1, aldeano: 2 };
+  // bruja y cupido activados pero sin repartir; composición secreta.
+  const g = mkGame({
+    composition: comp, fakeAllSelected: true, keywordsActive: true,
+    selectedRoles: ['vidente', 'bruja', 'cupido'],
+  });
+  const steps = computeNightSteps(g, players);
+  assert.ok(steps.includes('bruja'), 'la bruja se finge aunque no se repartió');
+  assert.ok(steps.includes('cupido') && steps.includes('enamorados'), 'cupido y enamorados fingidos');
+  assert.equal(stepActors('bruja', g, players), null, 'nadie actúa: paso fantasma');
+  assert.ok(stepNeedsGhostAnnounce('bruja', g, players), 'se anuncia por voz…');
+  assert.ok(stepNeedsGhostAnnounce('bruja', { ...g, revealDead: true }, players),
+    '…incluso con roles revelados al morir (nadie lo ha visto morir)');
+  // Con composición pública no se finge nada.
+  const pubSteps = computeNightSteps(mkGame({ composition: comp }), players);
+  assert.ok(!pubSteps.includes('bruja') && !pubSteps.includes('cupido'));
 });
 
 test('checkWinner: lobos + albino a solas — la caza sigue si el albino no está en minoría', () => {

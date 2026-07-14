@@ -952,6 +952,7 @@ function manualScreen(g, my) {
     ${my.inGame && my.roleSeen ? roleCard(my, g, true) : ''}
     ${playersGrid(players, { title: '🏘️ El pueblo', viewer: my })}`}
   ${logPanel(game)}
+  ${masterToolsBar(g)}
   `;
 }
 
@@ -996,6 +997,7 @@ function guidedScreen(g, my) {
     : `<div class="narration">📖 El narrador dirige la partida. Atiende a su voz… humana.</div>${my.inGame ? roleCard(my, g, true) : ''}`}
   ${playersGrid(players, { title: '🏘️ El pueblo', showAlguacil: game.alguacilId, viewer: my })}
   ${logPanel(game)}
+  ${masterToolsBar(g)}
   `;
 }
 
@@ -1062,7 +1064,7 @@ function guidedMasterScreen(g, my) {
   <div class="topbar"><h2>${esc(g.name)}</h2>${phaseChip(game)}</div>
   ${flashHtml()}
   <div class="card"><h3>📖 Narrador guiado</h3><p class="small-note">La app no habla: te va marcando los pasos y tú registras las decisiones. Los jugadores solo ven su carta.</p>
-  <div class="btnrow">${btn('view-roles', '👁 Roles', 'ghost small')}${btn('end-game', '🏳️ Terminar', 'ghost small')}</div></div>
+  <div class="btnrow">${btn('view-roles', '👁 Roles', 'ghost small')}${btn('open-game-roles', '🎴 Cartas', 'ghost small')}${btn('end-game', '🏳️ Terminar', 'ghost small')}</div></div>
   ${body}
   ${playersGrid(players, { title: '🏘️ El pueblo', showAlguacil: g.game.alguacilId })}
   ${logPanel(game)}
@@ -1100,14 +1102,19 @@ function guidedPendingPanel(head, g, players) {
 // ——— Herramientas del máster (modo auto) ———
 
 function masterToolsBar(g) {
-  if (g.game.mode !== 'auto' || g.game.phase === 'end') return '';
+  if (g.game.phase === 'end') return '';
   const my = me();
   const narrator = isMaster();
   if (!narrator && !(my && my.inGame)) return '';
+  if (g.game.mode !== 'auto') {
+    // En guiado/manual: solo la chuleta de cartas de la partida.
+    return `<div class="mastertools"><div class="inner">${btn('open-game-roles', '🎴 Cartas', 'ghost')}</div></div>`;
+  }
   // Todos los jugadores pueden forzar un paso atascado y terminar la partida;
   // el narrador-jugador tiene además la voz y la vista de roles.
   return `<div class="mastertools"><div class="inner">
     ${btn('voice-open', isMuted() ? '🔇 Voz' : '🗣️ Voz', 'ghost')}
+    ${btn('open-game-roles', '🎴 Cartas', 'ghost')}
     ${btn('repeat-last', '🔁 Repetir', 'ghost')}
     ${btn('force-advance', '⏭️ Forzar', 'ghost')}
     ${btn('end-game', '🏳️ Fin', 'ghost')}
@@ -1142,6 +1149,7 @@ function renderModal() {
     'thief-swap': thiefSwapModal,
     'vote-confirm': voteConfirmModal,
     'explain': explainModal,
+    'game-roles': gameRolesModal,
   }[m.type];
   if (!inner) return '';
   // El modal lleva data-a="noop" para que los clics en su interior no lleguen
@@ -1294,6 +1302,52 @@ function startModal() {
     ${btn('close-modal', 'Cancelar', 'ghost block')}`;
 }
 
+// Cartas presentes en la partida: con composición pública, las reales (y sus
+// cantidades); con composición secreta, solo los roles activados al empezar,
+// sin desvelar cuáles juegan de verdad.
+function gameRolesModal() {
+  const g = state.group;
+  const game = g.game || {};
+  const pub = game.compositionPublic ?? !!(g.settings || {}).showComposition;
+  const row = (r, n) => r ? `<div class="roletoggle on"><span class="remoji">${r.emoji}</span>
+    <div class="rinfo"><div class="rname">${r.name}${n > 1 ? ` <small>×${n}</small>` : ''}</div>
+    <div class="rdesc">${r.desc}</div></div></div>` : '';
+  let list; let note;
+  if (pub && game.composition) {
+    list = Object.entries(game.composition).map(([id, n]) => row(ROLES[id], n)).join('');
+    note = `Composición pública: estas son las cartas en juego.${game.centerCards ? ' (Con el Ladrón, 2 de ellas quedaron en el centro.)' : ''}`;
+  } else {
+    const ids = [...new Set(['hombre_lobo', ...(game.selectedRoles || []), 'aldeano'])];
+    list = ids.map((id) => row(ROLES[id], 1)).join('');
+    note = 'Composición secreta: estos roles se activaron al empezar, pero nadie sabe cuáles están realmente en juego… ni cuántos.';
+  }
+  const alguacilOn = !!(g.settings || {}).alguacil;
+  return `<h3>🎴 Cartas de la partida</h3>
+    <p class="small-note">${note}</p>
+    ${list}
+    ${alguacilOn ? '<p class="small-note">⭐ Además, el pueblo elige Alguacil: su voto vale doble y nombra sucesor al morir.</p>' : ''}
+    ${btn('close-modal', '✔️ Listo', 'primary block')}`;
+}
+
+// Resumen legible de los ajustes elegidos (para la explicación previa).
+function settingsSummary(st) {
+  const out = [];
+  out.push(st.revealDead
+    ? '💀 Cuando alguien muera, su rol se revelará a todo el pueblo.'
+    : '🙈 Los roles de los muertos quedarán ocultos: ni el cementerio hablará.');
+  out.push(st.showComposition
+    ? '🎴 Composición pública: se sabrá qué cartas hay en juego.'
+    : '🎴 Composición secreta: nadie sabrá qué roles juegan de verdad, y la voz fingirá también los que no se repartieron.');
+  if (st.primeraNocheTranquila) out.push('🌙 Primera noche sin sangre: los lobos se presentan, pero nadie muere.');
+  if (st.videnteSoloBando) out.push('🔮 La vidente solo descubrirá el bando (lobo o no), no el rol exacto.');
+  if (st.ocultarCausas) out.push('🌫️ Las muertes nocturnas no explicarán la causa: solo quién ha caído.');
+  if (st.alguacil) out.push('⭐ Habrá Alguacil: elegido el primer día, su voto vale doble.');
+  if (st.wolvesCount) out.push(`🐺 Número de lobos fijado: ${st.wolvesCount}.`);
+  if (st.villagersCount != null) out.push(`🧑‍🌾 Aldeanos reservados: ${st.villagersCount}.`);
+  if (st.casual) out.push('🎲 Modo casual activo (mesas de menos de 8).');
+  return out;
+}
+
 function explainModal() {
   const ex = EXPLANATIONS[(state.group || {}).currentGame] || EXPLANATIONS.hombres_lobo;
   const narrP = state.players.find((p) => p.id === (state.group || {}).lastNarratorId);
@@ -1301,6 +1355,11 @@ function explainModal() {
     ${ex.intro.map((t) => `<p style="margin:9px 0">${t}</p>`).join('')}
     <h3 style="margin-top:14px">🎲 Cómo se juega</h3>
     ${ex.how.map((t) => `<p class="small-note" style="margin:8px 0">• ${t}</p>`).join('')}
+    <h3 style="margin-top:14px">🎴 Roles activados en esta mesa</h3>
+    ${[...new Set(['hombre_lobo', ...((state.group || {}).extraRoles || []), 'aldeano'])].map((id) => ROLES[id] ? `
+      <p class="small-note" style="margin:7px 0">${ROLES[id].emoji} <b>${ROLES[id].name}</b> — ${ROLES[id].desc}</p>` : '').join('')}
+    <h3 style="margin-top:14px">🔧 Cómo se jugará</h3>
+    ${settingsSummary((state.group || {}).settings || {}).map((t) => `<p class="small-note" style="margin:7px 0">• ${t}</p>`).join('')}
     ${btn('explain-speak', '🔊 Leer en voz alta', 'violet block')}
     <p class="small-note" style="text-align:center">${narrP ? `Sonará en el dispositivo narrador: <b>${esc(narrP.name)}</b>.` : 'No hay narrador elegido: sonará en este dispositivo.'}</p>
     ${btn('close-modal', '✔️ Listo', 'primary block')}`;

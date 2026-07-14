@@ -273,7 +273,12 @@ export async function startGame(mode, narratorId) {
 
     // Palabras clave: solo hacen falta si hay roles que designan jugadores en
     // secreto durante la noche (enamorados de Cupido, encantados del Gaitero).
-    const keywordsActive = mode === 'auto' && !!(composition.cupido || composition.gaitero);
+    // Con composición secreta también se fingen los roles activados que no se
+    // repartieron; para poder fingir a Cupido/Gaitero hacen falta palabras clave.
+    const selectedRoles = (g.extraRoles || []).filter((r) => ROLES[r]);
+    const fakeAllSelected = mode === 'auto' && !settings0.showComposition;
+    const keywordsActive = mode === 'auto' && !!(composition.cupido || composition.gaitero
+      || (fakeAllSelected && selectedRoles.some((r) => r === 'cupido' || r === 'gaitero')));
     // Se generan de sobra: las pronunciadas se renuevan desde esta reserva.
     const kws = keywordsActive ? generateKeywords(eligible.length + 20, seed + 7) : [];
     const kwOf = {};
@@ -319,7 +324,9 @@ export async function startGame(mode, narratorId) {
       const aaName = (eligible.find((p) => p.id === aaId) || {}).name;
       log.push({ kind: 'evento', txt: `👥 La carta de ${aaName} tiene dos caras y ambas muestran un aldeano: ${aaName} es el Aldeano-Aldeano y todo el pueblo sabe con certeza que es inocente.` });
     }
-    if (dropped.length) {
+    // Con composición secreta, los descartes NO se anuncian: la voz fingirá
+    // que todos los roles activados están en juego.
+    if (dropped.length && settings.showComposition) {
       const droppedTxt = dropped.map((d) => `${ROLES[d.id].name} (${d.reason === 'min' ? `pide ≥${ROLES[d.id].minPlayers} jugadores` : 'sin sitio en la mesa'})`).join(', ');
       log.push({ kind: 'evento', txt: `ℹ️ Roles activados pero no repartidos: ${droppedTxt}.` });
     }
@@ -336,6 +343,7 @@ export async function startGame(mode, narratorId) {
         stepIdx: 0, steps: [], acts: {},
         vote: null, votesLeft: 0, pending: [], winner: null, keywordsActive,
         kwPool, kwIdx: 0,
+        selectedRoles, fakeAllSelected, compositionPublic: !!settings0.showComposition,
         wolvesKnown: false, hermanasKnown: false, hermanosKnown: false,
         alguacilId: null, soloVoteId: null, juezArmed: null,
         powersLost: false, wolfDeathOccurred: false, caballeroRust: null,

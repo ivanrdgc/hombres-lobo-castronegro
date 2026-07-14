@@ -219,6 +219,13 @@ try {
 
   let st = await waitState(ana, (s) => s.phase === 'night', 'noche 1');
   check(!st.players.find((p) => p.name === 'Ana').role, 'el máster no recibe rol en automático');
+
+  // Chuleta de cartas: cualquier jugador consulta qué roles hay en la partida.
+  await pages.bruno.click('button[data-a=open-game-roles]');
+  await pages.bruno.waitForSelector('text=Cartas de la partida');
+  check(await pages.bruno.isVisible('text=/Composición pública/i'), 'chuleta 🎴: composición pública visible');
+  await pages.bruno.click('button[data-a=close-modal]');
+  await pace(pages.bruno);
   const roleOf = Object.fromEntries(st.players.filter((p) => p.role).map((p) => [p.role, p.name.toLowerCase()]));
   console.log('  roles:', st.players.map((p) => `${p.name}=${p.role}`).join(', '));
   const wolfPage = pages[roleOf.hombre_lobo];
