@@ -346,7 +346,16 @@ test('resolveDawn: pregunta de la gitana la responde el primer muerto', () => {
   players[3].alive = false; players[3].deathAt = 1;
   const game = mkGame({ acts: { gitanaQIdx: 0 }, deathTick: 1 });
   const res = resolveDawn(game, players);
-  assert.equal(res.gitanaQ.mediumId, 'p3');
+  assert.ok(res.gitanaAnnounce.includes('J3'), 'el primer muerto hace de espíritu');
+});
+
+test('resolveDawn: la gitana puede escribir su propia pregunta', () => {
+  const players = mkPlayers(['hombre_lobo', 'gitana', 'aldeano', 'aldeano']);
+  players[3].alive = false; players[3].deathAt = 1;
+  const game = mkGame({ acts: { gitanaText: '¿Era Bruno el que roncaba anoche?' }, deathTick: 1 });
+  const res = resolveDawn(game, players);
+  assert.ok(res.gitanaAnnounce.includes('¿Era Bruno el que roncaba anoche?'));
+  assert.ok(res.gitanaAnnounce.includes('J3'));
 });
 
 test('resolveVote: linchamiento normal con revelación', () => {

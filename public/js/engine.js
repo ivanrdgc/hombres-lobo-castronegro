@@ -336,17 +336,24 @@ export function resolveDawn(game, playersIn) {
     logs.push({ kind: 'evento', txt: `🐦‍⬛ El Cuervo ha señalado a ${byId[markId].name}: carga con 2 votos extra en su contra.` });
   }
   // Pregunta de la gitana → la responderá un espíritu durante el día.
-  let gitanaQ = null;
-  if (acts.gitanaQIdx !== undefined && acts.gitanaQIdx !== null) {
+  // La pregunta de la Gitana se anuncia en voz alta al amanecer y un espíritu
+  // (el primer muerto) responde de viva voz durante el día: sin diálogos.
+  let gitanaAnnounce = null;
+  const gitanaText = acts.gitanaText
+    || (acts.gitanaQIdx !== undefined && acts.gitanaQIdx !== null ? GITANA_QUESTIONS[acts.gitanaQIdx] : null);
+  if (gitanaText) {
     const deadSorted = players.filter((p) => !p.alive).sort((a, b) => (a.deathAt || 0) - (b.deathAt || 0));
     if (deadSorted.length) {
-      gitanaQ = { q: GITANA_QUESTIONS[acts.gitanaQIdx], mediumId: deadSorted[0].id, answer: null };
+      const medium = deadSorted[0];
+      logs.push({ kind: 'evento', txt: `🔯 La Gitana preguntó a los espíritus: «${gitanaText}». Responde desde el más allá el espíritu de ${medium.name}.` });
+      gitanaAnnounce = `La Gitana preguntó a los espíritus: «${gitanaText}». Que responda en voz alta, desde el más allá, el espíritu de ${medium.name}. Solo puede decir sí o no.`;
     } else {
-      logs.push({ kind: 'evento', txt: '🔯 La Gitana invocó a los espíritus, pero nadie respondió desde el más allá.' });
+      logs.push({ kind: 'evento', txt: `🔯 La Gitana preguntó: «${gitanaText}», pero ningún espíritu puede responder todavía.` });
+      gitanaAnnounce = `La Gitana preguntó a los espíritus: «${gitanaText}»… pero ningún espíritu puede responder todavía.`;
     }
   }
 
-  return { players, logs, pendings: chain.pendings, gameUpdates, deaths: chain.deaths, gitanaQ };
+  return { players, logs, pendings: chain.pendings, gameUpdates, deaths: chain.deaths, gitanaAnnounce };
 }
 
 // ——— Condiciones de victoria ———

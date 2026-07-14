@@ -16,6 +16,7 @@ let muted = false;
 let nagCounts = {};
 let fillerPlan = {};
 let repeatSeen = null; // nonce de «repetir última locución»
+let lastSpokenText = ''; // última narración principal pronunciada
 
 // Frases de insistencia: si nadie actúa en ~30 s, la voz anima a seguir.
 // Admiten varias variantes para que cada aviso suene distinto.
@@ -117,6 +118,7 @@ export function initConductor() {
 function say(key, text, onend) {
   if (spoken.has(key)) { if (onend) onend(); return; }
   spoken.add(key);
+  if (text) lastSpokenText = text;
   speak(text, { muted, onend });
 }
 
@@ -157,7 +159,17 @@ export function conductorTick() {
   // flujo normal vuelve a pronunciarlo (paso, amanecer, debate…).
   const rn = game.repeatNonce || 0;
   if (repeatSeen === null) repeatSeen = rn;
-  else if (rn !== repeatSeen) { repeatSeen = rn; spoken.clear(); stopSpeech(); }
+  else if (rn !== repeatSeen) {
+    repeatSeen = rn;
+    stopSpeech();
+    if (lastSpokenText) {
+      // Pausa breve tras el cancel: Chrome se traga un speak() inmediato.
+      const t = lastSpokenText;
+      setTimeout(() => speak(t, { muted }), 350);
+    } else {
+      spoken.clear(); // narrador recién recargado: re-narra el contexto actual
+    }
+  }
   if (game.paused) { cancelTimer(); stopSpeech(); return; } // pausa global
   const players = state.players.filter((p) => p.inGame);
 
@@ -280,6 +292,7 @@ export function conductorTick() {
       } else {
         parts.push(narr('amanecer_sin_muertes', dawnSalt));
       }
+      if (game.lastDawn && game.lastDawn.gitana) parts.push(game.lastDawn.gitana);
       if (Math.random() < 0.5) parts.push(improv('amanecer'));
       const aliveCount = players.filter((p) => p.alive).length;
       if (aliveCount > 0 && aliveCount <= 4) parts.push(improv('pocos'));
@@ -343,6 +356,7 @@ export function conductorReset() {
     nagCounts = {};
     fillerPlan = {};
     repeatSeen = null;
+    lastSpokenText = '';
     cancelTimer();
     stopSpeech();
   }

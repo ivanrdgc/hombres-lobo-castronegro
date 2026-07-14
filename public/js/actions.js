@@ -436,12 +436,13 @@ export async function runDawn() {
     if ((g.settings || {}).alguacil && game.dayNum === 1) {
       game.pending.push({ type: 'alguacil_elect' });
     }
-    game.gitanaQ = res.gitanaQ || null;
+    game.gitanaQ = null;
     game.vote = null;
     game.votesLeft = 1;
     game.lastDawn = {
       deaths: res.deaths.map((d) => ({ name: byId[d.pid].name, role: game.revealDead ? ROLES[d.role]?.name : null })),
       events: [...logs, ...res.logs].map((l) => l.txt),
+      gitana: res.gitanaAnnounce || null,
     };
     if (winner) { game.phase = 'end'; game.winner = winner; }
     else game.phase = 'day';
@@ -652,7 +653,19 @@ export const actGaitero = (targets) => nightAction('gaitero', (game) => {
 
 export const actGitana = (qIdx) => nightAction('gitana', (game) => {
   game.acts.gitanaDone = true;
-  if (qIdx !== null && qIdx !== undefined) game.acts.gitanaQIdx = qIdx;
+  if (qIdx !== null && qIdx !== undefined) {
+    game.acts.gitanaQIdx = qIdx;
+    game.acts.gitanaText = GITANA_QUESTIONS[qIdx] || null;
+  }
+  return {};
+});
+
+// La gitana también puede escribir su propia pregunta (de sí o no).
+export const actGitanaCustom = (text) => nightAction('gitana', (game) => {
+  const q = String(text || '').trim().slice(0, 140);
+  if (!q) return null;
+  game.acts.gitanaDone = true;
+  game.acts.gitanaText = q;
   return {};
 });
 
@@ -818,16 +831,6 @@ export async function cabezaPick(pid) {
   }, { skipPlayers: true });
 }
 
-export async function answerGitana(yes) {
-  await gameTx((game, players, g) => {
-    if (!game.gitanaQ || game.gitanaQ.answer !== null) return null;
-    if (state.session.pid !== game.gitanaQ.mediumId && state.session.pid !== g.masterId) return null;
-    game.gitanaQ.answer = !!yes;
-    game.log.push({ kind: 'evento', txt: `🔯 Espiritismo — «${game.gitanaQ.q}» El espíritu responde: ${yes ? 'SÍ' : 'NO'}.` });
-    game.gitanaQ = null;
-    return { game };
-  }, { skipPlayers: true });
-}
 
 // ——— Pausa global (modo automático) ———
 

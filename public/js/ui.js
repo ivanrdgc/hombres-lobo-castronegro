@@ -711,7 +711,10 @@ function nightActionPanel(stepId, g, my, players) {
     }
     case 'gitana':
       if (game.powersLost) return wrap('🔯 La Gitana', 'La muerte del Anciano os arrebató los poderes. Que nadie lo note: espera un instante, disimula… y termina tu turno.', btn('act-gitana-skip', '🌙 Terminar mi turno', 'primary block'));
-      return wrap('🔯 La Gitana', 'Elige una pregunta: un espíritu (jugador muerto) la responderá al amanecer.',
+      return wrap('🔯 La Gitana', 'Escribe tu pregunta (de sí o no) o elige una sugerida: un espíritu (jugador muerto) la responderá al amanecer.',
+        `<input type="text" id="gitana-q" maxlength="140" placeholder="Tu pregunta de sí o no…" autocomplete="off">` +
+        btn('act-gitana-custom', '🕯️ Preguntar a los espíritus', 'primary block') +
+        '<p class="hint" style="margin-top:10px">O una sugerida:</p>' +
         GITANA_QUESTIONS.map((q, i) => btn('act-gitana', '🕯️ ' + q, 'ghost block', String(i))).join('') +
         btn('act-gitana-skip', 'No preguntar', 'ghost block'));
     default:
@@ -742,9 +745,6 @@ function dayPhase(g, my) {
   const head = (game.pending || [])[0];
   let panel = '';
 
-  if (game.gitanaQ && game.gitanaQ.answer === null) {
-    panel += gitanaDayPanel(g, my);
-  }
   if (head) panel += pendingPanel(head, g, my, players);
   else if (game.votesLeft > 0 && !game.vote) panel += votePanel(g, my, players);
   else if (game.vote) panel += `<div class="actionpanel"><h3>⏳ Juicio en curso…</h3><p class="hint">La Sirvienta medita su decisión.</p></div>`;
@@ -769,16 +769,6 @@ function juezButton(g, my) {
     ${btn('juez-arm', '⚖️ Exigir segunda votación tras el juicio', 'violet block')}</div>`;
 }
 
-function gitanaDayPanel(g, my) {
-  const q = g.game.gitanaQ;
-  const medium = state.players.find((p) => p.id === q.mediumId);
-  if (my.id === q.mediumId) {
-    return `<div class="actionpanel"><h3>🔯 Los espíritus te invocan</h3>
-      <p class="hint">Desde el más allá, responde con sinceridad: <b>«${esc(q.q)}»</b></p>
-      <div class="btnrow">${btn('gitana-yes', '✔️ SÍ', 'primary')}${btn('gitana-no', '✖️ NO', 'danger')}</div></div>`;
-  }
-  return `<div class="narration">🔯 La Gitana pregunta a los espíritus: «${esc(q.q)}». ${esc(medium?.name || 'Un difunto')} responderá desde el más allá…</div>`;
-}
 
 function pendingPanel(head, g, my, players) {
   const key = `pend:${head.type}`;
@@ -999,10 +989,6 @@ function guidedMasterScreen(g, my) {
   } else if (game.phase === 'day') {
     const head = (game.pending || [])[0];
     let panel = '';
-    if (game.gitanaQ && game.gitanaQ.answer === null) {
-      panel += `<div class="card"><h3>🔯 Espiritismo</h3><p class="small-note">Pregunta al espíritu (un jugador muerto): «${esc(game.gitanaQ.q)}»</p>
-        <div class="btnrow">${btn('gitana-yes', '✔️ SÍ', 'primary')}${btn('gitana-no', '✖️ NO', 'danger')}</div></div>`;
-    }
     if (head) {
       panel += guidedPendingPanel(head, g, players);
     } else if (game.votesLeft > 0 && !game.vote) {

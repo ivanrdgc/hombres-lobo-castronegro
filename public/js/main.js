@@ -265,6 +265,11 @@ const handlers = {
     return guard(() => A.actGaitero(sel()));
   },
   'act-gitana': (idx) => guard(() => A.actGitana(parseInt(idx, 10))),
+  'act-gitana-custom': () => {
+    const q = val('gitana-q');
+    if (!q) return formError ? setFlash('Escribe primero tu pregunta.') : null;
+    return guard(() => A.actGitanaCustom(q));
+  },
   'act-gitana-skip': () => guard(() => A.actGitana(null)),
 
   // ——— Día ———
@@ -280,8 +285,6 @@ const handlers = {
   'alguacil-pick': () => (sel1() ? guard(() => A.pickAlguacil(sel1())) : needSel()),
   'cabeza-pick': () => (sel1() ? guard(() => A.cabezaPick(sel1())) : needSel()),
   'cabeza-skip': () => guard(() => A.cabezaPick(null)),
-  'gitana-yes': () => guard(() => A.answerGitana(true)),
-  'gitana-no': () => guard(() => A.answerGitana(false)),
 
   // ——— Máster ———
   'toggle-mute': () => {
