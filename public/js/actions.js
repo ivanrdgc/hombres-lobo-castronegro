@@ -41,6 +41,11 @@ export const DEFAULT_SETTINGS = {
 
 // ——— Lobby ———
 
+// Elegir (o cambiar) el juego de la mesa: lo ve todo el grupo al instante.
+export async function selectGame(gameId) {
+  await updateDoc(gref(state.route.slug), { currentGame: gameId || null });
+}
+
 export async function createGroup(userName, groupName) {
   const slug = slugify(groupName);
   if (!slug) throw new Error('Nombre de grupo no válido.');
@@ -54,6 +59,7 @@ export async function createGroup(userName, groupName) {
       name: groupName.trim(),
       createdAt: Date.now(),
       masterId: null, // en el lobby no hay máster: todos configuran e inician
+      currentGame: null, // la mesa elige juego después
       status: 'lobby',
       settings: DEFAULT_SETTINGS,
       extraRoles: DEFAULT_EXTRA_ROLES,
@@ -62,7 +68,7 @@ export async function createGroup(userName, groupName) {
     tx.set(pref(slug, pid), basePlayer(userName, token));
   });
   saveSession(slug, { pid, token, name: userName.trim() });
-  navigate('/hombres_lobo/g/' + slug);
+  navigate('/g/' + slug);
 }
 
 export async function joinGroup(slug, userName) {
@@ -114,7 +120,7 @@ export async function joinExistingGroup(groupName, userName, claimMaster) {
     if (claimMaster) tx.update(gref(slug), { masterId: pid });
   });
   saveSession(slug, { pid, token, name: joinedName });
-  navigate('/hombres_lobo/g/' + slug);
+  navigate('/g/' + slug);
 }
 
 function playerIdFor(name) {
@@ -154,7 +160,7 @@ export async function leaveGroup() {
     tx.delete(pref(slug, myId));
   });
   clearSession(slug);
-  navigate('/hombres_lobo');
+  navigate('/');
 }
 
 export async function kickPlayer(pid) {
@@ -170,7 +176,7 @@ export async function deleteGroup() {
   batch.delete(gref(slug));
   await batch.commit();
   clearSession(slug);
-  navigate('/hombres_lobo');
+  navigate('/');
 }
 
 // Orden de la mesa (sentido horario). Se guarda en el grupo y persiste entre partidas.
@@ -290,6 +296,11 @@ export async function startGame(mode, narratorId) {
       log.push({ kind: 'evento', txt: `🎴 Cartas en juego: ${compTxt}.${center.length ? ' (2 de ellas quedan en el centro para el Ladrón.)' : ''}` });
     } else {
       log.push({ kind: 'evento', txt: '🎴 La composición de roles permanece en secreto.' });
+    }
+    const aaId = Object.keys(assignments).find((id) => assignments[id] === 'aldeano_aldeano');
+    if (aaId) {
+      const aaName = (eligible.find((p) => p.id === aaId) || {}).name;
+      log.push({ kind: 'evento', txt: `👥 La carta de ${aaName} tiene dos caras y ambas muestran un aldeano: ${aaName} es el Aldeano-Aldeano y todo el pueblo sabe con certeza que es inocente.` });
     }
     if (dropped.length) {
       const droppedTxt = dropped.map((d) => `${ROLES[d.id].name} (${d.reason === 'min' ? `pide ≥${ROLES[d.id].minPlayers} jugadores` : 'sin sitio en la mesa'})`).join(', ');
@@ -624,6 +635,7 @@ export const confirmLoboReconocido = () => nightAction('lobos_reconocen', (game,
 export const actLobos = (pid) => nightAction('lobos', (game, ps, myId) => {
   if (game.acts.wolfVictim !== undefined) return {};
   game.acts.wolfVictim = pid || null;
+  game.wolvesKnown = true; // al abrir los ojos para cazar, la manada ya se ha visto
   game.acts.wolfBy = myId;
   return {};
 });

@@ -77,6 +77,10 @@ export const NARRATION = {
     'Hombres lobo, ha llegado vuestro momento. Todo el pueblo duerme con los ojos bien cerrados. Lobos, abrid los ojos en silencio y reconoced a vuestra manada. Cuando os hayáis reconocido, confirmadlo en vuestro dispositivo.',
     'Llega la hora de la manada. Aldeanos, ojos cerrados: quien mire, que se atenga a las consecuencias. Lobos, abrid los ojos, reconoced a vuestros hermanos de caza… y confirmadlo en vuestro dispositivo.',
   ],
+  lobos_noche1: [
+    'Hombres lobo, ha llegado vuestro momento. Todo el pueblo duerme con los ojos bien cerrados. Abrid los ojos en silencio, miraos, reconoced a vuestra manada… y elegid juntos a vuestra primera presa.',
+    'Llega la hora de la manada. Aldeanos, ojos cerrados: quien mire, que se atenga a las consecuencias. Lobos, abrid los ojos, reconoced a vuestros hermanos de caza… y señalad en silencio a vuestra primera víctima.',
+  ],
   lobos: [
     'Hombres lobo, despertad. Elegid en silencio a vuestra próxima víctima.',
     'La manada sale de caza. Hombres lobo, elegid en silencio: ¿qué puerta derribaréis esta noche?',

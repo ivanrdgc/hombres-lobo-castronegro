@@ -1,8 +1,8 @@
 # 🎲 Juegos digitales
 
-Colección de juegos de mesa para jugar con amigos en la misma sala, cada uno desde su móvil. La portada (`/`) es un menú de juegos; de momento contiene uno:
+Colección de juegos de mesa para jugar con amigos en la misma sala, cada uno desde su móvil. La portada (`/`) crea la **mesa**: el grupo de dispositivos, quiénes juegan y el orden de asiento. Con la mesa montada se elige a qué jugar; los usuarios y el orden se comparten entre juegos y cada juego añade solo su configuración específica. De momento hay uno:
 
-# 🐺 Los Hombres Lobo de Castronegro (`/hombres_lobo`)
+# 🐺 Los Hombres Lobo de Castronegro
 
 Adaptación web completa del juego de mesa.
 
@@ -10,9 +10,10 @@ Adaptación web completa del juego de mesa.
 
 ## Cómo funciona
 
-- **Crear partida**: entra en `/`, escribe tu nombre y el del grupo (se sugiere uno aleatorio con un 🎲 para regenerarlo). Quien crea el grupo es el **máster**. Se genera una URL única (`/g/nombre-del-grupo`) para compartir. Si el grupo ya existe, la web ofrece entrar en él como jugador o **entrar como nuevo máster** (el anterior pasa a jugador): nadie se queda bloqueado.
+- **Crear la mesa**: entra en `/`, escribe tu nombre y el de la mesa (se sugiere uno aleatorio con un 🎲 para regenerarlo). Se genera una URL única (`/g/nombre-de-la-mesa`) para compartir. Si el nombre ya existe, la web ofrece entrar en esa mesa: nadie se queda bloqueado.
 - **Unirse**: abre la URL del grupo, escribe tu nombre y listo. Sin registros ni contraseñas; la sesión se guarda en el dispositivo (localStorage). Si tu nombre ya existe, puedes desconectar el dispositivo anterior y continuar como ese jugador (útil si se te cierra el navegador).
-- **Lobby**: todos ven la lista de jugadores. El máster puede expulsar jugadores, ceder el rol de máster, eliminar el grupo (libera el nombre), elegir los roles de la partida y los ajustes: revelar rol al morir, composición pública, alguacil, **primera noche sin sangre** (los lobos se reconocen pero no devoran), **vidente solo ve el bando** (lobo o no, sin rol exacto), y **ocultar causas de muerte nocturnas** (solo se anuncia quién murió). El **número de lobos** (auto oficial o fijado del 1 al 4) se elige en el menú de roles.
+- **La mesa**: todos ven los dispositivos **en el orden de asiento** (sentido horario), que se ajusta **arrastrando el asa ⠿** y se recuerda entre partidas y juegos. Cada dispositivo se marca como jugador o solo-pantalla, se puede expulsar, y cualquiera elige el juego (o lo cambia, o elimina la mesa, que libera el nombre).
+- **Lobby de Castronegro**: cualquiera elige los roles de la partida y los ajustes: revelar rol al morir, composición pública, alguacil, **primera noche sin sangre** (la manada se presenta sin devorar), **vidente solo ve el bando** (lobo o no, sin rol exacto), y **ocultar causas de muerte nocturnas** (solo se anuncia quién murió). El **número de lobos** (auto oficial o fijado del 1 al 4) se elige en el menú de roles.
 - **Partida en curso**: no se puede entrar ni salir del grupo; los visitantes ven un aviso con botón de reintentar. Los jugadores existentes sí pueden reconectarse.
 
 ## Modos de juego
@@ -37,9 +38,10 @@ Lobos y aldeanos se reparten automáticamente según el número de jugadores (1 
 ### Adaptaciones digitales (buena fe)
 
 - **Palabras clave** 🔑: si hay Cupido o Gaitero en juego, cada jugador recibe una palabra clave secreta junto a su rol (p. ej. «Cuervo de Ceniza»), distinta en cada partida. De noche todos juegan con los ojos cerrados; cuando hay que despertar a jugadores elegidos en oculto (enamorados, encantados), la voz los llama por sus palabras clave y solo ellos abren los ojos con disimulo para mirar su pantalla: nadie sabe a quién habla, como el toque en el hombro del narrador. Si el Gaitero muere con roles ocultos, la voz hace llamadas falsas para disimular.
-- **La manada se reconoce físicamente** 🐺: al revelarse el rol solo sabes que eres lobo. La primera noche, con todo el pueblo con los ojos cerrados, la voz pide a los lobos que abran los ojos y se reconozcan; cada lobo lo confirma en la app y solo entonces esta muestra la manada. Las Dos Hermanas y los Tres Hermanos se reconocen igual.
+- **La manada se reconoce físicamente** 🐺: al revelarse el rol solo sabes que eres lobo. La primera noche los lobos abren los ojos, se miran… y eligen ya a su primera presa (la voz pide expresamente que se reconozcan). Solo con «primera noche sin sangre» existe un paso de presentación aparte, donde cada lobo confirma en la app haberse reconocido. Las Dos Hermanas y los Tres Hermanos se reconocen con confirmación igual.
 - **La voz insiste (solo de noche)**: si nadie actúa en ~30 s, el narrador repite avisos con frases de ánimo («Los hombres lobo se lo están pensando…», «¡Cupido, abre los ojos!»). Para los enamorados, cada aviso repite sus palabras clave. Si tras ~2 minutos sigue sin respuesta, asume que alguien olvidó su rol: **pausa la noche y todo el pueblo abre los ojos para repasar su rol y su palabra clave**; al confirmar todos, la noche continúa donde estaba y el paso se vuelve a anunciar. De día y durante el reparto no insiste.
-- **Cierre de ojos con margen**: al terminar cada paso, la voz despide al rol («Los hombres lobo vuelven a cerrar los ojos…») y espera ~5 segundos antes de seguir, dando tiempo a bloquear el móvil. La despedida suena igual aunque el rol estuviera muerto o sin poderes: pura cortina de humo.
+- **Cierre de ojos con margen**: al terminar cada paso, la voz despide al rol («Los hombres lobo vuelven a cerrar los ojos…») y espera unos segundos antes de seguir, dando tiempo a bloquear el móvil. La despedida suena igual aunque el rol estuviera muerto o sin poderes: pura cortina de humo.
+- **La partida espera a la voz** 🔊: todas las transiciones aguardan a que el narrador termine de hablar (incluida la cola pendiente) antes de contar su pausa. Por muy rápido que la gente pulse, la interfaz y el audio nunca se desincronizan.
 - **Narración viva**: cada locución tiene varias variantes (elegidas por partida y noche) y la voz improvisa pinceladas aleatorias — presagios nocturnos, rumores del pueblo al amanecer, coñas durante el debate y transiciones al ocaso — para que cada partida suene distinta. Además intercala murmullos de despiste: a veces sigue hablando aunque el rol ya haya actuado, para que el audio no delate a nadie.
 - **Sin pistas por tiempos**: la vidente (y el zorro o el actor-vidente) ven su resultado y confirman «lo he visto»; entre paso y paso de la noche hay siempre una pausa aleatoria de 4-9 s, idéntica para roles vivos, muertos o sin poderes, para que nadie pueda deducir nada observando quién suelta el móvil ni cuánto tarda la voz.
 - **Disimulo total**: con roles ocultos, la voz sigue llamando a los roles eliminados con esperas falsas. Y los roles vivos sin poderes (bruja sin pociones, zorro sin olfato, castigo del Anciano) **despiertan igualmente**: ven un panel de «disimula y termina tu turno» y su comportamiento externo es idéntico al de siempre.
@@ -49,9 +51,11 @@ Lobos y aldeanos se reparten automáticamente según el número de jugadores (1 
 - **Niña**: espía con los ojos, como en el juego físico — entreabre los párpados mientras los lobos eligen. La app no le muestra nada ni le pide nada.
 - **Los lobos pueden devorar a cualquiera**, incluidos miembros de la propia manada, o declarar que «no se ponen de acuerdo» (nadie muere, regla oficial de la unanimidad). Durante el reconocimiento, su pantalla muestra la manada — y el lobo solitario puede confirmar sin esperar a nadie.
 - **Actor**: elige cada noche entre tres poderes fijos (ver rol, proteger, señalar como el cuervo).
-- **Gitana**: elige una pregunta; el primer jugador muerto la responde desde «el más allá» al amanecer.
+- **Gitana**: elige una pregunta (o la escribe con su teclado); la voz la pronuncia al amanecer y **los muertos la responden todos a una** — un solo «sí» o «no», puestos de acuerdo y con honestidad, como manda la regla.
+- **Aldeano-Aldeano** 👥: su carta muestra un aldeano por ambas caras, así que es pública: la app lo marca como «inocente» a la vista de todos y la voz lo anuncia al empezar.
+- **Ocaso con veredicto**: si se juega con roles revelados al morir, la voz anuncia el rol del linchado antes de que empiece la noche.
 - **Sectario**: la mesa se divide en dos mitades automáticas por orden de llegada.
-- **Zorro/Domador/Caballero**: la «vecindad» es el círculo por orden de llegada al grupo, saltando muertos.
+- **Zorro/Domador/Caballero**: la «vecindad» es el círculo según el **orden de la mesa** (el de la lista de dispositivos, ajustable arrastrando), saltando muertos; con roles de vecindad en juego, el orden se confirma justo antes de empezar.
 
 ## Estructura técnica
 

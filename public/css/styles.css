@@ -83,6 +83,8 @@ button:disabled { opacity: .45; cursor: default; }
 }
 
 .players { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-top: 8px; }
+/* Lista ordenable (mesa): una columna, como los asientos alrededor de la mesa */
+.players.seatable { grid-template-columns: 1fr; }
 .player {
   background: var(--card2); border: 1px solid var(--border); border-radius: 10px; padding: 9px 11px;
   display: flex; align-items: center; gap: 8px; font-size: .95rem; position: relative; min-height: 46px;
@@ -187,3 +189,15 @@ hr.sep { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
 @keyframes toastin { from { transform: translate(-50%, -8px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
 body.busy [data-a] { pointer-events: none; }
 body.busy button { opacity: .7; }
+
+/* Ordenar la mesa arrastrando (lobby) */
+.draghandle {
+  touch-action: none; cursor: grab; user-select: none;
+  padding: 2px 8px 2px 2px; color: var(--muted); font-size: 1.15rem;
+}
+.player.dragging {
+  position: relative; z-index: 6; opacity: .95;
+  outline: 2px solid var(--accent);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .55);
+  transition: none;
+}

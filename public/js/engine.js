@@ -50,7 +50,13 @@ export function computeNightSteps(game, players) {
     // Primera noche sin sangre: los lobos se reconocen, pero nadie devora.
     if (game.noKillNight1 && game.night === 1
       && ['lobos', 'infecto_decision', 'lobo_feroz'].includes(s.id)) continue;
-    if (s.id === 'lobos' || s.id === 'amanecer' || s.id === 'lobos_reconocen' || s.id === 'durmiendo') { steps.push(s.id); continue; }
+    if (s.id === 'lobos' || s.id === 'amanecer' || s.id === 'durmiendo') { steps.push(s.id); continue; }
+    if (s.id === 'lobos_reconocen') {
+      // Solo hace falta presentar a la manada cuando la primera noche es sin
+      // sangre; si hay caza, los lobos se reconocen al elegir a su presa.
+      if (game.noKillNight1) steps.push(s.id);
+      continue;
+    }
     if (s.id === 'enamorados') {
       if (roleDealt(game, 'cupido')) steps.push(s.id);
       continue;
@@ -342,18 +348,16 @@ export function resolveDawn(game, playersIn) {
     logs.push({ kind: 'evento', txt: `🐦‍⬛ El Cuervo ha señalado a ${byId[markId].name}: carga con 2 votos extra en su contra.` });
     cuervoAnnounce = `Sobre el tejado de ${byId[markId].name} han aparecido plumas negras: el Cuervo lo ha señalado, y hoy carga con dos votos extra en su contra.`;
   }
-  // Pregunta de la gitana → la responderá un espíritu durante el día.
-  // La pregunta de la Gitana se anuncia en voz alta al amanecer y un espíritu
-  // (el primer muerto) responde de viva voz durante el día: sin diálogos.
+  // La pregunta de la Gitana se anuncia en voz alta al amanecer y los muertos
+  // la responden de viva voz, todos a una (regla oficial): sin diálogos.
   let gitanaAnnounce = null;
   const gitanaText = acts.gitanaText
     || (acts.gitanaQIdx !== undefined && acts.gitanaQIdx !== null ? GITANA_QUESTIONS[acts.gitanaQIdx] : null);
   if (gitanaText) {
-    const deadSorted = players.filter((p) => !p.alive).sort((a, b) => (a.deathAt || 0) - (b.deathAt || 0));
-    if (deadSorted.length) {
-      const medium = deadSorted[0];
-      logs.push({ kind: 'evento', txt: `🔯 La Gitana preguntó a los espíritus: «${gitanaText}». Responde desde el más allá el espíritu de ${medium.name}.` });
-      gitanaAnnounce = `La Gitana preguntó a los espíritus: «${gitanaText}». Que responda en voz alta, desde el más allá, el espíritu de ${medium.name}. Solo puede decir sí o no.`;
+    const anyDead = players.some((p) => !p.alive);
+    if (anyDead) {
+      logs.push({ kind: 'evento', txt: `🔯 La Gitana preguntó a los espíritus: «${gitanaText}». Los muertos responden todos a una: sí o no.` });
+      gitanaAnnounce = `La Gitana preguntó a los espíritus: «${gitanaText}». Espíritus del más allá: poneos de acuerdo y responded todos a una, en voz alta y con honestidad. Solo podéis decir sí… o no.`;
     } else {
       logs.push({ kind: 'evento', txt: `🔯 La Gitana preguntó: «${gitanaText}», pero ningún espíritu puede responder todavía.` });
       gitanaAnnounce = `La Gitana preguntó a los espíritus: «${gitanaText}»… pero ningún espíritu puede responder todavía.`;
@@ -408,7 +412,7 @@ export function resolveVote(game, playersIn, choice) {
   const byId = Object.fromEntries(players.map((p) => [p.id, p]));
   const logs = [];
   let pendings = [];
-  const gameUpdates = {};
+  const gameUpdates = { lastLynch: null }; // el ocaso anuncia el rol si procede
   let winner = null;
 
   if (choice === 'nadie') {
@@ -422,6 +426,8 @@ export function resolveVote(game, playersIn, choice) {
       pendings = pendings.concat(chain.pendings, [{ type: 'cabeza_pick', pid: cabeza.id }]);
       Object.assign(gameUpdates, { powersLost: chain.powersLost, wolfDeathOccurred: game.wolfDeathOccurred || chain.wolfDeath, caballeroRust: chain.rust || game.caballeroRust });
       annotateDeaths(chain.deaths, byId, logs, game);
+      const cd = chain.deaths.find((d) => d.cause === 'sacrificio');
+      if (cd) gameUpdates.lastLynch = { name: byId[cd.pid].name, role: cd.role, hideRole: !!cd.hideRole };
     } else {
       logs.push({ kind: 'dia', txt: '🤝 La votación acabó en empate: hoy no muere nadie.' });
     }
@@ -441,6 +447,8 @@ export function resolveVote(game, playersIn, choice) {
       pendings = pendings.concat(chain.pendings);
       Object.assign(gameUpdates, { powersLost: chain.powersLost, wolfDeathOccurred: game.wolfDeathOccurred || chain.wolfDeath, caballeroRust: chain.rust || game.caballeroRust });
       annotateDeaths(chain.deaths, byId, logs, game);
+      const ld = chain.deaths.find((d) => d.cause === 'linchado');
+      if (ld) gameUpdates.lastLynch = { name: byId[ld.pid].name, role: ld.role, hideRole: !!ld.hideRole };
     }
   }
 

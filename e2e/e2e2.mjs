@@ -200,6 +200,8 @@ try {
     await p.waitForSelector('text=/Dispositivos/');
   }
   await ana.waitForSelector('text=Dispositivos (4)');
+  await ana.click('button[data-a=select-game]');
+  await ana.waitForSelector('[data-a=open-settings]');
   await ana.click('[data-a=open-settings]');
   await ana.click('.switch[data-a=toggle-setting][data-p=casual]');
   await ana.waitForSelector('.switch.on[data-a=toggle-setting][data-p=casual]');
@@ -244,7 +246,7 @@ try {
   await ana.waitForSelector('[data-a=open-start]');
   await ana.click('[data-a=confirm-delete-group]');
   await ana.click('button[data-a=delete-group-confirm]');
-  await ana.waitForURL(BASE + '/hombres_lobo');
+  await ana.waitForURL(BASE + '/');
   ok('limpieza del grupo manual');
 
   // ═══ PARTE B: AUTOMÁTICO CON ROLES COMPLEJOS ═══
@@ -268,6 +270,8 @@ try {
   await ana.click('.player[data-a=player-menu]:has-text("Ana")');
   await ana.click('button[data-a=toggle-player]');
   await ana.waitForSelector('.player:has-text("Ana"):has-text("no juega")');
+  await ana.click('button[data-a=select-game]');
+  await ana.waitForSelector('[data-a=open-settings]');
   await ana.click('[data-a=open-settings]');
   await ana.click('.switch[data-a=toggle-setting][data-p=casual]');
   await ana.waitForSelector('.switch.on[data-a=toggle-setting][data-p=casual]');
@@ -382,7 +386,7 @@ try {
   await ana.waitForSelector('[data-a=open-start]', { timeout: 15000 });
   await ana.click('[data-a=confirm-delete-group]');
   await ana.click('button[data-a=delete-group-confirm]');
-  await ana.waitForURL(BASE + '/hombres_lobo');
+  await ana.waitForURL(BASE + '/');
   ok('limpieza final');
 } catch (e) {
   failures++;

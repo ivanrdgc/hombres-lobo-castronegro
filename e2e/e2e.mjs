@@ -47,12 +47,11 @@ try {
   // ——— 1. Creación de grupo ———
   console.log('— Creación de grupo —');
   const ana = await mk('ana');
-  // Menú principal en la raíz → tarjeta del juego
-  await ana.goto(BASE + '/');
+  // Portada: se crea primero la mesa; la URL antigua del juego redirige.
+  await ana.goto(BASE + '/hombres_lobo');
   await ana.waitForSelector('text=Juegos digitales');
-  await ana.click('button[data-a=go-lobos]');
   await ana.waitForSelector('#inp-group');
-  ok('menú principal con el juego como subpágina');
+  ok('portada «Juegos digitales»: crear la mesa (URL antigua redirigida)');
   await ana.fill('#inp-name', 'Ana');
   await ana.fill('#inp-group', GROUP);
   await ana.click('[data-a=create-group]');
@@ -126,8 +125,12 @@ try {
   ok('Leo expulsado: su dispositivo vuelve a la pantalla de unirse');
   await leo.context().close();
 
-  // ——— 5. Configuración de roles y ajustes ———
+  // ——— 5. Elegir juego y configurar roles y ajustes ———
   console.log('— Configuración —');
+  await ana.click('button[data-a=select-game]');
+  await ana.waitForSelector('[data-a=open-roles]');
+  await pages.bruno.waitForSelector('[data-a=open-roles]', { timeout: 15000 });
+  ok('elegir juego lleva a toda la mesa al lobby de Castronegro');
   await ana.click('[data-a=open-roles]');
   await ana.waitForSelector('text=Roles de la partida');
   check(await ana.isVisible('.roletoggle.locked:has-text("Hombre Lobo")'), 'lobo siempre activo (bloqueado)');
@@ -213,19 +216,17 @@ try {
   await vidPage.click('button[data-a=act-vidente-seen]');
   ok('la vidente confirma que lo ha visto (pausa de disimulo antes del siguiente paso)');
 
-  // Reconocimiento físico de la manada (nuevo paso de la noche 1).
-  await waitState(ana, (s) => s.steps[s.stepIdx] === 'lobos_reconocen', 'reconocimiento de la manada');
+  // Con caza en la noche 1 no hay paso de presentación: los lobos van directos
+  // a elegir presa (se reconocen al abrir los ojos para cazar).
+  await waitState(ana, (s) => s.steps[s.stepIdx] === 'lobos', 'turno de los lobos');
   check(!(await wolfPage.isVisible('.rolecard')), 'el rol queda oculto por defecto durante la partida');
   await wolfPage.click('button[data-a=toggle-rolecard]');
   await wolfPage.waitForSelector('.rolecard');
-  check(await wolfPage.isVisible('text=/reconoceros como manada/i'), 'el lobo no ve nombres de la manada antes de reconocerse');
+  check(await wolfPage.isVisible('text=/reconoceros como manada/i'), 'el lobo aún no ha visto a su manada en la carta');
   await wolfPage.click('.rolecard');
   check(!(await wolfPage.isVisible('.rolecard')), 'la carta se vuelve a ocultar al tocarla');
-  await wolfPage.click('button[data-a=act-lobos-reconocido]');
-  ok('el lobo confirma que la manada se ha reconocido');
 
   // Lobo: elige víctima (la vidente).
-  await waitState(ana, (s) => s.steps[s.stepIdx] === 'lobos', 'turno de los lobos');
   const videnteName = st.players.find((p) => p.role === 'vidente').name;
   await wolfPage.click(`.actionpanel .player.selectable:has-text("${videnteName}")`);
   await wolfPage.click('[data-a=act-lobos]');
@@ -265,14 +266,14 @@ try {
   // Un jugador abandona.
   await pages.david.click('[data-a=leave]');
   await pages.david.click('[data-a=leave-confirm]');
-  await pages.david.waitForURL(BASE + '/hombres_lobo');
+  await pages.david.waitForURL(BASE + '/');
   await ana.waitForSelector('text=Dispositivos (4)');
   ok('abandonar grupo funciona');
 
   // El máster elimina el grupo.
   await ana.click('[data-a=confirm-delete-group]');
   await ana.click('[data-a=delete-group-confirm]');
-  await ana.waitForURL(BASE + '/hombres_lobo');
+  await ana.waitForURL(BASE + '/');
   await pages.bruno.waitForSelector('text=/grupo ha sido eliminado|grupo no existe/i', { timeout: 15000 });
   ok('grupo eliminado: los demás son expulsados y el nombre queda libre');
 
@@ -294,11 +295,12 @@ try {
   await paco.waitForURL('**/g/**');
   await paco.waitForSelector('.player:has-text("Paco")');
   ok('Paco entra en el grupo existente desde la portada');
-  const anaCanStart = await ana.isVisible('[data-a=open-start]');
-  check(anaCanStart, 'cualquiera puede iniciar (Ana ve empezar sin ser máster)');
+  await paco.click('button[data-a=select-game]');
+  await ana.waitForSelector('[data-a=open-start]', { timeout: 15000 });
+  ok('cualquiera elige juego e inicia (Ana ve empezar sin ser máster)');
   await paco.click('[data-a=confirm-delete-group]');
   await paco.click('[data-a=delete-group-confirm]');
-  await paco.waitForURL(BASE + '/hombres_lobo');
+  await paco.waitForURL(BASE + '/');
   await paco.context().close();
   ok('limpieza final');
 } catch (e) {

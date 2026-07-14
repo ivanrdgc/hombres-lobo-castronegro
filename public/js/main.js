@@ -1,6 +1,6 @@
 // Punto de entrada: enrutado, eventos y bucle de renderizado.
 import { state, onChange, applyRoute, navigate, me, isMaster, setFlash } from './store.js';
-import { render, esc, randomGroupName } from './ui.js';
+import { render, invalidateRender, esc, randomGroupName } from './ui.js';
 import * as A from './actions.js';
 import { conductorTick, conductorReset, initConductor, setMuted, isMuted } from './conductor.js';
 import { speak, setVoiceConfig, getVoiceConfig } from './narration.js';
@@ -55,6 +55,66 @@ function moveSeat(pid, dir) {
   return guard(() => A.setSeating(order));
 }
 
+// ——— Arrastrar para ordenar la mesa (lobby): funciona con dedo y con ratón ———
+// El bloque sigue al puntero con un transform; al cruzar la mitad de otra fila
+// se intercambian en el DOM y se compensa el salto del reflow para que el
+// movimiento se vea continuo. La lista .seatable es de una sola columna.
+let dragCtx = null;
+let swallowClick = false; // el click fantasma que sigue a un arrastre real
+document.addEventListener('pointerdown', (e) => {
+  const h = e.target.closest('[data-drag]');
+  if (!h) return;
+  const row = h.closest('.player');
+  const list = row && row.closest('.players');
+  if (!row || !list) return;
+  e.preventDefault();
+  state.ui.dragging = true;
+  row.classList.add('dragging');
+  dragCtx = { row, list, moved: false, startX: e.clientX, startY: e.clientY, baseX: 0, baseY: 0, pid: e.pointerId };
+  try { row.setPointerCapture(e.pointerId); } catch { /* sin captura también funciona */ }
+});
+document.addEventListener('pointermove', (e) => {
+  if (!dragCtx || e.pointerId !== dragCtx.pid) return;
+  e.preventDefault();
+  const { row, list } = dragCtx;
+  const move = () => {
+    row.style.transform = `translate(${e.clientX - dragCtx.startX + dragCtx.baseX}px, ${e.clientY - dragCtx.startY + dragCtx.baseY}px)`;
+  };
+  move();
+  const rows = [...list.querySelectorAll('.player')].filter((r) => r !== row);
+  const next = rows.find((r) => {
+    const b = r.getBoundingClientRect();
+    return e.clientY < b.top + b.height / 2;
+  }) || null;
+  const needsMove = next ? row.nextElementSibling !== next : row.nextElementSibling !== null;
+  if (needsMove) {
+    const b0 = row.getBoundingClientRect();
+    if (next) list.insertBefore(row, next); else list.appendChild(row);
+    const b1 = row.getBoundingClientRect();
+    dragCtx.baseX += b0.left - b1.left;
+    dragCtx.baseY += b0.top - b1.top;
+    dragCtx.moved = true;
+    move();
+  }
+});
+const endDrag = () => {
+  if (!dragCtx) return;
+  const { row, list, moved } = dragCtx;
+  row.classList.remove('dragging');
+  row.style.transform = '';
+  dragCtx = null;
+  state.ui.dragging = false;
+  invalidateRender(); // el DOM se movió a mano: forzar el siguiente pintado
+  if (moved) {
+    swallowClick = true;
+    setTimeout(() => { swallowClick = false; }, 350);
+    const order = [...list.querySelectorAll('.player')].map((r) => r.dataset.p).filter(Boolean);
+    guard(() => A.setSeating(order));
+  } else render();
+};
+document.addEventListener('pointerup', endDrag);
+document.addEventListener('pointercancel', endDrag);
+
 let roleHideTimer = null;
 let narratorWhoTimer = null;
 const $ = (id) => document.getElementById(id);
@@ -105,9 +165,9 @@ async function guard(fn) {
 // ——— Despacho de acciones ———
 const handlers = {
   'noop': () => {},
-  'go-home': () => navigate('/hombres_lobo'),
-  'go-lobos': () => navigate('/hombres_lobo'),
-  'go-menu': () => navigate('/'),
+  'go-home': () => navigate('/'),
+  'select-game': (p) => guard(() => A.selectGame(p)),
+  'change-game': () => guard(() => A.selectGame(null)),
   'dismiss-flash': () => { state.flash = null; render(); },
   'retry': () => location.reload(),
 
@@ -140,7 +200,7 @@ const handlers = {
   'takeover-confirm': (name) => { closeModal(); return guard(() => A.takeOverPlayer(state.route.slug, name)); },
 
   'copy-url': async () => {
-    const url = location.origin + '/hombres_lobo/g/' + state.route.slug;
+    const url = location.origin + '/g/' + state.route.slug;
     try { await navigator.clipboard.writeText(url); } catch {
       const inp = $('share-url'); if (inp) { inp.select(); document.execCommand('copy'); }
     }
@@ -361,6 +421,7 @@ const handlers = {
 };
 
 document.addEventListener('click', (ev) => {
+  if (swallowClick) { swallowClick = false; return; } // resto de un arrastre
   const el = ev.target.closest('[data-a]');
   if (!el) return;
   const fn = handlers[el.dataset.a];

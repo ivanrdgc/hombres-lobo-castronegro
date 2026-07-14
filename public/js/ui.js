@@ -23,13 +23,16 @@ let lastHtml = '';
 let lastModalType = null;
 let lastScreenKey = '';
 
+export function invalidateRender() { lastHtml = null; }
+
 export function render() {
+  if (state.ui.dragging) return; // no pisar el DOM mientras se arrastra
   const app = document.getElementById('app');
 
-  document.title = state.route.view === 'menu' ? 'Juegos digitales' : 'Los Hombres Lobo de Castronegro';
+  const inLobos = state.group && (state.group.currentGame === 'hombres_lobo' || state.group.status === 'playing');
+  document.title = inLobos ? 'Los Hombres Lobo de Castronegro' : 'Juegos digitales';
   let html = '';
-  if (state.route.view === 'menu') html = menuScreen();
-  else if (state.route.view === 'landing') html = landingScreen();
+  if (state.route.view === 'landing') html = landingScreen();
   else html = groupScreen();
   if (state.ui.modal) html += renderModal();
   document.body.classList.toggle('busy', !!state.ui.busy);
@@ -105,40 +108,34 @@ const flashHtml = () => state.flash
 // ——— Pantallas de entrada ———
 
 // Portada: menú de juegos (de momento, uno).
-function menuScreen() {
-  return `
-  <span class="moon">🎲</span>
-  <h1 class="title-hero">Juegos digitales</h1>
-  <p class="subtitle">Juegos de mesa para jugar con amigos, cada uno desde su móvil</p>
-  ${flashHtml()}
-  <div class="card selectable" data-a="go-lobos" style="cursor:pointer">
-    <h3>🐺 Los Hombres Lobo de Castronegro</h3>
-    <p class="small-note">El clásico de roles ocultos: lobos contra el pueblo, con narrador automático por voz, modo guiado y todas las expansiones.</p>
-    ${btn('go-lobos', '🌕 Jugar', 'primary block')}
-  </div>
-  <p class="small-note" style="text-align:center">Más juegos, próximamente…</p>`;
-}
+// Catálogo de juegos de la mesa. La mesa (usuarios + orden) es común; cada
+// juego aporta su propia configuración específica.
+const GAMES = [
+  {
+    id: 'hombres_lobo', emoji: '🐺', name: 'Los Hombres Lobo de Castronegro',
+    desc: 'El clásico de roles ocultos: lobos contra el pueblo, con narrador automático por voz, modo guiado y todas las expansiones.',
+  },
+];
 
 function landingScreen() {
   if (!state.ui.suggestedGroup) state.ui.suggestedGroup = randomGroupName();
   return `
-  <span class="moon">🌕🐺</span>
-  <h1 class="title-hero">Los Hombres Lobo de Castronegro</h1>
-  <p class="subtitle">Crea una partida y comparte el enlace con tu grupo</p>
-  <p style="text-align:center;margin-bottom:10px">${btn('go-menu', '🎲 Otros juegos', 'small ghost')}</p>
+  <span class="moon">🎲</span>
+  <h1 class="title-hero">Juegos digitales</h1>
+  <p class="subtitle">Montad primero vuestra mesa; después elegís a qué jugar</p>
   ${flashHtml()}
   <div class="card">
-    <h3>🆕 Nueva partida</h3>
+    <h3>🪑 Nueva mesa</h3>
     <label for="inp-name">Tu nombre</label>
     <input type="text" id="inp-name" maxlength="24" placeholder="P. ej. María" autocomplete="off">
-    <label for="inp-group">Nombre del grupo</label>
+    <label for="inp-group">Nombre de la mesa</label>
     <div style="display:flex;gap:8px">
       <input type="text" id="inp-group" maxlength="30" value="${esc(state.ui.suggestedGroup)}" autocomplete="off" style="flex:1">
       <button class="small ghost" data-a="reroll-group" title="Otro nombre al azar" style="font-size:1.2rem">🎲</button>
     </div>
     <div id="form-error">${state.ui.formError ? `<div class="flash error">${esc(state.ui.formError)}</div>` : ''}</div>
-    ${btn('create-group', '🌑 Crear grupo', 'primary block')}
-    <p class="small-note">Quien crea el grupo será el <b>máster</b> (narrador) de la partida. ¿Te han invitado? Abre directamente el enlace que te hayan pasado.</p>
+    ${btn('create-group', '🪑 Crear la mesa', 'primary block')}
+    <p class="small-note">Comparte luego el enlace y cada amigo entra desde su móvil. Los usuarios y el orden de asiento se configuran una vez y sirven para todos los juegos. ¿Te han invitado? Abre directamente el enlace que te hayan pasado.</p>
   </div>`;
 }
 
@@ -158,7 +155,7 @@ function groupScreen() {
     if (g.status === 'playing') return blockedScreen(g);
     return joinScreen(g);
   }
-  if (g.status === 'lobby') return lobbyScreen(g, my);
+  if (g.status === 'lobby') return g.currentGame === 'hombres_lobo' ? lobbyScreen(g, my) : mesaScreen(g, my);
   if (!g.game) return '<p style="text-align:center;margin-top:40vh">Preparando la partida…</p>';
   if (g.game.mode === 'manual') return manualScreen(g, my);
   if (g.game.mode === 'guiado') return guidedScreen(g, my);
@@ -202,39 +199,71 @@ function blockedScreen(g) {
 
 // ——— Lobby ———
 
+// Tarjeta de dispositivos: común a la mesa y al lobby de cada juego.
+function devicesCard(g, my) {
+  const n = state.players.length;
+  const nJug = state.players.filter((p) => p.isPlayer !== false).length;
+  return `<div class="card">
+    <h3>📱 Dispositivos (${n}) · 🎮 ${nJug} jugarán</h3>
+    <div class="players seatable">
+      ${seatingOrder(g).map((id) => state.players.find((p) => p.id === id)).filter(Boolean).map((p) => `
+        <div class="player selectable" data-a="player-menu" data-p="${p.id}">
+          <span class="draghandle" data-a="noop" data-drag="${p.id}" title="Arrastra para ordenar">⠿</span>
+          <span class="pname">${esc(p.name)}</span>
+          ${p.isPlayer === false ? '<span class="badge">📺 no juega</span>' : ''}
+          ${p.id === my.id ? '<span class="badge you">Tú</span>' : ''}
+        </div>`).join('')}
+    </div>
+    <p class="small-note">🪑 La lista sigue el orden de la mesa (sentido horario): arrastra el asa ⠿ para ajustarlo; se recuerda entre partidas. Toca un dispositivo para marcarlo como jugador o solo-pantalla, o para expulsarlo.</p>
+  </div>`;
+}
+
+// La mesa: usuarios y orden ya configurados; desde aquí se elige el juego.
+function mesaScreen(g, my) {
+  return `
+  <div class="topbar">
+    <h2>🪑 ${esc(g.name)}</h2>
+    ${btn('leave', '🚪 Salir', 'small ghost')}
+  </div>
+  <div class="card">
+    <h3>🔗 Invita a tu mesa</h3>
+    <div class="linkbox">
+      <input type="text" id="share-url" value="${esc(location.origin + '/g/' + g.id)}" readonly>
+      ${btn('copy-url', '📋 Copiar', 'small primary')}
+    </div>
+    <div id="copy-feedback"></div>
+  </div>
+  ${flashHtml()}
+  ${devicesCard(g, my)}
+  <div class="card">
+    <h3>🎮 ¿A qué jugamos?</h3>
+    ${GAMES.map((j) => `
+      <div class="card" style="margin:10px 0 4px">
+        <h3>${j.emoji} ${j.name}</h3>
+        <p class="small-note">${j.desc}</p>
+        ${btn('select-game', `${j.emoji} Jugar a esto`, 'primary block', j.id)}
+      </div>`).join('')}
+    <p class="small-note">Más juegos, próximamente… Cualquiera puede elegir: la mesa entera entra al juego con los usuarios y el orden ya puestos.</p>
+  </div>
+  <div class="card">
+    ${btn('confirm-delete-group', '🗑️ Eliminar la mesa', 'danger block')}
+  </div>`;
+}
+
+// Lobby de Los Hombres Lobo: solo la configuración específica del juego.
 function lobbyScreen(g, my) {
   // En el lobby no hay máster: cualquier dispositivo configura e inicia.
   const extra = g.extraRoles || [];
-  const n = state.players.length;
   const nJug = state.players.filter((p) => p.isPlayer !== false).length;
   const wolvesFixed = (g.settings || {}).wolvesCount || null;
   const lobos = Math.max(1, Math.min(Math.max(nJug - 1, 1), wolvesFixed || wolfCountFor(nJug || 1)));
   return `
   <div class="topbar">
     <h2>🌕 ${esc(g.name)}</h2>
-    ${btn('leave', '🚪 Salir', 'small ghost')}
-  </div>
-  <div class="card">
-    <h3>🔗 Invita a tu grupo</h3>
-    <div class="linkbox">
-      <input type="text" id="share-url" value="${esc(location.origin + '/hombres_lobo/g/' + g.id)}" readonly>
-      ${btn('copy-url', '📋 Copiar', 'small primary')}
-    </div>
-    <div id="copy-feedback"></div>
+    <span style="display:flex;gap:6px">${btn('change-game', '🎲 Otro juego', 'small ghost')}${btn('leave', '🚪 Salir', 'small ghost')}</span>
   </div>
   ${flashHtml()}
-  <div class="card">
-    <h3>📱 Dispositivos (${n}) · 🎮 ${nJug} jugarán</h3>
-    <div class="players">
-      ${state.players.map((p) => `
-        <div class="player selectable" data-a="player-menu" data-p="${p.id}">
-          <span class="pname">${esc(p.name)}</span>
-          ${p.isPlayer === false ? '<span class="badge">📺 no juega</span>' : ''}
-          ${p.id === my.id ? '<span class="badge you">Tú</span>' : ''}
-        </div>`).join('')}
-    </div>
-    <p class="small-note">Toca un dispositivo para marcarlo como jugador o solo-pantalla, o para expulsarlo. Cualquiera puede configurar y empezar.</p>
-  </div>
+  ${devicesCard(g, my)}
   <div class="card">
     <h3>🎴 Roles de la partida</h3>
     <p class="small-note">Con ${nJug} jugador${nJug === 1 ? '' : 'es'} marcado${nJug === 1 ? '' : 's'}: <b>${lobos} 🐺 lobo${lobos > 1 ? 's' : ''}</b>${wolvesFixed ? ' (fijado)' : ''} y el resto según los roles activados (los huecos se rellenan con 🧑‍🌾 aldeanos). En guiado/manual el narrador no juega aunque esté marcado.</p>
@@ -248,7 +277,7 @@ function lobbyScreen(g, my) {
     <h3>🎬 Empezar</h3>
     ${btn('open-settings', '🔧 Ajustes de partida', 'block')}
     ${btn('open-start', '🎬 Empezar partida', 'primary block')}
-    ${btn('confirm-delete-group', '🗑️ Eliminar el grupo', 'danger block')}
+    ${btn('confirm-delete-group', '🗑️ Eliminar la mesa', 'danger block')}
   </div>`;
 }
 
@@ -856,6 +885,7 @@ function playersGrid(players, { title = 'Jugadores', showAlguacil = null, viewer
           ${canPeek && peeked[p.id] ? `<br><small style="color:var(--accent)">${ROLES[p.role]?.emoji || '❔'} ${ROLES[p.role]?.name || '—'}${marks(p)}</small>` : ''}
         </span>
         ${p.id === narratorId ? '<span class="badge">🔊</span>' : ''}
+        ${p.role === 'aldeano_aldeano' ? '<span class="badge" title="Sus dos caras muestran un aldeano">👥 inocente</span>' : ''}
         ${showAlguacil === p.id ? '<span class="badge">⭐</span>' : ''}
         ${p.revealedTonto ? '<span class="badge">🤪</span>' : ''}
         ${p.id === (me() || {}).id ? '<span class="badge you">Tú</span>' : ''}

@@ -3,6 +3,7 @@
 // (roles muertos, pausas dramáticas, amanecer, transiciones de fase).
 import { state, isMaster } from './store.js';
 import { stepActors, stepNeedsGhostAnnounce, NIGHT_STEPS, WINNER_LABELS } from './engine.js';
+import { ROLES } from './roles.js';
 import { NARRATION, OUTROS, narr, deathLine, improv, speak, stopSpeech, initVoice, getVoiceConfig, isNarratorSpeaking } from './narration.js';
 import { ensureAmbience, stopAmbience } from './ambience.js';
 import {
@@ -204,7 +205,11 @@ export function conductorTick() {
     const kwNote = game.keywordsActive
       ? ' Junto a vuestro rol encontraréis una palabra clave secreta: memorizadla. Si de noche la voz la pronuncia, abrid los ojos con disimulo y mirad vuestra pantalla: el mensaje irá por vosotros.'
       : '';
-    say('reveal', narr('bienvenida', String(game.seed)) + kwNote);
+    const aa = players.find((p) => p.role === 'aldeano_aldeano');
+    const aaNote = aa
+      ? ` Y una certeza antes de dormir: la carta de ${aa.name} tiene dos caras, y ambas muestran un aldeano. ${aa.name} es el Aldeano-Aldeano: su inocencia está fuera de toda duda.`
+      : '';
+    say('reveal', narr('bienvenida', String(game.seed)) + kwNote + aaNote);
     // Aunque todos hayan confirmado, la primera noche también espera al botón:
     // la gente sigue mirando su carta y comentando con los ojos abiertos.
     cancelTimer();
@@ -281,6 +286,9 @@ export function conductorTick() {
       return; // paso interno: sin narración de entrada
     }
     let text = narr(stepId, `${game.seed}:n${game.night}:s${game.stepIdx}:${stepId}`);
+    if (stepId === 'lobos' && game.night === 1 && !game.noKillNight1) {
+      text = narr('lobos_noche1', `${game.seed}:n1:lobos`);
+    }
     // Enamorados: se les llama por sus palabras clave secretas.
     if (stepId === 'enamorados' && game.keywordsActive) {
       const lovers = players.filter((p) => p.lover && p.keyword);
@@ -374,7 +382,10 @@ export function conductorTick() {
     if (game.votesLeft <= 0 && !game.pending.length && !game.winner) {
       // El pueblo suele quedarse comentando la jugada: la noche no empieza
       // hasta que alguien pulse «Empezar la noche» en su dispositivo.
-      say(`d${game.dayNum}:ocaso`, improv('ocaso'));
+      const ll = game.lastLynch;
+      const lynchNote = game.revealDead && ll && ll.role && !ll.hideRole
+        ? `Castronegro ha dictado sentencia: ${ll.name} era ${ROLES[ll.role] ? ROLES[ll.role].name : ll.role}. ` : '';
+      say(`d${game.dayNum}:ocaso`, lynchNote + improv('ocaso'));
       cancelTimer();
     }
     return;

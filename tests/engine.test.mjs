@@ -159,20 +159,26 @@ test('generateKeywords: únicas, deterministas y suficientes', () => {
   assert.ok(a.every((k) => / de /.test(k)));
 });
 
-test('lobos_reconocen: primera noche, los lobos confirman y el paso se completa', () => {
+test('lobos_reconocen: solo en primera noche sin sangre; con caza van directos a la presa', () => {
   const players = mkPlayers(['hombre_lobo', 'perro_lobo', 'vidente', 'aldeano']);
   players[1].wolfSide = true; // el perro lobo eligió la manada
-  const game = mkGame({ composition: { hombre_lobo: 1, perro_lobo: 1, vidente: 1, aldeano: 1 } });
+  const comp = { hombre_lobo: 1, perro_lobo: 1, vidente: 1, aldeano: 1 };
+  // Con caza en la noche 1 no hay paso de presentación: se reconocen al elegir.
+  const normal = computeNightSteps(mkGame({ composition: comp }), players);
+  assert.ok(!normal.includes('lobos_reconocen'), 'sin paso de reconocimiento');
+  assert.ok(normal.includes('lobos'), 'directos a la elección de víctima');
+  // Con primera noche tranquila sí se presentan (y nadie muere).
+  const game = mkGame({ composition: comp, noKillNight1: true });
   const steps = computeNightSteps(game, players);
   assert.ok(steps.includes('lobos_reconocen'));
-  assert.ok(steps.indexOf('lobos_reconocen') < steps.indexOf('lobos'));
+  assert.ok(!steps.includes('lobos'));
   assert.deepEqual(stepActors('lobos_reconocen', game, players).sort(), ['p0', 'p1']);
   game.acts.lobosSeen = { p0: true };
   assert.deepEqual(stepActors('lobos_reconocen', game, players), ['p1']);
   game.acts.lobosSeen = { p0: true, p1: true };
   assert.equal(stepActors('lobos_reconocen', game, players), null);
   // La noche 2 ya no incluye el reconocimiento.
-  const s2 = computeNightSteps(mkGame({ night: 2, composition: game.composition }), players);
+  const s2 = computeNightSteps(mkGame({ night: 2, composition: comp, noKillNight1: true }), players);
   assert.ok(!s2.includes('lobos_reconocen'));
 });
 
@@ -353,12 +359,13 @@ test('resolveDawn: gruñido del oso con lobo vecino', () => {
   assert.ok(res.logs.some((l) => l.txt.includes('oso')));
 });
 
-test('resolveDawn: pregunta de la gitana la responde el primer muerto', () => {
+test('resolveDawn: la pregunta de la gitana la responden todos los muertos a una', () => {
   const players = mkPlayers(['hombre_lobo', 'gitana', 'aldeano', 'aldeano']);
   players[3].alive = false; players[3].deathAt = 1;
   const game = mkGame({ acts: { gitanaQIdx: 0 }, deathTick: 1 });
   const res = resolveDawn(game, players);
-  assert.ok(res.gitanaAnnounce.includes('J3'), 'el primer muerto hace de espíritu');
+  assert.ok(res.gitanaAnnounce.includes('todos a una'), 'los espíritus responden en coro');
+  assert.ok(!res.gitanaAnnounce.includes('J3'), 'sin médium concreto: responden entre todos');
 });
 
 test('resolveDawn: la gitana puede escribir su propia pregunta', () => {
@@ -367,7 +374,7 @@ test('resolveDawn: la gitana puede escribir su propia pregunta', () => {
   const game = mkGame({ acts: { gitanaText: '¿Era Bruno el que roncaba anoche?' }, deathTick: 1 });
   const res = resolveDawn(game, players);
   assert.ok(res.gitanaAnnounce.includes('¿Era Bruno el que roncaba anoche?'));
-  assert.ok(res.gitanaAnnounce.includes('J3'));
+  assert.ok(res.gitanaAnnounce.includes('todos a una'), 'la responden los muertos en coro');
 });
 
 test('resolveVote: linchamiento normal con revelación', () => {
@@ -532,7 +539,7 @@ test('partida completa: los lobos devoran, el pueblo lincha, gana el pueblo', ()
 
   // Noche 1
   game.steps = computeNightSteps(game, ps);
-  assert.deepEqual(game.steps, ['durmiendo', 'vidente', 'lobos_reconocen', 'lobos', 'bruja', 'amanecer']);
+  assert.deepEqual(game.steps, ['durmiendo', 'vidente', 'lobos', 'bruja', 'amanecer']);
   game.acts = { videnteTarget: 'p0', wolfVictim: 'p4', brujaDone: true };
   const dawn1 = resolveDawn(game, ps);
   ps = dawn1.players;

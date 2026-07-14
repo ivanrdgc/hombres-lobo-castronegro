@@ -4,7 +4,7 @@ import { db, doc, collection, onSnapshot, query, orderBy } from './fb.js';
 const LS_KEY = 'hlc_sessions_v1';
 
 export const state = {
-  route: { view: 'landing', slug: null }, // landing | group
+  route: { view: 'landing', slug: null }, // landing (crear mesa) | group
   group: null,        // datos del doc del grupo (o null)
   groupMissing: false,
   players: [],        // subcolección ordenada por asiento
@@ -52,13 +52,14 @@ export function clearSession(slug) {
 // ——— Rutas ———
 export function parseRoute() {
   const path = location.pathname;
-  let m = path.match(/^\/hombres_lobo\/g\/([a-z0-9-]+)\/?$/);
+  // La mesa es lo primero: /g/<slug> es la URL canónica del grupo.
+  let m = path.match(/^\/g\/([a-z0-9-]+)\/?$/);
   if (m) return { view: 'group', slug: m[1] };
-  // Enlaces antiguos sin prefijo: redirigir en silencio.
-  m = path.match(/^\/g\/([a-z0-9-]+)\/?$/);
-  if (m) { history.replaceState(null, '', '/hombres_lobo/g/' + m[1]); return { view: 'group', slug: m[1] }; }
-  if (/^\/hombres_lobo\/?$/.test(path)) return { view: 'landing', slug: null };
-  return { view: 'menu', slug: null }; // portada: menú de juegos
+  // Enlaces antiguos con prefijo de juego: redirigir en silencio.
+  m = path.match(/^\/hombres_lobo\/g\/([a-z0-9-]+)\/?$/);
+  if (m) { history.replaceState(null, '', '/g/' + m[1]); return { view: 'group', slug: m[1] }; }
+  if (/^\/hombres_lobo\/?$/.test(path)) history.replaceState(null, '', '/');
+  return { view: 'landing', slug: null }; // portada: crear la mesa
 }
 
 export function navigate(path) {

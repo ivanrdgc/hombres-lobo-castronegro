@@ -22,6 +22,8 @@ try {
   for (const n of ['Bea', 'Coco', 'Dani']) { const p = await mk(n.toLowerCase()); await p.goto(url); await p.fill('#inp-name', n); await p.click('[data-a=join]'); await p.waitForSelector('text=/Dispositivos/'); }
   await ana.waitForSelector('text=Dispositivos (4)');
   // Composición determinista: vidente + bruja (+1 lobo) — quitamos cazador y cupido.
+  await ana.click('button[data-a=select-game]');
+  await ana.waitForSelector('[data-a=open-roles]');
   await ana.click('[data-a=open-roles]');
   for (const r of ['cazador', 'cupido']) { await ana.click(`.roletoggle.on[data-p=${r}]`); await ana.waitForSelector(`.roletoggle[data-p=${r}]:not(.on)`); }
   await ana.click('button[data-a=close-modal]');
@@ -57,12 +59,7 @@ try {
   ok('el máster ve el resultado de la vidente para enseñárselo');
   await ana.click('button[data-a=act-vidente-seen]');
 
-  // Reconocimiento de la manada: botón «Hecho».
-  await wait(ana, (s) => s.steps[s.stepIdx] === 'lobos_reconocen', 'reconocimiento');
-  await ana.click('button[data-a=guided-skip]');
-  ok('reconocimiento resuelto por el máster');
-
-  // Lobos: el máster registra la víctima (la vidente).
+  // Lobos: sin paso de reconocimiento (hay caza), el máster registra la víctima.
   await wait(ana, (s) => s.steps[s.stepIdx] === 'lobos', 'lobos');
   await ana.click(`.actionpanel .player.selectable:has-text("${vidente.name}")`);
   await ana.click('button[data-a=act-lobos]');
@@ -89,7 +86,7 @@ try {
   await ana.waitForSelector('[data-a=confirm-delete-group]');
   await ana.click('[data-a=confirm-delete-group]');
   await ana.click('[data-a=delete-group-confirm]');
-  await ana.waitForURL(BASE + '/hombres_lobo');
+  await ana.waitForURL(BASE + '/');
   ok('limpieza');
 } catch (e) { fail++; console.log('✖ EXCEPCIÓN:', e.message); }
 await browser.close();
