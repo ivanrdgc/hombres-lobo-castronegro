@@ -131,6 +131,19 @@ try {
   await ana.waitForSelector('[data-a=open-roles]');
   await pages.bruno.waitForSelector('[data-a=open-roles]', { timeout: 15000 });
   ok('elegir juego lleva a toda la mesa al lobby de Castronegro');
+
+  // Narrador elegido desde la lista de dispositivos + explicación del juego.
+  await ana.click('.player[data-a=player-menu]:has-text("Ana")');
+  await ana.click('button[data-a=narrator-device]');
+  await ana.waitForSelector('.player:has-text("Ana"):has-text("🔊 narrador")');
+  ok('narrador configurado desde la mesa (recordado para los modos automáticos)');
+  await ana.click('[data-a=open-explain]');
+  await ana.waitForSelector('text=Cómo se juega');
+  await ana.click('button[data-a=explain-speak]');
+  await ana.waitForFunction(() => window.__hlc.group && window.__hlc.group.explain && window.__hlc.group.explain.nonce > 0);
+  ok('explicación: modal con introducción y petición de lectura al narrador');
+  await ana.click('button[data-a=close-modal]');
+  await pace(ana);
   await ana.click('[data-a=open-roles]');
   await ana.waitForSelector('text=Roles de la partida');
   check(await ana.isVisible('.roletoggle.locked:has-text("Hombre Lobo")'), 'lobo siempre activo (bloqueado)');

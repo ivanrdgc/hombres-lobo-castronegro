@@ -46,6 +46,18 @@ export async function selectGame(gameId) {
   await updateDoc(gref(state.route.slug), { currentGame: gameId || null });
 }
 
+// Elegir desde la mesa el dispositivo que narrará las partidas automáticas
+// (se recuerda para todos los juegos; al empezar se puede cambiar igualmente).
+export async function setNarratorDevice(pid) {
+  await updateDoc(gref(state.route.slug), { lastNarratorId: pid || null });
+}
+
+// Pedir que la explicación del juego se lea en voz alta: la reproduce el
+// dispositivo narrador (o, si no hay, el que la pidió).
+export async function requestExplain() {
+  await updateDoc(gref(state.route.slug), { explain: { nonce: Date.now(), by: state.session.pid } });
+}
+
 export async function createGroup(userName, groupName) {
   const slug = slugify(groupName);
   if (!slug) throw new Error('Nombre de grupo no válido.');

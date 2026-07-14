@@ -4,6 +4,7 @@
 import { state, isMaster } from './store.js';
 import { stepActors, stepNeedsGhostAnnounce, NIGHT_STEPS, WINNER_LABELS } from './engine.js';
 import { ROLES } from './roles.js';
+import { EXPLANATIONS } from './explain.js';
 import { NARRATION, OUTROS, narr, deathLine, improv, speak, stopSpeech, initVoice, getVoiceConfig, isNarratorSpeaking } from './narration.js';
 import { ensureAmbience, stopAmbience } from './ambience.js';
 import {
@@ -171,9 +172,30 @@ async function requestWakeLock() {
 }
 
 // Llamado en cada cambio de estado. Decide qué narrar y qué avanzar.
+let explainSeen = null; // `${grupo}:${nonce}` — para no releer al recargar
+
 export function conductorTick() {
   const g = state.group;
   const game = g && g.game;
+  // Explicación en voz alta (en el lobby): la lee el dispositivo narrador
+  // elegido en la mesa; si no hay, el dispositivo que la pidió.
+  if (g && g.explain && g.explain.nonce) {
+    const cur = `${g.id}:${g.explain.nonce}`;
+    if (explainSeen === null || explainSeen.split(':')[0] !== g.id) {
+      explainSeen = cur; // primera vista del grupo: no releer peticiones viejas
+    } else if (explainSeen !== cur) {
+      explainSeen = cur;
+      const myPid = state.session && state.session.pid;
+      const narrOk = state.players.some((p) => p.id === g.lastNarratorId);
+      const shouldSpeak = narrOk ? myPid === g.lastNarratorId : myPid === g.explain.by;
+      if (shouldSpeak && g.status === 'lobby') {
+        const ex = EXPLANATIONS[g.currentGame] || EXPLANATIONS.hombres_lobo;
+        initVoice();
+        stopSpeech();
+        setTimeout(() => speak(ex.spoken, { muted }), 350);
+      }
+    }
+  }
   if (!g || !game || game.mode !== 'auto' || !isMaster()) {
     cancelTimer();
     stopAmbience();

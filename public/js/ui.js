@@ -2,6 +2,7 @@
 import { state, me, isMaster } from './store.js';
 import { ROLES, TEAMS, EXPANSIONS, wolfCountFor, isWolfSide, isWolfTeamRole, OFFICIAL_MIN_PLAYERS, NEIGHBOR_ROLES } from './roles.js';
 import { NIGHT_STEPS, stepActors, GITANA_QUESTIONS, WINNER_LABELS } from './engine.js';
+import { EXPLANATIONS } from './explain.js';
 import { NARRATION, narr, listSpanishVoices, getVoiceConfig, CLOUD_VOICES, cloudAvailable } from './narration.js';
 import { isMuted } from './conductor.js';
 
@@ -211,10 +212,11 @@ function devicesCard(g, my) {
           <span class="draghandle" data-a="noop" data-drag="${p.id}" title="Arrastra para ordenar">⠿</span>
           <span class="pname">${esc(p.name)}</span>
           ${p.isPlayer === false ? '<span class="badge">📺 no juega</span>' : ''}
+          ${p.id === g.lastNarratorId ? '<span class="badge">🔊 narrador</span>' : ''}
           ${p.id === my.id ? '<span class="badge you">Tú</span>' : ''}
         </div>`).join('')}
     </div>
-    <p class="small-note">🪑 La lista sigue el orden de la mesa (sentido horario): arrastra el asa ⠿ para ajustarlo; se recuerda entre partidas. Toca un dispositivo para marcarlo como jugador o solo-pantalla, o para expulsarlo.</p>
+    <p class="small-note">🪑 La lista sigue el orden de la mesa (sentido horario): arrastra el asa ⠿ para ajustarlo; se recuerda entre partidas. Toca un dispositivo para marcarlo como jugador o solo-pantalla, elegirlo como 🔊 narrador de los modos automáticos (también recordado) o expulsarlo.</p>
   </div>`;
 }
 
@@ -264,6 +266,11 @@ function lobbyScreen(g, my) {
   </div>
   ${flashHtml()}
   ${devicesCard(g, my)}
+  <div class="card">
+    <h3>📖 ¿Primera vez?</h3>
+    <p class="small-note">Una introducción ambientada y cómo se juega desde el móvil — con lectura en voz alta en el dispositivo narrador.</p>
+    ${btn('open-explain', '📖 Explicación del juego', 'block')}
+  </div>
   <div class="card">
     <h3>🎴 Roles de la partida</h3>
     <p class="small-note">Con ${nJug} jugador${nJug === 1 ? '' : 'es'} marcado${nJug === 1 ? '' : 's'}: <b>${lobos} 🐺 lobo${lobos > 1 ? 's' : ''}</b>${wolvesFixed ? ' (fijado)' : ''} y el resto según los roles activados (los huecos se rellenan con 🧑‍🌾 aldeanos). En guiado/manual el narrador no juega aunque esté marcado.</p>
@@ -1126,6 +1133,7 @@ function renderModal() {
     'show-role': showRoleModal,
     'thief-swap': thiefSwapModal,
     'vote-confirm': voteConfirmModal,
+    'explain': explainModal,
   }[m.type];
   if (!inner) return '';
   // El modal lleva data-a="noop" para que los clics en su interior no lleguen
@@ -1265,13 +1273,27 @@ function startModal() {
     ${btn('close-modal', 'Cancelar', 'ghost block')}`;
 }
 
+function explainModal() {
+  const ex = EXPLANATIONS[(state.group || {}).currentGame] || EXPLANATIONS.hombres_lobo;
+  const narrP = state.players.find((p) => p.id === (state.group || {}).lastNarratorId);
+  return `<h3>${ex.title}</h3>
+    ${ex.intro.map((t) => `<p style="margin:9px 0">${t}</p>`).join('')}
+    <h3 style="margin-top:14px">🎲 Cómo se juega</h3>
+    ${ex.how.map((t) => `<p class="small-note" style="margin:8px 0">• ${t}</p>`).join('')}
+    ${btn('explain-speak', '🔊 Leer en voz alta', 'violet block')}
+    <p class="small-note" style="text-align:center">${narrP ? `Sonará en el dispositivo narrador: <b>${esc(narrP.name)}</b>.` : 'No hay narrador elegido: sonará en este dispositivo.'}</p>
+    ${btn('close-modal', '✔️ Listo', 'primary block')}`;
+}
+
 function playerMenuModal(m) {
   const p = state.players.find((x) => x.id === m.pid);
   if (!p) return '';
   const self = p.id === (me() || {}).id;
   const active = p.isPlayer !== false;
+  const isNarr = state.group.lastNarratorId === p.id;
   return `<h3>📱 ${esc(p.name)}${self ? ' (tú)' : ''}</h3>
     ${btn('toggle-player', active ? '📺 No jugará (solo pantalla o narrador)' : '🎮 Jugará la partida', active ? 'block' : 'violet block', p.id)}
+    ${btn('narrator-device', isNarr ? '🔇 Dejará de ser el narrador' : '🔊 Narrará en automático (pondrá la voz)', isNarr ? 'block' : 'violet block', p.id)}
     ${self ? '' : btn('kick', '👢 Expulsar del grupo', 'danger block', p.id)}
     ${btn('close-modal', 'Cancelar', 'ghost block')}`;
 }
