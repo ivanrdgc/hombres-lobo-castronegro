@@ -458,7 +458,8 @@ function roleCard(my, g, mini = false) {
   }
   const extras = [];
   if (my.keyword) {
-    extras.push(`🔑 Tu palabra clave: <b>${esc(my.keyword)}</b>. Si el narrador la pronuncia, el mensaje va por ti: abre los ojos con disimulo y mira tu pantalla.`);
+    const renewed = my.kwRenewedNight != null;
+    extras.push(`🔑 Tu palabra clave${renewed ? ` <b>se RENOVÓ la noche ${my.kwRenewedNight}</b> (la anterior ya se pronunció). Ahora es` : ''}: <b>${esc(my.keyword)}</b>. Si el narrador la pronuncia, el mensaje va por ti: abre los ojos con disimulo y mira tu pantalla.`);
   }
   if ((my.videnteLog || []).length) {
     const nameOf = (pid) => state.players.find((p) => p.id === pid)?.name || '¿?';
@@ -859,8 +860,8 @@ function pendingPanel(head, g, my, players) {
     case 'cabeza_pick': {
       if (my.id === head.pid) {
         return `<div class="actionpanel"><h3>🐐 Tu sacrificio no será en vano</h3>
-          <p class="hint">Decide quién será el único que podrá registrar la decisión del pueblo mañana.</p>
-          ${pickList(players, { exclude: [my.id], selKey: key })}${btn('cabeza-pick', '👉 Elegir', 'primary block')}${btn('cabeza-skip', 'Que voten todos', 'ghost block')}</div>`;
+          <p class="hint">Regla oficial: anuncia en voz alta quiénes tendrán derecho a votar mañana (los demás callan en la votación). En la app, elige además quién registrará esa decisión.</p>
+          ${pickList(players, { exclude: [my.id], selKey: key })}${btn('cabeza-pick', '👉 Será quien registre el voto', 'primary block')}${btn('cabeza-skip', 'Que vote todo el pueblo', 'ghost block')}</div>`;
       }
       return '<div class="narration">🐐 El Cabeza de Turco toma su última decisión…</div>';
     }

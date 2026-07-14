@@ -6,6 +6,7 @@ import {
 } from '../public/js/roles.js';
 import {
   computeNightSteps, stepActors, resolveDawn, resolveVote, applyDeathsChain, checkWinner,
+  rotateKeyword,
 } from '../public/js/engine.js';
 
 const mkPlayers = (roles) => roles.map((role, i) => ({
@@ -543,6 +544,59 @@ test('checkWinner: el perro lobo que elige lobos cuenta como lobo', () => {
   ps[1].alive = false;
   assert.equal(checkWinner(ps), 'lobos');
   assert.equal(effectiveTeam(ps[0]), 'lobos');
+});
+
+test('checkWinner: lobos + albino a solas — la caza sigue si el albino no está en minoría', () => {
+  const mk = (role, extra = {}) => ({ id: role + Math.random(), role, alive: true, powers: {}, ...extra });
+  // 1 lobo + 1 albino: nadie domina el voto → la partida continúa.
+  assert.equal(checkWinner([mk('hombre_lobo'), mk('lobo_albino')]), null);
+  // 2 lobos + 1 albino: la manada controla el voto → ganan los lobos.
+  assert.equal(checkWinner([mk('hombre_lobo'), mk('hombre_lobo'), mk('lobo_albino')]), 'lobos');
+  // Solo lobos, sin albino: victoria lobuna clásica.
+  assert.equal(checkWinner([mk('hombre_lobo'), mk('hombre_lobo')]), 'lobos');
+});
+
+test('applyDeathsChain: el castigo del Anciano desarma al Cazador', () => {
+  // Anciano y cazador enamorados: linchan al anciano → castigo → el cazador
+  // muere de pena, pero SIN disparo (los aldeanos perdieron sus poderes).
+  const players = [
+    { id: 'a', role: 'anciano', alive: true, lover: true, powers: {} },
+    { id: 'c', role: 'cazador', alive: true, lover: true, powers: {} },
+    { id: 'l', role: 'hombre_lobo', alive: true, powers: {} },
+    { id: 'x', role: 'aldeano', alive: true, powers: {} },
+  ];
+  const game = { powersLost: false };
+  const res = applyDeathsChain(players, [{ pid: 'a', cause: 'linchado' }], game);
+  assert.equal(res.powersLost, true);
+  assert.ok(!res.pendings.some((pd) => pd.type === 'cazador'), 'sin flecha final');
+  // Sin castigo, el mismo escenario sí dispara.
+  const players2 = players.map((p) => ({ ...p, alive: true }));
+  const res2 = applyDeathsChain(players2, [{ pid: 'c', cause: 'linchado' }], { powersLost: false });
+  assert.ok(res2.pendings.some((pd) => pd.type === 'cazador'));
+});
+
+test('rotateKeyword: renueva desde la reserva y avisa; sin reserva no rompe', () => {
+  const game = { keywordsActive: true, kwPool: ['Faro de Bruma', 'Puente de Hielo'], kwIdx: 0, night: 2 };
+  const players = [{ id: 'p1', keyword: 'Luna de Plata' }, { id: 'p2', keyword: 'Brasa de Otoño' }];
+  const patch1 = rotateKeyword(game, players, 'p1');
+  assert.deepEqual(patch1, { p1: { keyword: 'Faro de Bruma', kwRenewedNight: 2 } });
+  assert.equal(game.kwIdx, 1);
+  const patch2 = rotateKeyword(game, players, 'p2');
+  assert.equal(patch2.p2.keyword, 'Puente de Hielo');
+  // Reserva agotada: no cambia nada (mejor palabra usada que ninguna).
+  assert.deepEqual(rotateKeyword(game, players, 'p1'), {});
+  // Sin palabras clave activas: no-op.
+  assert.deepEqual(rotateKeyword({ keywordsActive: false, kwPool: ['X'], kwIdx: 0 }, players, 'p1'), {});
+});
+
+test('resolveDawn: el oso también se anuncia por voz (osoAnnounce)', () => {
+  const players = mkPlayers(['hombre_lobo', 'domador', 'aldeano', 'aldeano']);
+  const res = resolveDawn(mkGame({ acts: {} }), players);
+  assert.ok(res.osoAnnounce && res.osoAnnounce.includes('oso'), 'gruñido con locución');
+  const lejos = mkPlayers(['hombre_lobo', 'aldeano', 'domador', 'aldeano']);
+  // vecinos del domador: aldeano y aldeano → sin gruñido
+  const res2 = resolveDawn(mkGame({ acts: {} }), lejos);
+  assert.equal(res2.osoAnnounce, null);
 });
 
 test('aliveNeighbors: salta a los muertos en el círculo', () => {

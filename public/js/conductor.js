@@ -364,6 +364,7 @@ export function conductorTick() {
         parts.push(narr('amanecer_sin_muertes', dawnSalt));
       }
       if (game.lastDawn && game.lastDawn.cuervo) parts.push(game.lastDawn.cuervo);
+      if (game.lastDawn && game.lastDawn.oso) parts.push(game.lastDawn.oso);
       if (game.lastDawn && game.lastDawn.gitana) parts.push(game.lastDawn.gitana);
       if (Math.random() < 0.5) parts.push(improv('amanecer'));
       const aliveCount = players.filter((p) => p.alive).length;

@@ -243,7 +243,8 @@ export function applyDeathsChain(players, initialDeaths, game) {
       const partner = players.find((x) => x.alive && x.lover && x.id !== pid);
       if (partner) queue.push({ pid: partner.id, cause: 'pena' });
     }
-    if (p.role === 'cazador' && cause !== 'pena_sin_disparo') {
+    // El castigo del Anciano también desarma al Cazador (pierde su disparo).
+    if (p.role === 'cazador' && cause !== 'pena_sin_disparo' && !powersLost) {
       pendings.push({ type: 'cazador', pid });
     }
     if (game.alguacilId === pid) {
@@ -333,12 +334,14 @@ export function resolveDawn(game, playersIn) {
   };
   if (infectedPid) gameUpdates.infectoPowerUsed = true;
 
-  // Gruñido del oso.
+  // Gruñido del oso (la voz lo anuncia también al amanecer).
+  let osoAnnounce = null;
   const domador = players.find((p) => p.alive && p.role === 'domador');
   if (domador) {
     const neigh = aliveNeighbors(players, domador.id);
     if (domador.infected || neigh.some((x) => isWolfSide(x))) {
       logs.push({ kind: 'evento', txt: '🐻 Se oye un gruñido: el oso del Domador huele a un hombre lobo cerca.' });
+      osoAnnounce = 'Y un detalle más… se oye un gruñido grave. El oso del Domador está inquieto: huele a hombre lobo entre los vecinos de su amo.';
     }
   }
   // El cuervo señala públicamente (y la voz lo anuncia al amanecer).
@@ -364,7 +367,7 @@ export function resolveDawn(game, playersIn) {
     }
   }
 
-  return { players, logs, pendings: chain.pendings, gameUpdates, deaths: chain.deaths, gitanaAnnounce, cuervoAnnounce };
+  return { players, logs, pendings: chain.pendings, gameUpdates, deaths: chain.deaths, gitanaAnnounce, cuervoAnnounce, osoAnnounce };
 }
 
 // ——— Condiciones de victoria ———
@@ -381,7 +384,14 @@ export function checkWinner(players) {
   const sectario = alive.find((p) => p.role === 'sectario');
   if (sectario && !alive.some((p) => p.id !== sectario.id && p.sect !== sectario.sect)) return 'sectario';
   if (wolfish.length === 0) return 'pueblo';
-  if (alive.every((p) => isWolfSide(p) || p.role === 'lobo_albino')) return 'lobos';
+  if (alive.every((p) => isWolfSide(p))) {
+    // Todo lo que queda es manada. Si el Albino sigue entre ellos, oficialmente
+    // la caza continúa (él busca quedarse solo)… salvo que la manada lo supere
+    // en el voto del día: entonces su suerte está echada y ganan los lobos.
+    const albinos = alive.filter((p) => p.role === 'lobo_albino').length;
+    if (!albinos || alive.length - albinos > albinos) return 'lobos';
+    return null;
+  }
 
   // Paridad: si los lobos igualan o superan al resto, el pueblo ya no puede
   // ganar la votación y la partida termina… salvo que quede un Cazador o una
@@ -475,6 +485,19 @@ export function annotateDeaths(deaths, byId, logs, game) {
     }[d.cause] || 'muerto';
     logs.push({ kind: 'muerte', txt: `💀 ${p.name} ha sido ${causeTxt}.${roleTxt}` });
   }
+}
+
+// La palabra clave se «quema» al pronunciarse en una llamada (enamorados,
+// encantados): se renueva desde la reserva y se avisa al jugador en su panel.
+// Así, si más adelante hay que volver a identificarlo en oculto, la palabra
+// pronunciada antes no permite atar cabos. Devuelve un playerPatch (o {}).
+export function rotateKeyword(game, players, pid) {
+  const pool = game.kwPool || [];
+  const idx = game.kwIdx || 0;
+  const me = players.find((p) => p.id === pid);
+  if (!game.keywordsActive || !me || !me.keyword || idx >= pool.length) return {};
+  game.kwIdx = idx + 1;
+  return { [pid]: { keyword: pool[idx], kwRenewedNight: game.night } };
 }
 
 // Efecto del ángel devorado la primera noche.

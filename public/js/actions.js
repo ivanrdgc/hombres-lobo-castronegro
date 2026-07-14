@@ -6,7 +6,7 @@ import { state, slugify, randomId, saveSession, clearSession, navigate } from '.
 import { dealRoles, ROLES, isWolfSide, isWolfTeamRole, OFFICIAL_MIN_PLAYERS, CASUAL_MIN_PLAYERS, generateKeywords } from './roles.js';
 import {
   computeNightSteps, stepActors, resolveDawn, resolveVote, applyDeathsChain,
-  checkWinner, annotateDeaths, GITANA_QUESTIONS,
+  checkWinner, annotateDeaths, rotateKeyword, GITANA_QUESTIONS,
 } from './engine.js';
 
 const sanitize = (x) => JSON.parse(JSON.stringify(x === undefined ? null : x));
@@ -274,9 +274,11 @@ export async function startGame(mode, narratorId) {
     // Palabras clave: solo hacen falta si hay roles que designan jugadores en
     // secreto durante la noche (enamorados de Cupido, encantados del Gaitero).
     const keywordsActive = mode === 'auto' && !!(composition.cupido || composition.gaitero);
-    const kws = keywordsActive ? generateKeywords(eligible.length, seed + 7) : [];
+    // Se generan de sobra: las pronunciadas se renuevan desde esta reserva.
+    const kws = keywordsActive ? generateKeywords(eligible.length + 20, seed + 7) : [];
     const kwOf = {};
     eligible.forEach((p, i) => { kwOf[p.id] = kws[i] || null; });
+    const kwPool = keywordsActive ? kws.slice(eligible.length) : [];
 
     // Mitades de la mesa para el Abominable Sectario.
     const sorted = eligible.slice().sort((a, b) => (a.order || 0) - (b.order || 0));
@@ -333,6 +335,7 @@ export async function startGame(mode, narratorId) {
         phase: mode === 'manual' ? 'manual' : 'reveal',
         stepIdx: 0, steps: [], acts: {},
         vote: null, votesLeft: 0, pending: [], winner: null, keywordsActive,
+        kwPool, kwIdx: 0,
         wolvesKnown: false, hermanasKnown: false, hermanosKnown: false,
         alguacilId: null, soloVoteId: null, juezArmed: null,
         powersLost: false, wolfDeathOccurred: false, caballeroRust: null,
@@ -483,6 +486,7 @@ export async function runDawn() {
       events: [...logs, ...res.logs].map((l) => l.txt),
       gitana: res.gitanaAnnounce || null,
       cuervo: res.cuervoAnnounce || null,
+      oso: res.osoAnnounce || null,
     };
     if (winner) { game.phase = 'end'; game.winner = winner; }
     else game.phase = 'day';
@@ -557,7 +561,7 @@ export const actCupido = (a, b) => nightAction('cupido', (game) => {
 
 export const confirmLover = () => nightAction('enamorados', (game, ps, myId) => {
   game.acts.loversSeen = { ...(game.acts.loversSeen || {}), [myId]: true };
-  return {};
+  return { playerPatches: rotateKeyword(game, ps, myId) }; // la palabra sonó: se renueva
 });
 
 export const actNinoSalvaje = (pid) => nightAction('nino_salvaje', (game, ps, myId) => ({
@@ -694,7 +698,7 @@ export const actGaitero = (targets) => nightAction('gaitero', (game) => {
 
 export const confirmEncantado = () => nightAction('encantados', (game, ps, myId) => {
   game.acts.encantadosSeen = { ...(game.acts.encantadosSeen || {}), [myId]: true };
-  return {};
+  return { playerPatches: rotateKeyword(game, ps, myId) }; // la palabra sonó: se renueva
 });
 
 export const actGitana = (qIdx) => nightAction('gitana', (game) => {
@@ -769,6 +773,7 @@ function applyVoteResolution(game, ps, allPlayers, choice) {
 export async function armJuez() {
   await gameTx((game, players) => {
     if (game.phase !== 'day' || game.winner) return null;
+    if (game.powersLost) return null; // el castigo del Anciano también alcanza al Juez
     const meP = players.find((p) => p.id === state.session.pid);
     if (!meP || !meP.alive || meP.role !== 'juez' || (meP.powers || {}).juez === false) return null;
     game.juezArmed = meP.id;
