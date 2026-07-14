@@ -405,7 +405,7 @@ function narratorPanel(g) {
   }
   const needsUnlock = !state.ui.voiceUnlocked && !isMuted();
   return `<div class="card"><h3>🎙️ Eres el narrador</h3>
-    <p class="small-note">Tu dispositivo dirige la partida con su voz: mantén la pantalla encendida y el volumen alto. No juegas con rol, pero puedes consultar los roles de la mesa y forzar pasos desde la barra inferior.</p>
+    <p class="small-note">Tu dispositivo dirige la partida con su voz: mantén la pantalla encendida y el volumen alto. No juegas con rol; desde la barra inferior puedes repetir la última locución o terminar la partida.</p>
     ${needsUnlock ? `<div class="flash">🔊 Toca para activar la voz del narrador en este dispositivo.</div>${btn('unlock-voice', '🔊 Activar la narración', 'primary block')}` : ''}
     ${info ? `<p style="margin-top:6px">${info}</p>` : ''}</div>`;
 }
@@ -1110,13 +1110,13 @@ function masterToolsBar(g) {
     // En guiado/manual: solo la chuleta de cartas de la partida.
     return `<div class="mastertools"><div class="inner">${btn('open-game-roles', '🎴 Cartas', 'ghost')}</div></div>`;
   }
-  // Todos los jugadores pueden forzar un paso atascado y terminar la partida;
-  // el narrador-jugador tiene además la voz y la vista de roles.
+  // Todos los jugadores pueden repetir la locución y terminar la partida.
+  // Sin botón de «forzar»: se insiste hasta que el responsable actúe (repetir,
+  // avisos, repaso de roles) o, si alguien se ha ido, se termina la partida.
   return `<div class="mastertools"><div class="inner">
     ${btn('voice-open', isMuted() ? '🔇 Voz' : '🗣️ Voz', 'ghost')}
     ${btn('open-game-roles', '🎴 Cartas', 'ghost')}
     ${btn('repeat-last', '🔁 Repetir', 'ghost')}
-    ${btn('force-advance', '⏭️ Forzar', 'ghost')}
     ${btn('end-game', '🏳️ Fin', 'ghost')}
   </div></div>
   ${narrator ? '<p class="small-note" style="text-align:center">🔊 Mantén esta pantalla encendida: tu dispositivo es el narrador.</p>' : ''}`;

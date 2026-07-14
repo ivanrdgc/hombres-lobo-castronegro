@@ -415,11 +415,6 @@ const handlers = {
   },
   'view-roles': () => { if (isMaster()) { state.ui.modal = { type: 'view-roles' }; render(); } },
   'repeat-last': () => guard(() => A.requestRepeat()),
-  'force-advance': () => guard(async () => {
-    const g = state.group.game;
-    if (g.phase === 'night' && g.steps[g.stepIdx] === 'amanecer') await A.runDawn();
-    else await A.forceAdvance();
-  }),
   'end-game': () => {
     const my = me();
     if (isMaster() || (my && my.inGame)) { state.ui.modal = { type: 'end-game' }; render(); }
