@@ -29,6 +29,7 @@ onChange(() => {
     state.ui.brujaHeal = false;
     state.ui.narratorWho = false; // el «¿quién es?» se oculta al cambiar de paso
     state.ui.refreshOpen = false;
+    state.ui.revealOpen = false;
     if (state.group && state.group.status === 'playing') {
       // Los avisos tipo «selecciona primero a un jugador» caducan al cambiar
       // de fase o de paso (fuera de partida se conservan: p. ej. «grupo eliminado»).
@@ -281,7 +282,8 @@ const handlers = {
   'start-manual': () => guard(() => A.startGame('manual')),
   'start-guided': () => guard(() => A.startGame('guiado')),
 
-  'confirm-role-seen': () => guard(() => A.confirmRoleSeen()),
+  'open-reveal-role': () => { state.ui.revealOpen = true; render(); },
+  'confirm-role-seen': () => guard(async () => { await A.confirmRoleSeen(); state.ui.revealOpen = false; }),
   'confirm-role-refresh': () => guard(async () => { await A.confirmRoleRefresh(); state.ui.refreshOpen = false; }),
   'open-role-refresh': () => { state.ui.refreshOpen = true; render(); },
   'toggle-rolecard': () => {

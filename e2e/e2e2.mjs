@@ -213,8 +213,9 @@ try {
   let st = await hlc(ana);
   check(st.players.filter((p) => p.role).length === 3, 'el máster no recibe rol; los otros 3 sí');
   check(await ana.isVisible('.player:has-text("Bruno") small'), 'máster ve los roles de todos');
+  await pages.bruno.click('[data-a=open-reveal-role]');
   await pages.bruno.waitForSelector('.rolecard .rname');
-  ok('los jugadores ven su carta en modo manual');
+  ok('los jugadores despliegan su carta también en modo manual');
 
   // Marcar una muerte (sin causa).
   await ana.click('.player[data-a=manual-player]:has-text("Carla")');
@@ -292,6 +293,8 @@ try {
   let kwChecked = false;
   for (const p of st.players.filter((x) => x.inGame)) {
     const pg = pages[p.name.toLowerCase()];
+    await pg.waitForSelector('[data-a=open-reveal-role]');
+    await pg.click('[data-a=open-reveal-role]');
     await pg.waitForSelector('[data-a=confirm-role-seen]');
     if (kwActive && !kwChecked) {
       check(await pg.isVisible('text=/palabra clave/i'), 'la palabra clave aparece junto al rol');

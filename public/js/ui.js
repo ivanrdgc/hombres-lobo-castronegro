@@ -418,15 +418,22 @@ function phaseChip(game) {
   return '<span class="chip">🏁 Fin</span>';
 }
 
+// Al repartir, la carta solo se despliega bajo demanda: los móviles quedan boca
+// arriba (y a menudo desbloqueados) sobre la mesa, y nadie debe verla de reojo.
+function revealGate(g, my) {
+  return state.ui.revealOpen
+    ? `${roleCard(my, g)}${btn('confirm-role-seen', '✅ He visto mi rol', 'primary block')}`
+    : `<div class="card"><p class="small-note">🎴 Tu carta está lista. Despliégala cuando nadie mire tu pantalla, memorízala… y confirma.</p>
+       ${btn('open-reveal-role', '👁 Ver mi rol', 'primary block')}</div>`;
+}
+
 function revealPhase(g, my) {
   const pend = state.players.filter((p) => p.inGame && !p.roleSeen);
-  // Antes de confirmar: carta completa. Después: oculta al instante (los móviles
-  // suelen quedarse desbloqueados sobre la mesa) y pantalla uniforme para todos.
+  // Tras confirmar: carta oculta al instante y pantalla uniforme para todos.
   if (!my.roleSeen && my.inGame) {
     return `
     <div class="narration">📜 ${esc(narr('bienvenida', String(g.game.seed)))}</div>
-    ${roleCard(my, g)}
-    ${btn('confirm-role-seen', '✅ He visto mi rol', 'primary block')}
+    ${revealGate(g, my)}
     `;
   }
   return `
@@ -940,8 +947,8 @@ function manualScreen(g, my) {
   <div class="topbar"><h2>${esc(g.name)}</h2>${phaseChip(game)}</div>
   ${flashHtml()}
   ${master ? manualMasterPanel(g, players) : `
-    ${my.inGame ? roleCard(my, g, !!my.roleSeen) : ''}
-    ${!my.roleSeen && my.inGame ? btn('confirm-role-seen', '✅ He visto mi rol', 'primary block') : ''}
+    ${my.inGame && !my.roleSeen ? revealGate(g, my) : ''}
+    ${my.inGame && my.roleSeen ? roleCard(my, g, true) : ''}
     ${playersGrid(players, { title: '🏘️ El pueblo', viewer: my })}`}
   ${logPanel(game)}
   `;
@@ -984,7 +991,7 @@ function guidedScreen(g, my) {
   ${!my.alive && my.inGame && game.phase !== 'reveal' ? '<div class="flash">💀 Has muerto. Sigue mirando en silencio…</div>' : ''}
   ${flashHtml()}
   ${game.phase === 'reveal' && my.inGame && !my.roleSeen
-    ? `${roleCard(my, g)}${btn('confirm-role-seen', '✅ He visto mi rol', 'primary block')}`
+    ? revealGate(g, my)
     : `<div class="narration">📖 El narrador dirige la partida. Atiende a su voz… humana.</div>${my.inGame ? roleCard(my, g, true) : ''}`}
   ${playersGrid(players, { title: '🏘️ El pueblo', showAlguacil: game.alguacilId, viewer: my })}
   ${logPanel(game)}

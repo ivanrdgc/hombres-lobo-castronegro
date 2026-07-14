@@ -205,12 +205,14 @@ try {
 
   // El narrador-altavoz no recibe rol ni carta que confirmar.
   check(!(await ana.isVisible('[data-a=confirm-role-seen]')), 'el narrador no tiene carta que confirmar');
+  check(!(await pages.bruno.isVisible('.rolecard')), 'la carta no se muestra hasta pedirla con «Ver mi rol»');
   for (const label of ['bruno', 'carla', 'david', 'elsa']) {
     const p = pages[label];
+    await p.click('[data-a=open-reveal-role]');
     await p.waitForSelector('.rolecard .rname');
     await p.click('[data-a=confirm-role-seen]'); await pace(p);
   }
-  ok('los 4 jugadores ven su carta y confirman');
+  ok('los 4 jugadores despliegan su carta, la ven y confirman');
   await pages.bruno.waitForSelector('button[data-a=begin-first-night]');
   await pages.bruno.click('button[data-a=begin-first-night]');
   ok('la primera noche también espera al botón');

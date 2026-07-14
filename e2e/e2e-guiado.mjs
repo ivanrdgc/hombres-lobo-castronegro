@@ -35,7 +35,7 @@ try {
   await ana.click('button[data-a=start-guided]');
   let st = await wait(ana, (s) => s.phase === 'reveal', 'reparto');
   ok('partida guiada iniciada');
-  for (const l of ['bea', 'coco', 'dani']) { await pages[l].waitForSelector('[data-a=confirm-role-seen]'); await pages[l].click('[data-a=confirm-role-seen]'); }
+  for (const l of ['bea', 'coco', 'dani']) { await pages[l].waitForSelector('[data-a=open-reveal-role]'); await pages[l].click('[data-a=open-reveal-role]'); await pages[l].click('[data-a=confirm-role-seen]'); }
   await ana.waitForSelector('button[data-a=guided-first-night]');
   await ana.click('button[data-a=guided-first-night]');
   st = await wait(ana, (s) => s.phase === 'night', 'noche 1');
