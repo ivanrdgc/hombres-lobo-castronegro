@@ -21,12 +21,12 @@ const url = ana.url();
 for (const n of ['Bea', 'Coco', 'Dani', 'Enzo']) {
   const p = await mk(n.toLowerCase());
   await p.goto(url); await p.fill('#inp-name', n); await p.click('[data-a=join]');
-  await p.waitForSelector('text=⭐ Máster');
+  await p.waitForSelector('text=/Dispositivos/');
 }
-await ana.waitForSelector('text=Jugadores (5)');
+await ana.waitForSelector('text=Dispositivos (5)');
 // quitar los roles extra para tener solo 1 lobo + 2 aldeanos (muerte segura noche 1)
 await ana.click('[data-a=open-roles]');
-for (const r of ['vidente', 'bruja', 'cazador']) await ana.click(`.roletoggle.on[data-p=${r}]`);
+for (const r of ['vidente', 'bruja', 'cazador', 'cupido']) await ana.click(`.roletoggle.on[data-p=${r}]`);
 await ana.waitForSelector('.roletoggle[data-p=bruja]:not(.on)');
 await ana.click('button[data-a=close-modal]');
 await ana.click('[data-a=open-settings]');

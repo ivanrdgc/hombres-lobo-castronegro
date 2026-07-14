@@ -53,7 +53,7 @@ export async function createGroup(userName, groupName) {
     tx.set(gref(slug), {
       name: groupName.trim(),
       createdAt: Date.now(),
-      masterId: pid,
+      masterId: null, // en el lobby no hay máster: todos configuran e inician
       status: 'lobby',
       settings: DEFAULT_SETTINGS,
       extraRoles: DEFAULT_EXTRA_ROLES,
@@ -199,17 +199,22 @@ export async function makeMaster(pid) {
 
 // ——— Inicio y fin de partida ———
 
-export async function startGame(mode) {
+// El máster (narrador) se decide AQUÍ, al arrancar:
+//   auto            → narratorId es el dispositivo elegido para narrar
+//   manual / guiado → el máster es quien pulsa empezar (state.session.pid)
+// En todos los casos el máster narra y no recibe rol.
+export async function startGame(mode, narratorId) {
   const slug = state.route.slug;
   const ids = state.players.map((p) => p.id);
   await txWithRetry(async (tx) => {
     const gsnap = await tx.get(gref(slug));
     const g = gsnap.data();
     if (!g || g.status !== 'lobby') throw new Error('Estado no válido');
+    const masterId = (mode === 'auto' ? narratorId : state.session.pid) || state.session.pid;
     const snaps = await Promise.all(ids.map((id) => tx.get(pref(slug, id))));
     const players = snaps.filter((s) => s.exists()).map((s) => ({ id: s.id, ...s.data() }));
-    // El máster nunca juega: en manual narra él y en automático narra su dispositivo.
-    const eligible = players.filter((p) => p.id !== g.masterId);
+    if (!players.some((p) => p.id === masterId)) throw new Error('El narrador elegido ya no está en el grupo.');
+    const eligible = players.filter((p) => p.id !== masterId);
     const settings0 = g.settings || DEFAULT_SETTINGS;
     // Reglas oficiales: de 8 a 18 jugadores además del narrador.
     const minP = settings0.casual ? CASUAL_MIN_PLAYERS : OFFICIAL_MIN_PLAYERS;
@@ -271,6 +276,7 @@ export async function startGame(mode) {
 
     tx.update(gref(slug), sanitize({
       status: 'playing',
+      masterId,
       game: {
         mode, startedAt: Date.now(), seed,
         night: 0, dayNum: 0,
@@ -307,7 +313,7 @@ export async function backToLobby() {
       sect: null, keyword: null, causeOfDeath: null, deathAt: null, actorPower: null, powers: null, videnteLog: null,
     }));
   }
-  batch.update(gref(slug), { status: 'lobby', game: null });
+  batch.update(gref(slug), { status: 'lobby', game: null, masterId: null });
   await batch.commit();
 }
 

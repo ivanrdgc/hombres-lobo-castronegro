@@ -197,9 +197,9 @@ try {
     await p.goto(urlM);
     await p.fill('#inp-name', n);
     await p.click('[data-a=join]');
-    await p.waitForSelector('text=⭐ Máster');
+    await p.waitForSelector('text=/Dispositivos/');
   }
-  await ana.waitForSelector('text=Jugadores (4)');
+  await ana.waitForSelector('text=Dispositivos (4)');
   await ana.click('[data-a=open-settings]');
   await ana.click('.switch[data-a=toggle-setting][data-p=casual]');
   await ana.waitForSelector('.switch.on[data-a=toggle-setting][data-p=casual]');
@@ -261,9 +261,9 @@ try {
     await p.goto(urlA);
     await p.fill('#inp-name', n);
     await p.click('[data-a=join]');
-    await p.waitForSelector('text=⭐ Máster');
+    await p.waitForSelector('text=/Dispositivos/');
   }
-  await ana.waitForSelector('text=Jugadores (6)');
+  await ana.waitForSelector('text=Dispositivos (6)');
   await ana.click('[data-a=open-settings]');
   await ana.click('.switch[data-a=toggle-setting][data-p=casual]');
   await ana.waitForSelector('.switch.on[data-a=toggle-setting][data-p=casual]');

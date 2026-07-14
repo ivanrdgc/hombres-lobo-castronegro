@@ -19,8 +19,8 @@ try {
   await ana.click('[data-a=create-group]');
   await ana.waitForURL('**/g/**');
   const url = ana.url();
-  for (const n of ['Bea', 'Coco', 'Dani']) { const p = await mk(n.toLowerCase()); await p.goto(url); await p.fill('#inp-name', n); await p.click('[data-a=join]'); await p.waitForSelector('text=⭐ Máster'); }
-  await ana.waitForSelector('text=Jugadores (4)');
+  for (const n of ['Bea', 'Coco', 'Dani']) { const p = await mk(n.toLowerCase()); await p.goto(url); await p.fill('#inp-name', n); await p.click('[data-a=join]'); await p.waitForSelector('text=/Dispositivos/'); }
+  await ana.waitForSelector('text=Dispositivos (4)');
   // Composición determinista: vidente + bruja (+1 lobo) — quitamos cazador y cupido.
   await ana.click('[data-a=open-roles]');
   for (const r of ['cazador', 'cupido']) { await ana.click(`.roletoggle.on[data-p=${r}]`); await ana.waitForSelector(`.roletoggle[data-p=${r}]:not(.on)`); }

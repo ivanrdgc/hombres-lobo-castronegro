@@ -106,12 +106,7 @@ const handlers = {
     const inp = $('inp-group');
     if (inp) inp.value = state.ui.suggestedGroup;
   },
-  'join-existing-master': () => {
-    const m = state.ui.modal || {};
-    closeModal();
-    return guard(() => A.joinExistingGroup(m.group, m.name, true));
-  },
-  'join-existing-player': () => {
+  'join-existing': () => {
     const m = state.ui.modal || {};
     closeModal();
     return guard(() => A.joinExistingGroup(m.group, m.name, false));
@@ -138,9 +133,8 @@ const handlers = {
 
   'leave': () => { state.ui.modal = { type: 'confirm-leave' }; render(); },
   'leave-confirm': () => { closeModal(); return guard(() => A.leaveGroup()); },
-  'player-menu': (pid) => { if (isMaster() && state.group.status === 'lobby') { state.ui.modal = { type: 'player-menu', pid }; render(); } },
+  'player-menu': (pid) => { if (state.group.status === 'lobby') { state.ui.modal = { type: 'player-menu', pid }; render(); } },
   'kick': (pid) => { closeModal(); return guard(() => A.kickPlayer(pid)); },
-  'make-master': (pid) => { closeModal(); return guard(() => A.makeMaster(pid)); },
   'confirm-delete-group': () => { state.ui.modal = { type: 'confirm-delete' }; render(); },
   'delete-group-confirm': () => { closeModal(); return guard(() => A.deleteGroup()); },
 
@@ -166,10 +160,14 @@ const handlers = {
   },
   'reset-roles': () => guard(() => A.resetRolesConfig()),
   'reset-settings': () => guard(() => A.resetGameSettings()),
-  'start-auto': () => guard(async () => {
-    unlockSpeech(); // gesto del usuario: desbloquea la síntesis de voz (iOS/Android)
-    await A.startGame('auto');
-  }),
+  'set-narrator': (pid) => { state.ui.narratorPick = pid; render(); },
+  'start-auto': () => {
+    const narrator = state.ui.narratorPick || (me() || {}).id;
+    // El gesto solo desbloquea el audio en el dispositivo que narra.
+    if (narrator === (me() || {}).id) { unlockSpeech(); state.ui.voiceUnlocked = true; }
+    return guard(() => A.startGame('auto', narrator));
+  },
+  'unlock-voice': () => { unlockSpeech(); state.ui.voiceUnlocked = true; render(); },
   'start-manual': () => guard(() => A.startGame('manual')),
   'start-guided': () => guard(() => A.startGame('guiado')),
 

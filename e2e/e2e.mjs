@@ -54,8 +54,8 @@ try {
   await ana.waitForURL('**/g/**', { timeout: 15000 });
   const url = ana.url();
   ok('grupo creado, URL: ' + url);
-  await ana.waitForSelector('text=Jugadores (1)');
-  check(await ana.isVisible('text=⭐ Máster'), 'Ana aparece como máster');
+  await ana.waitForSelector('text=Dispositivos (1)');
+  check(!(await ana.isVisible('text=⭐ Máster')), 'nadie es máster en el lobby');
 
   // Nombre de grupo duplicado
   const dup = await mk('dup');
@@ -64,10 +64,9 @@ try {
   await dup.fill('#inp-group', GROUP);
   await dup.click('[data-a=create-group]');
   await dup.waitForSelector('text=/ya existe/i', { timeout: 10000 });
-  check(await dup.isVisible('[data-a=join-existing-master]'), 'modal ofrece entrar como máster');
-  check(await dup.isVisible('[data-a=join-existing-player]'), 'modal ofrece entrar como jugador');
+  check(await dup.isVisible('[data-a=join-existing]'), 'modal ofrece entrar en el grupo existente');
   await dup.click('button[data-a=close-modal]');
-  ok('grupo duplicado: modal con opciones y se puede elegir otro nombre');
+  ok('grupo duplicado: modal con opción de entrar y de elegir otro nombre');
   await dup.context().close();
 
   // ——— 2. Uniones ———
@@ -79,10 +78,10 @@ try {
     check(await p.isVisible(`text=${GROUP}`), `${name} ve el nombre del grupo`);
     await p.fill('#inp-name', name);
     await p.click('[data-a=join]');
-    await p.waitForSelector('text=⭐ Máster');
+    await p.waitForSelector('text=/Dispositivos/');
     ok(name + ' unido');
   }
-  await ana.waitForSelector('text=Jugadores (5)');
+  await ana.waitForSelector('text=Dispositivos (5)');
   ok('los 5 miembros aparecen en la lista del máster');
 
   // ——— 3. Colisión de nombre + takeover ———
@@ -94,7 +93,7 @@ try {
   await eva.waitForSelector('[data-a=takeover-confirm]');
   ok('aviso de nombre ocupado con opción de reconectar');
   await eva.click('[data-a=takeover-confirm]');
-  await eva.waitForSelector('text=⭐ Máster');
+  await eva.waitForSelector('text=/Dispositivos/');
   ok('Eva ha tomado la sesión de Bruno');
   await pages.bruno.waitForSelector('text=/sesión ya no es válida/i', { timeout: 15000 });
   ok('el dispositivo antiguo de Bruno queda desconectado');
@@ -103,7 +102,7 @@ try {
   await pages.bruno.click('[data-a=join]');
   await pages.bruno.waitForSelector('[data-a=takeover-confirm]');
   await pages.bruno.click('[data-a=takeover-confirm]');
-  await pages.bruno.waitForSelector('text=⭐ Máster');
+  await pages.bruno.waitForSelector('text=/Dispositivos/');
   await eva.context().close();
   ok('Bruno recupera su sesión');
 
@@ -113,11 +112,11 @@ try {
   await leo.goto(url);
   await leo.fill('#inp-name', 'Leo');
   await leo.click('[data-a=join]');
-  await leo.waitForSelector('text=⭐ Máster');
-  await ana.waitForSelector('text=Jugadores (6)');
+  await leo.waitForSelector('text=/Dispositivos/');
+  await ana.waitForSelector('text=Dispositivos (6)');
   await ana.click('.player[data-a=player-menu]:has-text("Leo")');
   await ana.click('[data-a=kick]');
-  await ana.waitForSelector('text=Jugadores (5)');
+  await ana.waitForSelector('text=Dispositivos (5)');
   await leo.waitForSelector('#inp-name', { timeout: 15000 });
   ok('Leo expulsado: su dispositivo vuelve a la pantalla de unirse');
   await leo.context().close();
@@ -247,7 +246,7 @@ try {
   // ——— 7. Volver al lobby y eliminar grupo ———
   console.log('— Lobby y limpieza —');
   await ana.click('[data-a=back-lobby]');
-  await ana.waitForSelector('text=Jugadores (5)');
+  await ana.waitForSelector('text=Dispositivos (5)');
   await pages.bruno.waitForSelector('[data-a=leave]');
   ok('vuelta al lobby para todos');
 
@@ -255,7 +254,7 @@ try {
   await pages.david.click('[data-a=leave]');
   await pages.david.click('[data-a=leave-confirm]');
   await pages.david.waitForURL(BASE + '/');
-  await ana.waitForSelector('text=Jugadores (4)');
+  await ana.waitForSelector('text=Dispositivos (4)');
   ok('abandonar grupo funciona');
 
   // El máster elimina el grupo.
@@ -278,14 +277,13 @@ try {
   await paco.fill('#inp-name', 'Paco');
   await paco.fill('#inp-group', GROUP);
   await paco.click('[data-a=create-group]');
-  await paco.waitForSelector('[data-a=join-existing-master]');
-  await paco.click('[data-a=join-existing-master]');
+  await paco.waitForSelector('[data-a=join-existing]');
+  await paco.click('[data-a=join-existing]');
   await paco.waitForURL('**/g/**');
-  await paco.waitForSelector('.player:has-text("Paco"):has-text("Máster")');
-  ok('Paco entra en el grupo existente como nuevo máster');
-  await ana.waitForTimeout(1500);
-  const anaIsMaster = await ana.isVisible('[data-a=open-start]');
-  check(!anaIsMaster, 'el máster anterior (Ana) pasa a ser un jugador más');
+  await paco.waitForSelector('.player:has-text("Paco")');
+  ok('Paco entra en el grupo existente desde la portada');
+  const anaCanStart = await ana.isVisible('[data-a=open-start]');
+  check(anaCanStart, 'cualquiera puede iniciar (Ana ve empezar sin ser máster)');
   await paco.click('[data-a=confirm-delete-group]');
   await paco.click('[data-a=delete-group-confirm]');
   await paco.waitForURL(BASE + '/');

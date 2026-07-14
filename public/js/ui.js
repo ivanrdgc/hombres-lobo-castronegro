@@ -185,10 +185,10 @@ function blockedScreen(g) {
 // ——— Lobby ———
 
 function lobbyScreen(g, my) {
-  const master = isMaster();
+  // En el lobby no hay máster: cualquier dispositivo configura e inicia.
   const extra = g.extraRoles || [];
   const n = state.players.length;
-  const nJug = Math.max(0, n - 1); // el máster narra y no juega
+  const nJug = Math.max(0, n - 1); // el narrador no juega
   const wolvesFixed = (g.settings || {}).wolvesCount || null;
   const lobos = Math.max(1, Math.min(Math.max(nJug - 1, 1), wolvesFixed || wolfCountFor(nJug || 1)));
   return `
@@ -206,36 +206,31 @@ function lobbyScreen(g, my) {
   </div>
   ${flashHtml()}
   <div class="card">
-    <h3>👥 Jugadores (${n})</h3>
+    <h3>📱 Dispositivos (${n})</h3>
     <div class="players">
       ${state.players.map((p) => `
-        <div class="player ${master && p.id !== my.id ? 'selectable' : ''}" ${master && p.id !== my.id ? `data-a="player-menu" data-p="${p.id}"` : ''}>
+        <div class="player ${p.id !== my.id ? 'selectable' : ''}" ${p.id !== my.id ? `data-a="player-menu" data-p="${p.id}"` : ''}>
           <span class="pname">${esc(p.name)}</span>
-          ${p.id === g.masterId ? '<span class="badge">⭐ Máster</span>' : ''}
           ${p.id === my.id ? '<span class="badge you">Tú</span>' : ''}
         </div>`).join('')}
     </div>
-    ${master && n > 1 ? '<p class="small-note">Toca un jugador para expulsarlo o cederle el rol de máster.</p>' : ''}
+    ${n > 1 ? '<p class="small-note">Cualquiera puede configurar y empezar. Toca un dispositivo para expulsarlo.</p>' : ''}
   </div>
   <div class="card">
     <h3>🎴 Roles de la partida</h3>
-    <p class="small-note">Con ${nJug} jugador${nJug === 1 ? '' : 'es'} (el máster narra y no juega): <b>${lobos} 🐺 lobo${lobos > 1 ? 's' : ''}</b>${wolvesFixed ? ' (fijado por el máster)' : ''} y el resto según los roles activados (los huecos se rellenan con 🧑‍🌾 aldeanos).</p>
-    ${nJug < OFFICIAL_MIN_PLAYERS && !(g.settings || {}).casual ? `<p class="small-note">⚠️ Las reglas oficiales piden de ${OFFICIAL_MIN_PLAYERS} a 18 jugadores además del narrador. Para jugar con menos, el máster puede activar el <b>modo casual</b> en los ajustes.</p>` : ''}
+    <p class="small-note">Con ${nJug} jugador${nJug === 1 ? '' : 'es'} (el narrador no juega): <b>${lobos} 🐺 lobo${lobos > 1 ? 's' : ''}</b>${wolvesFixed ? ' (fijado)' : ''} y el resto según los roles activados (los huecos se rellenan con 🧑‍🌾 aldeanos).</p>
+    ${nJug < OFFICIAL_MIN_PLAYERS && !(g.settings || {}).casual ? `<p class="small-note">⚠️ Las reglas oficiales piden de ${OFFICIAL_MIN_PLAYERS} a 18 jugadores además del narrador. Para jugar con menos, activad el <b>modo casual</b> en los ajustes.</p>` : ''}
     <div class="btnrow" style="margin-top:6px">
       ${(extra.length ? extra.map((r) => ROLES[r] ? `<span class="chip">${ROLES[r].emoji} ${ROLES[r].name}</span>` : '').join('') : '<span class="chip">Solo lobos y aldeanos</span>')}${(g.settings || {}).alguacil ? '<span class="chip">⭐ Alguacil</span>' : ''}
     </div>
-    ${master ? btn('open-roles', '⚙️ Elegir roles', 'block') : ''}
+    ${btn('open-roles', '⚙️ Elegir roles', 'block')}
   </div>
-  ${master ? `
   <div class="card">
-    <h3>🛠️ Opciones del máster</h3>
+    <h3>🎬 Empezar</h3>
     ${btn('open-settings', '🔧 Ajustes de partida', 'block')}
     ${btn('open-start', '🎬 Empezar partida', 'primary block')}
     ${btn('confirm-delete-group', '🗑️ Eliminar el grupo', 'danger block')}
-  </div>` : `
-  <div class="card">
-    <p style="color:var(--muted)">Esperando a que <b>${esc(state.players.find((p) => p.id === g.masterId)?.name || 'el máster')}</b> empiece la partida…</p>
-  </div>`}`;
+  </div>`;
 }
 
 // ——— Partida: modo automático ———
@@ -324,8 +319,10 @@ function narratorPanel(g) {
       : game.votesLeft > 0 ? '🗳️ Votación del pueblo abierta.'
         : '🌆 El día termina, la noche llegará enseguida…';
   }
+  const needsUnlock = !state.ui.voiceUnlocked && !isMuted();
   return `<div class="card"><h3>🎙️ Eres el narrador</h3>
     <p class="small-note">Tu dispositivo dirige la partida con su voz: mantén la pantalla encendida y el volumen alto. No juegas con rol, pero puedes consultar los roles de la mesa y forzar pasos desde la barra inferior.</p>
+    ${needsUnlock ? `<div class="flash">🔊 Toca para activar la voz del narrador en este dispositivo.</div>${btn('unlock-voice', '🔊 Activar la narración', 'primary block')}` : ''}
     ${info ? `<p style="margin-top:6px">${info}</p>` : ''}</div>`;
 }
 
@@ -841,7 +838,7 @@ function endPhase(g, my) {
         ${p.alive === false ? '<span>💀</span>' : '<span>❤️</span>'}
       </div>`).join('')}
   </div></div>
-  ${isMaster() ? btn('back-lobby', '🔁 Volver al lobby', 'primary block') : '<p class="subtitle">El máster puede devolver al grupo al lobby para otra partida.</p>'}
+  ${btn('back-lobby', '🔁 Volver al lobby', 'primary block')}
   `;
 }
 
@@ -1124,24 +1121,33 @@ function settingsModal() {
 
 function startModal() {
   const n = state.players.length;
+  const meId = (me() || {}).id;
+  const narrator = state.players.some((p) => p.id === state.ui.narratorPick) ? state.ui.narratorPick : meId;
   return `<h3>🎬 Empezar partida</h3>
-    <p class="small-note">Jugadores en la mesa: <b>${n}</b>. Una vez empiece, nadie podrá entrar ni salir del grupo.</p>
+    <p class="small-note">Dispositivos conectados: <b>${n}</b>. Una vez empiece, nadie podrá entrar ni salir del grupo.</p>
     <div class="card" style="border-color:var(--accent)">
       <h3>🤖 Modo automático</h3>
-      <p class="small-note">La app dirige la partida sin narrador humano: este dispositivo narra con voz las fases y los jugadores actúan desde su móvil. Tú no recibes rol (tu dispositivo es el narrador). Jugad en la misma sala, con este móvil a buen volumen.</p>
+      <p class="small-note">La app dirige la partida con voz, sin narrador humano. Elige qué dispositivo narrará (no jugará: será el que suene). Ponedlo en el centro con volumen alto.</p>
+      <label>🔊 Dispositivo narrador</label>
+      <div class="players">
+        ${state.players.map((p) => `
+          <div class="player selectable ${p.id === narrator ? 'selected' : ''}" data-a="set-narrator" data-p="${p.id}">
+            <span class="pname">${esc(p.name)}</span>${p.id === meId ? '<span class="badge you">este</span>' : ''}${p.id === narrator ? '<span>🔊</span>' : ''}
+          </div>`).join('')}
+      </div>
       ${btn('start-auto', '🤖 Empezar en automático', 'primary block')}
     </div>
     <div class="card">
       <h3>📖 Modo guiado</h3>
-      <p class="small-note">Tú narras en persona y la app no habla: tu pantalla te guía paso a paso por la noche (qué rol despierta, qué puede hacer) y tú registras sus decisiones. Los jugadores solo ven su carta.</p>
-      ${btn('start-guided', '📖 Empezar guiado', 'violet block')}
+      <p class="small-note">Tú (este dispositivo) narras en persona y la app no habla: tu pantalla te guía paso a paso y registras las decisiones. Los jugadores solo ven su carta. Tú no juegas.</p>
+      ${btn('start-guided', '📖 Narrar yo (guiado)', 'violet block')}
     </div>
     <div class="card">
       <h3>🎩 Modo manual</h3>
-      <p class="small-note">Control total sin guion: la app reparte los roles, te los muestra y tú marcas muertes, enamorados o el cambio del Ladrón cuando toque.</p>
-      ${btn('start-manual', '🎩 Empezar en manual', 'ghost block')}
+      <p class="small-note">Tú (este dispositivo) diriges sin guion: la app reparte los roles, te los muestra y marcas muertes, enamorados o el cambio del Ladrón. Tú no juegas.</p>
+      ${btn('start-manual', '🎩 Narrar yo (manual)', 'ghost block')}
     </div>
-    <p class="small-note">En ambos modos el máster hace de narrador y no juega. Reglas oficiales: de ${OFFICIAL_MIN_PLAYERS} a 18 jugadores además de ti${(state.group.settings || {}).casual ? ' (modo casual activo: desde 3)' : ''}.</p>
+    <p class="small-note">El narrador no recibe rol. Reglas oficiales: de ${OFFICIAL_MIN_PLAYERS} a 18 jugadores además del narrador${(state.group.settings || {}).casual ? ' (modo casual activo: desde 3)' : ''}.</p>
     <div id="form-error">${state.ui.formError ? `<div class="flash error">${esc(state.ui.formError)}</div>` : ''}</div>
     ${btn('close-modal', 'Cancelar', 'ghost block')}`;
 }
@@ -1149,9 +1155,8 @@ function startModal() {
 function playerMenuModal(m) {
   const p = state.players.find((x) => x.id === m.pid);
   if (!p) return '';
-  return `<h3>👤 ${esc(p.name)}</h3>
+  return `<h3>📱 ${esc(p.name)}</h3>
     ${btn('kick', '👢 Expulsar del grupo', 'danger block', p.id)}
-    ${btn('make-master', '⭐ Hacer máster', 'violet block', p.id)}
     ${btn('close-modal', 'Cancelar', 'ghost block')}`;
 }
 
@@ -1173,9 +1178,7 @@ function takeoverModal(m) {
 function groupExistsModal(m) {
   return `<h3>🏘️ Ese grupo ya existe</h3>
     <p class="small-note">El grupo <b>${esc(m.group)}</b> ya está creado. ¿Quieres entrar en él en vez de crear uno nuevo?</p>
-    ${btn('join-existing-master', '🎩 Entrar y ser el máster', 'primary block')}
-    <p class="small-note" style="margin:2px 0 8px">El máster actual pasará a ser un jugador más.</p>
-    ${btn('join-existing-player', '🚪 Entrar como jugador', 'violet block')}
+    ${btn('join-existing', '🚪 Entrar en el grupo', 'primary block')}
     ${btn('close-modal', '✏️ Elegir otro nombre de grupo', 'ghost block')}`;
 }
 

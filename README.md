@@ -13,7 +13,7 @@ Adaptación web del juego de mesa para jugar con amigos en la misma sala, cada u
 
 ## Modos de juego
 
-En ambos modos el máster hace de narrador y **no recibe rol**, como en el juego de mesa (el narrador no recibe carta).
+En el **lobby no hay máster**: cualquier dispositivo configura los roles, ajusta las opciones e inicia la partida. El narrador (que no recibe rol, como en el juego de mesa) se decide **al arrancar**: en **automático** se elige qué dispositivo narrará (el que se pone en el centro con volumen); en **guiado** y **manual** narra quien pulsa empezar.
 
 **Reglas oficiales aplicadas**: de **8 a 18 jugadores** además del narrador; **2 lobos** con 8-11 jugadores, **3** con 12-17 y **4** con 18. Con el Ladrón se añaden **2 cartas de Aldeano extra** al mazo y las 2 sobrantes del reparto quedan en el centro (si ambas son de lobo, el cambio es obligatorio). Las Dos Hermanas piden mesas de ≥12 y los Tres Hermanos de ≥16 (aldeas grandes según su reglamento); si no se cumplen, no se reparten y se anuncia. Para grupos pequeños existe el **modo casual** (ajuste del máster): permite jugar desde 3 jugadores, señalado como fuera de las reglas oficiales. La partida termina también por **paridad**: si los lobos igualan o superan al resto (p. ej. 1 lobo + 1 aldeano), ganan — salvo que siga vivo un Cazador o una Bruja con veneno (aún podrían dar la vuelta), o que el único lobo sea el Albino (que busca su victoria en solitario).
 
