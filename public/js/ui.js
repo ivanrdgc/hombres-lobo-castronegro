@@ -676,7 +676,11 @@ function dayPhase(g, my) {
   if (head) panel += pendingPanel(head, g, my, players);
   else if (game.votesLeft > 0 && !game.vote) panel += votePanel(g, my, players);
   else if (game.vote) panel += `<div class="actionpanel"><h3>⏳ Juicio en curso…</h3><p class="hint">La Sirvienta medita su decisión.</p></div>`;
-  else panel += '<div class="narration">🌆 El día llega a su fin. La noche caerá enseguida…</div>';
+  else {
+    panel += `<div class="card"><h3>🌆 El día ha terminado</h3>
+      <p class="small-note">Comentad la jugada con calma. Cuando estéis listos, que alguien mande al pueblo a dormir.</p>
+      ${my.alive || isMaster() ? btn('begin-night', '🌙 Empezar la noche', 'primary block') : ''}</div>`;
+  }
 
   return `
   <div class="narration">☀️ ${esc(narr(((game.lastDawn || {}).deaths || []).length ? 'dia_debate' : 'dia_debate_tranquilo', `${game.seed}:d${game.dayNum}:${game.votesLeft}`))}</div>

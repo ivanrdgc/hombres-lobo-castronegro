@@ -323,6 +323,20 @@ try {
         await ana.waitForTimeout(400);
         continue;
       }
+      if (st.votesLeft <= 0 && !st.pending.length) {
+        // Fin del día: alguien pulsa «Empezar la noche».
+        const key = `d${st.dayNum}:tonight`;
+        if (key !== lastKey) {
+          lastKey = key;
+          const alive = st.players.find((p) => p.alive && p.role);
+          if (alive) {
+            const pg = pages[alive.name.toLowerCase()];
+            try { await pg.click('button[data-a=begin-night]', { timeout: 8000 }); } catch { /* quizá ya es de noche */ }
+          }
+        }
+        await ana.waitForTimeout(400);
+        continue;
+      }
       if (st.votesLeft > 0) {
         const key = `d${st.dayNum}:vote:${st.votesLeft}`;
         if (key !== lastKey) {

@@ -306,8 +306,10 @@ export function conductorTick() {
     }
 
     if (game.votesLeft <= 0 && !game.pending.length && !game.winner) {
+      // El pueblo suele quedarse comentando la jugada: la noche no empieza
+      // hasta que alguien pulse «Empezar la noche» en su dispositivo.
       say(`d${game.dayNum}:ocaso`, improv('ocaso'));
-      schedule(`d${game.dayNum}:toNight`, 7000, startNextNight);
+      cancelTimer();
     }
     return;
   }
