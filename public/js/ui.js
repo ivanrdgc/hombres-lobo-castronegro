@@ -142,7 +142,9 @@ function groupScreen() {
   }
   if (g.status === 'lobby') return lobbyScreen(g, my);
   if (!g.game) return '<p style="text-align:center;margin-top:40vh">Preparando la partida…</p>';
-  return g.game.mode === 'manual' ? manualScreen(g, my) : autoScreen(g, my);
+  if (g.game.mode === 'manual') return manualScreen(g, my);
+  if (g.game.mode === 'guiado') return guidedScreen(g, my);
+  return autoScreen(g, my);
 }
 
 function joinScreen(g) {
@@ -320,7 +322,7 @@ function phaseChip(game) {
   if (game.phase === 'reveal') return '<span class="chip">🎴 Reparto</span>';
   if (game.phase === 'night') return `<span class="chip">🌙 Noche ${game.night}</span>`;
   if (game.phase === 'day') return `<span class="chip">☀️ Día ${game.dayNum}</span>`;
-  if (game.phase === 'manual') return `<span class="chip">${game.manualPhase === 'noche' ? '🌙 Noche' : '☀️ Día'} ${game.manualCount}</span>`;
+  if (game.phase === 'manual') return '<span class="chip">🎩 Manual</span>';
   return '<span class="chip">🏁 Fin</span>';
 }
 
@@ -836,8 +838,7 @@ function manualMasterPanel(g, players) {
   return `
   <div class="card">
     <h3>🎩 Panel del narrador</h3>
-    <p class="small-note">Tú diriges: la app repartió los roles y lleva el registro. Toca un jugador para marcar muertes o correcciones.</p>
-    ${btn('manual-phase', g.game.manualPhase === 'noche' ? '☀️ Pasar al día' : '🌙 Pasar a la noche', 'primary block')}
+    <p class="small-note">Tú diriges la partida al estilo clásico. Toca un jugador para: marcarlo muerto o vivo, enseñar su rol a pantalla completa, marcar enamorados o aplicar el cambio del Ladrón.</p>
   </div>
   <div class="card"><h3>👥 Jugadores y roles</h3><div class="players">
     ${players.map((p) => `
@@ -849,6 +850,128 @@ function manualMasterPanel(g, players) {
   </div></div>
   <div class="btnrow">${btn('end-game', '🏳️ Terminar partida', 'danger')}</div>
   `;
+}
+
+// ——— Modo guiado: máster humano con guion en pantalla (la app no habla) ———
+
+const GUIDED_CONFIRM_STEPS = ['enamorados', 'dos_hermanas', 'tres_hermanos', 'lobos_reconocen', 'encantados'];
+
+function guidedScreen(g, my) {
+  const game = g.game;
+  if (game.phase === 'end') {
+    return `<div class="topbar"><h2>${esc(g.name)}</h2>${phaseChip(game)}</div>${endPhase(g, my)}${logPanel(game)}`;
+  }
+  if (isMaster()) return guidedMasterScreen(g, my);
+  // Jugador: solo su carta (oculta por defecto); el narrador dirige en persona.
+  const players = state.players.filter((p) => p.inGame);
+  return `
+  <div class="topbar"><h2>${esc(g.name)}</h2>${phaseChip(game)}</div>
+  ${!my.alive && my.inGame && game.phase !== 'reveal' ? '<div class="flash">💀 Has muerto. Sigue mirando en silencio…</div>' : ''}
+  ${flashHtml()}
+  ${game.phase === 'reveal' && my.inGame && !my.roleSeen
+    ? `${roleCard(my, g)}${btn('confirm-role-seen', '✅ He visto mi rol', 'primary block')}`
+    : `<div class="narration">📖 El narrador dirige la partida. Atiende a su voz… humana.</div>${my.inGame ? roleCard(my, g, true) : ''}`}
+  ${playersGrid(players, { title: '🏘️ El pueblo', showAlguacil: game.alguacilId, viewer: my })}
+  ${logPanel(game)}
+  `;
+}
+
+function guidedMasterScreen(g, my) {
+  const game = g.game;
+  const players = state.players.filter((p) => p.inGame);
+  let body = '';
+
+  if (game.phase === 'reveal') {
+    const pend = players.filter((p) => !p.roleSeen).map((p) => esc(p.name));
+    body = `<div class="card"><h3>🎴 Reparto</h3>
+      <p class="small-note">Cada jugador mira su carta en su móvil y confirma.</p>
+      ${pend.length ? `<div class="waitlist">Faltan por confirmar: ${pend.join(', ')}</div>`
+    : btn('guided-first-night', '🌙 Empezar la primera noche', 'primary block')}</div>`;
+  } else if (game.phase === 'night') {
+    const stepId = game.steps[game.stepIdx];
+    const salt = `${game.seed}:n${game.night}:s${game.stepIdx}:${stepId}`;
+    if (stepId === 'amanecer') {
+      body = `<div class="card"><h3>🌅 Fin de la noche</h3>
+        <p class="small-note">Cuando hayas despertado al pueblo, resuelve el amanecer: la app calculará las muertes y te dará el parte.</p>
+        ${btn('guided-dawn', '🌅 Resolver el amanecer', 'primary block')}</div>`;
+    } else {
+      const actors = stepId ? stepActors(stepId, game, players) : null;
+      const label = STEP_LABELS[stepId] || stepId;
+      const script = `<div class="narration">📖 <b>Noche ${game.night} · ${esc(label)}.</b> Lee en voz alta:<br><i>«${esc(narr(stepId, salt) || '…')}»</i></div>`;
+      if (actors && actors.length) {
+        if (GUIDED_CONFIRM_STEPS.includes(stepId)) {
+          body = `${script}<div class="card"><p class="small-note">Despierta a quien corresponda con un toque en el hombro. Cuando se hayan reconocido, continúa.</p>
+            ${btn('guided-skip', '✅ Hecho, continuar', 'primary block')}</div>`;
+        } else {
+          const actorP = players.find((p) => p.id === actors[0]);
+          body = `${script}
+            <div class="card"><p class="small-note">👤 Actúa <b>${esc(actorP?.name || '')}</b>. Registra aquí su decisión:</p></div>
+            ${nightActionPanel(stepId, g, actorP, players)}`;
+        }
+      } else {
+        body = `${script}<div class="card"><p class="small-note">🌫️ Nadie debe actuar (rol muerto, sin poder o ya resuelto). Lee la llamada igualmente y espera unos segundos para disimular.</p>
+          ${btn('guided-skip', '⏭️ Continuar', 'primary block')}</div>`;
+      }
+    }
+  } else if (game.phase === 'day') {
+    const head = (game.pending || [])[0];
+    let panel = '';
+    if (game.gitanaQ && game.gitanaQ.answer === null) {
+      panel += `<div class="card"><h3>🔯 Espiritismo</h3><p class="small-note">Pregunta al espíritu (un jugador muerto): «${esc(game.gitanaQ.q)}»</p>
+        <div class="btnrow">${btn('gitana-yes', '✔️ SÍ', 'primary')}${btn('gitana-no', '✖️ NO', 'danger')}</div></div>`;
+    }
+    if (head) {
+      panel += guidedPendingPanel(head, g, players);
+    } else if (game.votesLeft > 0 && !game.vote) {
+      panel += `<div class="actionpanel"><h3>⚖️ El juicio del pueblo</h3>
+        <p class="hint">Dirige el debate y registra la decisión final.</p>
+        ${pickList(players, { selKey: 'gvote' })}
+        ${btn('vote-confirm', '⚖️ Condenar al seleccionado', 'danger block')}
+        <div class="btnrow">${btn('vote-nadie', '🕊️ El pueblo perdona', 'ghost')}${btn('vote-empate', '🤝 Hubo empate', 'ghost')}</div></div>`;
+    } else {
+      panel += `<div class="card"><p class="small-note">🌆 El día ha terminado.</p>
+        ${btn('guided-next-night', '🌙 Comenzar la noche', 'primary block')}</div>`;
+    }
+    body = `<div class="narration">☀️ Día ${game.dayNum}. Guía el debate en persona.</div>${panel}`;
+  }
+
+  return `
+  <div class="topbar"><h2>${esc(g.name)}</h2>${phaseChip(game)}</div>
+  ${flashHtml()}
+  <div class="card"><h3>📖 Narrador guiado</h3><p class="small-note">La app no habla: te va marcando los pasos y tú registras las decisiones. Los jugadores solo ven su carta.</p>
+  <div class="btnrow">${btn('view-roles', '👁 Roles', 'ghost small')}${btn('end-game', '🏳️ Terminar', 'ghost small')}</div></div>
+  ${body}
+  ${playersGrid(players, { title: '🏘️ El pueblo', showAlguacil: g.game.alguacilId })}
+  ${logPanel(game)}
+  `;
+}
+
+function guidedPendingPanel(head, g, players) {
+  const key = 'gpend:' + head.type;
+  const actorP = players.find((p) => p.id === head.pid);
+  switch (head.type) {
+    case 'cazador':
+      return `<div class="actionpanel"><h3>🏹 El Cazador dispara</h3>
+        <p class="hint">${esc(actorP?.name || 'El Cazador')} ha caído: pregúntale a quién se lleva.</p>
+        ${pickList(players, { exclude: [head.pid], selKey: key })}
+        ${btn('cazador-shoot', '🏹 Disparar', 'danger block')}${btn('cazador-skip', 'No dispara', 'ghost block')}</div>`;
+    case 'sirvienta':
+      return `<div class="actionpanel"><h3>🧹 La Sirvienta</h3>
+        <p class="hint">Pregúntale con discreción si toma el rol del condenado.</p>
+        <div class="btnrow">${btn('sirvienta-yes', '🧹 Interviene', 'violet')}${btn('sirvienta-no', 'No interviene', 'ghost')}</div></div>`;
+    case 'alguacil_elect':
+      return `<div class="actionpanel"><h3>⭐ Elección del Alguacil</h3>
+        ${pickList(players, { selKey: key })}${btn('alguacil-pick', '⭐ Nombrar', 'primary block')}</div>`;
+    case 'alguacil_pick':
+      return `<div class="actionpanel"><h3>⭐ Sucesión del Alguacil</h3>
+        <p class="hint">${esc(actorP?.name || '')} señala a su sucesor.</p>
+        ${pickList(players, { exclude: [head.pid], selKey: key })}${btn('alguacil-pick', '⭐ Nombrar sucesor', 'primary block')}</div>`;
+    case 'cabeza_pick':
+      return `<div class="actionpanel"><h3>🐐 El Cabeza de Turco decide</h3>
+        ${pickList(players, { exclude: [head.pid], selKey: key })}
+        ${btn('cabeza-pick', '👉 Elegir', 'primary block')}${btn('cabeza-skip', 'Que voten todos', 'ghost block')}</div>`;
+    default: return '';
+  }
 }
 
 // ——— Herramientas del máster (modo auto) ———
@@ -888,6 +1011,8 @@ function renderModal() {
     'view-roles': viewRolesModal,
     'end-game': endGameModal,
     'manual-player': manualPlayerModal,
+    'show-role': showRoleModal,
+    'thief-swap': thiefSwapModal,
     'vote-confirm': voteConfirmModal,
   }[m.type];
   if (!inner) return '';
@@ -971,9 +1096,14 @@ function startModal() {
       ${btn('start-auto', '🤖 Empezar en automático', 'primary block')}
     </div>
     <div class="card">
+      <h3>📖 Modo guiado</h3>
+      <p class="small-note">Tú narras en persona y la app no habla: tu pantalla te guía paso a paso por la noche (qué rol despierta, qué puede hacer) y tú registras sus decisiones. Los jugadores solo ven su carta.</p>
+      ${btn('start-guided', '📖 Empezar guiado', 'violet block')}
+    </div>
+    <div class="card">
       <h3>🎩 Modo manual</h3>
-      <p class="small-note">Tú narras la partida al estilo clásico (sin rol para ti). La app reparte los roles en secreto, te los muestra todos y lleva el registro de muertes.</p>
-      ${btn('start-manual', '🎩 Empezar en manual', 'violet block')}
+      <p class="small-note">Control total sin guion: la app reparte los roles, te los muestra y tú marcas muertes, enamorados o el cambio del Ladrón cuando toque.</p>
+      ${btn('start-manual', '🎩 Empezar en manual', 'ghost block')}
     </div>
     <p class="small-note">En ambos modos el máster hace de narrador y no juega. Reglas oficiales: de ${OFFICIAL_MIN_PLAYERS} a 18 jugadores además de ti${(state.group.settings || {}).casual ? ' (modo casual activo: desde 3)' : ''}.</p>
     <div id="form-error">${state.ui.formError ? `<div class="flash error">${esc(state.ui.formError)}</div>` : ''}</div>
@@ -1071,14 +1201,45 @@ function manualPlayerModal(m) {
   const p = state.players.find((x) => x.id === m.pid);
   if (!p) return '';
   const r = ROLES[p.role];
-  return `<h3>${r?.emoji || ''} ${esc(p.name)} — ${r?.name || ''}</h3>
+  const game = (state.group && state.group.game) || {};
+  const hasCupido = ((game.composition || {}).cupido || 0) > 0;
+  const hasCenter = (game.centerCards || []).length > 0;
+  return `<h3>${r?.emoji || ''} ${esc(p.name)} — ${r?.name || ''}${p.lover ? ' 💘' : ''}${p.alive === false ? ' 💀' : ''}</h3>
     <p class="small-note">${r?.desc || ''}</p>
-    ${p.alive ? `
-      ${btn('manual-kill-lobos', '🐺 Devorado por los lobos', 'danger block', p.id)}
-      ${btn('manual-kill-linchado', '⚖️ Linchado por el pueblo', 'danger block', p.id)}
-      ${btn('manual-kill-otro', '☠️ Muere por otra causa', 'danger block', p.id)}` : `
-      ${btn('manual-revive', '✨ Revivir (corrección)', 'violet block', p.id)}`}
+    ${btn('manual-toggle-dead', p.alive ? '💀 Marcar como muerto' : '✨ Revivir', p.alive ? 'danger block' : 'violet block', p.id)}
+    ${btn('show-role-full', '👁 Mostrar su rol a pantalla completa', 'block', p.id)}
+    ${hasCupido ? btn('manual-toggle-lover', p.lover ? '💔 Quitar la marca de enamorado' : '💘 Marcar como enamorado', 'block', p.id) : ''}
+    ${hasCenter ? btn('open-thief-swap', '🃏 Cambio de carta del Ladrón…', 'block', p.id) : ''}
     ${btn('close-modal', 'Cancelar', 'ghost block')}`;
+}
+
+// Carta de un jugador a pantalla completa (para enseñársela a la vidente, etc.).
+function showRoleModal(m) {
+  const p = state.players.find((x) => x.id === m.pid);
+  if (!p) return '';
+  const r = ROLES[p.role];
+  return `<div class="rolecard" style="margin:24px 0;padding:34px 16px">
+      <span class="remoji" style="font-size:5rem">${r?.emoji || '❔'}</span>
+      <span class="rname" style="font-size:1.9rem">${r?.name || '—'}</span>
+      <div class="rteam">${esc(p.name)}</div>
+      <div class="rdesc">${r?.desc || ''}</div>
+    </div>
+    ${btn('close-modal', '✔️ Visto', 'primary block')}`;
+}
+
+// El máster aplica el cambio del Ladrón: enseña las dos cartas del centro.
+function thiefSwapModal(m) {
+  const p = state.players.find((x) => x.id === m.pid);
+  const cc = ((state.group && state.group.game) || {}).centerCards || [];
+  if (!p) return '';
+  return `<h3>🃏 El Ladrón: ${esc(p.name)}</h3>
+    <p class="small-note">Enséñale las dos cartas del centro. Si elige una, su carta actual (${ROLES[p.role]?.emoji || ''} ${ROLES[p.role]?.name || ''}) pasa al centro.</p>
+    <div class="centercards">
+      ${cc.map((r, i) => `<div class="cc" data-a="thief-swap-pick" data-p="${m.pid}:${i}">
+        <div style="font-size:2rem">${ROLES[r]?.emoji || '❔'}</div><b>${ROLES[r]?.name || r}</b>
+        <div class="small-note">${ROLES[r]?.desc || ''}</div></div>`).join('')}
+    </div>
+    ${btn('close-modal', '✋ Se queda su carta', 'ghost block')}`;
 }
 
 function voteConfirmModal(m) {

@@ -169,6 +169,7 @@ const handlers = {
     await A.startGame('auto');
   }),
   'start-manual': () => guard(() => A.startGame('manual')),
+  'start-guided': () => guard(() => A.startGame('guiado')),
 
   'confirm-role-seen': () => guard(() => A.confirmRoleSeen()),
   'confirm-role-refresh': () => guard(() => A.confirmRoleRefresh()),
@@ -299,11 +300,19 @@ const handlers = {
 
   // ——— Modo manual ———
   'manual-player': (pid) => { if (isMaster()) { state.ui.modal = { type: 'manual-player', pid }; render(); } },
-  'manual-kill-lobos': (pid) => { closeModal(); return guard(() => A.manualKill(pid, 'lobos')); },
-  'manual-kill-linchado': (pid) => { closeModal(); return guard(() => A.manualKill(pid, 'linchado')); },
-  'manual-kill-otro': (pid) => { closeModal(); return guard(() => A.manualKill(pid, 'otro')); },
-  'manual-revive': (pid) => { closeModal(); return guard(() => A.manualRevive(pid)); },
-  'manual-phase': () => guard(() => A.manualNextPhase()),
+  'manual-toggle-dead': (pid) => { closeModal(); return guard(() => A.manualToggleDead(pid)); },
+  'manual-toggle-lover': (pid) => { closeModal(); return guard(() => A.manualToggleLover(pid)); },
+  'show-role-full': (pid) => { if (isMaster()) { state.ui.modal = { type: 'show-role', pid }; render(); } },
+  'open-thief-swap': (pid) => { if (isMaster()) { state.ui.modal = { type: 'thief-swap', pid }; render(); } },
+  'thief-swap-pick': (param) => {
+    const [pid, idx] = String(param).split(':');
+    closeModal();
+    return guard(() => A.manualSwapRole(pid, parseInt(idx, 10)));
+  },
+  'guided-first-night': () => guard(() => A.startFirstNight()),
+  'guided-dawn': () => guard(() => A.runDawn()),
+  'guided-next-night': () => guard(() => A.startNextNight()),
+  'guided-skip': () => guard(() => A.forceAdvance()),
 };
 
 document.addEventListener('click', (ev) => {

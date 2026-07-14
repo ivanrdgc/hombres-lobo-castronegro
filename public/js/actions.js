@@ -169,8 +169,12 @@ export async function resetGameSettings() {
 }
 
 export async function setSettings(patch) {
-  const s = { ...(state.group.settings || DEFAULT_SETTINGS), ...patch };
-  await updateDoc(gref(state.route.slug), { settings: s });
+  // Escritura atómica por campo: dos cambios seguidos nunca se pisan entre sí
+  // (antes se escribía el mapa completo leído de la caché y podía perderse
+  // un cambio reciente, p. ej. justo después de «Restaurar»).
+  const updates = {};
+  for (const [k, v] of Object.entries(patch)) updates['settings.' + k] = v === undefined ? null : v;
+  await updateDoc(gref(state.route.slug), updates);
 }
 
 export async function makeMaster(pid) {
@@ -205,7 +209,7 @@ export async function startGame(mode) {
 
     // Palabras clave: solo hacen falta si hay roles que designan jugadores en
     // secreto durante la noche (enamorados de Cupido, encantados del Gaitero).
-    const keywordsActive = !!(composition.cupido || composition.gaitero);
+    const keywordsActive = mode === 'auto' && !!(composition.cupido || composition.gaitero);
     const kws = keywordsActive ? generateKeywords(eligible.length, seed + 7) : [];
     const kwOf = {};
     eligible.forEach((p, i) => { kwOf[p.id] = kws[i] || null; });
@@ -235,7 +239,8 @@ export async function startGame(mode) {
     }
 
     const settings = g.settings || DEFAULT_SETTINGS;
-    const log = [{ kind: 'evento', txt: `🌑 Comienza la partida en modo ${mode === 'auto' ? 'automático' : 'manual'} con ${eligible.length} jugadores.` }];
+    const modeName = { auto: 'automático', manual: 'manual', guiado: 'guiado' }[mode] || mode;
+    const log = [{ kind: 'evento', txt: `🌑 Comienza la partida en modo ${modeName} con ${eligible.length} jugadores.` }];
     if (settings.showComposition) {
       const compTxt = Object.entries(composition)
         .map(([r, n]) => `${ROLES[r].emoji} ${ROLES[r].name}${n > 1 ? ' ×' + n : ''}`).join(', ');
@@ -254,7 +259,6 @@ export async function startGame(mode) {
         mode, startedAt: Date.now(), seed,
         night: 0, dayNum: 0,
         phase: mode === 'manual' ? 'manual' : 'reveal',
-        manualPhase: 'noche', manualCount: 1,
         stepIdx: 0, steps: [], acts: {},
         vote: null, votesLeft: 0, pending: [], winner: null, keywordsActive,
         wolvesKnown: false, hermanasKnown: false, hermanosKnown: false,
@@ -427,11 +431,15 @@ export async function startNextNight() {
 
 // Acción genérica: valida paso + actor y aplica cambios; avanza si el paso queda completo.
 async function nightAction(stepId, apply) {
-  await gameTx((game, players) => {
+  await gameTx((game, players, g) => {
     if (game.phase !== 'night' || game.steps[game.stepIdx] !== stepId) return null;
     const ps = inGamePlayers(players);
     const actors = stepActors(stepId, game, ps);
-    const myId = state.session.pid;
+    let myId = state.session.pid;
+    // En modo guiado, el máster registra las decisiones en nombre del actor.
+    if (game.mode === 'guiado' && myId === g.masterId && actors && actors.length && !actors.includes(myId)) {
+      myId = actors[0];
+    }
     if (!actors || !actors.includes(myId)) return null;
     const res = apply(game, ps, myId) || {};
     // El paso completo NO avanza aquí: lo avanza el conductor tras una pausa
@@ -442,6 +450,9 @@ async function nightAction(stepId, apply) {
       // Grupos que ya se han reconocido físicamente: la app puede mostrarlos.
       const flag = { lobos_reconocen: 'wolvesKnown', dos_hermanas: 'hermanasKnown', tres_hermanos: 'hermanosKnown' }[stepId];
       if (flag) game[flag] = true;
+      // En guiado no hay pausas de disimulo (solo actúa el móvil del máster):
+      // el paso completado avanza al instante y el máster marca el ritmo.
+      if (game.mode === 'guiado') game.stepIdx += 1;
     }
     return { game, playerPatches: res.playerPatches };
   });
@@ -609,18 +620,21 @@ export const actGitana = (qIdx) => nightAction('gitana', (game) => {
 // ——— Día: votación y resoluciones pendientes ———
 
 export async function castVote(choice) {
-  await gameTx((game, players) => {
+  await gameTx((game, players, g) => {
     if (game.phase !== 'day' || game.pending.length || game.votesLeft <= 0 || game.vote) return null;
     const ps = inGamePlayers(players);
     const myId = state.session.pid;
+    const guidedMaster = game.mode === 'guiado' && myId === g.masterId;
     const voter = ps.find((p) => p.id === myId);
-    if (!voter || !voter.alive || voter.revealedTonto) return null;
-    if (game.soloVoteId && game.soloVoteId !== myId) return null;
+    if (!guidedMaster) {
+      if (!voter || !voter.alive || voter.revealedTonto) return null;
+      if (game.soloVoteId && game.soloVoteId !== myId) return null;
+    }
     if (choice !== 'nadie' && choice !== 'empate') {
       const t = ps.find((p) => p.id === choice);
       if (!t || !t.alive) return null;
     }
-    game.log.push({ kind: 'dia', txt: `🗳️ ${voter.name} registra la decisión del pueblo.` });
+    game.log.push({ kind: 'dia', txt: `🗳️ ${voter ? voter.name : 'El narrador'} registra la decisión del pueblo.` });
 
     // ¿Debe intervenir la sirvienta antes de revelar la carta?
     const sirvienta = ps.find((p) => p.alive && p.role === 'sirvienta' && !p.lover);
@@ -847,14 +861,16 @@ export async function forceAdvance() {
       }
       const stepId = game.steps[game.stepIdx];
       if (stepId === 'amanecer') return null; // lo resuelve el conductor
+      const actorsNow = stepActors(stepId, game, ps);
+      if (!actorsNow || !actorsNow.length) { game.stepIdx += 1; return { game }; }
       const skip = STEP_SKIP_DEFAULTS[stepId];
       if (skip) skip(game, ps);
       else if (stepId === 'nino_salvaje' || stepId === 'perro_lobo' || stepId === 'dos_hermanas' || stepId === 'tres_hermanos') {
         const patches = {};
         if (stepId === 'nino_salvaje') ps.filter((p) => p.role === 'nino_salvaje' && p.alive && !p.modelId).forEach((p) => { patches[p.id] = { modelId: 'nadie' }; });
         if (stepId === 'perro_lobo') ps.filter((p) => p.role === 'perro_lobo' && p.alive && p.wolfSide == null).forEach((p) => { patches[p.id] = { wolfSide: false }; });
-        if (stepId === 'dos_hermanas') game.acts.hermanasSeen = Object.fromEntries(ps.filter((p) => p.role === 'dos_hermanas').map((p) => [p.id, true]));
-        if (stepId === 'tres_hermanos') game.acts.hermanosSeen = Object.fromEntries(ps.filter((p) => p.role === 'tres_hermanos').map((p) => [p.id, true]));
+        if (stepId === 'dos_hermanas') { game.acts.hermanasSeen = Object.fromEntries(ps.filter((p) => p.role === 'dos_hermanas').map((p) => [p.id, true])); game.hermanasKnown = true; }
+        if (stepId === 'tres_hermanos') { game.acts.hermanosSeen = Object.fromEntries(ps.filter((p) => p.role === 'tres_hermanos').map((p) => [p.id, true])); game.hermanosKnown = true; }
         game.stepIdx += 1;
         return { game, playerPatches: patches };
       }
@@ -888,36 +904,37 @@ export async function forceAdvance() {
 
 // ——— Modo manual: el máster dirige ———
 
-export async function manualKill(pid, cause) {
+export async function manualToggleDead(pid) {
   await gameTx((game, players) => {
     const p = players.find((x) => x.id === pid);
-    if (!p || !p.alive) return null;
-    const causeTxt = { lobos: 'devorado por los lobos', linchado: 'linchado por el pueblo', otro: 'ha muerto' }[cause] || 'ha muerto';
-    const reveal = game.revealDead ? ` Era ${ROLES[p.role]?.emoji || ''} ${ROLES[p.role]?.name || ''}.` : '';
-    game.log.push({ kind: 'muerte', txt: `💀 ${p.name} ${causeTxt === 'ha muerto' ? 'ha muerto' : 'ha sido ' + causeTxt}.${reveal}` });
-    return { game, playerPatches: { [pid]: { alive: false, causeOfDeath: cause } } };
-  });
-}
-
-export async function manualRevive(pid) {
-  await gameTx((game, players) => {
-    const p = players.find((x) => x.id === pid);
-    if (!p || p.alive) return null;
-    game.log.push({ kind: 'evento', txt: `✨ ${p.name} vuelve a la vida (corrección del máster).` });
+    if (!p || !p.inGame) return null;
+    if (p.alive) {
+      const reveal = game.revealDead ? ` Era ${ROLES[p.role]?.emoji || ''} ${ROLES[p.role]?.name || ''}.` : '';
+      game.log.push({ kind: 'muerte', txt: `💀 ${p.name} ha muerto.${reveal}` });
+      return { game, playerPatches: { [pid]: { alive: false } } };
+    }
+    game.log.push({ kind: 'evento', txt: `✨ ${p.name} vuelve a la vida.` });
     return { game, playerPatches: { [pid]: { alive: true, causeOfDeath: null } } };
   });
 }
 
-export async function manualNextPhase() {
-  await gameTx((game) => {
-    if (game.manualPhase === 'noche') {
-      game.manualPhase = 'dia';
-      game.log.push({ kind: 'dia', txt: `☀️ Día ${game.manualCount}.` });
-    } else {
-      game.manualPhase = 'noche';
-      game.manualCount += 1;
-      game.log.push({ kind: 'noche', txt: `🌙 Noche ${game.manualCount}.` });
-    }
-    return { game };
+// Marca u olvida un enamoramiento (solo seguimiento, sin anuncio público).
+export async function manualToggleLover(pid) {
+  await gameTx((game, players) => {
+    const p = players.find((x) => x.id === pid);
+    if (!p || !p.inGame) return null;
+    return { game, playerPatches: { [pid]: { lover: !p.lover } } };
+  });
+}
+
+// El Ladrón cambia (o no) su carta por una del centro; el máster lo registra.
+export async function manualSwapRole(pid, centerIdx) {
+  await gameTx((game, players) => {
+    const p = players.find((x) => x.id === pid);
+    const card = (game.centerCards || [])[centerIdx];
+    if (!p || !card) return null;
+    game.centerCards[centerIdx] = p.role;
+    game.log.push({ kind: 'evento', txt: '🃏 El Ladrón ha tomado su decisión.' });
+    return { game, playerPatches: { [pid]: { role: card } } };
   });
 }

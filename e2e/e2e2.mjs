@@ -211,24 +211,26 @@ try {
   await pages.bruno.waitForSelector('.rolecard .rname');
   ok('los jugadores ven su carta en modo manual');
 
-  // Marcar una muerte.
+  // Marcar una muerte (sin causa).
   await ana.click('.player[data-a=manual-player]:has-text("Carla")');
-  await ana.click('button[data-a=manual-kill-lobos]');
-  await pages.carla.waitForSelector('text=/Carla ha sido devorad/');
+  await ana.click('button[data-a=manual-toggle-dead]');
+  await pages.carla.waitForSelector('text=/Carla ha muerto/');
   ok('muerte marcada por el máster y anunciada en la crónica');
   st = await hlc(ana);
   check(st.players.find((p) => p.name === 'Carla').alive === false, 'Carla figura como muerta');
 
-  // Revivir (corrección).
+  // Revivir (mismo botón, control absoluto).
   await ana.click('.player[data-a=manual-player]:has-text("Carla")');
-  await ana.click('button[data-a=manual-revive]');
+  await ana.click('button[data-a=manual-toggle-dead]');
   st = await waitState(ana, (s) => s.players.find((p) => p.name === 'Carla').alive === true, 'revivir');
-  ok('corrección de muerte (revivir) funciona');
+  ok('revivir funciona');
 
-  // Cambio de fase.
-  await ana.click('button[data-a=manual-phase]');
-  await ana.waitForSelector('text=☀️ Día 1');
-  ok('cambio noche → día');
+  // Mostrar el rol a pantalla completa.
+  await ana.click('.player[data-a=manual-player]:has-text("Bruno")');
+  await ana.click('button[data-a=show-role-full]');
+  await ana.waitForSelector('.modal .rolecard');
+  ok('rol a pantalla completa desde el menú del máster');
+  await ana.click('button[data-a=close-modal]');
 
   // Fin de partida manual.
   await ana.click('button[data-a=end-game]');
