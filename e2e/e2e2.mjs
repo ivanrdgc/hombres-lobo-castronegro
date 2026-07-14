@@ -264,6 +264,10 @@ try {
     await p.waitForSelector('text=/Dispositivos/');
   }
   await ana.waitForSelector('text=Dispositivos (6)');
+  // Ana narrará sin jugar: se desmarca como jugadora.
+  await ana.click('.player[data-a=player-menu]:has-text("Ana")');
+  await ana.click('button[data-a=toggle-player]');
+  await ana.waitForSelector('.player:has-text("Ana"):has-text("no juega")');
   await ana.click('[data-a=open-settings]');
   await ana.click('.switch[data-a=toggle-setting][data-p=casual]');
   await ana.waitForSelector('.switch.on[data-a=toggle-setting][data-p=casual]');

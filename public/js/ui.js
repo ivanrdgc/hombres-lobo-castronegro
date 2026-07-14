@@ -206,7 +206,7 @@ function lobbyScreen(g, my) {
   // En el lobby no hay máster: cualquier dispositivo configura e inicia.
   const extra = g.extraRoles || [];
   const n = state.players.length;
-  const nJug = Math.max(0, n - 1); // el narrador no juega
+  const nJug = state.players.filter((p) => p.isPlayer !== false).length;
   const wolvesFixed = (g.settings || {}).wolvesCount || null;
   const lobos = Math.max(1, Math.min(Math.max(nJug - 1, 1), wolvesFixed || wolfCountFor(nJug || 1)));
   return `
@@ -224,19 +224,20 @@ function lobbyScreen(g, my) {
   </div>
   ${flashHtml()}
   <div class="card">
-    <h3>📱 Dispositivos (${n})</h3>
+    <h3>📱 Dispositivos (${n}) · 🎮 ${nJug} jugarán</h3>
     <div class="players">
       ${state.players.map((p) => `
-        <div class="player ${p.id !== my.id ? 'selectable' : ''}" ${p.id !== my.id ? `data-a="player-menu" data-p="${p.id}"` : ''}>
+        <div class="player selectable" data-a="player-menu" data-p="${p.id}">
           <span class="pname">${esc(p.name)}</span>
+          ${p.isPlayer === false ? '<span class="badge">📺 no juega</span>' : ''}
           ${p.id === my.id ? '<span class="badge you">Tú</span>' : ''}
         </div>`).join('')}
     </div>
-    ${n > 1 ? '<p class="small-note">Cualquiera puede configurar y empezar. Toca un dispositivo para expulsarlo.</p>' : ''}
+    <p class="small-note">Toca un dispositivo para marcarlo como jugador o solo-pantalla, o para expulsarlo. Cualquiera puede configurar y empezar.</p>
   </div>
   <div class="card">
     <h3>🎴 Roles de la partida</h3>
-    <p class="small-note">Con ${nJug} jugador${nJug === 1 ? '' : 'es'} (el narrador no juega): <b>${lobos} 🐺 lobo${lobos > 1 ? 's' : ''}</b>${wolvesFixed ? ' (fijado)' : ''} y el resto según los roles activados (los huecos se rellenan con 🧑‍🌾 aldeanos).</p>
+    <p class="small-note">Con ${nJug} jugador${nJug === 1 ? '' : 'es'} marcado${nJug === 1 ? '' : 's'}: <b>${lobos} 🐺 lobo${lobos > 1 ? 's' : ''}</b>${wolvesFixed ? ' (fijado)' : ''} y el resto según los roles activados (los huecos se rellenan con 🧑‍🌾 aldeanos). En guiado/manual el narrador no juega aunque esté marcado.</p>
     ${nJug < OFFICIAL_MIN_PLAYERS && !(g.settings || {}).casual ? `<p class="small-note">⚠️ Las reglas oficiales piden de ${OFFICIAL_MIN_PLAYERS} a 18 jugadores además del narrador. Para jugar con menos, activad el <b>modo casual</b> en los ajustes.</p>` : ''}
     <div class="btnrow" style="margin-top:6px">
       ${(extra.length ? extra.map((r) => ROLES[r] ? `<span class="chip">${ROLES[r].emoji} ${ROLES[r].name}</span>` : '').join('') : '<span class="chip">Solo lobos y aldeanos</span>')}${(g.settings || {}).alguacil ? '<span class="chip">⭐ Alguacil</span>' : ''}
@@ -253,8 +254,37 @@ function lobbyScreen(g, my) {
 
 // ——— Partida: modo automático ———
 
+// Dispositivo que no juega ni narra: solo el aviso de partida en curso.
+function spectatorScreen(g) {
+  return `
+  <div class="topbar"><h2>${esc(g.name)}</h2><span class="chip">🌙 En curso</span></div>
+  <div class="card" style="text-align:center">
+    <span class="moon">🌙</span>
+    <h3>Hay una partida en curso</h3>
+    <p class="small-note">Este dispositivo no participa. La pantalla cambiará sola cuando termine.</p>
+  </div>`;
+}
+
+// Narrador que no juega (tele/altavoz): solo el aviso + la voz del juego.
+function narratorOnlyScreen(g) {
+  const needsUnlock = !state.ui.voiceUnlocked && !isMuted();
+  return `
+  <div class="topbar"><h2>${esc(g.name)}</h2><span class="chip">🔊 Narrador</span></div>
+  <div class="card" style="text-align:center">
+    <span class="moon">🔊</span>
+    <h3>Este dispositivo narra la partida</h3>
+    <p class="small-note">Hay una partida en curso. Deja este dispositivo con la pantalla encendida y el volumen alto: nadie necesita tocarlo.</p>
+    ${needsUnlock ? btn('unlock-voice', '🔊 Activar la narración', 'primary block') : ''}
+  </div>`;
+}
+
 function autoScreen(g, my) {
   const game = g.game;
+  // Dispositivos sin rol durante la partida: pantallas mínimas.
+  if (!my.inGame && game.phase !== 'end') {
+    if (isMaster()) return narratorOnlyScreen(g);
+    return spectatorScreen(g);
+  }
   const alive = my.alive;
   let body = '';
   if (game.phase === 'reveal') body = revealPhase(g, my);
@@ -869,6 +899,7 @@ function manualScreen(g, my) {
   if (game.phase === 'end') {
     return `<div class="topbar"><h2>${esc(g.name)}</h2>${phaseChip(game)}</div>${endPhase(g, my)}${logPanel(game)}`;
   }
+  if (!master && !my.inGame) return spectatorScreen(g);
   return `
   <div class="topbar"><h2>${esc(g.name)}</h2>${phaseChip(game)}</div>
   ${flashHtml()}
@@ -909,6 +940,7 @@ function guidedScreen(g, my) {
     return `<div class="topbar"><h2>${esc(g.name)}</h2>${phaseChip(game)}</div>${endPhase(g, my)}${logPanel(game)}`;
   }
   if (isMaster()) return guidedMasterScreen(g, my);
+  if (!my.inGame) return spectatorScreen(g);
   // Jugador: solo su carta (oculta por defecto); el narrador dirige en persona.
   const players = state.players.filter((p) => p.inGame);
   return `
@@ -1028,15 +1060,19 @@ function guidedPendingPanel(head, g, players) {
 // ——— Herramientas del máster (modo auto) ———
 
 function masterToolsBar(g) {
-  if (!isMaster() || g.game.mode !== 'auto') return '';
-  if (g.game.phase === 'end') return '';
+  if (g.game.mode !== 'auto' || g.game.phase === 'end') return '';
+  const my = me();
+  const narrator = isMaster();
+  if (!narrator && !(my && my.inGame)) return '';
+  // Todos los jugadores pueden forzar un paso atascado y terminar la partida;
+  // el narrador-jugador tiene además la voz y la vista de roles.
   return `<div class="mastertools"><div class="inner">
-    ${btn('voice-open', isMuted() ? '🔇 Voz' : '🗣️ Voz', 'ghost')}
-    ${btn('view-roles', '👁 Roles', 'ghost')}
+    ${narrator ? btn('voice-open', isMuted() ? '🔇 Voz' : '🗣️ Voz', 'ghost') : ''}
+    ${btn('repeat-last', '🔁 Repetir', 'ghost')}
     ${btn('force-advance', '⏭️ Forzar', 'ghost')}
     ${btn('end-game', '🏳️ Fin', 'ghost')}
   </div></div>
-  <p class="small-note" style="text-align:center">🔊 Mantén esta pantalla encendida: tu dispositivo es el narrador.</p>`;
+  ${narrator ? '<p class="small-note" style="text-align:center">🔊 Mantén esta pantalla encendida: tu dispositivo es el narrador.</p>' : ''}`;
 }
 
 function logPanel(game) {
@@ -1140,7 +1176,11 @@ function settingsModal() {
 function startModal() {
   const n = state.players.length;
   const meId = (me() || {}).id;
-  const narrator = state.players.some((p) => p.id === state.ui.narratorPick) ? state.ui.narratorPick : meId;
+  const g0 = state.group || {};
+  const remembered = state.players.some((p) => p.id === g0.lastNarratorId) ? g0.lastNarratorId : null;
+  const narrator = state.players.some((p) => p.id === state.ui.narratorPick) ? state.ui.narratorPick : (remembered || meId);
+  const narratorP = state.players.find((p) => p.id === narrator);
+  const narratorPlays = narratorP && narratorP.isPlayer !== false;
   return `<h3>🎬 Empezar partida</h3>
     <p class="small-note">Dispositivos conectados: <b>${n}</b>. Una vez empiece, nadie podrá entrar ni salir del grupo.</p>
     <div class="card" style="border-color:var(--accent)">
@@ -1150,9 +1190,12 @@ function startModal() {
       <div class="players">
         ${state.players.map((p) => `
           <div class="player selectable ${p.id === narrator ? 'selected' : ''}" data-a="set-narrator" data-p="${p.id}">
-            <span class="pname">${esc(p.name)}</span>${p.id === meId ? '<span class="badge you">este</span>' : ''}${p.id === narrator ? '<span>🔊</span>' : ''}
+            <span class="pname">${esc(p.name)}</span>${p.id === meId ? '<span class="badge you">este</span>' : ''}${p.isPlayer === false ? '<span class="badge">📺</span>' : ''}${p.id === narrator ? '<span>🔊</span>' : ''}
           </div>`).join('')}
       </div>
+      <p class="small-note">${narratorPlays
+    ? '🎮 El narrador está marcado como jugador: narrará y además jugará con rol desde el mismo dispositivo.'
+    : '📺 El narrador no juega: solo pondrá la voz (ideal para una tele o un altavoz).'}</p>
       ${btn('start-auto', '🤖 Empezar en automático', 'primary block')}
     </div>
     <div class="card">
@@ -1173,8 +1216,11 @@ function startModal() {
 function playerMenuModal(m) {
   const p = state.players.find((x) => x.id === m.pid);
   if (!p) return '';
-  return `<h3>📱 ${esc(p.name)}</h3>
-    ${btn('kick', '👢 Expulsar del grupo', 'danger block', p.id)}
+  const self = p.id === (me() || {}).id;
+  const active = p.isPlayer !== false;
+  return `<h3>📱 ${esc(p.name)}${self ? ' (tú)' : ''}</h3>
+    ${btn('toggle-player', active ? '📺 No jugará (solo pantalla o narrador)' : '🎮 Jugará la partida', active ? 'block' : 'violet block', p.id)}
+    ${self ? '' : btn('kick', '👢 Expulsar del grupo', 'danger block', p.id)}
     ${btn('close-modal', 'Cancelar', 'ghost block')}`;
 }
 

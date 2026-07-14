@@ -137,6 +137,11 @@ const handlers = {
   'leave-confirm': () => { closeModal(); return guard(() => A.leaveGroup()); },
   'player-menu': (pid) => { if (state.group.status === 'lobby') { state.ui.modal = { type: 'player-menu', pid }; render(); } },
   'kick': (pid) => { closeModal(); return guard(() => A.kickPlayer(pid)); },
+  'toggle-player': (pid) => {
+    const p = state.players.find((x) => x.id === pid);
+    closeModal();
+    return guard(() => A.setPlayerActive(pid, p ? p.isPlayer === false : true));
+  },
   'confirm-delete-group': () => { state.ui.modal = { type: 'confirm-delete' }; render(); },
   'delete-group-confirm': () => { closeModal(); return guard(() => A.deleteGroup()); },
 
@@ -293,12 +298,16 @@ const handlers = {
   },
   'voice-test': () => speak('Bienvenidos a Castronegro. Cae la noche y los lobos aúllan a lo lejos.', { muted: false }),
   'view-roles': () => { if (isMaster()) { state.ui.modal = { type: 'view-roles' }; render(); } },
+  'repeat-last': () => guard(() => A.requestRepeat()),
   'force-advance': () => guard(async () => {
     const g = state.group.game;
     if (g.phase === 'night' && g.steps[g.stepIdx] === 'amanecer') await A.runDawn();
     else await A.forceAdvance();
   }),
-  'end-game': () => { if (isMaster()) { state.ui.modal = { type: 'end-game' }; render(); } },
+  'end-game': () => {
+    const my = me();
+    if (isMaster() || (my && my.inGame)) { state.ui.modal = { type: 'end-game' }; render(); }
+  },
   'end-game-confirm': (winner) => { closeModal(); return guard(() => A.endGameNow(winner || null)); },
   'back-lobby': () => guard(() => A.backToLobby()),
 

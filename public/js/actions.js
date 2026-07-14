@@ -126,7 +126,13 @@ function basePlayer(name, token) {
   return {
     name: name.trim(), deviceToken: token, order: Date.now(),
     role: null, alive: null, inGame: false,
+    isPlayer: true, // por defecto todo dispositivo juega; se puede desactivar
   };
+}
+
+// Activa/desactiva un dispositivo como jugador (se recuerda entre partidas).
+export async function setPlayerActive(pid, active) {
+  await updateDoc(pref(state.route.slug, pid), { isPlayer: !!active });
 }
 
 export async function leaveGroup() {
@@ -214,14 +220,18 @@ export async function startGame(mode, narratorId) {
     const snaps = await Promise.all(ids.map((id) => tx.get(pref(slug, id))));
     const players = snaps.filter((s) => s.exists()).map((s) => ({ id: s.id, ...s.data() }));
     if (!players.some((p) => p.id === masterId)) throw new Error('El narrador elegido ya no está en el grupo.');
-    const eligible = players.filter((p) => p.id !== masterId);
+    // Solo juegan los dispositivos marcados como jugadores. En automático, el
+    // narrador puede además jugar (mismo móvil) o solo narrar (tele/altavoz);
+    // en guiado/manual el narrador humano nunca juega.
+    const isP = (p) => p.isPlayer !== false;
+    const eligible = players.filter((p) => isP(p) && (mode === 'auto' || p.id !== masterId));
     const settings0 = g.settings || DEFAULT_SETTINGS;
     // Reglas oficiales: de 8 a 18 jugadores además del narrador.
     const minP = settings0.casual ? CASUAL_MIN_PLAYERS : OFFICIAL_MIN_PLAYERS;
     if (eligible.length < minP) {
       throw new Error(settings0.casual
-        ? `Hacen falta al menos ${CASUAL_MIN_PLAYERS} jugadores además del máster (que hace de narrador).`
-        : `Las reglas oficiales piden al menos ${OFFICIAL_MIN_PLAYERS} jugadores además del máster. Puedes activar el «modo casual» en los ajustes para jugar desde ${CASUAL_MIN_PLAYERS}.`);
+        ? `Hacen falta al menos ${CASUAL_MIN_PLAYERS} dispositivos marcados como jugadores.`
+        : `Las reglas oficiales piden al menos ${OFFICIAL_MIN_PLAYERS} jugadores. Puedes activar el «modo casual» en los ajustes para jugar desde ${CASUAL_MIN_PLAYERS}.`);
     }
 
     const seed = Math.floor(Date.now() % 2147483647);
@@ -277,6 +287,7 @@ export async function startGame(mode, narratorId) {
     tx.update(gref(slug), sanitize({
       status: 'playing',
       masterId,
+      lastNarratorId: masterId, // recordado para partidas sucesivas
       game: {
         mode, startedAt: Date.now(), seed,
         night: 0, dayNum: 0,
@@ -322,7 +333,7 @@ export async function endGameNow(winner) {
     game.winner = winner || checkWinner(players.filter((p) => p.inGame)) || 'nadie';
     game.phase = 'end';
     game.paused = null;
-    game.log.push({ kind: 'evento', txt: '🏁 El máster ha dado por terminada la partida.' });
+    game.log.push({ kind: 'evento', txt: '🏁 La partida se da por terminada: se revelan todos los roles.' });
     return { game };
   }, { allowPaused: true });
 }
@@ -840,6 +851,14 @@ export async function resumeGame() {
     game.log.push({ kind: 'evento', txt: '▶️ La partida continúa.' });
     return { game };
   }, { allowPaused: true, skipPlayers: true });
+}
+
+// Cualquier jugador puede pedir que el narrador repita la locución actual.
+export async function requestRepeat() {
+  await gameTx((game) => {
+    game.repeatNonce = (game.repeatNonce || 0) + 1;
+    return { game };
+  }, { skipPlayers: true, allowPaused: true });
 }
 
 // ——— Repaso de roles: si alguien se atasca 2 minutos, todo el pueblo revisa ———

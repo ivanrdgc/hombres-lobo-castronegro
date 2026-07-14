@@ -25,6 +25,9 @@ for (const n of ['Bea', 'Coco', 'Dani', 'Enzo']) {
 }
 await ana.waitForSelector('text=Dispositivos (5)');
 // quitar los roles extra para tener solo 1 lobo + 2 aldeanos (muerte segura noche 1)
+await ana.click('.player[data-a=player-menu]:has-text("Ana")');
+await ana.click('button[data-a=toggle-player]');
+await ana.waitForSelector('.player:has-text("Ana"):has-text("no juega")');
 await ana.click('[data-a=open-roles]');
 for (const r of ['vidente', 'bruja', 'cazador', 'cupido']) await ana.click(`.roletoggle.on[data-p=${r}]`);
 await ana.waitForSelector('.roletoggle[data-p=bruja]:not(.on)');
@@ -62,8 +65,9 @@ else bad('rol revelado incorrecto: ' + txt);
 const alivePeek = await wolfPage.locator('.player[data-a=dead-peek]').count();
 if (alivePeek === 0) ok('los vivos no tienen la opción de espiar roles');
 else bad('un jugador vivo puede espiar roles');
-await ana.click('button[data-a=end-game]');
-await ana.click('button[data-a=end-game-confirm]');
+// El narrador-altavoz no tiene botones: termina un jugador vivo.
+await wolfPage.click('button[data-a=end-game]');
+await wolfPage.click('button[data-a=end-game-confirm]');
 await wait(ana, (s) => s.phase === 'end', 'fin');
 await ana.click('button[data-a=back-lobby]');
 await ana.waitForSelector('[data-a=confirm-delete-group]');

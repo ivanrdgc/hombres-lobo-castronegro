@@ -146,6 +146,11 @@ try {
 
   // ——— 6. Partida automática ———
   console.log('— Partida automática —');
+  // Ana narrará sin jugar: se desmarca como jugadora.
+  await ana.click('.player[data-a=player-menu]:has-text("Ana")');
+  await ana.click('button[data-a=toggle-player]');
+  await ana.waitForSelector('.player:has-text("Ana"):has-text("no juega")');
+  ok('Ana marcada como solo-narradora (se recuerda entre partidas)');
   // Reglas oficiales: con 4 jugadores no deja empezar sin modo casual.
   await ana.click('[data-a=open-start]');
   await ana.click('[data-a=start-auto]');
@@ -161,6 +166,8 @@ try {
   await ana.click('[data-a=start-auto]');
   await waitState(ana, (s) => s.status === 'playing' && s.phase === 'reveal', 'fase de reparto');
   ok('partida iniciada en modo automático');
+  await ana.waitForSelector('text=Este dispositivo narra la partida');
+  ok('narrador sin rol: pantalla mínima de altavoz');
 
   // Un nuevo visitante no puede entrar con partida en curso.
   const tarde = await mk('tarde');
@@ -169,9 +176,8 @@ try {
   check(await tarde.isVisible('[data-a=retry]'), 'visitante tardío ve "partida en curso" + botón reintentar');
   await tarde.context().close();
 
-  // El máster no recibe rol: ve el panel de narrador. Confirman los 4 jugadores.
-  await ana.waitForSelector('text=Eres el narrador');
-  check(!(await ana.isVisible('[data-a=confirm-role-seen]')), 'el máster no tiene carta que confirmar');
+  // El narrador-altavoz no recibe rol ni carta que confirmar.
+  check(!(await ana.isVisible('[data-a=confirm-role-seen]')), 'el narrador no tiene carta que confirmar');
   for (const label of ['bruno', 'carla', 'david', 'elsa']) {
     const p = pages[label];
     await p.waitForSelector('.rolecard .rname');
@@ -252,6 +258,7 @@ try {
   console.log('— Lobby y limpieza —');
   await ana.click('[data-a=back-lobby]');
   await ana.waitForSelector('text=Dispositivos (5)');
+  check(await ana.isVisible('.player:has-text("Ana"):has-text("no juega")'), 'la marca de no-jugador se recuerda tras la partida');
   await pages.bruno.waitForSelector('[data-a=leave]');
   ok('vuelta al lobby para todos');
 

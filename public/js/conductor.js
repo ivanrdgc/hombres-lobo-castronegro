@@ -15,6 +15,7 @@ let wakeLock = null;
 let muted = false;
 let nagCounts = {};
 let fillerPlan = {};
+let repeatSeen = null; // nonce de «repetir última locución»
 
 // Frases de insistencia: si nadie actúa en ~30 s, la voz anima a seguir.
 // Admiten varias variantes para que cada aviso suene distinto.
@@ -152,6 +153,11 @@ export function conductorTick() {
     return;
   }
   requestWakeLock();
+  // Repetición bajo demanda: se olvida lo dicho en el contexto actual y el
+  // flujo normal vuelve a pronunciarlo (paso, amanecer, debate…).
+  const rn = game.repeatNonce || 0;
+  if (repeatSeen === null) repeatSeen = rn;
+  else if (rn !== repeatSeen) { repeatSeen = rn; spoken.clear(); stopSpeech(); }
   if (game.paused) { cancelTimer(); stopSpeech(); return; } // pausa global
   const players = state.players.filter((p) => p.inGame);
 
@@ -336,6 +342,7 @@ export function conductorReset() {
     spoken = new Set();
     nagCounts = {};
     fillerPlan = {};
+    repeatSeen = null;
     cancelTimer();
     stopSpeech();
   }
