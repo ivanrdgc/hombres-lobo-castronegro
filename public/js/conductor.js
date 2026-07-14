@@ -189,6 +189,12 @@ export function conductorTick() {
       schedule(key, 2500, runDawn);
       return;
     }
+    // Colchón inicial: la misma pantalla de sueño para todos mientras suena
+    // «cae la noche»; el primer rol no despierta hasta que todos duermen.
+    if (stepId === 'durmiendo') {
+      schedule(key, 11000 + Math.random() * 3000, () => advanceGhostStep(game.stepIdx));
+      return;
+    }
     // Encantados: paso informativo con palabras clave (el "toque en el hombro" del narrador).
     if (stepId === 'encantados') {
       const targets = (game.acts.gaiteroTargets || []).map((id) => players.find((p) => p.id === id)).filter(Boolean);

@@ -14,6 +14,7 @@ export const GITANA_QUESTIONS = [
 // Definición ordenada de los pasos de la noche.
 // silent: paso interno sin locución (no delata información).
 export const NIGHT_STEPS = [
+  { id: 'durmiendo', roles: [] }, // colchón inicial: todos cierran los ojos
   { id: 'ladron', roles: ['ladron'], firstNight: true },
   { id: 'cupido', roles: ['cupido'], firstNight: true },
   { id: 'enamorados', roles: [], firstNight: true },
@@ -49,7 +50,7 @@ export function computeNightSteps(game, players) {
     // Primera noche sin sangre: los lobos se reconocen, pero nadie devora.
     if (game.noKillNight1 && game.night === 1
       && ['lobos', 'infecto_decision', 'lobo_feroz'].includes(s.id)) continue;
-    if (s.id === 'lobos' || s.id === 'amanecer' || s.id === 'lobos_reconocen') { steps.push(s.id); continue; }
+    if (s.id === 'lobos' || s.id === 'amanecer' || s.id === 'lobos_reconocen' || s.id === 'durmiendo') { steps.push(s.id); continue; }
     if (s.id === 'enamorados') {
       if (roleDealt(game, 'cupido')) steps.push(s.id);
       continue;
@@ -170,6 +171,8 @@ export function stepActors(stepId, game, players) {
     }
     case 'encantados':
       return null; // paso informativo: lo temporiza el conductor con palabras clave
+    case 'durmiendo':
+      return null; // nadie actúa: tiempo para que todos cierren los ojos
     case 'gitana': {
       if (acts.gitanaDone) return null;
       return idsOf(aliveWithRole(players, 'gitana'));
@@ -184,7 +187,7 @@ function idsOf(arr) { return arr.length ? arr.map((p) => p.id) : null; }
 // ¿Debe anunciarse este paso aunque nadie actúe? (turno "fantasma" para disimular)
 export function stepNeedsGhostAnnounce(stepId, game, players) {
   const def = NIGHT_STEPS.find((s) => s.id === stepId);
-  if (!def || def.silent || stepId === 'amanecer' || stepId === 'lobos') return false;
+  if (!def || def.silent || stepId === 'amanecer' || stepId === 'lobos' || stepId === 'durmiendo') return false;
   if (stepId === 'enamorados' || stepId === 'encantados' || stepId === 'lobos_reconocen') return false;
   // Rol vivo pero sin poder utilizable (bruja sin pociones, zorro sin olfato,
   // poderes perdidos por el Anciano…): disimular SIEMPRE, o se delataría.

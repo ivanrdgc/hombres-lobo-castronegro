@@ -38,6 +38,9 @@ try {
   await ana.click('button[data-a=guided-first-night]');
   st = await wait(ana, (s) => s.phase === 'night', 'noche 1');
   console.log('  roles:', st.players.map((p) => `${p.name}=${p.role}`).join(', '));
+  // Paso «durmiendo»: el máster espera a que todos cierren los ojos.
+  await wait(ana, (s) => s.steps[s.stepIdx] === 'durmiendo', 'durmiendo');
+  await ana.click('button[data-a=guided-skip]');
   const wolf = st.players.find((p) => p.role === 'hombre_lobo');
   const vidente = st.players.find((p) => p.role === 'vidente');
 

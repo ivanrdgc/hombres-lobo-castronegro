@@ -129,6 +129,7 @@ test('computeNightSteps: noche 1 incluye pasos iniciales, noche 2 no', () => {
   const players = mkPlayers(['hombre_lobo', 'vidente', 'cupido', 'aldeano']);
   const g1 = mkGame({ night: 1, composition: { hombre_lobo: 1, vidente: 1, cupido: 1, aldeano: 1 } });
   const s1 = computeNightSteps(g1, players);
+  assert.equal(s1[0], 'durmiendo', 'la noche empieza con todos durmiéndose');
   assert.ok(s1.includes('cupido'));
   assert.ok(s1.includes('enamorados'));
   assert.ok(s1.includes('vidente'));
@@ -510,7 +511,7 @@ test('partida completa: los lobos devoran, el pueblo lincha, gana el pueblo', ()
 
   // Noche 1
   game.steps = computeNightSteps(game, ps);
-  assert.deepEqual(game.steps, ['vidente', 'lobos_reconocen', 'lobos', 'bruja', 'amanecer']);
+  assert.deepEqual(game.steps, ['durmiendo', 'vidente', 'lobos_reconocen', 'lobos', 'bruja', 'amanecer']);
   game.acts = { videnteTarget: 'p0', wolfVictim: 'p4', brujaDone: true };
   const dawn1 = resolveDawn(game, ps);
   ps = dawn1.players;

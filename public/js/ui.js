@@ -282,6 +282,7 @@ const STEP_LABELS = {
   dos_hermanas: 'las Dos Hermanas', tres_hermanos: 'los Tres Hermanos',
   actor: 'el Actor', defensor: 'el Defensor', vidente: 'la Vidente',
   zorro: 'el Zorro', cuervo: 'el Cuervo', lobos_reconocen: 'la manada (reconocimiento)',
+  durmiendo: 'el pueblo (durmiéndose)',
   lobos: 'los Hombres Lobo', infecto_decision: 'el Infecto Padre',
   lobo_feroz: 'el Gran Lobo Feroz', lobo_albino: 'el Lobo Albino',
   bruja: 'la Bruja', gaitero: 'el Gaitero', gitana: 'la Gitana', encantados: 'los Encantados',
@@ -463,7 +464,9 @@ function nightPhase(g, my) {
   const players = state.players.filter((p) => p.inGame);
   const actors = stepId ? stepActors(stepId, game, players) : null;
   const isActor = actors && actors.includes(my.id) && my.alive;
-  const narrText = (def && !def.silent && narr(stepId, `${game.seed}:n${game.night}:s${game.stepIdx}:${stepId}`)) || 'La noche envuelve Castronegro…';
+  const narrText = stepId === 'durmiendo'
+    ? narr('noche_cae', `${game.seed}:n${game.night}`)
+    : (def && !def.silent && narr(stepId, `${game.seed}:n${game.night}:s${game.stepIdx}:${stepId}`)) || 'La noche envuelve Castronegro…';
 
   let panel = '';
   if (isActor) panel = nightActionPanel(stepId, g, my, players);
@@ -923,6 +926,10 @@ function guidedMasterScreen(g, my) {
       body = `<div class="card"><h3>🌅 Fin de la noche</h3>
         <p class="small-note">Cuando hayas despertado al pueblo, resuelve el amanecer: la app calculará las muertes y te dará el parte.</p>
         ${btn('guided-dawn', '🌅 Resolver el amanecer', 'primary block')}</div>`;
+    } else if (stepId === 'durmiendo') {
+      body = `<div class="narration">📖 <b>Noche ${game.night}.</b> Lee en voz alta:<br><i>«${esc(narr('noche_cae', `${game.seed}:n${game.night}`))}»</i></div>
+        <div class="card"><p class="small-note">Espera a que todos cierren los ojos.</p>
+        ${btn('guided-skip', '😴 Todos dormidos, continuar', 'primary block')}</div>`;
     } else {
       const actors = stepId ? stepActors(stepId, game, players) : null;
       const label = STEP_LABELS[stepId] || stepId;
