@@ -954,6 +954,27 @@ let cloudQueue = [];
 let cloudAudio = null;
 let cloudBusy = false;
 
+// iOS solo permite reproducir audio nacido de un gesto del usuario. Se
+// desbloquea UNA VEZ un elemento (reproduciendo un wav silencioso dentro del
+// gesto) y se reutiliza después para todas las frases: cambiar su src
+// conserva el permiso. En escritorio no molesta.
+let sharedAudio = null;
+const SILENT_WAV = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQQAAACAgICA';
+
+export function unlockAudioPlayback() {
+  try {
+    if (!sharedAudio) {
+      sharedAudio = new Audio(SILENT_WAV);
+      sharedAudio.play().then(() => { try { sharedAudio.pause(); } catch { /* nada */ } }).catch(() => { /* sin gesto válido */ });
+    }
+    if (typeof speechSynthesis !== 'undefined' && !speechSynthesis.speaking) {
+      const u = new SpeechSynthesisUtterance(' ');
+      u.volume = 0;
+      speechSynthesis.speak(u); // desbloquea también la voz del dispositivo
+    }
+  } catch { /* sin audio disponible */ }
+}
+
 export function cloudAvailable() { return !!TTS_KEY; }
 
 async function synthCloud(text) {
@@ -999,12 +1020,19 @@ function pumpCloud() {
     pumpCloud();
   };
   synthCloud(item.text).then((url) => {
-    cloudAudio = new Audio(url);
+    // Reutiliza el elemento desbloqueado por gesto (imprescindible en iOS).
+    cloudAudio = sharedAudio || new Audio();
     try { cloudAudio.preservesPitch = true; } catch { /* opcional */ }
     cloudAudio.playbackRate = voiceCfg.rate || 1;
     cloudAudio.onended = finish;
     cloudAudio.onerror = finish;
-    cloudAudio.play().catch(() => { speakDevice(item.text, {}); finish(); });
+    cloudAudio.src = url;
+    cloudAudio.play().catch(() => {
+      cloudAudio.onended = null;
+      cloudAudio.onerror = null;
+      speakDevice(item.text, {});
+      finish();
+    });
   }).catch(() => {
     // Sin red o sin cuota: cae a la voz del dispositivo y la cola sigue.
     speakDevice(item.text, {});
@@ -1130,5 +1158,8 @@ export function stopSpeech() {
   if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel();
   cloudQueue = [];
   cloudBusy = false;
-  if (cloudAudio) { try { cloudAudio.pause(); } catch { /* nada */ } cloudAudio = null; }
+  if (cloudAudio) {
+    try { cloudAudio.onended = null; cloudAudio.onerror = null; cloudAudio.pause(); } catch { /* nada */ }
+    cloudAudio = null; // el elemento compartido sigue desbloqueado para la próxima
+  }
 }

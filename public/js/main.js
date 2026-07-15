@@ -3,14 +3,19 @@ import { state, onChange, applyRoute, navigate, me, isMaster, setFlash } from '.
 import { render, invalidateRender, esc, randomGroupName } from './ui.js';
 import * as A from './actions.js';
 import { conductorTick, conductorReset, initConductor, setMuted, isMuted } from './conductor.js';
-import { speak, stopSpeech, setVoiceConfig, getVoiceConfig } from './narration.js';
+import { speak, stopSpeech, unlockAudioPlayback, setVoiceConfig, getVoiceConfig } from './narration.js';
 import { EXPLANATIONS } from './explain.js';
 import { kickAmbience, stopAmbience, ensureAmbience } from './ambience.js';
 import { aliveNeighbors, isWolfSide, wolfCountFor } from './roles.js';
 
 function unlockSpeech() {
+  unlockAudioPlayback(); // síncrono, dentro del gesto (iOS)
   try { speak('El pueblo de Castronegro abre sus puertas.'); } catch { /* sin voz */ }
 }
+
+// iOS bloquea el audio que no nace de un gesto: el primer toque en la página
+// desbloquea el elemento compartido (y el contexto del ambiente) para siempre.
+document.addEventListener('pointerdown', () => { unlockAudioPlayback(); kickAmbience(); }, { once: true, capture: true });
 
 // ——— Limpieza de selección al cambiar el contexto de juego ———
 let lastCtx = '';
