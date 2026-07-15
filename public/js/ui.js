@@ -1362,8 +1362,9 @@ function explainModal() {
       <p class="small-note" style="margin:7px 0">${ROLES[id].emoji} <b>${ROLES[id].name}</b> — ${ROLES[id].desc}</p>` : '').join('')}
     <h3 style="margin-top:14px">🔧 Cómo se jugará</h3>
     ${settingsSummary((state.group || {}).settings || {}).map((t) => `<p class="small-note" style="margin:7px 0">• ${t}</p>`).join('')}
-    ${btn('explain-speak', '🔊 Leer en voz alta', 'violet block')}
-    <p class="small-note" style="text-align:center">${narrP ? `Sonará en el dispositivo narrador: <b>${esc(narrP.name)}</b>.` : 'No hay narrador elegido: sonará en este dispositivo.'}</p>
+    ${btn('explain-speak-local', '🔊 Leer en este dispositivo', 'violet block')}
+    ${narrP && narrP.id !== (me() || {}).id ? btn('explain-speak', `🔊 Leer en el narrador (${esc(narrP.name)})`, 'ghost block') : ''}
+    <p class="small-note" style="text-align:center">${narrP && narrP.id === (me() || {}).id ? 'Este dispositivo es el narrador.' : 'La lectura usa la voz configurada en el dispositivo que suene.'}</p>
     ${btn('close-modal', '✔️ Listo', 'primary block')}`;
 }
 

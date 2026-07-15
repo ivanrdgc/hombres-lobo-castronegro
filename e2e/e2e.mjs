@@ -148,13 +148,14 @@ try {
   await ana.click('button[data-a=narrator-device]');
   await ana.waitForSelector('.player:has-text("Ana"):has-text("🔊 narrador")');
   ok('y vuelve a Ana para el resto de la batería');
-  await ana.click('[data-a=open-explain]');
-  await ana.waitForSelector('text=Cómo se juega');
-  await ana.click('button[data-a=explain-speak]');
-  await ana.waitForFunction(() => window.__hlc.group && window.__hlc.group.explain && window.__hlc.group.explain.nonce > 0);
-  ok('explicación: modal con introducción y petición de lectura al narrador');
-  await ana.click('button[data-a=close-modal]');
-  await pace(ana);
+  await pages.bruno.click('[data-a=open-explain]');
+  await pages.bruno.waitForSelector('text=Cómo se juega');
+  check(await pages.bruno.isVisible('button[data-a=explain-speak-local]'), 'explicación: opción de leer en este dispositivo');
+  await pages.bruno.click('button[data-a=explain-speak]'); // leer en el narrador (Ana)
+  await pages.bruno.waitForFunction(() => window.__hlc.group && window.__hlc.group.explain && window.__hlc.group.explain.nonce > 0);
+  ok('explicación: petición de lectura enviada al narrador');
+  await pages.bruno.click('button[data-a=close-modal]');
+  await pace(pages.bruno);
   await ana.click('[data-a=open-roles]');
   await ana.waitForSelector('text=Roles de la partida');
   check(await ana.isVisible('.roletoggle.locked:has-text("Hombre Lobo")'), 'lobo siempre activo (bloqueado)');

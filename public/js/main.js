@@ -3,7 +3,8 @@ import { state, onChange, applyRoute, navigate, me, isMaster, setFlash } from '.
 import { render, invalidateRender, esc, randomGroupName } from './ui.js';
 import * as A from './actions.js';
 import { conductorTick, conductorReset, initConductor, setMuted, isMuted } from './conductor.js';
-import { speak, setVoiceConfig, getVoiceConfig } from './narration.js';
+import { speak, stopSpeech, setVoiceConfig, getVoiceConfig } from './narration.js';
+import { EXPLANATIONS } from './explain.js';
 import { kickAmbience, stopAmbience, ensureAmbience } from './ambience.js';
 import { aliveNeighbors, isWolfSide, wolfCountFor } from './roles.js';
 
@@ -179,6 +180,11 @@ const handlers = {
   'open-explain': () => { state.ui.modal = { type: 'explain' }; render(); },
   'open-game-roles': () => { state.ui.modal = { type: 'game-roles' }; render(); },
   'explain-speak': () => guard(() => A.requestExplain()),
+  'explain-speak-local': () => {
+    const ex = EXPLANATIONS[(state.group || {}).currentGame] || EXPLANATIONS.hombres_lobo;
+    stopSpeech();
+    setTimeout(() => speak(ex.spoken), 250);
+  },
   'dismiss-flash': () => { state.flash = null; render(); },
   'retry': () => location.reload(),
 
