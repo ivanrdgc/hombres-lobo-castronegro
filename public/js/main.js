@@ -13,9 +13,12 @@ function unlockSpeech() {
   try { speak('El pueblo de Castronegro abre sus puertas.'); } catch { /* sin voz */ }
 }
 
-// iOS bloquea el audio que no nace de un gesto: el primer toque en la página
-// desbloquea el elemento compartido (y el contexto del ambiente) para siempre.
-document.addEventListener('pointerdown', () => { unlockAudioPlayback(); kickAmbience(); }, { once: true, capture: true });
+// iOS bloquea el audio que no nace de un gesto VÁLIDO (click o touchend;
+// pointerdown no cuenta). Cada toque reintenta el desbloqueo hasta que una
+// reproducción silenciosa funcione; después es un no-op barato.
+const tryUnlockAudio = () => { unlockAudioPlayback(); kickAmbience(); };
+document.addEventListener('click', tryUnlockAudio, true);
+document.addEventListener('touchend', tryUnlockAudio, true);
 
 // ——— Limpieza de selección al cambiar el contexto de juego ———
 let lastCtx = '';

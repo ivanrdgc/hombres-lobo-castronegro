@@ -959,15 +959,22 @@ let cloudBusy = false;
 // gesto) y se reutiliza después para todas las frases: cambiar su src
 // conserva el permiso. En escritorio no molesta.
 let sharedAudio = null;
+let audioUnlocked = false; // true cuando una reproducción ha SALIDO bien
 const SILENT_WAV = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQQAAACAgICA';
 
 export function unlockAudioPlayback() {
   try {
-    if (!sharedAudio) {
-      sharedAudio = new Audio(SILENT_WAV);
-      sharedAudio.play().then(() => { try { sharedAudio.pause(); } catch { /* nada */ } }).catch(() => { /* sin gesto válido */ });
+    if (!sharedAudio) sharedAudio = new Audio();
+    // Se reintenta en cada gesto hasta que una reproducción silenciosa
+    // funcione de verdad (iOS solo valida click/touchend, no pointerdown).
+    if (!audioUnlocked && !cloudBusy) {
+      sharedAudio.src = SILENT_WAV;
+      sharedAudio.play().then(() => {
+        audioUnlocked = true;
+        try { sharedAudio.pause(); } catch { /* nada */ }
+      }).catch(() => { /* gesto no válido aún: se reintentará */ });
     }
-    if (typeof speechSynthesis !== 'undefined' && !speechSynthesis.speaking) {
+    if (typeof speechSynthesis !== 'undefined' && !speechSynthesis.speaking && !speechSynthesis.pending) {
       const u = new SpeechSynthesisUtterance(' ');
       u.volume = 0;
       speechSynthesis.speak(u); // desbloquea también la voz del dispositivo
@@ -982,28 +989,30 @@ async function synthCloud(text) {
   if (memCache.has(k)) return memCache.get(k);
   const cacheUrl = 'https://tts.cache.local/' + voiceCfg.cloudVoice + '/' + encodeURIComponent(text).slice(0, 1500);
   let blob = null;
+  let store = null;
   try {
-    const store = await caches.open('tts-v1');
+    store = await caches.open('tts-v1');
     const hit = await store.match(cacheUrl);
     if (hit) blob = await hit.blob();
-    if (!blob) {
-      const res = await fetch('https://texttospeech.googleapis.com/v1/text:synthesize?key=' + TTS_KEY, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          input: { text },
-          voice: { languageCode: 'es-ES', name: voiceCfg.cloudVoice },
-          audioConfig: { audioEncoding: 'MP3' },
-        }),
-      });
-      if (!res.ok) throw new Error('tts ' + res.status);
-      const data = await res.json();
-      const bytes = Uint8Array.from(atob(data.audioContent), (c) => c.charCodeAt(0));
-      blob = new Blob([bytes], { type: 'audio/mpeg' });
-      await store.put(cacheUrl, new Response(blob, { headers: { 'Content-Type': 'audio/mpeg' } }));
+  } catch { store = null; /* Cache API no disponible (p. ej. navegación privada) */ }
+  if (!blob) {
+    const res = await fetch('https://texttospeech.googleapis.com/v1/text:synthesize?key=' + TTS_KEY, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        input: { text },
+        voice: { languageCode: 'es-ES', name: voiceCfg.cloudVoice },
+        audioConfig: { audioEncoding: 'MP3' },
+      }),
+    });
+    if (!res.ok) {
+      console.warn('TTS neuronal falló:', res.status, await res.text().catch(() => ''));
+      throw new Error('tts ' + res.status);
     }
-  } catch (e) {
-    if (!blob) throw e;
+    const data = await res.json();
+    const bytes = Uint8Array.from(atob(data.audioContent), (c) => c.charCodeAt(0));
+    blob = new Blob([bytes], { type: 'audio/mpeg' });
+    if (store) await store.put(cacheUrl, new Response(blob, { headers: { 'Content-Type': 'audio/mpeg' } })).catch(() => { /* caché llena */ });
   }
   const url = URL.createObjectURL(blob);
   memCache.set(k, url);
@@ -1022,12 +1031,12 @@ function pumpCloud() {
   synthCloud(item.text).then((url) => {
     // Reutiliza el elemento desbloqueado por gesto (imprescindible en iOS).
     cloudAudio = sharedAudio || new Audio();
-    try { cloudAudio.preservesPitch = true; } catch { /* opcional */ }
+    try { cloudAudio.preservesPitch = true; cloudAudio.webkitPreservesPitch = true; } catch { /* opcional */ }
     cloudAudio.playbackRate = voiceCfg.rate || 1;
     cloudAudio.onended = finish;
     cloudAudio.onerror = finish;
     cloudAudio.src = url;
-    cloudAudio.play().catch(() => {
+    cloudAudio.play().then(() => { audioUnlocked = true; }).catch(() => {
       cloudAudio.onended = null;
       cloudAudio.onerror = null;
       speakDevice(item.text, {});
