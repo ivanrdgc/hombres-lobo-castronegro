@@ -140,10 +140,12 @@ function outroFor(stepId, game) {
   return outro(stepId, `${game.seed}:n${game.night}:s${game.stepIdx}`);
 }
 
-// Llamada a los enamorados con sus palabras clave. Aparte para poder pre-generarla
-// en cuanto Cupido marca (no antes: hasta entonces no se sabe quiénes son).
-function enamoradosCall(lovers) {
-  return `Cupido ha disparado sus flechas. Todos con los ojos cerrados y atentos. Si oyes tu palabra clave, abre los ojos con disimulo y mira tu pantalla: … ${lovers.map((p) => p.keyword).join('… y ')}. Enamorados, descubrid a vuestro amor y confirmad en silencio.`;
+// Las llamadas por palabra clave se dicen en DOS partes: una fija (que se
+// pre-genera y suena al instante) y otra con las palabras clave (dinámica). Al
+// encadenarlas, la segunda se sintetiza mientras suena la primera, sin espera.
+const ENAMORADOS_INTRO = 'Cupido ha disparado sus flechas esta noche. Guardad todos los ojos cerrados y escuchad con atención. Si oyes tu palabra clave, abre los ojos con disimulo y mira tu pantalla.';
+function enamoradosKw(lovers) {
+  return `Atención: … ${lovers.map((p) => p.keyword).join('… y ')}. Enamorados, reconoced en silencio a vuestro amor y confirmad en la pantalla.`;
 }
 
 // Adelanta la síntesis de las locuciones previsibles de una noche (entradas de
@@ -165,11 +167,25 @@ function prewarmNight(game, players, night) {
     });
     prewarm(narr('amanecer_sin_muertes', `${game.seed}:d${night}`));
     prewarm(narr('amanecer_con_muertes', `${game.seed}:d${night}`));
+    if (steps.includes('enamorados')) prewarm(ENAMORADOS_INTRO); // parte fija de la llamada
   } catch { /* la pre-generación es opcional: si algo falla, se sintetiza al vuelo */ }
+}
+
+// Pre-genera la entrada (y despedida) de un paso concreto, si es estático.
+function prewarmStep(game, idx) {
+  try {
+    const stepId = (game.steps || [])[idx];
+    if (!stepId || ['durmiendo', 'amanecer', 'enamorados', 'encantados', 'lobos'].includes(stepId)) return;
+    prewarm(narr(stepId, `${game.seed}:n${game.night}:s${idx}:${stepId}`));
+    prewarm(outroFor(stepId, { ...game, stepIdx: idx }));
+  } catch { /* la pre-generación es opcional */ }
 }
 
 function chainOutro(key, outroTxt, waitMs, stepIdx) {
   const adv = () => advanceGhostStep(stepIdx);
+  // Mientras suena esta despedida, adelanta la síntesis del siguiente rol.
+  const g = state.group && state.group.game;
+  if (g) prewarmStep(g, stepIdx + 1);
   if (!outroTxt) { scheduleAfterSpeech(key + ':adv', 500, adv); return; }
   const oKey = key + ':outro';
   if (spoken.has(oKey)) { scheduleAfterSpeech(key + ':adv', 1100 + Math.random() * 600, adv); return; }
@@ -192,6 +208,18 @@ function say(key, text, onend) {
   spoken.add(key);
   if (text) lastSpokenText = text;
   speak(text, { muted, onend });
+}
+
+// Como say(), pero encadena varias partes en una sola locución. La primera parte
+// (fija, pre-generada) suena al instante mientras la segunda (dinámica, con las
+// palabras clave) se sintetiza en paralelo gracias al prefetch de la cola.
+function sayParts(key, parts, onend) {
+  if (spoken.has(key)) { if (onend) onend(); return; }
+  spoken.add(key);
+  const list = parts.filter(Boolean);
+  if (!list.length) { if (onend) onend(); return; }
+  lastSpokenText = list.join(' ');
+  list.forEach((p, i) => speak(p, { muted, chain: i > 0, onend: i === list.length - 1 ? onend : null }));
 }
 
 function schedule(key, ms, fn) {
@@ -354,10 +382,16 @@ export function conductorTick() {
       const actors = stepActors(stepId, game, players);
       if (targets.length && actors && actors.length) {
         const kws = targets.map((p) => p.keyword).filter(Boolean);
-        say(key, `${encIntro} Todos con los ojos cerrados. Si oyes tu palabra clave, la música te ha atrapado: abre los ojos con disimulo, mira tu pantalla y confirma. Las palabras son: … ${kws.join('… y ')}.`);
+        // Parte fija + palabras clave encadenadas: las claves se sintetizan
+        // mientras suena la primera parte, así no añaden espera.
+        sayParts(key, [
+          `${encIntro} Todos con los ojos cerrados. Si oyes tu palabra clave, la música te ha atrapado: abre los ojos con disimulo, mira tu pantalla y confirma.`,
+          `Escuchad las palabras: … ${kws.join('… y ')}.`,
+        ]);
         scheduleNag(key, 'encantados');
         return;
       }
+
       if (targets.length) { // todos confirmados: despedida y sigue la noche
         chainOutro(key, outro('encantados', `${game.seed}:n${game.night}`), 900, game.stepIdx);
         return;
@@ -403,13 +437,15 @@ export function conductorTick() {
         return;
       }
     }
-    // Enamorados: se les llama por sus palabras clave secretas.
+    // Enamorados: parte fija (pre-generada) + palabras clave (dinámica), encadenadas.
+    let parts = null;
     if (stepId === 'enamorados' && game.keywordsActive) {
       const lovers = players.filter((p) => p.lover && p.keyword);
-      if (lovers.length >= 2) text = enamoradosCall(lovers);
+      if (lovers.length >= 2) parts = [ENAMORADOS_INTRO, enamoradosKw(lovers)];
     }
     if (actors && actors.length) {
-      if (text) say(key, text);
+      if (parts) sayParts(key, parts);
+      else if (text) say(key, text);
       // Adelanta la síntesis de lo que viene: la despedida de este paso (para
       // cuando actúen) y la entrada del siguiente paso estático.
       prewarm(outroFor(stepId, game));
@@ -437,7 +473,7 @@ export function conductorTick() {
     // síntesis de la llamada a los enamorados (que si no, se haría al vuelo).
     if (game.steps[game.stepIdx + 1] === 'enamorados' && game.keywordsActive) {
       const lovers = players.filter((p) => p.lover && p.keyword);
-      if (lovers.length >= 2) prewarm(enamoradosCall(lovers));
+      if (lovers.length >= 2) { prewarm(ENAMORADOS_INTRO); prewarm(enamoradosKw(lovers)); }
     }
     const outro = outroFor(stepId, game);
     if (stepNeedsGhostAnnounce(stepId, game, players)) {
