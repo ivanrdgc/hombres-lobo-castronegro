@@ -4,7 +4,7 @@ import { render, invalidateRender, esc, randomGroupName } from './ui.js';
 import * as A from './actions.js';
 import { conductorTick, conductorReset, initConductor, setMuted, isMuted } from './conductor.js';
 import { speak, stopSpeech, unlockAudioPlayback, testCloudVoice, setVoiceConfig, getVoiceConfig } from './narration.js';
-import { EXPLANATIONS } from './explain.js';
+import { EXPLANATIONS, buildExplainSpeech } from './explain.js';
 import { kickAmbience, stopAmbience, ensureAmbience } from './ambience.js';
 import { aliveNeighbors, isWolfSide, wolfCountFor } from './roles.js';
 
@@ -190,8 +190,9 @@ const handlers = {
   'explain-speak': () => guard(() => A.requestExplain()),
   'explain-speak-local': () => {
     const ex = EXPLANATIONS[(state.group || {}).currentGame] || EXPLANATIONS.hombres_lobo;
+    const s = buildExplainSpeech(ex);
     stopSpeech();
-    setTimeout(() => speak(ex.spoken), 250);
+    setTimeout(() => speak(s.text, { ssml: s.ssml }), 250);
   },
   'dismiss-flash': () => { state.flash = null; render(); },
   'retry': () => location.reload(),

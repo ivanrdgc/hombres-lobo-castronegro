@@ -1014,10 +1014,10 @@ export function unlockAudioPlayback() {
 
 export function cloudAvailable() { return !!TTS_KEY; }
 
-async function synthCloud(text) {
-  const k = voiceCfg.cloudVoice + '|' + text;
+async function synthCloud(text, ssml) {
+  const k = voiceCfg.cloudVoice + '|' + (ssml || text);
   if (memCache.has(k)) return memCache.get(k);
-  const cacheUrl = 'https://tts.cache.local/' + voiceCfg.cloudVoice + '/' + encodeURIComponent(text).slice(0, 1500);
+  const cacheUrl = 'https://tts.cache.local/' + voiceCfg.cloudVoice + '/' + encodeURIComponent(ssml || text).slice(0, 1500);
   let blob = null;
   let store = null;
   try {
@@ -1030,7 +1030,7 @@ async function synthCloud(text) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        input: { text },
+        input: ssml ? { ssml } : { text },
         voice: { languageCode: 'es-ES', name: voiceCfg.cloudVoice },
         audioConfig: { audioEncoding: 'MP3' },
       }),
@@ -1060,7 +1060,7 @@ function pumpCloud() {
     if (item.onend) item.onend();
     pumpCloud();
   };
-  synthCloud(item.text).then((url) => {
+  synthCloud(item.text, item.ssml).then((url) => {
     // Reutiliza el elemento desbloqueado por gesto (imprescindible en iOS).
     cloudAudio = sharedAudio || new Audio();
     try { cloudAudio.preservesPitch = true; cloudAudio.webkitPreservesPitch = true; } catch { /* opcional */ }
@@ -1148,7 +1148,7 @@ export function initVoice() {
 // priority 'low' (murmullos, recordatorios): si la voz está ocupada, se omite.
 // onend se llama también si la síntesis no está disponible.
 export function speak(text, opts = {}) {
-  const { muted = false, onend = null, priority = 'normal' } = opts;
+  const { muted = false, onend = null, priority = 'normal', ssml = null } = opts;
   if (muted || !text) {
     if (onend) setTimeout(onend, 800);
     return;
@@ -1159,11 +1159,11 @@ export function speak(text, opts = {}) {
       return;
     }
     if (cloudBusy && cloudQueue.length) cloudQueue = []; // suelta el backlog atrasado
-    cloudQueue.push({ text, onend });
+    cloudQueue.push({ text, ssml, onend });
     pumpCloud();
     return;
   }
-  speakDevice(text, opts);
+  speakDevice(text, opts); // la voz del dispositivo no entiende SSML: texto plano
 }
 
 function speakDevice(text, { muted = false, onend = null, priority = 'normal' } = {}) {

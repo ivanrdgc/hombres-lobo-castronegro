@@ -4,7 +4,7 @@
 import { state, isMaster } from './store.js';
 import { stepActors, stepNeedsGhostAnnounce, NIGHT_STEPS, WINNER_LABELS } from './engine.js';
 import { ROLES } from './roles.js';
-import { EXPLANATIONS } from './explain.js';
+import { EXPLANATIONS, buildExplainSpeech } from './explain.js';
 import { NARRATION, narr, outro, deathLine, improv, speak, stopSpeech, initVoice, getVoiceConfig, isNarratorSpeaking } from './narration.js';
 import { ensureAmbience, stopAmbience } from './ambience.js';
 import {
@@ -212,9 +212,10 @@ export function conductorTick() {
       const shouldSpeak = narrOk ? myPid === g.lastNarratorId : myPid === g.explain.by;
       if (shouldSpeak && g.status === 'lobby') {
         const ex = EXPLANATIONS[g.currentGame] || EXPLANATIONS.hombres_lobo;
+        const s = buildExplainSpeech(ex);
         initVoice();
         stopSpeech();
-        setTimeout(() => speak(ex.spoken, { muted }), 350);
+        setTimeout(() => speak(s.text, { ssml: s.ssml, muted }), 350);
       }
     }
   }

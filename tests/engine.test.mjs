@@ -640,6 +640,23 @@ test('narración compuesta: ~100+ variantes por tipo, deterministas por sal', as
   assert.ok(outs.size >= 15, 'despedidas de la bruja: ' + outs.size);
 });
 
+test('explicación: la voz lee exactamente el mismo texto que muestra el modal, con pausas', async () => {
+  const { EXPLANATIONS, buildExplainSpeech } = await import('../public/js/explain.js');
+  const ex = EXPLANATIONS.hombres_lobo;
+  const s = buildExplainSpeech(ex);
+  const words = (t) => t.replace(/<[^>]+>/g, '').replace(/[«»…—:]/g, ' ')
+    .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]/gu, '')
+    .replace(/\s+/g, ' ').trim().toLowerCase();
+  const shown = words([...ex.intro, ...ex.how].join(' '));
+  const spoken = words(s.ssml.replace(/<break[^>]*>/g, ' ').replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>'));
+  assert.equal(spoken, shown, 'lo leído debe coincidir con lo mostrado');
+  assert.equal(s.text, [...ex.intro, ...ex.how].map((h) => h.replace(/<[^>]+>/g, '')).join(' ')
+    .replace(/[«»]/g, '').replace(/\s+/g, ' ').trim(), 'el texto plano es el fallback del dispositivo');
+  assert.ok((s.ssml.match(/<break/g) || []).length >= 6, 'debe haber varias pausas');
+  assert.match(s.ssml, /^<speak>.*<\/speak>$/s, 'SSML bien formado');
+});
+
 test('aliveNeighbors: salta a los muertos en el círculo', () => {
   const ps = mkPlayers(['aldeano', 'aldeano', 'aldeano', 'aldeano', 'aldeano']);
   ps[1].alive = false; ps[4].alive = false;
