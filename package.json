@@ -1,0 +1,11 @@
+{
+  "name": "hombres-lobo",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix app run dev",
+    "build": "npm --prefix app run build",
+    "test": "node --test tests/engine.test.mjs && npm --prefix app test",
+    "deploy:v2": "npm --prefix app run build && firebase deploy --only hosting:v2 --project castronegro-zui5sg",
+    "deploy:prod": "firebase deploy --only hosting:prod --project castronegro-zui5sg"
+  }
+}

@@ -1,5 +1,18 @@
 {
   "projects": {
     "default": "castronegro-zui5sg"
-  }
+  },
+  "targets": {
+    "castronegro-zui5sg": {
+      "hosting": {
+        "prod": [
+          "jd-c7f816261e2a6b00ea17f540"
+        ],
+        "v2": [
+          "jd-56f81e8ab33ceead24b35e92"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }
