@@ -926,27 +926,46 @@ export function deathLine(name, roleName, salt = '') {
   return tpl.replace('{name}', name).replace('{role}', roleName ? ` Era ${roleName}.` : '');
 }
 
+// Muerte en cadena de los enamorados: al caer {a}, su pareja {b} muere de amor.
+// Se anuncia siempre (la muerte es visible), pase lo que pase con revelar roles.
+const LOVE_DEATH_LINES = [
+  'Pero la horca se cobra dos vidas: {b}, unido a {a} por el flechazo de Cupido, no soporta perderle y cae muerto de amor a su lado.',
+  'Y el amor es cruel: al ver caer a {a}, su pareja secreta {b} se derrumba sin vida, muerto de pena.',
+  '{b}, enamorado en secreto de {a}, lanza un último suspiro y se apaga de amor junto a su cuerpo.',
+  'Cupido cobra su precio: {b} no puede seguir viviendo sin {a} y muere de pena en el acto.',
+  'La flecha de Cupido los unió en vida y en muerte: con {a} en la hoguera, {b} cae fulminado de amor.',
+];
+export function loveDeathLine(a, b, salt = '') {
+  const tpl = LOVE_DEATH_LINES[hashStr('love|' + salt + b) % LOVE_DEATH_LINES.length];
+  return ' ' + tpl.replace('{a}', a || 'su amor').replace('{b}', b);
+}
+
 let watchdog = null;
-const VOICE_LS = 'hlc_voice_v1';
+const VOICE_LS = 'hlc_voice_v2'; // v2: por defecto Neural2 (ágil) en vez de Chirp3-HD (lenta)
 let voiceCfg = {
   engine: 'cloud', // 'cloud' (neuronal, muy humana) o 'device' (la del móvil)
-  cloudVoice: 'es-ES-Chirp3-HD-Charon',
+  cloudVoice: 'es-ES-Neural2-F', // masculina grave, muy natural y ~5x más rápida que Chirp3-HD
   voiceURI: null, rate: 0.95, pitch: 0.9,
   ambience: true, // paisaje sonoro de fondo en el narrador
 };
 try { Object.assign(voiceCfg, JSON.parse(localStorage.getItem(VOICE_LS)) || {}); } catch { /* valores por defecto */ }
 
-// Voz neuronal en la nube (Google TTS, Chirp3-HD). La clave está restringida a
-// esta API y al dominio del juego, y el audio se cachea en el dispositivo:
-// cada frase fija se sintetiza (y factura) una sola vez por narrador.
+// Voz neuronal en la nube (Google TTS). La clave está restringida a esta API y al
+// dominio del juego, y el audio se cachea en el dispositivo: cada frase fija se
+// sintetiza (y factura) una sola vez por narrador. Las Neural2 son igual de
+// naturales pero se sintetizan en ~0,2 s (vs ~1 s de Chirp3-HD), así que el juego
+// fluye mucho mejor; las Chirp3-HD quedan como opción «HD» para quien prefiera
+// aún más expresividad a costa de velocidad.
 const TTS_KEY = (typeof window !== 'undefined' && window.TTS_KEY) || null;
 export const CLOUD_VOICES = [
-  { id: 'es-ES-Chirp3-HD-Charon', label: 'Charon — masculina grave' },
-  { id: 'es-ES-Chirp3-HD-Enceladus', label: 'Enceladus — masculina serena' },
-  { id: 'es-ES-Chirp3-HD-Algieba', label: 'Algieba — masculina cálida' },
-  { id: 'es-ES-Chirp3-HD-Kore', label: 'Kore — femenina clara' },
-  { id: 'es-ES-Chirp3-HD-Gacrux', label: 'Gacrux — femenina madura' },
-  { id: 'es-ES-Chirp3-HD-Sulafat', label: 'Sulafat — femenina cálida' },
+  { id: 'es-ES-Neural2-F', label: 'Ágil · masculina grave (recomendada)' },
+  { id: 'es-ES-Neural2-G', label: 'Ágil · masculina' },
+  { id: 'es-ES-Neural2-A', label: 'Ágil · femenina clara' },
+  { id: 'es-ES-Neural2-E', label: 'Ágil · femenina' },
+  { id: 'es-ES-Neural2-H', label: 'Ágil · femenina cálida' },
+  { id: 'es-ES-Chirp3-HD-Charon', label: 'HD · masculina grave (más lenta)' },
+  { id: 'es-ES-Chirp3-HD-Kore', label: 'HD · femenina clara (más lenta)' },
+  { id: 'es-ES-Chirp3-HD-Sulafat', label: 'HD · femenina cálida (más lenta)' },
 ];
 
 const memCache = new Map(); // texto|voz → objectURL
@@ -1068,16 +1087,19 @@ function pumpCloud() {
     cloudAudio.onended = finish;
     cloudAudio.onerror = finish;
     cloudAudio.src = url;
-    cloudAudio.play().then(() => { audioUnlocked = true; }).catch((e) => {
+    cloudAudio.play().then(() => { audioUnlocked = true; if (item.onstart) item.onstart(); }).catch((e) => {
       lastCloudError = `reproducción — ${(e && e.name) || 'Error'}: ${(e && e.message) || e}`;
       cloudAudio.onended = null;
       cloudAudio.onerror = null;
-      speakDevice(item.text, {});
+      speakDevice(item.text, { onstart: item.onstart });
       finish();
     });
+    // Adelanta la síntesis del siguiente en cola mientras suena el actual: cuando
+    // termine, ya estará en caché y sonará sin espera (locuciones encadenadas).
+    if (cloudQueue.length) { const nx = cloudQueue[0]; synthCloud(nx.text, nx.ssml).catch(() => { /* se reintenta al tocar */ }); }
   }).catch(() => {
     // Sin red o sin cuota: cae a la voz del dispositivo y la cola sigue.
-    speakDevice(item.text, {});
+    speakDevice(item.text, { onstart: item.onstart });
     finish();
   });
 }
@@ -1148,8 +1170,9 @@ export function initVoice() {
 // priority 'low' (murmullos, recordatorios): si la voz está ocupada, se omite.
 // onend se llama también si la síntesis no está disponible.
 export function speak(text, opts = {}) {
-  const { muted = false, onend = null, priority = 'normal', ssml = null } = opts;
+  const { muted = false, onend = null, priority = 'normal', ssml = null, onstart = null, chain = false } = opts;
   if (muted || !text) {
+    if (onstart) onstart();
     if (onend) setTimeout(onend, 800);
     return;
   }
@@ -1158,16 +1181,19 @@ export function speak(text, opts = {}) {
       if (onend) setTimeout(onend, 400);
       return;
     }
-    if (cloudBusy && cloudQueue.length) cloudQueue = []; // suelta el backlog atrasado
-    cloudQueue.push({ text, ssml, onend });
+    // Descarta lo atrasado en cola, salvo cuando encadenamos a propósito varios
+    // segmentos de una misma locución larga (p. ej. la explicación).
+    if (!chain && cloudBusy && cloudQueue.length) cloudQueue = [];
+    cloudQueue.push({ text, ssml, onstart, onend });
     pumpCloud();
     return;
   }
   speakDevice(text, opts); // la voz del dispositivo no entiende SSML: texto plano
 }
 
-function speakDevice(text, { muted = false, onend = null, priority = 'normal' } = {}) {
+function speakDevice(text, { muted = false, onend = null, priority = 'normal', onstart = null } = {}) {
   if (muted || typeof speechSynthesis === 'undefined' || !text) {
+    if (onstart) onstart();
     if (onend) setTimeout(onend, 800);
     return;
   }
@@ -1185,13 +1211,18 @@ function speakDevice(text, { muted = false, onend = null, priority = 'normal' } 
     u.pitch = voiceCfg.pitch;
     u.volume = 1;
     let done = false;
+    let started = false;
+    const start = () => { if (!started) { started = true; if (onstart) onstart(); } };
     const finish = () => { if (!done) { done = true; if (onend) onend(); } };
+    u.onstart = start;
     u.onend = finish;
     u.onerror = finish;
     // Cinturón de seguridad: algunos navegadores no disparan onend.
     setTimeout(finish, Math.max(4000, text.length * 110));
     speechSynthesis.speak(u);
+    setTimeout(start, 300); // por si el navegador no dispara onstart
   } catch {
+    if (onstart) onstart();
     if (onend) setTimeout(onend, 800);
   }
 }

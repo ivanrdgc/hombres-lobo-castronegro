@@ -430,7 +430,7 @@ export function resolveVote(game, playersIn, choice) {
   const byId = Object.fromEntries(players.map((p) => [p.id, p]));
   const logs = [];
   let pendings = [];
-  const gameUpdates = { lastLynch: null }; // el ocaso anuncia el rol si procede
+  const gameUpdates = { lastLynch: null, lastLoveDeath: null }; // el ocaso anuncia el rol y la muerte por amor si proceden
   let winner = null;
 
   if (choice === 'nadie') {
@@ -467,6 +467,9 @@ export function resolveVote(game, playersIn, choice) {
       annotateDeaths(chain.deaths, byId, logs, game);
       const ld = chain.deaths.find((d) => d.cause === 'linchado');
       if (ld) gameUpdates.lastLynch = { name: byId[ld.pid].name, role: ld.role, hideRole: !!ld.hideRole };
+      // Si el linchado estaba enamorado, su pareja muere de amor: la voz lo anuncia.
+      const lv = chain.deaths.find((d) => d.cause === 'pena');
+      if (lv) gameUpdates.lastLoveDeath = { name: byId[lv.pid].name, role: lv.role, hideRole: !!lv.hideRole };
     }
   }
 

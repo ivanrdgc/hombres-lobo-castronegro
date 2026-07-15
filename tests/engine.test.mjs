@@ -640,21 +640,93 @@ test('narración compuesta: ~100+ variantes por tipo, deterministas por sal', as
   assert.ok(outs.size >= 15, 'despedidas de la bruja: ' + outs.size);
 });
 
-test('explicación: la voz lee exactamente el mismo texto que muestra el modal, con pausas', async () => {
-  const { EXPLANATIONS, buildExplainSpeech } = await import('../public/js/explain.js');
-  const ex = EXPLANATIONS.hombres_lobo;
-  const s = buildExplainSpeech(ex);
-  const words = (t) => t.replace(/<[^>]+>/g, '').replace(/[«»…—:]/g, ' ')
-    .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]/gu, '')
-    .replace(/\s+/g, ' ').trim().toLowerCase();
-  const shown = words([...ex.intro, ...ex.how].join(' '));
-  const spoken = words(s.ssml.replace(/<break[^>]*>/g, ' ').replace(/<[^>]+>/g, '')
-    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>'));
-  assert.equal(spoken, shown, 'lo leído debe coincidir con lo mostrado');
-  assert.equal(s.text, [...ex.intro, ...ex.how].map((h) => h.replace(/<[^>]+>/g, '')).join(' ')
-    .replace(/[«»]/g, '').replace(/\s+/g, ' ').trim(), 'el texto plano es el fallback del dispositivo');
-  assert.ok((s.ssml.match(/<break/g) || []).length >= 6, 'debe haber varias pausas');
-  assert.match(s.ssml, /^<speak>.*<\/speak>$/s, 'SSML bien formado');
+const speechWords = (t) => t.replace(/<[^>]+>/g, '')
+  .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}\u{2B00}-\u{2BFF}\u{FE0F}\u{200D}]/gu, '')
+  .replace(/[«»]/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+
+test('explicación: la voz lee lo mismo que muestra el modal, incluidos roles y ajustes', async () => {
+  const { EXPLANATIONS, explainSections, buildExplainSpeech } = await import('../public/js/explain.js');
+  const group = { currentGame: 'hombres_lobo', extraRoles: ['vidente', 'bruja', 'cazador'], settings: { revealDead: true, alguacil: true } };
+  const shownParts = [EXPLANATIONS.hombres_lobo.title];
+  for (const sec of explainSections(group)) {
+    if (sec.heading) shownParts.push(sec.heading);
+    shownParts.push(...sec.items);
+  }
+  const shown = speechWords(shownParts.join(' '));
+  const { text, segments } = buildExplainSpeech(group);
+  assert.ok(segments.length >= 1, 'al menos un segmento');
+  const spoken = speechWords(segments.map((s) => s.ssml.replace(/<break[^>]*>/g, ' ').replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')).join(' '));
+  assert.equal(spoken, shown, 'lo leído coincide con lo mostrado, incluidos roles y ajustes');
+  assert.equal(speechWords(text), shown, 'el texto plano (fallback del dispositivo) coincide');
+  const breaks = segments.reduce((a, s) => a + (s.ssml.match(/<break/g) || []).length, 0);
+  assert.ok(breaks >= 5, 'debe haber varias pausas: ' + breaks);
+  for (const s of segments) assert.match(s.ssml, /^<speak>.*<\/speak>$/s, 'SSML bien formado');
+});
+
+test('explicación: con todos los roles se trocea en segmentos que caben en la API (≤5000 bytes)', async () => {
+  const { buildExplainSpeech } = await import('../public/js/explain.js');
+  const all = Object.keys(ROLES).filter((id) => id !== 'hombre_lobo' && id !== 'aldeano');
+  const { segments } = buildExplainSpeech({ currentGame: 'hombres_lobo', extraRoles: all, settings: { revealDead: true, showComposition: true, alguacil: true } });
+  assert.ok(segments.length >= 2, 'con muchos roles debe haber varios segmentos: ' + segments.length);
+  for (const s of segments) assert.ok(Buffer.byteLength(s.ssml, 'utf8') <= 5000, 'cada segmento cabe en la API');
+});
+
+test('resolveVote: linchar a un enamorado mata a su pareja de amor y lo registra para la voz', () => {
+  const players = mkPlayers(['hombre_lobo', 'aldeano', 'vidente', 'bruja']);
+  players[1].lover = true; players[2].lover = true; // aldeano y vidente, enamorados
+  const game = mkGame({ phase: 'day', dayNum: 1, votesLeft: 1, revealDead: true });
+  const res = resolveVote(game, players, players[1].id); // el pueblo lincha al aldeano enamorado
+  assert.equal(res.gameUpdates.lastLynch.name, 'J1', 'el linchado');
+  assert.ok(res.gameUpdates.lastLoveDeath, 'debe registrarse la muerte por amor');
+  assert.equal(res.gameUpdates.lastLoveDeath.name, 'J2', 'la pareja muere de amor');
+  assert.equal(res.players.find((p) => p.id === players[1].id).alive, false);
+  assert.equal(res.players.find((p) => p.id === players[2].id).alive, false);
+});
+
+test('resolveVote: sin enamorados no hay muerte por amor', () => {
+  const players = mkPlayers(['hombre_lobo', 'aldeano', 'vidente', 'bruja']);
+  const game = mkGame({ phase: 'day', dayNum: 1, votesLeft: 1, revealDead: true });
+  const res = resolveVote(game, players, players[1].id);
+  assert.equal(res.gameUpdates.lastLoveDeath, null);
+});
+
+test('loveDeathLine: nombra a ambos y ofrece variedad', async () => {
+  const { loveDeathLine } = await import('../public/js/narration.js');
+  const s = loveDeathLine('Ana', 'Beto', 'd1');
+  assert.match(s, /Ana/); assert.match(s, /Beto/);
+  const seen = new Set();
+  for (let i = 0; i < 200; i++) seen.add(loveDeathLine('Ana', 'B' + i, 's'));
+  assert.ok(seen.size >= 4, 'varias frases distintas: ' + seen.size);
+});
+
+test('seatInsertIndex: reordenar arrastrando en una rejilla de 2 columnas', async () => {
+  const { seatInsertIndex } = await import('../public/js/dragutil.js');
+  // 4 bloques (150×46, gap 8) en 2 columnas: [0 1] / [2 3]
+  const rects = [
+    { left: 0, top: 0, width: 150, height: 46 },     // 0 · centro (75, 23)
+    { left: 158, top: 0, width: 150, height: 46 },   // 1 · centro (233, 23)
+    { left: 0, top: 54, width: 150, height: 46 },    // 2 · centro (75, 77)
+    { left: 158, top: 54, width: 150, height: 46 },  // 3 · centro (233, 77)
+  ];
+  assert.equal(seatInsertIndex(rects, 10, 23), 0, 'a la izquierda del primero → al principio');
+  assert.equal(seatInsertIndex(rects, 200, 23), 1, 'entre el 0 y el 1 → índice 1');
+  assert.equal(seatInsertIndex(rects, 10, 77), 2, 'inicio de la 2ª fila → índice 2');
+  assert.equal(seatInsertIndex(rects, 300, 77), 4, 'a la derecha del último → al final');
+  assert.equal(seatInsertIndex(rects, 75, -20), 0, 'por encima de todo → al principio');
+  assert.equal(seatInsertIndex(rects, 300, 23), 2, 'a la derecha de la 1ª fila → antes de la 2ª');
+});
+
+test('seatInsertIndex: una sola columna decide por altura (mitad superior/inferior)', async () => {
+  const { seatInsertIndex } = await import('../public/js/dragutil.js');
+  const rects = [
+    { left: 0, top: 0, width: 300, height: 46 },
+    { left: 0, top: 54, width: 300, height: 46 },
+    { left: 0, top: 108, width: 300, height: 46 },
+  ];
+  assert.equal(seatInsertIndex(rects, 150, 5), 0, 'mitad superior del primero → al principio');
+  assert.equal(seatInsertIndex(rects, 150, 40), 1, 'mitad inferior del primero → tras él');
+  assert.equal(seatInsertIndex(rects, 150, 200), 3, 'debajo de todo → al final');
 });
 
 test('aliveNeighbors: salta a los muertos en el círculo', () => {

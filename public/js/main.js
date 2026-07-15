@@ -4,9 +4,10 @@ import { render, invalidateRender, esc, randomGroupName } from './ui.js';
 import * as A from './actions.js';
 import { conductorTick, conductorReset, initConductor, setMuted, isMuted } from './conductor.js';
 import { speak, stopSpeech, unlockAudioPlayback, testCloudVoice, setVoiceConfig, getVoiceConfig } from './narration.js';
-import { EXPLANATIONS, buildExplainSpeech } from './explain.js';
+import { buildExplainSpeech } from './explain.js';
 import { kickAmbience, stopAmbience, ensureAmbience } from './ambience.js';
 import { aliveNeighbors, isWolfSide, wolfCountFor } from './roles.js';
+import { seatInsertIndex } from './dragutil.js';
 
 function unlockSpeech() {
   unlockAudioPlayback(); // síncrono, dentro del gesto (iOS)
@@ -98,10 +99,10 @@ document.addEventListener('pointermove', (e) => {
   };
   move();
   const rows = [...list.querySelectorAll('.player')].filter((r) => r !== row);
-  const next = rows.find((r) => {
-    const b = r.getBoundingClientRect();
-    return e.clientY < b.top + b.height / 2;
-  }) || null;
+  // Rejilla de una o varias columnas: insertar antes del bloque que, en orden de
+  // lectura (izquierda→derecha, arriba→abajo), quede por detrás del cursor.
+  const rects = rows.map((r) => r.getBoundingClientRect());
+  const next = rows[seatInsertIndex(rects, e.clientX, e.clientY)] || null;
   const needsMove = next ? row.nextElementSibling !== next : row.nextElementSibling !== null;
   if (needsMove) {
     const b0 = row.getBoundingClientRect();
@@ -189,10 +190,18 @@ const handlers = {
   'open-game-roles': () => { state.ui.modal = { type: 'game-roles' }; render(); },
   'explain-speak': () => guard(() => A.requestExplain()),
   'explain-speak-local': () => {
-    const ex = EXPLANATIONS[(state.group || {}).currentGame] || EXPLANATIONS.hombres_lobo;
-    const s = buildExplainSpeech(ex);
+    // Toca de nuevo para detener (la lectura es larga) o mientras carga no hace nada.
+    if (state.ui.explainAudio) { stopSpeech(); state.ui.explainAudio = null; render(); return; }
+    const { segments } = buildExplainSpeech(state.group || {});
     stopSpeech();
-    setTimeout(() => speak(s.text, { ssml: s.ssml }), 250);
+    state.ui.explainAudio = 'loading';
+    render();
+    setTimeout(() => segments.forEach((seg, i) => speak(seg.text, {
+      ssml: seg.ssml,
+      chain: true,
+      onstart: i === 0 ? () => { if (state.ui.explainAudio === 'loading') { state.ui.explainAudio = 'playing'; render(); } } : null,
+      onend: i === segments.length - 1 ? () => { if (state.ui.explainAudio) { state.ui.explainAudio = null; render(); } } : null,
+    })), 250);
   },
   'dismiss-flash': () => { state.flash = null; render(); },
   'retry': () => location.reload(),

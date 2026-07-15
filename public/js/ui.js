@@ -2,12 +2,12 @@
 import { state, me, isMaster } from './store.js';
 import { ROLES, TEAMS, EXPANSIONS, wolfCountFor, isWolfSide, isWolfTeamRole, OFFICIAL_MIN_PLAYERS, NEIGHBOR_ROLES } from './roles.js';
 import { NIGHT_STEPS, stepActors, GITANA_QUESTIONS, WINNER_LABELS } from './engine.js';
-import { EXPLANATIONS } from './explain.js';
+import { EXPLANATIONS, explainSections } from './explain.js';
 import { NARRATION, narr, listSpanishVoices, getVoiceConfig, CLOUD_VOICES, cloudAvailable } from './narration.js';
 import { isMuted } from './conductor.js';
 
 // Sello de versión visible (para verificar despliegues en los móviles).
-export const APP_VERSION = 'v2026-07-15.2';
+export const APP_VERSION = 'v2026-07-15.5';
 
 // Generador de nombres de grupo con sabor a Castronegro.
 const NAME_GROUPS = ['Los Lobos', 'La Manada', 'El Aquelarre', 'Los Aullidos', 'La Camada', 'Los Colmillos', 'Las Garras', 'Los Susurros', 'La Niebla', 'Las Sombras'];
@@ -1335,37 +1335,30 @@ function gameRolesModal() {
 }
 
 // Resumen legible de los ajustes elegidos (para la explicación previa).
-function settingsSummary(st) {
-  const out = [];
-  out.push(st.revealDead
-    ? '💀 Cuando alguien muera, su rol se revelará a todo el pueblo.'
-    : '🙈 Los roles de los muertos quedarán ocultos: ni el cementerio hablará.');
-  out.push(st.showComposition
-    ? '🎴 Composición pública: se sabrá qué cartas hay en juego.'
-    : '🎴 Composición secreta: nadie sabrá qué roles juegan de verdad, y la voz fingirá también los que no se repartieron.');
-  if (st.primeraNocheTranquila) out.push('🌙 Primera noche sin sangre: los lobos se presentan, pero nadie muere.');
-  if (st.videnteSoloBando) out.push('🔮 La vidente solo descubrirá el bando (lobo o no), no el rol exacto.');
-  if (st.ocultarCausas) out.push('🌫️ Las muertes nocturnas no explicarán la causa: solo quién ha caído.');
-  if (st.alguacil) out.push('⭐ Habrá Alguacil: elegido el primer día, su voto vale doble.');
-  if (st.wolvesCount) out.push(`🐺 Número de lobos fijado: ${st.wolvesCount}.`);
-  if (st.villagersCount != null) out.push(`🧑‍🌾 Aldeanos reservados: ${st.villagersCount}.`);
-  if (st.casual) out.push('🎲 Modo casual activo (mesas de menos de 8).');
-  return out;
-}
-
 function explainModal() {
-  const ex = EXPLANATIONS[(state.group || {}).currentGame] || EXPLANATIONS.hombres_lobo;
-  const narrP = state.players.find((p) => p.id === (state.group || {}).lastNarratorId);
+  const g = state.group || {};
+  const ex = EXPLANATIONS[g.currentGame] || EXPLANATIONS.hombres_lobo;
+  const narrP = state.players.find((p) => p.id === g.lastNarratorId);
+  const body = explainSections(g).map((sec) => {
+    const head = sec.heading ? `<h3 style="margin-top:14px">${sec.heading}</h3>` : '';
+    const items = (sec.items || []).map((it) => {
+      if (sec.kind === 'intro') return `<p style="margin:9px 0">${it}</p>`;
+      if (sec.kind === 'plain') return `<p class="small-note" style="margin:7px 0">${it}</p>`;
+      return `<p class="small-note" style="margin:8px 0">• ${it}</p>`;
+    }).join('');
+    return head + items;
+  }).join('');
+  // El audio neuronal tarda en sintetizarse: mostramos que está cargando y, una
+  // vez suena, la opción de detener la lectura (que es larga).
+  const au = state.ui.explainAudio;
+  const speakBtn = au === 'loading'
+    ? '<button class="violet block" disabled><span class="spinner"></span> Preparando la voz…</button>'
+    : au === 'playing'
+      ? btn('explain-speak-local', '⏹️ Detener la lectura', 'ghost block')
+      : btn('explain-speak-local', '🔊 Leer en este dispositivo', 'violet block');
   return `<h3>${ex.title}</h3>
-    ${ex.intro.map((t) => `<p style="margin:9px 0">${t}</p>`).join('')}
-    <h3 style="margin-top:14px">🎲 Cómo se juega</h3>
-    ${ex.how.map((t) => `<p class="small-note" style="margin:8px 0">• ${t}</p>`).join('')}
-    <h3 style="margin-top:14px">🎴 Roles activados en esta mesa</h3>
-    ${[...new Set(['hombre_lobo', ...((state.group || {}).extraRoles || []), 'aldeano'])].map((id) => ROLES[id] ? `
-      <p class="small-note" style="margin:7px 0">${ROLES[id].emoji} <b>${ROLES[id].name}</b> — ${ROLES[id].desc}</p>` : '').join('')}
-    <h3 style="margin-top:14px">🔧 Cómo se jugará</h3>
-    ${settingsSummary((state.group || {}).settings || {}).map((t) => `<p class="small-note" style="margin:7px 0">• ${t}</p>`).join('')}
-    ${btn('explain-speak-local', '🔊 Leer en este dispositivo', 'violet block')}
+    ${body}
+    ${speakBtn}
     ${narrP && narrP.id !== (me() || {}).id ? btn('explain-speak', `🔊 Leer en el narrador (${esc(narrP.name)})`, 'ghost block') : ''}
     <p class="small-note" style="text-align:center">${narrP && narrP.id === (me() || {}).id ? 'Este dispositivo es el narrador.' : 'La lectura usa la voz configurada en el dispositivo que suene.'}</p>
     ${btn('close-modal', '✔️ Listo', 'primary block')}`;

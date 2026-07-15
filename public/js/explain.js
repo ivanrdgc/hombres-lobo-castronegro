@@ -1,7 +1,9 @@
-// Explicación de cada juego: un ÚNICO texto que se muestra en el modal y se lee
-// en voz alta (misma versión, para que coincidan). La mesa es común; cada juego
-// trae la suya. La locución se construye con buildExplainSpeech(): mismas
-// palabras que en pantalla, con pausas para que suene como un narrador humano.
+// Explicación de cada juego: un ÚNICO origen de texto que alimenta el modal y la
+// voz, para que lo que se lee coincida con lo que se muestra. explainSections()
+// arma las secciones (ambientación, cómo se juega, roles de la mesa, ajustes) y
+// buildExplainSpeech() las convierte en locución con pausas de narrador humano.
+import { ROLES } from './roles.js';
+
 export const EXPLANATIONS = {
   hombres_lobo: {
     title: '🐺 Los Hombres Lobo de Castronegro',
@@ -20,12 +22,52 @@ export const EXPLANATIONS = {
   },
 };
 
+// Resumen legible de los modos de juego elegidos para esta mesa. Vive aquí (y no
+// en la interfaz) porque forma parte del apartado «Cómo se jugará» que también se
+// lee en voz alta.
+export function settingsSummary(st = {}) {
+  const out = [];
+  out.push(st.revealDead
+    ? '💀 Cuando alguien muera, su rol se revelará a todo el pueblo.'
+    : '🙈 Los roles de los muertos quedarán ocultos: ni el cementerio hablará.');
+  out.push(st.showComposition
+    ? '🎴 Composición pública: se sabrá qué cartas hay en juego.'
+    : '🎴 Composición secreta: nadie sabrá qué roles juegan de verdad, y la voz fingirá también los que no se repartieron.');
+  if (st.primeraNocheTranquila) out.push('🌙 Primera noche sin sangre: los lobos se presentan, pero nadie muere.');
+  if (st.videnteSoloBando) out.push('🔮 La vidente solo descubrirá el bando (lobo o no), no el rol exacto.');
+  if (st.ocultarCausas) out.push('🌫️ Las muertes nocturnas no explicarán la causa: solo quién ha caído.');
+  if (st.alguacil) out.push('⭐ Habrá Alguacil: elegido el primer día, su voto vale doble.');
+  if (st.wolvesCount) out.push(`🐺 Número de lobos fijado: ${st.wolvesCount}.`);
+  if (st.villagersCount != null) out.push(`🧑‍🌾 Aldeanos reservados: ${st.villagersCount}.`);
+  if (st.casual) out.push('🎲 Modo casual activo (mesas de menos de 8).');
+  return out;
+}
+
+// Roles activados en esta mesa (lobo + extras elegidos + aldeano), tal como se
+// listan en el modal: emoji, nombre en negrita y descripción.
+export function explainRoleItems(group = {}) {
+  const ids = [...new Set(['hombre_lobo', ...(group.extraRoles || []), 'aldeano'])].filter((id) => ROLES[id]);
+  return ids.map((id) => `${ROLES[id].emoji} <b>${ROLES[id].name}</b> — ${ROLES[id].desc}`);
+}
+
+// Secciones de la explicación, en el mismo orden que el modal. Cada una:
+// { heading, items, kind }. kind guía el estilo del modal y no afecta a la voz.
+export function explainSections(group = {}) {
+  const ex = EXPLANATIONS[group.currentGame] || EXPLANATIONS.hombres_lobo;
+  return [
+    { heading: null, items: ex.intro, kind: 'intro' },
+    { heading: '🎲 Cómo se juega', items: ex.how, kind: 'bullet' },
+    { heading: '🎴 Roles activados en esta mesa', items: explainRoleItems(group), kind: 'plain' },
+    { heading: '🔧 Cómo se jugará', items: settingsSummary(group.settings || {}), kind: 'bullet' },
+  ];
+}
+
 // Quita el HTML del modal para leerlo en voz alta: etiquetas, emojis, flechas y
 // comillas angulares fuera; espacios normalizados. Deja los acentos intactos.
 function toSpeech(html) {
-  return html
+  return String(html)
     .replace(/<[^>]+>/g, '')
-    .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}\u{2B00}-\u{2BFF}\u{FE0F}]/gu, '')
+    .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}\u{2B00}-\u{2BFF}\u{FE0F}\u{200D}]/gu, '')
     .replace(/[«»]/g, '')
     .replace(/\s+/g, ' ')
     .trim();
@@ -35,19 +77,56 @@ function ssmlEscape(s) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-// Locución de la explicación a partir del MISMO texto que muestra el modal
-// (intro + cómo se juega). Añade pausas entre párrafos y una pausa dramática al
-// pasar de la ambientación a las reglas; el SSML lo aprovecha la voz neuronal,
-// y el texto plano queda para la voz del dispositivo. Devuelve { text, ssml }.
-export function buildExplainSpeech(ex) {
-  const intro = (ex.intro || []).map(toSpeech).filter(Boolean);
-  const how = (ex.how || []).map(toSpeech).filter(Boolean);
-  const text = [...intro, ...how].join(' ');
-  const joined = (arr) => arr.map(ssmlEscape).join(' <break time="800ms"/> ');
-  const ssml = '<speak><prosody rate="95%">'
-    + joined(intro)
-    + ' <break time="1200ms"/> '
-    + joined(how)
+function tokenSsml(tk, first) {
+  return (first ? '' : `<break time="${tk.pause}ms"/> `) + ssmlEscape(tk.t);
+}
+function wrapSsml(tokens) {
+  return '<speak><prosody rate="95%">'
+    + tokens.map((tk, i) => tokenSsml(tk, i === 0)).join(' ')
     + '</prosody></speak>';
-  return { text, ssml };
+}
+
+// Locución de la explicación a partir del MISMO texto que muestra el modal
+// (título + todas las secciones, incluidos roles y ajustes). Añade pausas entre
+// secciones y párrafos, y una pausa tras cada encabezado, para que suene como un
+// narrador humano. El SSML lo aprovecha la voz neuronal; el texto plano queda
+// para la voz del dispositivo. Como la API de síntesis limita cada petición a
+// 5000 bytes, la troceamos en segmentos que se reproducen encadenados.
+// Devuelve { text, segments: [{ text, ssml }] }.
+export function buildExplainSpeech(group = {}) {
+  const ex = EXPLANATIONS[group.currentGame] || EXPLANATIONS.hombres_lobo;
+  // tokens: { t: texto, pause: ms de silencio antes }
+  const tokens = [{ t: toSpeech(ex.title), pause: 0 }];
+  explainSections(group).forEach((sec, si) => {
+    if (sec.heading) tokens.push({ t: toSpeech(sec.heading), pause: si === 0 ? 900 : 1100 });
+    (sec.items || []).forEach((it, ii) => {
+      const t = toSpeech(it);
+      if (!t) return;
+      const pause = ii === 0
+        ? (sec.heading ? 450 : (si === 0 ? 900 : 1100))
+        : 700;
+      tokens.push({ t, pause });
+    });
+  });
+  const clean = tokens.filter((x) => x.t);
+  const text = clean.map((x) => x.t).join(' ');
+  // Agrupa tokens en segmentos bajo el límite (holgura sobre los 5000 bytes).
+  const LIMIT = 3200;
+  const segments = [];
+  let cur = [];
+  let curLen = 0;
+  const flush = () => {
+    if (!cur.length) return;
+    segments.push({ text: cur.map((x) => x.t).join(' '), ssml: wrapSsml(cur) });
+    cur = [];
+    curLen = 0;
+  };
+  for (const tk of clean) {
+    const add = tk.t.length + 34; // margen por <break>, escapes y espacios
+    if (curLen + add > LIMIT && cur.length) flush();
+    cur.push(tk);
+    curLen += add;
+  }
+  flush();
+  return { text, segments };
 }

@@ -4,8 +4,8 @@
 import { state, isMaster } from './store.js';
 import { stepActors, stepNeedsGhostAnnounce, NIGHT_STEPS, WINNER_LABELS } from './engine.js';
 import { ROLES } from './roles.js';
-import { EXPLANATIONS, buildExplainSpeech } from './explain.js';
-import { NARRATION, narr, outro, deathLine, improv, speak, stopSpeech, initVoice, getVoiceConfig, isNarratorSpeaking } from './narration.js';
+import { buildExplainSpeech } from './explain.js';
+import { NARRATION, narr, outro, deathLine, loveDeathLine, improv, speak, stopSpeech, initVoice, getVoiceConfig, isNarratorSpeaking } from './narration.js';
 import { ensureAmbience, stopAmbience } from './ambience.js';
 import {
   startFirstNight, advanceGhostStep, runDawn, startNextNight, resolveSirvienta, startRoleRefresh, finishRoleRefreshClose,
@@ -211,11 +211,10 @@ export function conductorTick() {
       const narrOk = state.players.some((p) => p.id === g.lastNarratorId);
       const shouldSpeak = narrOk ? myPid === g.lastNarratorId : myPid === g.explain.by;
       if (shouldSpeak && g.status === 'lobby') {
-        const ex = EXPLANATIONS[g.currentGame] || EXPLANATIONS.hombres_lobo;
-        const s = buildExplainSpeech(ex);
+        const { segments } = buildExplainSpeech(g);
         initVoice();
         stopSpeech();
-        setTimeout(() => speak(s.text, { ssml: s.ssml, muted }), 350);
+        setTimeout(() => segments.forEach((seg) => speak(seg.text, { ssml: seg.ssml, chain: true, muted })), 350);
       }
     }
   }
@@ -450,7 +449,10 @@ export function conductorTick() {
       const ll = game.lastLynch;
       const lynchNote = game.revealDead && ll && ll.role && !ll.hideRole
         ? `Castronegro ha dictado sentencia: ${ll.name} era ${ROLES[ll.role] ? ROLES[ll.role].name : ll.role}. ` : '';
-      say(`d${game.dayNum}:ocaso`, lynchNote + improv('ocaso'));
+      // Si el linchado estaba enamorado, su pareja muere de amor: se anuncia siempre.
+      const lv = game.lastLoveDeath;
+      const loveNote = lv ? loveDeathLine(ll ? ll.name : null, lv.name, `d${game.dayNum}`) + ' ' : '';
+      say(`d${game.dayNum}:ocaso`, lynchNote + loveNote + improv('ocaso'));
       cancelTimer();
     }
     return;
