@@ -1,19 +1,31 @@
 <script lang="ts">
+  import AudioLab from './shell/AudioLab.svelte';
+
   const version = __APP_VERSION__;
+
+  // Rutas de desarrollo por hash mientras se construye el shell (F4 trae el
+  // enrutado real por pathname, compatible con /g/<slug> de la v1).
+  let hash = $state(location.hash);
+  window.addEventListener('hashchange', () => (hash = location.hash));
 </script>
 
-<main>
-  <section class="card">
-    <div class="moon" aria-hidden="true"></div>
-    <p class="kicker">Juegos digitales</p>
-    <h1>Castronegro <span class="v2">v2</span></h1>
-    <p class="sub">
-      La nueva versión está en construcción. La app de siempre sigue funcionando en su dirección
-      habitual: aquí solo se prueba lo nuevo.
-    </p>
-    <p class="stamp">{version}</p>
-  </section>
-</main>
+{#if hash === '#audio'}
+  <AudioLab />
+{:else}
+  <main>
+    <section class="card">
+      <div class="moon" aria-hidden="true"></div>
+      <p class="kicker">Juegos digitales</p>
+      <h1>Castronegro <span class="v2">v2</span></h1>
+      <p class="sub">
+        La nueva versión está en construcción. La app de siempre sigue funcionando en su dirección
+        habitual: aquí solo se prueba lo nuevo.
+      </p>
+      <p class="dev"><a href="#audio">🔬 Laboratorio de audio</a></p>
+      <p class="stamp">{version}</p>
+    </section>
+  </main>
+{/if}
 
 <style>
   main {
@@ -75,9 +87,17 @@
   }
 
   .sub {
-    margin: 0 auto var(--sp-5);
+    margin: 0 auto var(--sp-4);
     max-width: 34ch;
     color: var(--ink-2);
+  }
+
+  .dev {
+    margin: 0 0 var(--sp-5);
+  }
+
+  .dev a {
+    color: var(--luna);
   }
 
   .stamp {
