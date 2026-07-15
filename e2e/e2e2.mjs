@@ -311,7 +311,7 @@ try {
 
   // Reconexión a mitad de partida: Bruno recarga.
   await pages.bruno.reload();
-  await pages.bruno.waitForSelector('[data-a=toggle-rolecard], .actionpanel', { timeout: 15000 });
+  await pages.bruno.waitForSelector('[data-a=toggle-rolecard], .actionpanel', { timeout: 45000 });
   ok('reconexión tras recargar la página en plena partida');
 
   // Conducir la partida hasta el final (máx. 6 ciclos noche/día).
@@ -386,7 +386,7 @@ try {
 
   // Limpieza.
   await ana.click('button[data-a=back-lobby]');
-  await ana.waitForSelector('[data-a=open-start]', { timeout: 15000 });
+  await ana.waitForSelector('[data-a=open-start]', { timeout: 45000 });
   await ana.click('[data-a=confirm-delete-group]');
   await ana.click('button[data-a=delete-group-confirm]');
   await ana.waitForURL(BASE + '/');

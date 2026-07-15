@@ -217,6 +217,8 @@ function devicesCard(g, my) {
         </div>`).join('')}
     </div>
     <p class="small-note">🪑 La lista sigue el orden de la mesa (sentido horario): arrastra el asa ⠿ para ajustarlo; se recuerda entre partidas. Toca un dispositivo para marcarlo como jugador o solo-pantalla, elegirlo como 🔊 narrador de los modos automáticos (también recordado) o expulsarlo.</p>
+    ${btn('voice-open', '🗣️ Voz de este dispositivo', 'ghost block')}
+    <p class="small-note">La voz se usa al narrar en automático y al leer la explicación del juego: configúrala en el dispositivo que hará de narrador.</p>
   </div>`;
 }
 

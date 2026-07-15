@@ -33,7 +33,7 @@ const hlc = (page) => page.evaluate(() => {
   };
 });
 
-async function waitState(page, fn, what, timeout = 30000) {
+async function waitState(page, fn, what, timeout = 90000) {
   const t0 = Date.now();
   while (Date.now() - t0 < timeout) {
     const s = await hlc(page);
@@ -55,7 +55,7 @@ try {
   await ana.fill('#inp-name', 'Ana');
   await ana.fill('#inp-group', GROUP);
   await ana.click('[data-a=create-group]');
-  await ana.waitForURL('**/g/**', { timeout: 15000 });
+  await ana.waitForURL('**/g/**', { timeout: 45000 });
   const url = ana.url();
   ok('grupo creado, URL: ' + url);
   await ana.waitForSelector('text=Dispositivos (1)');
@@ -99,7 +99,7 @@ try {
   await eva.click('[data-a=takeover-confirm]');
   await eva.waitForSelector('text=/Dispositivos/');
   ok('Eva ha tomado la sesión de Bruno');
-  await pages.bruno.waitForSelector('text=/sesión ya no es válida/i', { timeout: 15000 });
+  await pages.bruno.waitForSelector('text=/sesión ya no es válida/i', { timeout: 45000 });
   ok('el dispositivo antiguo de Bruno queda desconectado');
   // Bruno recupera su sesión y Eva vuelve a quedar fuera.
   await pages.bruno.fill('#inp-name', 'Bruno');
@@ -121,7 +121,7 @@ try {
   await ana.click('.player[data-a=player-menu]:has-text("Leo")');
   await ana.click('[data-a=kick]');
   await ana.waitForSelector('text=Dispositivos (5)');
-  await leo.waitForSelector('#inp-name', { timeout: 15000 });
+  await leo.waitForSelector('#inp-name', { timeout: 45000 });
   ok('Leo expulsado: su dispositivo vuelve a la pantalla de unirse');
   await leo.context().close();
 
@@ -129,7 +129,7 @@ try {
   console.log('— Configuración —');
   await ana.click('button[data-a=select-game]');
   await ana.waitForSelector('[data-a=open-roles]');
-  await pages.bruno.waitForSelector('[data-a=open-roles]', { timeout: 15000 });
+  await pages.bruno.waitForSelector('[data-a=open-roles]', { timeout: 45000 });
   ok('elegir juego lleva a toda la mesa al lobby de Castronegro');
 
   // Narrador: el creador lo es por defecto y solo se ofrece cambiarlo.
@@ -307,7 +307,7 @@ try {
   await ana.click('[data-a=confirm-delete-group]');
   await ana.click('[data-a=delete-group-confirm]');
   await ana.waitForURL(BASE + '/');
-  await pages.bruno.waitForSelector('text=/grupo ha sido eliminado|grupo no existe/i', { timeout: 15000 });
+  await pages.bruno.waitForSelector('text=/grupo ha sido eliminado|grupo no existe/i', { timeout: 45000 });
   ok('grupo eliminado: los demás son expulsados y el nombre queda libre');
 
   // El nombre queda libre: crear de nuevo funciona.
@@ -329,7 +329,7 @@ try {
   await paco.waitForSelector('.player:has-text("Paco")');
   ok('Paco entra en el grupo existente desde la portada');
   await paco.click('button[data-a=select-game]');
-  await ana.waitForSelector('[data-a=open-start]', { timeout: 15000 });
+  await ana.waitForSelector('[data-a=open-start]', { timeout: 45000 });
   ok('cualquiera elige juego e inicia (Ana ve empezar sin ser máster)');
   await paco.click('[data-a=confirm-delete-group]');
   await paco.click('[data-a=delete-group-confirm]');

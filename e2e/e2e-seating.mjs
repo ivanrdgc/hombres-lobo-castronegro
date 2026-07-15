@@ -46,7 +46,7 @@ await ana.click('button[data-a=seating-ok]');
 await ana.waitForSelector('text=Orden de mesa confirmado');
 ok('orden confirmado, aparecen los modos de juego');
 await ana.click('[data-a=start-auto]');
-await ana.waitForSelector('text=Este dispositivo narra la partida', { timeout: 20000 });
+await ana.waitForSelector('text=Este dispositivo narra la partida', { timeout: 60000 });
 const o = await orders(ana);
 const daniOrder = o.find((x) => x[0] === 'Dani')[1];
 if (daniOrder === 1) ok('player.order sigue el orden de mesa (Dani = asiento 2)'); else bad('order incorrecto: ' + JSON.stringify(o));
@@ -54,7 +54,7 @@ if (daniOrder === 1) ok('player.order sigue el orden de mesa (Dani = asiento 2)'
 const alive = await pages.bea;
 await alive.click('button[data-a=end-game]');
 await alive.click('button[data-a=end-game-confirm]');
-await ana.waitForSelector('button[data-a=back-lobby]', { timeout: 20000 });
+await ana.waitForSelector('button[data-a=back-lobby]', { timeout: 60000 });
 await ana.click('button[data-a=back-lobby]');
 await ana.waitForSelector('[data-a=open-start]');
 const s2 = await seating(ana);

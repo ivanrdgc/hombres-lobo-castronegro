@@ -4,63 +4,593 @@
 // Cada locución tiene varias variantes equivalentes: la partida elige una de
 // forma determinista (según semilla, noche y paso), así cada partida suena
 // distinta pero la voz y el texto en pantalla siempre coinciden.
-export const NARRATION = {
+// Frases COMPUESTAS: apertura × cuerpo × cierre, escritas para combinar bien.
+// 6×6×5 piezas ≈ 180 frases distintas por tipo; la elección es determinista
+// (semilla+noche+paso), así pantalla y voz coinciden y cada partida es única.
+const COMPO = {
   bienvenida: [
-    'Bienvenidos a Castronegro. La niebla cubre las calles y los aldeanos se miran con recelo. Cada uno de vosotros acaba de recibir su destino. Miradlo en secreto en vuestro dispositivo y confirmad cuando estéis listos.',
-    'Forasteros, habéis llegado a Castronegro… y ya no podréis marcharos. El destino de cada uno está escrito en su dispositivo: miradlo en secreto, no se lo enseñéis a nadie, y confirmad cuando estéis listos.',
-    'Las campanas de Castronegro doblan al atardecer. Dicen los ancianos que esta noche la bestia camina entre nosotros. Descubrid vuestro destino en secreto y confirmad cuando lo hayáis memorizado.',
-    'Castronegro, año del Señor de mil y pico. La cosecha fue buena; la vecindad, ya veremos. Cada cual tiene su papel esperando en el dispositivo: miradlo a escondidas y confirmad cuando lo sepáis de memoria.',
-    'Abrid bien los oídos, vecinos: el pergamino del destino ya está repartido. Quien enseñe su carta, que no llore luego. Miradla en secreto y confirmad cuando estéis listos.',
-    'Hay pueblos con mala fama y luego está Castronegro. Aun así, le tenemos cariño. Vuestra suerte espera en el dispositivo: leedla en secreto, memorizadla… y confirmad.',
-    'La diligencia os deja en la plaza y arranca a toda prisa: el cochero sabe algo que vosotros no. Vuestro destino aguarda en el dispositivo. En secreto: miradlo y confirmad.',
+    [
+      'Bienvenidos a Castronegro.',
+      'Forasteros: habéis llegado a Castronegro, y ya no podréis marcharos.',
+      'Las campanas de Castronegro doblan al atardecer.',
+      'Castronegro os abre sus puertas… y las cierra a vuestra espalda.',
+      'La diligencia os deja en la plaza y arranca a toda prisa: el cochero sabe algo que vosotros no.',
+      'Abrid bien los oídos, vecinos: esta historia empieza hoy.',
+    ],
+    [
+      'La niebla cubre las calles y los aldeanos se miran con recelo.',
+      'Dicen los ancianos que esta noche la bestia camina entre nosotros.',
+      'La cosecha fue buena; la vecindad, ya veremos.',
+      'Hay pueblos con mala fama, y luego está este. Aun así, le tenemos cariño.',
+      'El herrero afila, el cura reza y el tabernero apunta deudas: todo normal… de momento.',
+      'Aquí hasta las gallinas duermen con un ojo abierto, y hacen bien.',
+    ],
+    [
+      'Cada uno de vosotros acaba de recibir su destino: miradlo en secreto en vuestro dispositivo y confirmad cuando estéis listos.',
+      'Vuestro papel os espera en el dispositivo. En secreto: miradlo, memorizadlo y confirmad.',
+      'El pergamino del destino ya está repartido: leedlo a escondidas en vuestro dispositivo y confirmad. Quien enseñe su carta, que no llore luego.',
+      'Descubrid vuestro destino en secreto y confirmad cuando lo hayáis memorizado.',
+      'Mirad vuestra carta sin que nadie la vea, grabadla en la memoria… y confirmad en el dispositivo.',
+    ],
   ],
   noche_cae: [
-    'Cae la noche sobre Castronegro. El pueblo entero cierra los ojos y solo la luna vigila. Que nadie hable hasta el amanecer.',
-    'El sol se esconde tras las colinas y Castronegro queda a merced de la oscuridad. Silencio absoluto: la noche tiene oídos.',
-    'La luna se alza sobre los tejados y las velas se apagan una a una. Castronegro duerme… o finge dormir.',
-    'Un aullido lejano anuncia la llegada de la noche. Cerrad las puertas, apagad las luces… y que la suerte os acompañe.',
-    'Se apaga el último farol y el sereno se mete en casa a toda prisa. Ojos cerrados, Castronegro: la noche no perdona a los curiosos.',
-    'El cielo se pone del color del carbón y el bosque contiene la respiración. Dormid, vecinos… los que podáis.',
-    'Noche cerrada en Castronegro. La luna pasa lista y prefiere no contar cuántos faltaréis mañana. Cerrad los ojos.',
-    'Las estrellas se asoman con miedo y hasta el gato del tabernero busca refugio. Ojos cerrados todo el mundo: empieza la función.',
-    'El reloj de la iglesia da las doce y nadie recuerda haberle dado cuerda. Mala señal. Cerrad los ojos, Castronegro.',
+    [
+      'Cae la noche sobre Castronegro.',
+      'El sol se esconde tras las colinas.',
+      'La luna se alza sobre los tejados.',
+      'Un aullido lejano anuncia la llegada de la noche.',
+      'Se apaga el último farol de la plaza.',
+      'El reloj de la iglesia da las doce, y nadie recuerda haberle dado cuerda.',
+    ],
+    [
+      'El pueblo entero cierra los ojos y solo la luna vigila.',
+      'Castronegro queda a merced de la oscuridad.',
+      'Las velas se apagan una a una: el pueblo duerme… o finge dormir.',
+      'El sereno se mete en casa a toda prisa; él sabrá por qué.',
+      'El bosque contiene la respiración y hasta el gato del tabernero busca refugio.',
+      'La luna pasa lista y prefiere no contar cuántos faltaréis mañana.',
+    ],
+    [
+      'Que nadie hable hasta el amanecer.',
+      'Silencio absoluto: la noche tiene oídos.',
+      'Cerrad los ojos… y que la suerte os acompañe.',
+      'Ojos cerrados todo el mundo: empieza la función.',
+      'Dormid, vecinos… los que podáis.',
+    ],
   ],
   ladron: [
-    'Ladrón, despierta. Observa las dos cartas del centro de la mesa y decide si cambias tu destino.',
-    'Ladrón, es tu momento: dos destinos ajenos te esperan sobre la mesa. ¿Robarás uno… o te quedarás como estás?',
-    'Ladrón, despierta sin hacer ruido. La noche te ofrece dos vidas ajenas: elige si alguna te conviene más que la tuya.',
-    'Ladrón, abre los ojos: hasta el destino se puede robar si se tiene maña. Dos cartas esperan… decide.',
-    'Ladrón, dicen que lo tuyo no es robar, sino tomar prestado para siempre. Sobre la mesa hay dos vidas: ¿alguna te queda a medida?',
-    'Ladrón, despierta. El oficio más viejo de Castronegro te llama: mira las dos cartas del centro y elige tu conciencia de esta noche.',
+    [
+      'Ladrón, despierta.',
+      'Ladrón, es tu momento.',
+      'Ladrón, abre los ojos sin hacer ruido.',
+      'Ladrón, la noche te llama por tu oficio.',
+      'Ladrón, despierta: el trabajo nocturno es tu especialidad.',
+      'Ladrón, en pie, que lo tuyo no espera.',
+    ],
+    [
+      'Dos destinos ajenos te esperan sobre la mesa.',
+      'La noche te ofrece dos vidas ajenas, recién barajadas.',
+      'Hasta el destino se puede robar, si se tiene maña: ahí tienes dos.',
+      'Dicen que lo tuyo no es robar, sino tomar prestado para siempre: sobre la mesa hay dos tentaciones.',
+      'En el centro aguardan dos cartas que nadie reclama… todavía.',
+      'El azar dejó dos cartas boca abajo, como quien deja la puerta entornada.',
+    ],
+    [
+      'Decide si cambias tu destino… o te quedas como estás.',
+      '¿Robarás uno, o la conciencia te puede?',
+      'Elige si alguna de esas vidas te conviene más que la tuya.',
+      'Mira las dos cartas y elige tu conciencia de esta noche.',
+      'Tuya es la decisión: lo propio… o lo ajeno.',
+    ],
   ],
   cupido: [
-    'Cupido, despierta. Tensa tu arco y une para siempre los corazones de dos habitantes del pueblo.',
-    'Cupido, abre los ojos: tus flechas no entienden de bandos ni de prudencia. Elige a dos corazones y únelos para siempre.',
-    'Cupido, la noche es joven y el amor, ciego. Apunta bien: esos dos corazones latirán juntos… o dejarán de latir juntos.',
-    'Cupido, despierta: en Castronegro hasta el amor es cosa seria. Dispara tus dos flechas y que sea lo que la luna quiera.',
-    'Cupido, saca tu arco: dos vecinos van a quererse sin remedio. Tú decides quiénes… ellos ya no podrán decidir nada.',
-    'Cupido, el frío de la noche pide corazones calientes. Une dos para siempre… y reza por que sean del mismo bando.',
+    [
+      'Cupido, despierta.',
+      'Cupido, abre los ojos.',
+      'Cupido, la noche es joven y el amor, ciego.',
+      'Cupido, saca tu arco.',
+      'Cupido, despierta: hay trabajo para tus flechas.',
+      'Cupido, en pie: el corazón de Castronegro late desparejado.',
+    ],
+    [
+      'Tus flechas no entienden de bandos ni de prudencia.',
+      'En Castronegro hasta el amor es cosa seria.',
+      'Dos vecinos van a quererse sin remedio; ellos aún no lo saben.',
+      'El frío de la noche pide corazones calientes.',
+      'Tu puntería vale dos vidas: que no te tiemble el pulso.',
+      'El amor entra esta noche en el pueblo sin llamar a la puerta.',
+    ],
+    [
+      'Tensa tu arco y une para siempre los corazones de dos habitantes.',
+      'Elige a dos corazones y únelos para siempre.',
+      'Dispara tus dos flechas… y que sea lo que la luna quiera.',
+      'Apunta bien: esos dos latirán juntos, o dejarán de latir juntos.',
+      'Une dos destinos… y reza por que sean del mismo bando.',
+    ],
   ],
   enamorados: [
-    'Enamorados, abrid los ojos y reconoceos. Vuestros destinos están unidos: si uno muere, el otro morirá de pena.',
-    'Dos corazones han quedado unidos por una flecha. Enamorados, reconoceos: desde hoy compartís la vida… y la muerte.',
-    'La flecha de Cupido ha encontrado dos pechos. Enamorados, miraos en silencio: vuestra suerte ya es una sola.',
-    'El amor ha entrado en Castronegro sin llamar a la puerta. Enamorados, reconoceos: donde vaya uno, irá el otro… hasta el final.',
+    [
+      'Enamorados, abrid los ojos.',
+      'Dos corazones han quedado unidos por una flecha.',
+      'La flecha de Cupido ha encontrado dos pechos.',
+      'El amor ha entrado en Castronegro sin llamar a la puerta.',
+      'Cupido ya hizo su trabajo; ahora os toca a vosotros.',
+      'Hay dos corazones nuevos latiendo al mismo compás.',
+    ],
+    [
+      'Vuestros destinos están unidos: si uno muere, el otro morirá de pena.',
+      'Desde hoy compartís la vida… y la muerte.',
+      'Vuestra suerte ya es una sola, para lo bueno y para lo terrible.',
+      'Donde vaya uno, irá el otro… hasta el final.',
+      'Ni la muerte sabrá separaros: lo comprobaréis.',
+      'Un solo hilo sostiene ahora dos vidas.',
+    ],
+    [
+      'Reconoceos en silencio.',
+      'Miraos, reconoceos… y que nadie más lo note.',
+      'Reconoceos: este secreto es solo vuestro.',
+      'Buscaos con la mirada y guardad el secreto.',
+      'Reconoceos sin ruido, que el pueblo duerme.',
+    ],
   ],
   nino_salvaje: [
-    'Niño Salvaje, despierta. Elige en silencio a tu modelo a seguir. Si algún día muere, la bestia despertará en ti.',
-    'Niño Salvaje, abre los ojos y busca a quien admirar. Rézale a la luna para que viva mucho… o la bestia que llevas dentro despertará.',
-    'Niño Salvaje, la noche te pregunta: ¿a quién querrás parecerte? Elige con cuidado: su muerte sería tu transformación.',
-    'Niño Salvaje, criado entre zarzas y aullidos: elige un espejo humano en quien mirarte. Si ese espejo se rompe, saldrá el lobo.',
-    'Niño Salvaje, despierta. Todo cachorro necesita alguien a quien imitar. Elígelo bien: de su vida cuelga tu piel humana.',
+    [
+      'Niño Salvaje, despierta.',
+      'Niño Salvaje, abre los ojos.',
+      'Niño Salvaje, criado entre zarzas y aullidos: es tu momento.',
+      'Niño Salvaje, la noche te pregunta.',
+      'Niño Salvaje, despierta: el bosque quiere saber de quién aprenderás.',
+      'Niño Salvaje, en pie, pequeño: hay una decisión esperándote.',
+    ],
+    [
+      'Todo cachorro necesita alguien a quien imitar.',
+      'Elige un espejo humano en quien mirarte.',
+      'Busca a quien admirar entre los vecinos.',
+      'Necesitas un modelo a seguir, y esta noche se elige.',
+      'De todos los rostros del pueblo, uno será tu guía.',
+      'Alguien de esta mesa marcará tu camino.',
+    ],
+    [
+      'Elígelo en silencio… y rézale a la luna para que viva mucho: si muere, la bestia despertará en ti.',
+      'Elige con cuidado: su muerte sería tu transformación.',
+      'Escoge bien: de su vida cuelga tu piel humana.',
+      'Señálalo en tu pantalla… y que no le pase nada, o saldrá el lobo.',
+      'Elige a tu modelo sabiendo el precio: si cae, tú cambias de bando.',
+    ],
   ],
   perro_lobo: [
-    'Perro Lobo, despierta. Esta noche eliges tu destino: la lealtad del pueblo o la llamada salvaje de la manada.',
-    'Perro Lobo, dos sangres corren por tus venas y esta noche debes elegir una: ¿el calor del hogar o el aullido del bosque?',
-    'Perro Lobo, la luna te llama y el pueblo te necesita. Decide de una vez por todas quién eres.',
-    'Perro Lobo, despierta: ni el collar te queda bien ni el bosque te acaba de aceptar. Esta noche, por fin, eliges bando.',
-    'Perro Lobo, mitad ladrido, mitad aullido. Castronegro quiere saber cuál de las dos mitades manda. Decide.',
+    [
+      'Perro Lobo, despierta.',
+      'Perro Lobo, abre los ojos.',
+      'Perro Lobo, la luna te llama y el pueblo te necesita.',
+      'Perro Lobo, despierta: dos sangres corren por tus venas.',
+      'Perro Lobo, mitad ladrido, mitad aullido: es la hora.',
+      'Perro Lobo, ni el collar te queda bien ni el bosque te acaba de aceptar.',
+    ],
+    [
+      'Esta noche eliges tu destino, y no habrá vuelta atrás.',
+      'El calor del hogar o el aullido del bosque: no puedes tener ambos.',
+      'Castronegro quiere saber cuál de tus dos mitades manda.',
+      'La lealtad del pueblo y la llamada salvaje tiran de ti a la vez.',
+      'Una decisión, dos vidas posibles: solo una amanecerá contigo.',
+      'Tu corazón lleva toda la vida en esta encrucijada.',
+    ],
+    [
+      'Decide de una vez por todas quién eres.',
+      'Elige bando en tu pantalla… y cárgalo sobre tu conciencia.',
+      'Escoge: ¿pueblo o manada?',
+      'Elige tu destino en silencio.',
+      'Toma tu decisión… y que la luna te la respete.',
+    ],
   ],
+  actor: [
+    [
+      'Actor, despierta.',
+      'Actor, se abre el telón.',
+      'Actor, la función va a comenzar.',
+      'Actor, despierta: Castronegro es tu escenario y la luna, tu candileja.',
+      'Actor, el público duerme, que es como mejor se actúa.',
+      'Actor, en pie: la noche estrena obra.',
+    ],
+    [
+      'Tres papeles esperan sobre el escenario de la noche.',
+      'Tres disfraces cuelgan del perchero de la oscuridad.',
+      'Tres máscaras aguardan tu rostro.',
+      'El repertorio es corto pero matador: tres papeles.',
+      'Esta noche puedes ser quien no eres, que es tu especialidad.',
+      'El guion ofrece tres personajes; el resto es interpretación.',
+    ],
+    [
+      'Elige el tuyo e interprétalo con maestría.',
+      'Escoge papel y no te salgas del guion.',
+      '¿Qué máscara vestirás esta noche? Elige.',
+      'Elige tu personaje… y que la crítica te sea leve.',
+      'Decide tu papel en la pantalla y actúa en consecuencia.',
+    ],
+  ],
+  defensor: [
+    [
+      'Defensor, despierta.',
+      'Defensor, la noche está llena de colmillos.',
+      'Defensor, alza tu escudo.',
+      'Defensor, despierta: en Castronegro las murallas las ponen los valientes.',
+      'Defensor, tu escudo aún guarda las marcas de otras noches.',
+      'Defensor, en pie: hay puertas que no se defienden solas.',
+    ],
+    [
+      'Alguien dormirá tranquilo gracias a ti… si eliges bien.',
+      'Los colmillos no avisan, y tu escudo no puede estar en dos puertas.',
+      'La noche silba entre las rendijas buscando una casa sin guardia.',
+      'La manada ronda, y solo tu acero se interpone.',
+      'Una puerta de este pueblo merece tu guardia hasta el alba.',
+      'El pueblo duerme confiado en un escudo que no sabe de quién es.',
+    ],
+    [
+      'Elige a quién protegerás esta noche del ataque de las bestias.',
+      'Escoge una puerta ante la que montar guardia hasta el alba.',
+      '¿A quién protegerás de la manada esta vez? Elige en tu pantalla.',
+      'Señala a quien arroparás con tu acero hasta que cante el gallo.',
+      'Decide tu guardia de esta noche… y que no se repita la de ayer.',
+    ],
+  ],
+  vidente: [
+    [
+      'Vidente, despierta.',
+      'Vidente, las estrellas están de tu lado esta noche.',
+      'Vidente, tu bola de cristal brilla en la oscuridad.',
+      'Vidente, despierta: la niebla del cristal se abre solo para ti.',
+      'Vidente, abre los ojos: la verdad hace guardia esta noche.',
+      'Vidente, el cristal está tibio y las cartas calladas: buena noche para saber.',
+    ],
+    [
+      'En este pueblo todos mienten, pero a tu bola nadie sabe mentirle.',
+      'Un rostro del pueblo esconde más de lo que enseña.',
+      'La noche guarda secretos que solo tú puedes arrancarle.',
+      'Detrás de una de estas sonrisas hay una respuesta esperándote.',
+      'Tu don pesa, pero alumbra: úsalo.',
+      'Alguien duerme creyendo que su secreto está a salvo. Iluso.',
+    ],
+    [
+      'Elige un rostro y la verdad se te revelará.',
+      'Consulta tu bola y descubre el verdadero rostro de un habitante.',
+      'Pregunta un nombre en tu pantalla: ella dirá lo que esconde.',
+      '¿A quién quieres ver por dentro? Elige.',
+      'Escoge a quién mirar con los ojos del cristal.',
+    ],
+  ],
+  zorro: [
+    [
+      'Zorro, despierta.',
+      'Zorro, la brisa nocturna trae olores interesantes.',
+      'Zorro, afina tu hocico.',
+      'Zorro, despierta: a ti no se te escapa ni el tufillo de una mentira.',
+      'Zorro, abre los ojos: la noche huele a algo.',
+      'Zorro, en pie: hay rastros que se enfrían.',
+    ],
+    [
+      'La noche huele a leña, a pan dormido… ¿y a lobo? Eso dímelo tú.',
+      'En algún vecindario puede esconderse la bestia.',
+      'Tres casas seguidas, un solo olfato: el tuyo.',
+      'Donde el pueblo ve vecinos, tu nariz ve sospechosos.',
+      'El viento sopla a tu favor, astuto.',
+      'Alguna madriguera de este pueblo no es lo que parece.',
+    ],
+    [
+      'Elige un rincón del pueblo y husmea en busca de la bestia.',
+      'Escoge dónde meter el hocico… sabiendo que si no hay lobos, lo perderás.',
+      'Señala a un vecino: olfatearás su casa y las dos de al lado.',
+      '¿Dónde olfatearás esta noche? Decide.',
+      'Elige tu trío de casas y confía en tu nariz.',
+    ],
+  ],
+  cuervo: [
+    [
+      'Cuervo, despierta.',
+      'Cuervo, despliega tus alas sobre Castronegro.',
+      'Cuervo, la noche es tuya.',
+      'Cuervo, despierta: tus plumas pesan dos votos y tú lo sabes.',
+      'Cuervo, el viento te presta sus alas.',
+      'Cuervo, en pie: hay tejados esperando tu sombra.',
+    ],
+    [
+      'Tu graznido vale más que muchos discursos en la plaza.',
+      'Una pluma negra sobre un tejado, y mañana el pueblo mirará distinto a su dueño.',
+      'La sospecha es tu oficio, y lo ejerces de noche.',
+      'Alguien te huele mal, y tu instinto rara vez se equivoca.',
+      'Desde el cielo se ven cosas que la plaza no quiere ver.',
+      'Tu sombra sabe posarse donde más duele.',
+    ],
+    [
+      'Señala con tus plumas negras a quien consideres sospechoso.',
+      '¿Sobre qué tejado dejarás caer tu sombra de sospecha? Elige.',
+      'Grazna sobre la casa de quien no te inspire confianza: mañana todos lo sabrán.',
+      'Elige un tejado: amanecerá más negro que los demás.',
+      'Deja caer tus plumas… con dos votos dentro.',
+    ],
+  ],
+  lobos_noche1: [
+    [
+      'Hombres lobo, ha llegado vuestro momento.',
+      'Llega la hora de la manada.',
+      'Primera noche de luna en Castronegro.',
+      'Silencio: es la hora de los colmillos.',
+      'El pueblo duerme y no sabe lo que ha sembrado.',
+      'La luna llena pasa lista a sus criaturas.',
+    ],
+    [
+      'Todo el pueblo duerme con los ojos bien cerrados; quien mire, que se atenga a las consecuencias.',
+      'Aldeanos, ojos cerrados: esto no va con vosotros… todavía.',
+      'Castronegro sueña, ajeno a lo que despierta entre sus camas.',
+      'Nadie os ve, nadie os oye: la noche es toda vuestra.',
+      'Los postigos están cerrados y las conciencias, dormidas.',
+      'El bosque calla para que se os oiga mejor.',
+    ],
+    [
+      'Lobos, abrid los ojos en silencio, miraos, reconoced a vuestra manada… y elegid juntos a vuestra primera presa.',
+      'Lobos, abrid los ojos: saludad a los vuestros con la mirada y señalad en silencio a vuestra primera víctima.',
+      'Lobos, abrid los ojos sin ruido: contaos, reconoceos… y estrenad la temporada eligiendo cena.',
+      'Lobos, abrid los ojos: mirad quién caza con vosotros y decidid juntos quién no verá el alba.',
+      'Lobos, abrid los ojos, reconoceos… y que vuestra primera elección sea digna de leyenda.',
+    ],
+  ],
+  lobos: [
+    [
+      'Hombres lobo, despertad.',
+      'La manada sale de caza.',
+      'Hombres lobo, abrid los ojos.',
+      'Hombres lobo, el hambre aprieta y la luna está alta.',
+      'Se oyen pisadas suaves sobre los tejados: sois vosotros.',
+      'Aúlla el viento para disimular vuestros pasos.',
+    ],
+    [
+      'La despensa de Castronegro vuelve a estar abierta.',
+      'El pueblo ha cerrado las puertas, pero olvidó cerrar los sueños.',
+      'La luna pone la mesa y vosotros ponéis los dientes.',
+      'La caza es un arte, y vosotros sois artistas con colmillos.',
+      'El pueblo empieza a sospechar, así que elegid con cabeza.',
+      'Alguna puerta de este pueblo ya no verá otro amanecer.',
+    ],
+    [
+      'Elegid en silencio a vuestra próxima víctima.',
+      '¿Qué puerta derribaréis esta noche? Decidid.',
+      'Señalad a vuestra presa, con la mirada primero y con la pantalla después.',
+      'Firmad la noche con un nombre.',
+      'Escoged plato… con educación y en silencio.',
+    ],
+  ],
+  encantados: [
+    [
+      'La melodía del Gaitero flota sobre los tejados de Castronegro.',
+      'Una música dulce y extraña se cuela por las rendijas de las ventanas.',
+      'El Gaitero toca su melodía y las notas reptan por las calles dormidas.',
+      'Suena una gaita a lo lejos, tan dulce que hasta la niebla se para a escuchar.',
+      'Las notas del Gaitero gotean de tejado en tejado, buscando oídos nuevos.',
+      'Una melodía vieja como el bosque se enrosca en las chimeneas.',
+    ],
+  ],
+  lobo_feroz: [
+    [
+      'Gran Lobo Feroz, despierta otra vez.',
+      'Gran Lobo Feroz, tu hambre no conoce límites.',
+      'Gran Lobo Feroz, una presa no basta para saciarte.',
+      'Gran Lobo Feroz, tu estómago es leyenda en tres condados.',
+      'Gran Lobo Feroz, la manada ya cenó… pero tú nunca repites plato: lo doblas.',
+      'Gran Lobo Feroz, dicen que soplando derribas casas; esta noche no hará falta tanto.',
+    ],
+    [
+      'La noche te concede un segundo bocado: elige.',
+      'Elige una segunda víctima para esta noche.',
+      '¿Quién será el segundo plato? Señálalo.',
+      'Escoge otra puerta, tú solo, sin compartir.',
+      'Tu segunda presa aguarda: decide en silencio.',
+    ],
+  ],
+  lobo_albino: [
+    [
+      'Hombre Lobo Albino, despierta.',
+      'Hombre Lobo Albino, la luna llena ilumina tu pelaje.',
+      'Hombre Lobo Albino, blanco como la nieve y frío como ella.',
+      'Hombre Lobo Albino, la luna te confunde con su reflejo.',
+      'Hombre Lobo Albino, tú no cazas para la manada: cazas para quedarte solo.',
+      'Hombre Lobo Albino, tu paciencia es tan blanca como tu piel.',
+    ],
+    [
+      'Esta noche puedes traicionar a tu propia manada, si así lo deseas.',
+      '¿Morderás la mano de tu propia manada? Decide.',
+      '¿Caerá esta noche un hermano de camada? Tú eliges.',
+      'Traición… o paciencia: escoge en silencio.',
+      '¿Empiezas esta noche a quedarte solo? Decide.',
+    ],
+  ],
+  bruja: [
+    [
+      'Bruja, despierta.',
+      'Bruja, tu caldero burbujea.',
+      'Bruja, los frascos tintinean en tu alacena.',
+      'Bruja, despierta: huele a azufre y a decisiones difíciles.',
+      'Bruja, tu gato bosteza y el caldero pregunta.',
+      'Bruja, abre los ojos: la noche viene a consultarte.',
+    ],
+    [
+      'La noche te muestra su obra.',
+      'Contempla lo que han hecho los lobos.',
+      'La noche te enseña sus cartas, y tú guardas dos ases embotellados.',
+      'En tus manos caben un amanecer más y un funeral más.',
+      'Mira el trabajo de los colmillos y pésalo en tu balanza.',
+      'La luna te enseña el estropicio de esta noche.',
+    ],
+    [
+      '¿Usarás tu poción de vida? ¿O quizás la de muerte? Decide.',
+      'Decide si lo arreglas, lo empeoras… o lo dejas estar.',
+      '¿Vida? ¿Muerte? ¿O dejarás que la noche siga su curso?',
+      '¿Devuelves un alma, te llevas otra… o cierras la alacena? Elige.',
+      'Administra tus pociones… y termina tu turno.',
+    ],
+  ],
+  gaitero: [
+    [
+      'Gaitero, despierta.',
+      'Gaitero, afina tu instrumento.',
+      'Gaitero, infla el fuelle.',
+      'Gaitero, despierta: tu música no mata, pero tampoco suelta.',
+      'Gaitero, tu melodía teje su red nota a nota.',
+      'Gaitero, en pie: la noche pide música.',
+    ],
+    [
+      'Castronegro baila dormido y tú llevas el compás.',
+      'Donde no llegan los colmillos, llega tu música.',
+      'Dos almas más caerán esta noche bajo tu hechizo.',
+      'Tu red de notas aún tiene huecos por llenar.',
+      'La gaita sabe a quién busca; tú solo tienes que soplar.',
+      'Nadie escapa dos veces de tu melodía.',
+    ],
+    [
+      'Encanta a dos nuevos habitantes.',
+      'Elige dos oídos nuevos para tu música.',
+      'Escoge qué dos vecinos quedarán prendidos en tu red.',
+      'Señala a dos almas más en tu pantalla.',
+      'Que suene tu melodía hipnótica: dos más esta noche.',
+    ],
+  ],
+  gitana: [
+    [
+      'Gitana, despierta.',
+      'Gitana, el velo entre los mundos es fino esta noche.',
+      'Gitana, enciende tus velas.',
+      'Gitana, despierta: los espíritus están de tertulia.',
+      'Gitana, los muertos se aburren, y a los aburridos se les escapa la verdad.',
+      'Gitana, abre los ojos: el más allá tiene línea directa esta noche.',
+    ],
+    [
+      'Los espíritus aguardan tu pregunta desde el más allá.',
+      'Los muertos escuchan, que es lo único que ya pueden hacer.',
+      'El otro lado admite una pregunta, y solo una.',
+      'Los espíritus responderán al amanecer, a coro y sin mentir.',
+      'La verdad de los muertos no tiene dueño… pero sí precio: una sola pregunta.',
+      'Esta noche los difuntos están habladores.',
+    ],
+    [
+      'Formula tu pregunta.',
+      'Elígela con astucia.',
+      '¿Qué quieres saber? Escríbelo o escoge una pregunta.',
+      'Haz tu pregunta de sí o no.',
+      'Pregunta… y mañana escucha.',
+    ],
+  ],
+  amanecer_sin_muertes: [
+    [
+      'Amanece en Castronegro.',
+      'El gallo canta con ganas esta mañana.',
+      'Sale el sol sobre los tejados escarchados.',
+      'Amanece con niebla y buenas noticias, que aquí es casi lo mismo que un milagro.',
+      'Hoy el sol madruga… y la muerte se ha dormido.',
+      'Las contraventanas se abren una a una.',
+    ],
+    [
+      'Milagrosamente, esta noche nadie ha perdido la vida.',
+      'Contra todo pronóstico, todas las camas amanecen ocupadas.',
+      'El recuento es rápido: ni un rasguño.',
+      'El enterrador desayuna tranquilo: no hay trabajo.',
+      'Ni una silla vacía: la noche fue clemente.',
+      'Todos responden al pasar lista. Todos.',
+    ],
+    [
+      'El pueblo respira aliviado… por ahora.',
+      'Nadie baja la guardia, y hacen bien.',
+      '¿Brujería? ¿Suerte? Mañana se sabrá.',
+      'Aprovechad el respiro: no durará.',
+      'Que nadie se confíe: los colmillos solo descansan.',
+    ],
+  ],
+  amanecer_con_muertes: [
+    [
+      'Amanece en Castronegro y el pueblo se reúne en la plaza.',
+      'El sol se alza sobre Castronegro, pero no calienta a todos por igual.',
+      'Las campanas tocan a difuntos esta mañana.',
+      'Amanece con el cielo del color de la ceniza.',
+      'El gallo canta a media voz, como pidiendo perdón.',
+      'La escarcha de esta mañana no es lo más frío de la plaza.',
+    ],
+    [
+      'La noche ha dejado su huella…',
+      'La noche ha pasado factura…',
+      'Hay noticias, y no son buenas…',
+      'La noche se ha cobrado su parte…',
+      'El panadero no silba y el herrero no golpea: mala señal…',
+      'Un corrillo y un silencio esperan en la plaza…',
+    ],
+  ],
+  dia_debate: [
+    [
+      'Es la hora del juicio.',
+      'La plaza hierve de acusaciones.',
+      'Castronegro exige un culpable.',
+      'Se abre la sesión en la plaza.',
+      'Hoy se juzga con la lengua lo que anoche se hizo con los dientes.',
+      'La horca tiene hambre y el pueblo tiene sospechas: mal día para los tímidos.',
+    ],
+    [
+      'Debatid, acusad y defendeos.',
+      'Se admiten pruebas, corazonadas y rencores mal disimulados.',
+      'Hablad, señalad, defendeos… con la cabeza fría y el corazón caliente.',
+      'El pueblo quiere justicia y, si no la encuentra, se conforma con un culpable.',
+      'Hablad ahora o aullad para siempre.',
+      'Mirad bien esos rostros: uno de ellos ensaya su cara de inocente.',
+    ],
+    [
+      'Cuando el pueblo haya decidido, que cualquiera registre la decisión final en su dispositivo.',
+      'Cuando la decisión esté tomada, que alguien la registre en su dispositivo.',
+      'La decisión final se registra en el dispositivo.',
+      'Al acabar, registrad la decisión en el dispositivo.',
+      'Y que alguien registre después lo que el pueblo decida.',
+    ],
+  ],
+  dia_debate_tranquilo: [
+    [
+      'Nadie ha muerto esta noche, pero la amenaza sigue entre vosotros.',
+      'La noche fue tranquila… demasiado tranquila.',
+      'Sin sangre al amanecer, pero los lobos siguen ahí fuera… o aquí dentro.',
+      'Ningún muerto que llorar, pero la desconfianza no descansa.',
+      'La calma también es sospechosa en Castronegro.',
+      'Noche sin dientes, día con lenguas.',
+    ],
+    [
+      'Debatid con calma: ¿quién se esconde tras una sonrisa?',
+      'Hablad, sospechad… ¿quién sonríe demasiado esta mañana?',
+      'Debatid sin prisa y decidid si hoy la horca ayuna.',
+      'Aprovechad las lenguas, que anoche descansaron los dientes.',
+      'Pensad bien: la clemencia también es una opción.',
+      'Repasad las caras: alguna esconde colmillos.',
+    ],
+    [
+      'La decisión —condena o clemencia— se registra en el dispositivo.',
+      'Cuando el pueblo decida, que alguien lo registre en su dispositivo.',
+      'La decisión final se registra en el dispositivo.',
+      'Registrad al acabar la decisión en el dispositivo.',
+      'Y que alguien anote en su dispositivo lo que decidáis.',
+    ],
+  ],
+  fin_partida: [
+    [
+      'La historia de Castronegro llega a su fin.',
+      'Y así termina esta historia de lobos, secretos y vecinos demasiado confiados.',
+      'El telón cae sobre Castronegro.',
+      'Se cierra el libro de Castronegro… hasta que alguien vuelva a abrirlo.',
+      'Fin de la historia: la niebla se retira y los secretos salen al sol.',
+      'Y colorín, colorado… en Castronegro nadie ha quedado como esperaba.',
+    ],
+    [
+      'Recordad: en este pueblo, nadie es quien dice ser.',
+      'Los pueblos malditos siempre encuentran nuevos lectores.',
+      'El pueblo jura que esto no volverá a pasar. Mentira.',
+      'La luna apaga su farol: se acabó.',
+      'Guardad las antorchas… hasta la próxima.',
+      'Que cada cual haga las paces con lo que hizo.',
+    ],
+  ],
+};
+
+export const NARRATION = {
   dos_hermanas: [
     'Dos Hermanas, despertad y reconoceos. Confiad la una en la otra, pase lo que pase.',
     'Dos Hermanas, alzad la vista y encontraos: la misma sangre corre por vuestras venas. Que nada os separe.',
@@ -73,151 +603,11 @@ export const NARRATION = {
     'Tres Hermanos, abrid los ojos: tres pares de manos, una sola casa. Reconoceos y que nadie os la derribe.',
     'Tres Hermanos, despertad: vuestra madre os hizo prometer que os cuidaríais. Es buen momento para empezar. Reconoceos.',
   ],
-  actor: [
-    'Actor, despierta. Elige qué papel interpretarás esta noche y actúa en consecuencia.',
-    'Actor, se abre el telón: tres papeles esperan sobre el escenario de la noche. Elige el tuyo e interprétalo con maestría.',
-    'Actor, la función va a comenzar. ¿Qué máscara vestirás esta noche?',
-    'Actor, despierta: Castronegro es tu escenario y la luna, tu candileja. Elige papel y no te salgas del guion.',
-    'Actor, el público duerme, que es como mejor se actúa. Escoge tu personaje de esta noche.',
-    'Actor, tres disfraces cuelgan del perchero de la noche. Ponte uno… y que la crítica te sea leve.',
-  ],
-  defensor: [
-    'Defensor, despierta. Alza tu escudo y elige a quién protegerás esta noche del ataque de las bestias.',
-    'Defensor, la noche está llena de colmillos. Elige una puerta ante la que montar guardia hasta el alba.',
-    'Defensor, tu escudo aún guarda las marcas de otras noches. ¿A quién protegerás de la manada esta vez?',
-    'Defensor, despierta: en Castronegro las murallas las ponen los valientes. ¿Ante qué casa clavarás tu escudo?',
-    'Defensor, elige bien tu guardia: los colmillos no avisan y tu escudo no puede estar en dos puertas.',
-    'Defensor, la noche silba entre las rendijas. Escoge a quién arropar con tu acero hasta que cante el gallo.',
-  ],
-  vidente: [
-    'Vidente, despierta. Consulta tu bola de cristal y descubre el verdadero rostro de un habitante del pueblo.',
-    'Vidente, las estrellas están de tu lado esta noche. Elige un rostro y la verdad se te revelará.',
-    'Vidente, tu bola de cristal brilla en la oscuridad. ¿Qué secreto quieres arrancarle a la noche?',
-    'Vidente, despierta: la niebla de tu bola se abre solo para ti. Pregunta un nombre y ella dirá lo que esconde.',
-    'Vidente, el cristal está tibio y las cartas calladas: buena noche para la verdad. ¿A quién quieres ver por dentro?',
-    'Vidente, abre los ojos: en este pueblo todos mienten, pero a tu bola nadie sabe mentirle. Elige a quién mirar.',
-  ],
-  zorro: [
-    'Zorro, despierta. Olfatea con astucia y descubre si la bestia se esconde en el vecindario.',
-    'Zorro, la brisa nocturna trae olores interesantes. Elige un rincón del pueblo y husmea en busca de la bestia.',
-    'Zorro, afina tu hocico: en algún vecindario puede esconderse el lobo. ¿Dónde olfatearás esta noche?',
-    'Zorro, despierta: a ti no se te escapa ni el tufillo de una mentira. Elige tres casas seguidas y husmea.',
-    'Zorro, la noche huele a leña, a pan dormido… ¿y a lobo? Eso dímelo tú. Elige dónde meter el hocico.',
-  ],
-  cuervo: [
-    'Cuervo, despierta. Sobrevuela el pueblo y señala con tus plumas negras a quien consideres sospechoso.',
-    'Cuervo, despliega tus alas sobre Castronegro. ¿Sobre qué tejado dejarás caer tu sombra de sospecha?',
-    'Cuervo, la noche es tuya. Grazna sobre la casa de quien no te inspire confianza: mañana todos lo sabrán.',
-    'Cuervo, despierta: tus plumas pesan dos votos y tú lo sabes. ¿Sobre qué conciencia las dejarás caer?',
-    'Cuervo, el viento te presta sus alas. Elige un tejado: mañana amanecerá más negro que los demás.',
-  ],
   lobos_reconocen: [
     'Hombres lobo, ha llegado vuestro momento. Todo el pueblo duerme con los ojos bien cerrados. Lobos, abrid los ojos en silencio y reconoced a vuestra manada. Cuando os hayáis reconocido, confirmadlo en vuestro dispositivo.',
     'Llega la hora de la manada. Aldeanos, ojos cerrados: quien mire, que se atenga a las consecuencias. Lobos, abrid los ojos, reconoced a vuestros hermanos de caza… y confirmadlo en vuestro dispositivo.',
     'Esta noche no hay caza, pero sí presentaciones. Lobos, abrid los ojos sin ruido, miraos bien: esta es vuestra manada. Confirmadlo en el dispositivo cuando os tengáis vistos.',
     'El bosque quiere saber cuántos sois. Lobos, abrid los ojos con sigilo y reconoceos: mañana empezará lo serio. Confirmadlo en vuestro dispositivo.',
-  ],
-  lobos_noche1: [
-    'Hombres lobo, ha llegado vuestro momento. Todo el pueblo duerme con los ojos bien cerrados. Abrid los ojos en silencio, miraos, reconoced a vuestra manada… y elegid juntos a vuestra primera presa.',
-    'Llega la hora de la manada. Aldeanos, ojos cerrados: quien mire, que se atenga a las consecuencias. Lobos, abrid los ojos, reconoced a vuestros hermanos de caza… y señalad en silencio a vuestra primera víctima.',
-    'Primera noche de luna en Castronegro. Lobos, abrid los ojos sin ruido: miraos, contaos, reconoceos… y estrenad la temporada eligiendo cena.',
-    'El pueblo duerme y no sabe lo que ha sembrado. Lobos, abrid los ojos: saludad a vuestra manada con la mirada… y decidid juntos quién no verá el alba.',
-    'Silencio: es la hora de los colmillos. Lobos, abrid los ojos, reconoced a los vuestros… y que vuestra primera elección sea digna de leyenda.',
-  ],
-  lobos: [
-    'Hombres lobo, despertad. Elegid en silencio a vuestra próxima víctima.',
-    'La manada sale de caza. Hombres lobo, elegid en silencio: ¿qué puerta derribaréis esta noche?',
-    'Hombres lobo, el hambre aprieta y la luna está alta. Señalad a vuestra presa.',
-    'Se oyen pisadas suaves sobre los tejados… Hombres lobo, elegid a vuestra víctima con cuidado: el pueblo empieza a sospechar.',
-    'Hombres lobo, abrid los ojos: la despensa de Castronegro vuelve a estar abierta. Elegid plato… con educación y en silencio.',
-    'La luna pone la mesa y vosotros ponéis los dientes. Manada, elegid a vuestra víctima.',
-    'Hombres lobo, despertad: el pueblo ha cerrado las puertas, pero olvidó cerrar los sueños. Escoged por dónde entrar.',
-    'Aúlla el viento para disimular vuestros pasos. Manada, abrid los ojos y firmad la noche con un nombre.',
-    'Hombres lobo, la caza es un arte y vosotros, artistas con colmillos. Elegid vuestra obra de esta noche.',
-  ],
-  encantados: [
-    'La melodía del Gaitero flota sobre los tejados de Castronegro.',
-    'Una música dulce y extraña se cuela por las rendijas de las ventanas…',
-    'El Gaitero toca su melodía y las notas reptan por las calles dormidas…',
-    'Suena una gaita a lo lejos, tan dulce que hasta la niebla se para a escuchar…',
-    'Las notas del Gaitero gotean de tejado en tejado, buscando oídos nuevos…',
-    'Una melodía vieja como el bosque se enrosca en las chimeneas de Castronegro…',
-  ],
-  lobo_feroz: [
-    'Gran Lobo Feroz, tu hambre no conoce límites. Elige una segunda víctima para esta noche.',
-    'Gran Lobo Feroz, una presa no basta para saciarte. La noche te concede un segundo bocado: elige.',
-    'Gran Lobo Feroz, despierta otra vez: tu estómago es leyenda en tres condados. ¿Quién será el segundo plato?',
-    'Gran Lobo Feroz, la manada ya cenó… pero tú nunca repites plato: lo doblas. Elige a tu segunda víctima.',
-    'Gran Lobo Feroz, dicen que sopló y derribó una casa. Esta noche te basta con elegir otra puerta. Hazlo.',
-  ],
-  lobo_albino: [
-    'Hombre Lobo Albino, despierta. Esta noche puedes traicionar a tu propia manada, si así lo deseas.',
-    'Hombre Lobo Albino, la luna llena ilumina tu pelaje. ¿Morderás esta noche la mano de tu propia manada?',
-    'Hombre Lobo Albino, blanco como la nieve y frío como ella. ¿Caerá esta noche un hermano de camada?',
-    'Hombre Lobo Albino, despierta: tú no cazas para la manada… cazas para quedarte solo. ¿Empiezas esta noche?',
-    'Hombre Lobo Albino, la luna te confunde con su reflejo. Aprovecha el disfraz: ¿traición… o paciencia?',
-  ],
-  bruja: [
-    'Bruja, despierta. Contempla la víctima de los lobos. ¿Usarás tu poción de vida? ¿O quizás la de muerte?',
-    'Bruja, tu caldero burbujea. La noche te muestra su obra: decide si la deshaces con una poción… o si añades una víctima más.',
-    'Bruja, los frascos tintinean en tu alacena. ¿Vida? ¿Muerte? ¿O dejarás que la noche siga su curso?',
-    'Bruja, despierta: la noche te enseña sus cartas y tú guardas dos ases embotellados. ¿Juegas alguno?',
-    'Bruja, huele a azufre y a decisiones difíciles. Mira lo que han hecho los lobos… y di si lo arreglas, lo empeoras o lo dejas estar.',
-    'Bruja, tu gato bosteza y el caldero pregunta. ¿Devuelves un alma, te llevas otra… o cierras la alacena?',
-    'Bruja, despierta: en tus manos caben un amanecer más y un funeral más. Administra.',
-  ],
-  gaitero: [
-    'Gaitero, despierta. Que suene tu melodía hipnótica y encanta a dos nuevos habitantes.',
-    'Gaitero, afina tu instrumento: dos nuevas almas caerán esta noche bajo el hechizo de tu música.',
-    'Gaitero, despierta: tu música no mata, pero tampoco suelta. Elige dos oídos nuevos.',
-    'Gaitero, infla el fuelle: Castronegro baila dormido y tú llevas el compás. Dos más esta noche.',
-    'Gaitero, tu melodía teje su red nota a nota. Elige qué dos vecinos quedarán prendidos en ella.',
-    'Gaitero, despierta: donde no llegan los colmillos llega tu música. Encanta a dos almas más.',
-  ],
-  gitana: [
-    'Gitana, despierta. Los espíritus aguardan tu pregunta desde el más allá.',
-    'Gitana, el velo entre los mundos es fino esta noche. Formula tu pregunta: los muertos escuchan.',
-    'Gitana, despierta: los espíritus están de tertulia y admiten una pregunta. Elígela con astucia.',
-    'Gitana, enciende tus velas: el más allá tiene línea directa esta noche. ¿Qué quieres saber?',
-    'Gitana, los muertos se aburren y a los aburridos se les escapa la verdad. Pregunta.',
-  ],
-  amanecer_sin_muertes: [
-    'Amanece en Castronegro. Milagrosamente, esta noche nadie ha perdido la vida. El pueblo respira aliviado… por ahora.',
-    'El gallo canta y, contra todo pronóstico, todas las camas amanecen ocupadas. Nadie ha muerto esta noche… ¿brujería?',
-    'Amanece y el recuento es rápido: ni un rasguño. El pueblo respira, pero nadie baja la guardia.',
-    'Sale el sol y, por una vez, el enterrador desayuna tranquilo: no hay trabajo. Nadie ha muerto esta noche.',
-    'Amanece con niebla y buenas noticias, que en Castronegro es casi lo mismo que un milagro: todos siguen vivos.',
-    'El gallo canta con ganas, como si lo supiera: esta noche la muerte pasó de largo. Todos en pie… todos.',
-    'Amanece. Las puertas se abren una a una… y una a una responden. Ni una silla vacía: la noche fue clemente.',
-    'Hoy el sol madruga y la muerte se ha dormido: no falta nadie en Castronegro. Aprovechad el respiro.',
-  ],
-  amanecer_con_muertes: [
-    'Amanece en Castronegro y el pueblo se reúne en la plaza. La noche ha dejado su huella…',
-    'El sol se alza sobre Castronegro, pero no calienta a todos por igual. La noche ha pasado factura…',
-    'Las campanas tocan a difuntos esta mañana. El pueblo se congrega en la plaza con el corazón encogido…',
-    'Amanece con el cielo del color de la ceniza. En la plaza, un corrillo y un silencio: la noche se ha cobrado su parte…',
-    'El gallo canta a media voz, como pidiendo perdón. Castronegro despierta… no todos con él.',
-    'Sale el sol y encuentra las contraventanas abiertas y los rostros pálidos. Hay noticias, y no son buenas…',
-    'Amanece. El panadero no silba, el herrero no golpea, y eso en Castronegro solo significa una cosa…',
-    'La escarcha de esta mañana no es lo más frío de la plaza. Reuníos, vecinos: la noche ha hablado…',
-  ],
-  dia_debate: [
-    'Es la hora del juicio. Debatid, acusad y defendeos. Cuando el pueblo haya decidido, que cualquiera registre la decisión final en su dispositivo.',
-    'La plaza hierve de acusaciones. Hablad, señalad, defendeos… y cuando la decisión esté tomada, que alguien la registre en su dispositivo.',
-    'Castronegro exige un culpable. Debatid con la cabeza fría y el corazón caliente; la decisión final se registra en el dispositivo.',
-    'Se abre la sesión en la plaza: se admiten pruebas, corazonadas y rencores mal disimulados. Al acabar, registrad la decisión en el dispositivo.',
-    'El pueblo quiere justicia y, si no la encuentra, se conforma con un culpable. Debatid… y registrad después la decisión en el dispositivo.',
-    'Hablad ahora o aullad para siempre. Acusaciones al centro de la plaza; la decisión final, al dispositivo.',
-    'Hoy se juzga con la lengua lo que anoche se hizo con los dientes. Debatid, decidid… y que alguien lo registre en su dispositivo.',
-    'La horca tiene hambre y el pueblo tiene sospechas: mal día para los tímidos. Debatid y registrad la decisión en el dispositivo.',
-  ],
-  dia_debate_tranquilo: [
-    'Nadie ha muerto esta noche, pero la amenaza sigue entre vosotros. Debatid con calma: ¿quién se esconde tras una sonrisa? La decisión se registra en el dispositivo.',
-    'La noche fue tranquila… demasiado tranquila. Hablad, sospechad, y cuando el pueblo decida —condena o clemencia—, que alguien lo registre en su dispositivo.',
-    'Sin sangre al amanecer, pero los lobos siguen ahí fuera… o aquí dentro. Debatid; la decisión final se registra en el dispositivo.',
-    'Ningún muerto que llorar, pero la desconfianza no descansa. Hablad claro: ¿quién sonríe demasiado esta mañana? Registrad luego la decisión.',
-    'La calma también es sospechosa en Castronegro. Debatid sin prisa… y decidid si hoy la horca ayuna. La decisión, al dispositivo.',
-    'Noche sin dientes, día con lenguas. Aprovechadlas bien, y que alguien registre lo que el pueblo decida.',
   ],
   cazador: [
     'El Cazador cae, pero con su último aliento tensa el arco. Cazador, elige a quién te llevas contigo.',
@@ -255,14 +645,6 @@ export const NARRATION = {
     'Sacrificado por un empate injusto, el Cabeza de Turco aún tiene un último poder: decidir quién hablará mañana por el pueblo.',
     'Pagó culpas ajenas, como siempre… pero el Cabeza de Turco tiene la última palabra: la de decidir quiénes votarán mañana.',
     'El empate se cobró su chivo expiatorio. Antes de partir, el Cabeza de Turco reparte la voz del día siguiente.',
-  ],
-  fin_partida: [
-    'La historia de Castronegro llega a su fin.',
-    'Y así termina esta historia de lobos, secretos y vecinos demasiado confiados.',
-    'El telón cae sobre Castronegro. Recordad: en este pueblo, nadie es quien dice ser.',
-    'Se cierra el libro de Castronegro… hasta que alguien vuelva a abrirlo. Los pueblos malditos siempre encuentran lectores.',
-    'Fin de la historia. La niebla se retira, los secretos salen al sol… y el pueblo jura que esto no volverá a pasar. Mentira.',
-    'Y colorín, colorado… en Castronegro nadie ha quedado como esperaba. La luna apaga su farol: se acabó.',
   ],
 };
 
@@ -483,12 +865,26 @@ export const OUTROS = {
   ],
 };
 
+// Coletillas genéricas de despedida: combinadas con las bases dan 20-30
+// despedidas distintas por rol (la vacía deja la base sola).
+const OUTRO_TAILS = [
+  '',
+  'La noche sigue su curso.',
+  'Que nadie se mueva todavía.',
+  'La oscuridad vuelve a espesarse.',
+  'El silencio recupera su trono.',
+  'La luna sigue contando pasos.',
+  'Castronegro sigue durmiendo… o eso parece.',
+];
+
 // Variante de despedida: estable por partida, noche y paso.
 export function outro(stepId, salt = '') {
   const v = OUTROS[stepId];
   if (!v) return null;
-  if (typeof v === 'string') return v;
-  return v[hashStr('outro|' + stepId + '|' + salt) % v.length];
+  const rnd = seededRnd(hashStr('outro|' + stepId + '|' + salt));
+  const base = typeof v === 'string' ? v : v[Math.floor(rnd() * v.length)];
+  const tail = OUTRO_TAILS[Math.floor(rnd() * OUTRO_TAILS.length)];
+  return tail ? `${base} ${tail}` : base;
 }
 
 function hashStr(s) {
@@ -499,7 +895,26 @@ function hashStr(s) {
 
 // Devuelve la variante de una locución, estable para una misma sal
 // (p. ej. semilla+noche+paso) y distinta entre partidas y noches.
+// Las locuciones compuestas combinan apertura × cuerpo × cierre: con ~17
+// piezas escritas a mano salen 100-180 frases distintas por tipo.
+// Generador determinista pequeño para decorrelacionar las elecciones de cada
+// pieza (un hash directo por pieza produce índices que se mueven en bloque).
+function seededRnd(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 export function narr(key, salt = '') {
+  const c = COMPO[key];
+  if (c) {
+    const rnd = seededRnd(hashStr(key + '|' + salt));
+    return c.map((parts) => parts[Math.floor(rnd() * parts.length)]).join(' ');
+  }
   const v = NARRATION[key];
   if (!v) return '';
   if (typeof v === 'string') return v;

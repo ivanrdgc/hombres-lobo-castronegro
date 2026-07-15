@@ -627,6 +627,19 @@ test('resolveDawn: el oso también se anuncia por voz (osoAnnounce)', () => {
   assert.equal(res2.osoAnnounce, null);
 });
 
+test('narración compuesta: ~100+ variantes por tipo, deterministas por sal', async () => {
+  const { narr, outro } = await import('../public/js/narration.js');
+  for (const key of ['bruja', 'vidente', 'lobos', 'noche_cae', 'dia_debate', 'bienvenida']) {
+    const seen = new Set();
+    for (let i = 0; i < 600; i++) seen.add(narr(key, 'seed' + i));
+    assert.ok(seen.size >= 100, `${key}: ${seen.size} variantes (se esperaban ≥100)`);
+    assert.equal(narr(key, 'fija'), narr(key, 'fija'), 'misma sal, misma frase');
+  }
+  const outs = new Set();
+  for (let i = 0; i < 300; i++) outs.add(outro('bruja', 's' + i));
+  assert.ok(outs.size >= 15, 'despedidas de la bruja: ' + outs.size);
+});
+
 test('aliveNeighbors: salta a los muertos en el círculo', () => {
   const ps = mkPlayers(['aldeano', 'aldeano', 'aldeano', 'aldeano', 'aldeano']);
   ps[1].alive = false; ps[4].alive = false;
