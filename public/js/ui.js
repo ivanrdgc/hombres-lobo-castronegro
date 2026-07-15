@@ -7,7 +7,7 @@ import { NARRATION, narr, listSpanishVoices, getVoiceConfig, CLOUD_VOICES, cloud
 import { isMuted } from './conductor.js';
 
 // Sello de versión visible (para verificar despliegues en los móviles).
-export const APP_VERSION = 'v2026-07-15.7';
+export const APP_VERSION = 'v2026-07-15.8';
 
 // Generador de nombres de grupo con sabor a Castronegro.
 const NAME_GROUPS = ['Los Lobos', 'La Manada', 'El Aquelarre', 'Los Aullidos', 'La Camada', 'Los Colmillos', 'Las Garras', 'Los Susurros', 'La Niebla', 'Las Sombras'];

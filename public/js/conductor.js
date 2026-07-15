@@ -140,6 +140,12 @@ function outroFor(stepId, game) {
   return outro(stepId, `${game.seed}:n${game.night}:s${game.stepIdx}`);
 }
 
+// Llamada a los enamorados con sus palabras clave. Aparte para poder pre-generarla
+// en cuanto Cupido marca (no antes: hasta entonces no se sabe quiénes son).
+function enamoradosCall(lovers) {
+  return `Cupido ha disparado sus flechas. Todos con los ojos cerrados y atentos. Si oyes tu palabra clave, abre los ojos con disimulo y mira tu pantalla: … ${lovers.map((p) => p.keyword).join('… y ')}. Enamorados, descubrid a vuestro amor y confirmad en silencio.`;
+}
+
 // Adelanta la síntesis de las locuciones previsibles de una noche (entradas de
 // cada rol, despedidas y amanecer) mientras la gente aún mira su carta. Es «best
 // effort»: usa los mismos textos y sales deterministas que reproducirá el
@@ -164,13 +170,13 @@ function prewarmNight(game, players, night) {
 
 function chainOutro(key, outroTxt, waitMs, stepIdx) {
   const adv = () => advanceGhostStep(stepIdx);
-  if (!outroTxt) { scheduleAfterSpeech(key + ':adv', 700, adv); return; }
+  if (!outroTxt) { scheduleAfterSpeech(key + ':adv', 500, adv); return; }
   const oKey = key + ':outro';
-  if (spoken.has(oKey)) { scheduleAfterSpeech(key + ':adv', 2000 + Math.random() * 700, adv); return; }
+  if (spoken.has(oKey)) { scheduleAfterSpeech(key + ':adv', 1100 + Math.random() * 600, adv); return; }
   scheduleAfterSpeech(oKey + ':t', waitMs, async () => {
     say(oKey, outroTxt);
     // El «cerrad los ojos» debe SONAR entero antes de la espera de bloqueo.
-    scheduleAfterSpeech(key + ':adv', 2000 + Math.random() * 700, adv);
+    scheduleAfterSpeech(key + ':adv', 1100 + Math.random() * 600, adv);
   });
 }
 
@@ -331,13 +337,13 @@ export function conductorTick() {
 
     if (stepId === 'amanecer') {
       say(key, '', null);
-      scheduleAfterSpeech(key, 1200, runDawn);
+      scheduleAfterSpeech(key, 1000, runDawn);
       return;
     }
     // Colchón inicial: la misma pantalla de sueño para todos mientras suena
     // «cae la noche»; el primer rol no despierta hasta que todos duermen.
     if (stepId === 'durmiendo') {
-      scheduleAfterSpeech(key, 3000 + Math.random() * 1800, () => advanceGhostStep(game.stepIdx));
+      scheduleAfterSpeech(key, 1800 + Math.random() * 1000, () => advanceGhostStep(game.stepIdx));
       return;
     }
     // Encantados: se les llama por palabras clave y el juego ESPERA a que cada
@@ -367,7 +373,7 @@ export function conductorTick() {
           ? [decoys[base], decoys[(base + 1) % decoys.length]]
           : players.filter((p) => p.alive && p.keyword).slice(0, 2).map((p) => p.keyword);
         say(key, `${encIntro} Todos con los ojos cerrados. Si oyes tu palabra clave, la música te ha atrapado: abre los ojos con disimulo y mira tu pantalla. Las palabras son: … ${fake.join('… y ')}. Cuando lo hayáis visto, volved a cerrar los ojos.`);
-        scheduleAfterSpeech(key, 4000, () => advanceGhostStep(game.stepIdx));
+        scheduleAfterSpeech(key, 3000, () => advanceGhostStep(game.stepIdx));
       } else {
         schedule(key, 900, () => advanceGhostStep(game.stepIdx));
       }
@@ -393,19 +399,24 @@ export function conductorTick() {
       const fake = (game.kwDecoys || []).slice(0, 2);
       if (fake.length === 2) {
         say(key, `Cupido ha disparado sus flechas. Todos con los ojos cerrados y atentos. Si oyes tu palabra clave, abre los ojos con disimulo y mira tu pantalla: … ${fake.join('… y ')}. Enamorados, descubrid a vuestro amor en silencio… y volved a cerrar los ojos.`);
-        scheduleAfterSpeech(key, 4500 + Math.random() * 2000, () => advanceGhostStep(game.stepIdx));
+        scheduleAfterSpeech(key, 3500 + Math.random() * 1500, () => advanceGhostStep(game.stepIdx));
         return;
       }
     }
     // Enamorados: se les llama por sus palabras clave secretas.
     if (stepId === 'enamorados' && game.keywordsActive) {
       const lovers = players.filter((p) => p.lover && p.keyword);
-      if (lovers.length >= 2) {
-        text = `Cupido ha disparado sus flechas. Todos con los ojos cerrados y atentos. Si oyes tu palabra clave, abre los ojos con disimulo y mira tu pantalla: … ${lovers.map((p) => p.keyword).join('… y ')}. Enamorados, descubrid a vuestro amor y confirmad en silencio.`;
-      }
+      if (lovers.length >= 2) text = enamoradosCall(lovers);
     }
     if (actors && actors.length) {
       if (text) say(key, text);
+      // Adelanta la síntesis de lo que viene: la despedida de este paso (para
+      // cuando actúen) y la entrada del siguiente paso estático.
+      prewarm(outroFor(stepId, game));
+      const nextId = game.steps[game.stepIdx + 1];
+      if (nextId && !['durmiendo', 'amanecer', 'enamorados', 'encantados', 'lobos'].includes(nextId)) {
+        prewarm(narr(nextId, `${game.seed}:n${game.night}:s${game.stepIdx + 1}:${nextId}`));
+      }
       // A veces, un murmullo ambiental antes del primer aviso (despista y ambienta).
       if (fillerPlan[key] === undefined) fillerPlan[key] = Math.random() < 0.3;
       if (fillerPlan[key]) {
@@ -422,14 +433,20 @@ export function conductorTick() {
     // Nadie debe actuar: el paso se resolvió, el rol está muerto o no puede usar
     // su poder. En todos los casos suena la misma despedida («…vuelve a cerrar
     // los ojos») con la misma espera: los tiempos y el audio no delatan nada.
+    // Si Cupido acaba de marcar, ya sabemos las palabras clave: adelantamos la
+    // síntesis de la llamada a los enamorados (que si no, se haría al vuelo).
+    if (game.steps[game.stepIdx + 1] === 'enamorados' && game.keywordsActive) {
+      const lovers = players.filter((p) => p.lover && p.keyword);
+      if (lovers.length >= 2) prewarm(enamoradosCall(lovers));
+    }
     const outro = outroFor(stepId, game);
     if (stepNeedsGhostAnnounce(stepId, game, players)) {
       if (text) say(key, text);
-      chainOutro(key, outro, 1600 + Math.random() * 1600, game.stepIdx);
+      chainOutro(key, outro, 1200 + Math.random() * 1000, game.stepIdx);
     } else if (['enamorados', 'lobos_reconocen', 'lobos'].includes(stepId)) {
-      chainOutro(key, outro, 700, game.stepIdx); // pasos vivos ya completados
+      chainOutro(key, outro, 400, game.stepIdx); // pasos vivos ya completados
     } else {
-      schedule(key, 900, () => advanceGhostStep(game.stepIdx)); // rol públicamente muerto
+      schedule(key, 700, () => advanceGhostStep(game.stepIdx)); // rol públicamente muerto
     }
     return;
   }
