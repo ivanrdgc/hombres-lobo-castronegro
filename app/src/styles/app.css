@@ -1,0 +1,312 @@
+/* Castronegro v2 — hoja de estilos de la app.
+   Port de la v1 (mismas CLASES: card, players, rolecard, modal…) sobre los
+   tokens nuevos: el «lavado de cara» vive en la paleta y los detalles, no en
+   los nombres. Las variables de la v1 se mantienen como ALIAS de los tokens
+   para que los estilos portados (incl. inline) sigan funcionando. */
+
+:root {
+  --bg: var(--bg-0);
+  --bg2: var(--bg-1);
+  --card: var(--bg-2);
+  --card2: var(--bg-3);
+  --border: var(--line);
+  --text: var(--ink-1);
+  --muted: var(--ink-2);
+  --accent: var(--luna);
+  --accent2: var(--arcano);
+  --danger: var(--sangre);
+  --ok: var(--bosque);
+  --moon: var(--luna-2);
+}
+
+#app {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 12px 14px 90px;
+}
+
+h1, h2, h3 { font-weight: 700; letter-spacing: 0.3px; margin: 0; }
+p { margin: 0; }
+
+.title-hero {
+  text-align: center;
+  margin: 28px 0 4px;
+  font-size: 1.7rem;
+  font-family: var(--font-display);
+  color: var(--moon);
+  text-shadow: 0 0 24px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.subtitle { text-align: center; color: var(--muted); margin-bottom: 24px; font-size: 0.95rem; }
+.moon { font-size: 3.2rem; text-align: center; display: block; margin-top: 26px; filter: drop-shadow(0 0 18px color-mix(in srgb, var(--moon) 50%, transparent)); }
+
+.card {
+  background: linear-gradient(180deg, var(--card), color-mix(in srgb, var(--card) 82%, var(--bg-0)));
+  border: 1px solid var(--border);
+  border-radius: var(--r-2);
+  padding: 16px;
+  margin: 12px 0;
+  box-shadow: var(--shadow-1);
+}
+.card h3 { margin-bottom: 10px; }
+.card .card { box-shadow: none; }
+
+label { display: block; color: var(--muted); font-size: 0.85rem; margin: 10px 0 4px; }
+input[type='text'] {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: var(--r-1);
+  border: 1px solid var(--border);
+  background: var(--bg2);
+  color: var(--text);
+  font-size: 1.05rem;
+  outline: none;
+}
+input[type='text']:focus { border-color: var(--accent); box-shadow: var(--focus); }
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border-radius: var(--r-1);
+  padding: 12px 16px;
+  font-size: 1rem;
+  font-weight: 600;
+  background: var(--card2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  transition: transform 0.06s ease, background var(--t-fast), border-color var(--t-fast);
+  -webkit-tap-highlight-color: transparent;
+}
+button:active { transform: scale(0.97); }
+button.primary { background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 80%, #7a4d00), var(--accent)); color: #241a05; border: none; }
+button.violet { background: linear-gradient(135deg, color-mix(in srgb, var(--accent2) 75%, #2a1b57), var(--accent2)); color: #fff; border: none; }
+button.danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
+button.ghost { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+button.small { padding: 7px 10px; font-size: 0.85rem; border-radius: 8px; }
+button.block { display: block; width: 100%; margin-top: 12px; }
+button:disabled { opacity: 0.45; cursor: default; }
+.btnrow { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.btnrow button { flex: 1; min-width: 130px; }
+
+.flash {
+  background: color-mix(in srgb, var(--accent) 16%, var(--bg-1));
+  border: 1px solid var(--accent);
+  color: var(--moon);
+  padding: 10px 14px;
+  border-radius: var(--r-1);
+  margin: 10px 0;
+  font-size: 0.95rem;
+}
+.error { background: color-mix(in srgb, var(--danger) 16%, var(--bg-1)); border-color: var(--danger); color: #f3c2c2; }
+
+.topbar { display: flex; align-items: center; gap: 8px; margin: 6px 0 4px; flex-wrap: wrap; }
+.topbar h2 { font-size: 1.25rem; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-display); }
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-full);
+  padding: 5px 12px;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.narration {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent2) 18%, var(--bg-1)), color-mix(in srgb, var(--accent2) 8%, var(--bg-1)));
+  border: 1px solid var(--accent2);
+  border-radius: var(--r-2);
+  padding: 12px 14px;
+  margin: 10px 0;
+  font-style: italic;
+  font-family: var(--font-display);
+  color: #d8ccf5;
+  font-size: 0.98rem;
+}
+
+.players { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-top: 8px; }
+/* Lista ordenable (mesa): varias columnas; se arrastra por el asa ⠿ */
+.players.seatable { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+.player {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-1);
+  padding: 9px 11px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  position: relative;
+  min-height: 46px;
+}
+.player.dead { opacity: 0.45; text-decoration: line-through; }
+.player.selectable { cursor: pointer; }
+.player.selectable:active { background: color-mix(in srgb, var(--accent2) 22%, var(--card2)); }
+.player.selected { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 18%, var(--bg-1)); }
+.player .pname { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.badge { font-size: 0.7rem; background: var(--bg); border-radius: 6px; padding: 2px 6px; color: var(--accent); border: 1px solid var(--accent); }
+.badge.you { color: var(--ok); border-color: var(--ok); }
+
+.rolecard {
+  background: linear-gradient(160deg, color-mix(in srgb, var(--accent2) 22%, var(--bg-1)), color-mix(in srgb, var(--accent2) 6%, var(--bg-0)));
+  border: 1px solid var(--accent2);
+  border-radius: var(--r-2);
+  padding: 16px;
+  margin: 12px 0;
+  text-align: center;
+}
+.rolecard .remoji { font-size: 3rem; display: block; margin-bottom: 4px; }
+.rolecard .rname { font-size: 1.3rem; font-weight: 700; color: var(--moon); font-family: var(--font-display); }
+.rolecard .rteam { color: var(--accent2); font-size: 0.85rem; margin: 2px 0 8px; }
+.rolecard .rdesc { color: var(--muted); font-size: 0.9rem; }
+.rolecard .rextra { margin-top: 10px; font-size: 0.9rem; color: #d8ccf5; background: color-mix(in srgb, var(--accent2) 12%, transparent); border-radius: 8px; padding: 8px; }
+
+.actionpanel { background: var(--card); border: 2px solid var(--accent); border-radius: var(--r-2); padding: 14px; margin: 12px 0; box-shadow: var(--shadow-1); }
+.actionpanel h3 { color: var(--moon); margin-bottom: 6px; }
+.actionpanel .hint { color: var(--muted); font-size: 0.88rem; margin-bottom: 8px; }
+
+.log { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--r-2); padding: 10px 12px; margin: 12px 0; max-height: 260px; overflow-y: auto; font-size: 0.88rem; }
+.log p { margin: 5px 0; color: var(--muted); }
+.log p.muerte { color: #f3b0b0; }
+.log p.dia { color: var(--moon); }
+.log p.noche { color: #b7aef0; }
+.log p.evento { color: #cfe8d9; }
+
+.exp { margin: 14px 0 6px; color: var(--accent); font-size: 0.9rem; font-weight: 700; letter-spacing: 0.5px; }
+.roletoggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: var(--r-1);
+  border: 1px solid var(--border);
+  margin: 6px 0;
+  background: var(--card2);
+  cursor: pointer;
+}
+.roletoggle.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, var(--bg-1)); }
+.roletoggle.locked { opacity: 0.8; cursor: default; border-style: dashed; }
+.roletoggle .remoji { font-size: 1.4rem; }
+.roletoggle .rinfo { flex: 1; }
+.roletoggle .rname { font-weight: 600; font-size: 0.95rem; }
+.roletoggle .rdesc { color: var(--muted); font-size: 0.78rem; }
+.roletoggle .state { font-size: 1.2rem; }
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 6, 12, 0.75);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 50;
+  backdrop-filter: blur(3px);
+}
+.modal {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 18px 18px 0 0;
+  width: 100%;
+  max-width: 640px;
+  max-height: 88vh;
+  overflow-y: auto;
+  padding: 18px 16px 26px;
+  animation: up 0.18s ease;
+}
+@keyframes up { from { transform: translateY(40px); opacity: 0.5; } to { transform: none; opacity: 1; } }
+@media (min-width: 700px) {
+  .overlay { align-items: center; }
+  .modal { border-radius: 18px; }
+}
+
+.settingrow { display: flex; align-items: center; gap: 10px; padding: 10px 4px; border-bottom: 1px solid var(--border); }
+.settingrow:last-child { border-bottom: none; }
+.settingrow .sinfo { flex: 1; }
+.settingrow .sname { font-size: 0.95rem; }
+.settingrow .sdesc { color: var(--muted); font-size: 0.78rem; }
+.switch { width: 46px; height: 26px; border-radius: var(--r-full); background: var(--bg); border: 1px solid var(--border); position: relative; flex-shrink: 0; cursor: pointer; }
+.switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: 50%; background: var(--muted); transition: 0.15s; }
+.switch.on { background: var(--accent); border-color: var(--accent); }
+.switch.on::after { left: 22px; background: #241a05; }
+
+.mastertools {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  background: color-mix(in srgb, var(--bg-0) 92%, transparent);
+  border-top: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+}
+.mastertools .inner { max-width: 640px; margin: 0 auto; display: flex; gap: 8px; padding: 10px 14px; }
+.mastertools button { flex: 1; font-size: 0.85rem; padding: 9px 6px; }
+
+.winbanner { text-align: center; padding: 26px 14px; }
+.winbanner .wemoji { font-size: 4rem; display: block; }
+.winbanner h2 { color: var(--moon); margin: 10px 0; font-family: var(--font-display); }
+
+.countdown { font-variant-numeric: tabular-nums; color: var(--accent); font-weight: 700; }
+.centercards { display: flex; gap: 10px; }
+.centercards .cc { flex: 1; background: var(--card2); border: 1px solid var(--border); border-radius: var(--r-1); padding: 12px; text-align: center; cursor: pointer; }
+.centercards .cc:active { border-color: var(--accent); }
+.copyok { color: var(--ok); }
+.waitlist { color: var(--muted); font-size: 0.88rem; margin-top: 8px; }
+.linkbox { display: flex; gap: 8px; margin-top: 8px; }
+.linkbox input { flex: 1; font-size: 0.85rem; }
+hr.sep { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
+.small-note { color: var(--muted); font-size: 0.8rem; margin-top: 8px; }
+
+/* Feedback inmediato de acciones */
+.toast {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--card2);
+  border: 1px solid var(--accent);
+  color: var(--moon);
+  padding: 7px 16px;
+  border-radius: var(--r-full);
+  z-index: 90;
+  font-size: 0.88rem;
+  font-weight: 600;
+  box-shadow: var(--shadow-2);
+  animation: toastin 0.15s ease;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.toast.ok { border-color: var(--ok); color: var(--ok); }
+@keyframes toastin { from { transform: translate(-50%, -8px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+/* Ruedita de carga (p. ej. mientras se sintetiza la voz neuronal) */
+.spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  vertical-align: -2px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+body.busy [data-a] { pointer-events: none; }
+body.busy button { opacity: 0.7; }
+
+/* Ordenar la mesa arrastrando (lobby) */
+.draghandle {
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+  padding: 2px 8px 2px 2px;
+  color: var(--muted);
+  font-size: 1.15rem;
+}
+.player.dragging {
+  position: relative;
+  z-index: 6;
+  opacity: 0.95;
+  outline: 2px solid var(--accent);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55);
+  transition: none;
+}

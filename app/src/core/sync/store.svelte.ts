@@ -50,7 +50,10 @@ export interface AppState {
   ui: UiState;
 }
 
-export const state: AppState = $state({
+// Nota de nombres: en los componentes .svelte hay que importar `app` (importar
+// un binding llamado `state` eclipsa la runa $state); en módulos .ts puede
+// usarse el alias `state` (mismo objeto).
+export const app: AppState = $state({
   route: { view: 'landing', slug: null },
   group: null,
   groupMissing: false,
@@ -59,6 +62,8 @@ export const state: AppState = $state({
   flash: null,
   ui: {},
 });
+
+export const state: AppState = app;
 
 let unsubGroup: (() => void) | null = null;
 let unsubPlayers: (() => void) | null = null;

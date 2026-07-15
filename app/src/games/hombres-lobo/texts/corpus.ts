@@ -885,14 +885,21 @@ export const OUTRO_TAILS: string[] = [
   'Castronegro sigue durmiendo… o eso parece.',
 ];
 
-// Variante de despedida: estable por partida, noche y paso.
-export function outro(stepId: string, salt = ''): string | null {
+// Piezas de la despedida (base + coletilla opcional): misma selección
+// determinista que outro(); el secuenciador las encadena como clips.
+export function outroParts(stepId: string, salt = ''): string[] | null {
   const v = OUTROS[stepId];
   if (!v) return null;
   const rnd = seededRnd(hashStr('outro|' + stepId + '|' + salt));
   const base = typeof v === 'string' ? v : v[Math.floor(rnd() * v.length)];
   const tail = OUTRO_TAILS[Math.floor(rnd() * OUTRO_TAILS.length)];
-  return tail ? `${base} ${tail}` : base;
+  return tail ? [base, tail] : [base];
+}
+
+// Variante de despedida: estable por partida, noche y paso.
+export function outro(stepId: string, salt = ''): string | null {
+  const parts = outroParts(stepId, salt);
+  return parts ? parts.join(' ') : null;
 }
 
 export function hashStr(s: string): number {
@@ -917,16 +924,23 @@ export function seededRnd(seed: number): () => number {
   };
 }
 
-export function narr(key: string, salt = ''): string {
+// Piezas elegidas de una locución (apertura, cuerpo, cierre…): la misma
+// selección determinista que narr(); el secuenciador las reproduce como clips
+// encadenados (pre-generables uno a uno) y narr() las une para la pantalla.
+export function narrParts(key: string, salt = ''): string[] {
   const c = COMPO[key];
   if (c) {
     const rnd = seededRnd(hashStr(key + '|' + salt));
-    return c.map((parts) => parts[Math.floor(rnd() * parts.length)]).join(' ');
+    return c.map((parts) => parts[Math.floor(rnd() * parts.length)]);
   }
   const v = NARRATION[key];
-  if (!v) return '';
-  if (typeof v === 'string') return v;
-  return v[hashStr(key + '|' + salt) % v.length];
+  if (!v) return [];
+  if (typeof v === 'string') return [v];
+  return [v[hashStr(key + '|' + salt) % v.length]];
+}
+
+export function narr(key: string, salt = ''): string {
+  return narrParts(key, salt).join(' ');
 }
 
 export function deathLine(name: string, roleName: string | null | undefined, salt = ''): string {
@@ -1049,12 +1063,28 @@ export function enamoradosFake(kws: string[]): string {
   return `Cupido ha disparado sus flechas. Todos con los ojos cerrados y atentos. Si oyes tu palabra clave, abre los ojos con disimulo y mira tu pantalla: … ${kws.join('… y ')}. Enamorados, descubrid a vuestro amor en silencio… y volved a cerrar los ojos.`;
 }
 
+// Piezas granulares de las llamadas por palabra clave (v2): el marco fijo y la
+// entradilla se pre-generan como clips; las palabras se intercalan como clips
+// sueltos con silencios programados. Llamadas reales y FALSAS comparten
+// exactamente las mismas piezas (en la v1 diferían: un «tell» aprendible).
+export const ENC_FRAME =
+  'Todos con los ojos cerrados. Si oyes tu palabra clave, la música te ha atrapado: abre los ojos con disimulo, mira tu pantalla y confirma.';
+export const KW_LEAD = 'Escuchad las palabras:';
+export const ENAMORADOS_TAIL =
+  'Enamorados, reconoced en silencio a vuestro amor y confirmad en la pantalla.';
+export const ENCANTADOS_TAIL = 'Cuando lo hayáis visto, volved a cerrar los ojos.';
+
+/** La palabra clave como clip pronunciable («Luna de Plata.» / «y Luna de Plata.»). */
+export function kwClip(kw: string, first: boolean): string {
+  return first ? `${kw}.` : `y ${kw}.`;
+}
+
 // Llamada de los encantados: intro compuesta (COMPO.encantados) + marco fijo +
 // palabras clave. La variante falsa usa señuelos y despide ella misma.
 export function encantadosCallParts(encIntro: string, kws: string[]): [string, string] {
   return [
-    `${encIntro} Todos con los ojos cerrados. Si oyes tu palabra clave, la música te ha atrapado: abre los ojos con disimulo, mira tu pantalla y confirma.`,
-    `Escuchad las palabras: … ${kws.join('… y ')}.`,
+    `${encIntro} ${ENC_FRAME}`,
+    `${KW_LEAD} … ${kws.join('… y ')}.`,
   ];
 }
 
@@ -1084,4 +1114,48 @@ export const VOICE_TEST_LINE = 'Bienvenidos a Castronegro. La voz del narrador f
 // Nota de linchamiento del ocaso (el rol solo si la mesa revela a los muertos).
 export function lynchNote(name: string, roleName: string): string {
   return `Castronegro ha dictado sentencia: ${name} era ${roleName}. `;
+}
+
+export const UNLOCK_LINE = 'El pueblo de Castronegro abre sus puertas.';
+export const VOICE_ON_LINE = 'La voz del narrador está activada.';
+
+// ————————————————————————————————————————————————————————————————————————
+// Enumerador para la pre-generación (F6): TODAS las piezas estáticas que el
+// narrador puede pedir como clip. El test de completitud exige que cada una
+// exista en el manifest de clips; si un texto cambia sin regenerar, avisa.
+// ————————————————————————————————————————————————————————————————————————
+export interface StaticPiece {
+  kind: string;
+  text: string;
+}
+
+export function allStaticPieces(): StaticPiece[] {
+  const out: StaticPiece[] = [];
+  const push = (kind: string, text: string) => {
+    if (text && text.trim()) out.push({ kind, text: text.trim() });
+  };
+  for (const [key, slots] of Object.entries(COMPO)) {
+    for (const slot of slots) for (const piece of slot) push('compo:' + key, piece);
+  }
+  for (const [key, list] of Object.entries(NARRATION)) {
+    for (const t of list) push('narration:' + key, t);
+  }
+  for (const [key, bases] of Object.entries(OUTROS)) {
+    for (const b of bases) push('outro:' + key, b);
+  }
+  for (const t of OUTRO_TAILS) push('outro-tail', t);
+  for (const t of LISTOS) push('listos', t);
+  for (const [key, list] of Object.entries(NAGS)) for (const t of list) push('nag:' + key, t);
+  for (const t of NAG_GENERIC) push('nag:generic', t);
+  for (const [key, list] of Object.entries(IMPROV)) for (const t of list) push('improv:' + key, t);
+  for (const t of [
+    ENAMORADOS_INTRO, ENAMORADOS_TAIL, ENC_FRAME, ENCANTADOS_TAIL, KW_LEAD,
+    ABRID_OJOS, REFRESH_OPEN, REFRESH_CLOSE, KW_NOTE, VOICE_TEST_LINE, UNLOCK_LINE, VOICE_ON_LINE,
+  ]) push('const', t);
+  return out;
+}
+
+/** Huella del corpus estático: detecta clips desfasados tras editar textos. */
+export function corpusHash(extra: string[] = []): number {
+  return hashStr(allStaticPieces().map((p) => p.text).concat(extra).join('\n'));
 }

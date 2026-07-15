@@ -5,7 +5,8 @@
 // así los clips pre-generados (F6) y la síntesis en vivo suenan idénticos.
 import { getVoiceConfig } from './voice-config';
 
-const TTS_KEY = (import.meta.env.VITE_TTS_KEY as string | undefined) || null;
+// (guard: bajo Node/tsx —script de pre-generación— import.meta.env no existe)
+const TTS_KEY = ((import.meta as { env?: Record<string, string> }).env?.VITE_TTS_KEY as string | undefined) || null;
 
 let lastCloudError: string | null = null;
 
