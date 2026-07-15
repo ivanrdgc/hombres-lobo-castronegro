@@ -167,6 +167,10 @@ function prewarmNight(game, players, night) {
     });
     prewarm(narr('amanecer_sin_muertes', `${game.seed}:d${night}`));
     prewarm(narr('amanecer_con_muertes', `${game.seed}:d${night}`));
+    // El día también se precarga: el debate suena justo tras el amanecer.
+    prewarm('Castronegro, abrid todos los ojos.');
+    prewarm(narr('dia_debate', `${game.seed}:d${night}:1`));
+    prewarm(narr('dia_debate_tranquilo', `${game.seed}:d${night}:1`));
     if (steps.includes('enamorados')) prewarm(ENAMORADOS_INTRO); // parte fija de la llamada
   } catch { /* la pre-generación es opcional: si algo falla, se sintetiza al vuelo */ }
 }
@@ -188,11 +192,11 @@ function chainOutro(key, outroTxt, waitMs, stepIdx) {
   if (g) prewarmStep(g, stepIdx + 1);
   if (!outroTxt) { scheduleAfterSpeech(key + ':adv', 500, adv); return; }
   const oKey = key + ':outro';
-  if (spoken.has(oKey)) { scheduleAfterSpeech(key + ':adv', 1100 + Math.random() * 600, adv); return; }
+  if (spoken.has(oKey)) { scheduleAfterSpeech(key + ':adv', 800 + Math.random() * 400, adv); return; }
   scheduleAfterSpeech(oKey + ':t', waitMs, async () => {
     say(oKey, outroTxt);
     // El «cerrad los ojos» debe SONAR entero antes de la espera de bloqueo.
-    scheduleAfterSpeech(key + ':adv', 1100 + Math.random() * 600, adv);
+    scheduleAfterSpeech(key + ':adv', 800 + Math.random() * 400, adv);
   });
 }
 
@@ -243,7 +247,7 @@ function cancelTimer() {
 // Tope de seguridad de 20 s por si el motor de voz se quedara colgado.
 function scheduleAfterSpeech(key, extraMs, fn, waited = 0) {
   if (isNarratorSpeaking() && waited < 20000) {
-    schedule(key + ':w', 400, async () => scheduleAfterSpeech(key, extraMs, fn, waited + 400));
+    schedule(key + ':w', 250, async () => scheduleAfterSpeech(key, extraMs, fn, waited + 250));
     return;
   }
   schedule(key, extraMs, fn);
@@ -371,14 +375,16 @@ export function conductorTick() {
     // Colchón inicial: la misma pantalla de sueño para todos mientras suena
     // «cae la noche»; el primer rol no despierta hasta que todos duermen.
     if (stepId === 'durmiendo') {
-      scheduleAfterSpeech(key, 1800 + Math.random() * 1000, () => advanceGhostStep(game.stepIdx));
+      scheduleAfterSpeech(key, 1500 + Math.random() * 800, () => advanceGhostStep(game.stepIdx));
       return;
     }
     // Encantados: se les llama por palabras clave y el juego ESPERA a que cada
     // uno confirme haberse reconocido (como los enamorados).
     if (stepId === 'encantados') {
       const targets = (game.acts.gaiteroTargets || []).map((id) => players.find((p) => p.id === id)).filter(Boolean);
-      const encIntro = narr('encantados', `${game.seed}:${key}`);
+      // Misma sal que usa prewarmNight: así la intro de los encantados acierta
+      // en caché y suena al instante (antes usaba otra sal y sintetizaba en vivo).
+      const encIntro = narr('encantados', `${game.seed}:n${game.night}:s${game.stepIdx}:encantados`);
       const actors = stepActors(stepId, game, players);
       if (targets.length && actors && actors.length) {
         const kws = targets.map((p) => p.keyword).filter(Boolean);
@@ -466,6 +472,14 @@ export function conductorTick() {
       }
       return; // esperamos la acción del jugador (su transacción avanza el paso)
     }
+    // Carrera de datos: Cupido ya emparejó (doc del grupo) pero las marcas
+    // `lover` viven en los docs de jugadores, que pueden llegar DESPUÉS por
+    // otro listener. Sin este guardia, el paso creería «no hay enamorados que
+    // esperar» y se los saltaría. Esperamos al snapshot de jugadores.
+    if (stepId === 'enamorados' && (game.acts || {}).cupidoPair && !players.some((p) => p.lover)) {
+      cancelTimer();
+      return;
+    }
     // Nadie debe actuar: el paso se resolvió, el rol está muerto o no puede usar
     // su poder. En todos los casos suena la misma despedida («…vuelve a cerrar
     // los ojos») con la misma espera: los tiempos y el audio no delatan nada.
@@ -478,7 +492,7 @@ export function conductorTick() {
     const outro = outroFor(stepId, game);
     if (stepNeedsGhostAnnounce(stepId, game, players)) {
       if (text) say(key, text);
-      chainOutro(key, outro, 1200 + Math.random() * 1000, game.stepIdx);
+      chainOutro(key, outro, 900 + Math.random() * 700, game.stepIdx);
     } else if (['enamorados', 'lobos_reconocen', 'lobos'].includes(stepId)) {
       chainOutro(key, outro, 400, game.stepIdx); // pasos vivos ya completados
     } else {

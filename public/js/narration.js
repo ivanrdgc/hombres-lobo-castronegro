@@ -941,10 +941,10 @@ export function loveDeathLine(a, b, salt = '') {
 }
 
 let watchdog = null;
-const VOICE_LS = 'hlc_voice_v3'; // v3: por defecto Studio (locutor); la latencia se cubre pre-generando
+const VOICE_LS = 'hlc_voice_v4'; // v4: vuelta a Chirp3-HD (Studio resultó plano y lento en partida real)
 let voiceCfg = {
   engine: 'cloud', // 'cloud' (neuronal, muy humana) o 'device' (la del móvil)
-  cloudVoice: 'es-ES-Studio-F', // voz «Studio» de Google: calidad de locutor profesional
+  cloudVoice: 'es-ES-Chirp3-HD-Charon', // la voz que mejor ha funcionado en mesa: grave y natural
   voiceURI: null, rate: 0.95, pitch: 0.9,
   ambience: true, // paisaje sonoro de fondo en el narrador
 };
@@ -959,13 +959,13 @@ try { Object.assign(voiceCfg, JSON.parse(localStorage.getItem(VOICE_LS)) || {});
 // si algún dispositivo no alcanza a pre-generar.
 const TTS_KEY = (typeof window !== 'undefined' && window.TTS_KEY) || null;
 export const CLOUD_VOICES = [
-  { id: 'es-ES-Studio-F', label: '🎙️ Studio · masculina (locutor, recomendada)' },
-  { id: 'es-ES-Studio-C', label: '🎙️ Studio · femenina (locutora)' },
-  { id: 'es-ES-Chirp3-HD-Charon', label: '🎬 HD · masculina grave' },
+  { id: 'es-ES-Chirp3-HD-Charon', label: '🎬 HD · masculina grave (recomendada)' },
   { id: 'es-ES-Chirp3-HD-Enceladus', label: '🎬 HD · masculina serena' },
   { id: 'es-ES-Chirp3-HD-Kore', label: '🎬 HD · femenina clara' },
   { id: 'es-ES-Chirp3-HD-Sulafat', label: '🎬 HD · femenina cálida' },
-  { id: 'es-ES-Neural2-F', label: '⚡ Ágil · masculina (sin pre-generar)' },
+  { id: 'es-ES-Studio-F', label: '🎙️ Studio · masculina (locutor)' },
+  { id: 'es-ES-Studio-C', label: '🎙️ Studio · femenina (locutora)' },
+  { id: 'es-ES-Neural2-F', label: '⚡ Ágil · masculina' },
   { id: 'es-ES-Neural2-A', label: '⚡ Ágil · femenina' },
 ];
 
@@ -1034,6 +1034,19 @@ export function unlockAudioPlayback() {
 
 export function cloudAvailable() { return !!TTS_KEY; }
 
+// Pausas de narrador DENTRO de cada locución: si no llega SSML explícito, se
+// genera uno con <break> entre oraciones (las voces neuronales leen las frases
+// seguidas si no se les pide la pausa). La clave de caché sigue siendo el texto,
+// así la pre-generación y la reproducción coinciden siempre.
+function autoSsml(text) {
+  try {
+    const parts = String(text).split(/(?<=[.!?…])\s+/u).map((s) => s.trim()).filter(Boolean);
+    if (parts.length < 2) return null;
+    const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return '<speak>' + parts.map(esc).join(' <break time="450ms"/> ') + '</speak>';
+  } catch { return null; /* navegador sin lookbehind: texto plano */ }
+}
+
 async function synthCloud(text, ssml) {
   const k = voiceCfg.cloudVoice + '|' + (ssml || text);
   if (memCache.has(k)) return memCache.get(k);
@@ -1041,16 +1054,17 @@ async function synthCloud(text, ssml) {
   let blob = null;
   let store = null;
   try {
-    store = await caches.open('tts-v1');
+    store = await caches.open('tts-v2'); // v2: audios con pausas entre frases (autoSsml)
     const hit = await store.match(cacheUrl);
     if (hit) blob = await hit.blob();
   } catch { store = null; /* Cache API no disponible (p. ej. navegación privada) */ }
   if (!blob) {
+    const effectiveSsml = ssml || autoSsml(text);
     const res = await fetch('https://texttospeech.googleapis.com/v1/text:synthesize?key=' + TTS_KEY, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        input: ssml ? { ssml } : { text },
+        input: effectiveSsml ? { ssml: effectiveSsml } : { text },
         voice: { languageCode: 'es-ES', name: voiceCfg.cloudVoice },
         audioConfig: { audioEncoding: 'MP3' },
       }),
@@ -1205,9 +1219,9 @@ export function speak(text, opts = {}) {
       if (onend) setTimeout(onend, 400);
       return;
     }
-    // Descarta lo atrasado en cola, salvo cuando encadenamos a propósito varios
-    // segmentos de una misma locución larga (p. ej. la explicación).
-    if (!chain && cloudBusy && cloudQueue.length) cloudQueue = [];
+    // Nota: NO se descarta la cola aquí. Hacerlo se comía locuciones legítimas
+    // (la 2ª parte de las llamadas por palabra clave, el «ya estáis listos»…).
+    // Lo obsoleto ya lo poda stopSpeech() en pausas, relevos y repeticiones.
     cloudQueue.push({ text, ssml, onstart, onend });
     pumpCloud();
     return;
