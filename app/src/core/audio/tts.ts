@@ -64,7 +64,7 @@ export async function synthesize(text: string): Promise<ArrayBuffer> {
   try {
     store = await caches.open('tts-v2');
   } catch {
-    store = null; // Cache API no disponible (p. ej. navegación privada)
+    /* Cache API no disponible (p. ej. navegación privada): sigue sin caché */
   }
   if (store) {
     const cached = await store.match(cacheUrl).catch(() => null);
