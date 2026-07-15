@@ -46,6 +46,11 @@
 <Flash />
 <DevicesCard group={group} />
 <div class="card">
+  <h3>🗣️ Configuración de voz</h3>
+  <p class="small-note">La voz se usa al narrar en automático y al leer la explicación del juego: configúrala en el dispositivo que hará de narrador.</p>
+  <button class="ghost block" data-a="voice-open" onclick={() => { app.ui.modal = { type: 'voice' }; app.ui.voiceTest = null; }}>🗣️ Configurar la voz de este dispositivo</button>
+</div>
+<div class="card">
   <h3>🎮 ¿A qué jugamos?</h3>
   {#each GAMES as j (j.id)}
     <div class="card" style="margin:10px 0 4px">

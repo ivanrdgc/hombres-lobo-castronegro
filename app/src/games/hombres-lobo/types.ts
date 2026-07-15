@@ -176,6 +176,9 @@ export interface GameState {
   caballeroRust?: CaballeroRust | null;
   lastLynch?: DeathNote | null;
   lastLoveDeath?: DeathNote | null;
+  /** Muertes por la flecha del Cazador, pendientes de anunciar por voz. */
+  lastShot?: DeathNote[] | null;
+  shotNonce?: number;
   lastDawn?: {
     deaths: { name: string; role: RoleId | string | null }[];
     events?: string[];

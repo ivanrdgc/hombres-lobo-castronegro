@@ -138,7 +138,9 @@ try {
   await pages.bruno.waitForSelector('[data-a=open-roles]', { timeout: 45000 });
   ok('cada dispositivo entra al lobby de Castronegro cuando quiere');
 
-  // Narrador: el creador lo es por defecto y solo se ofrece cambiarlo.
+  // Narrador y dispositivos se gestionan en la MESA: Ana vuelve al catálogo.
+  await ana.click('[data-a=change-game]');
+  await ana.waitForSelector('text=¿A qué jugamos?');
   await ana.waitForSelector('.player:has-text("Ana"):has-text("🔊 narrador")');
   ok('el primer dispositivo (creador) es el narrador por defecto');
   await ana.click('.player[data-a=player-menu]:has-text("Ana")');
@@ -154,6 +156,8 @@ try {
   await ana.click('button[data-a=narrator-device]');
   await ana.waitForSelector('.player:has-text("Ana"):has-text("🔊 narrador")');
   ok('y vuelve a Ana para el resto de la batería');
+  await ana.click('button[data-a=select-game]'); // Ana vuelve al lobby a configurar
+  await ana.waitForSelector('[data-a=open-roles]');
   await pages.bruno.click('[data-a=open-explain]');
   await pages.bruno.waitForSelector('text=Cómo se juega');
   check(await pages.bruno.isVisible('button[data-a=explain-speak-local]'), 'explicación: opción de leer en este dispositivo');
@@ -180,11 +184,15 @@ try {
 
   // ——— 6. Partida automática ———
   console.log('— Partida automática —');
-  // Ana narrará sin jugar: se desmarca como jugadora.
+  // Ana narrará sin jugar: se desmarca como jugadora (en la mesa).
+  await ana.click('[data-a=change-game]');
+  await ana.waitForSelector('text=¿A qué jugamos?');
   await ana.click('.player[data-a=player-menu]:has-text("Ana")');
   await ana.click('button[data-a=toggle-player]');
   await ana.waitForSelector('.player:has-text("Ana"):has-text("no juega")');
   ok('Ana marcada como solo-narradora (se recuerda entre partidas)');
+  await ana.click('button[data-a=select-game]'); // de vuelta al lobby para empezar
+  await ana.waitForSelector('[data-a=open-start]');
   // Reglas oficiales: con 4 jugadores no deja empezar sin modo casual.
   await ana.click('[data-a=open-start]');
   await ana.click('[data-a=start-auto]');
@@ -298,10 +306,12 @@ try {
   // ——— 7. Volver al lobby y eliminar grupo ———
   console.log('— Lobby y limpieza —');
   await ana.click('[data-a=back-lobby]');
-  await ana.waitForSelector('text=Dispositivos (5)');
-  check(await ana.isVisible('.player:has-text("Ana"):has-text("no juega")'), 'la marca de no-jugador se recuerda tras la partida');
   await pages.bruno.waitForSelector('[data-a=leave]');
   ok('vuelta al lobby para todos');
+  // Los dispositivos viven en la mesa: Ana va al catálogo para comprobarlos.
+  await ana.click('[data-a=change-game]');
+  await ana.waitForSelector('text=Dispositivos (5)');
+  check(await ana.isVisible('.player:has-text("Ana"):has-text("no juega")'), 'la marca de no-jugador se recuerda tras la partida');
 
   // Un jugador abandona.
   await pages.david.click('[data-a=leave]');

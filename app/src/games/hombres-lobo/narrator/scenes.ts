@@ -18,6 +18,7 @@ import {
   bienvenidaUtterance, dawnUtterance, debateUtterance, enamoradosCallUtterance, encantadosCallUtterance,
   fillerUtterance, finUtterance, introParts, introUtterance, listosUtterance, nagUtterance, nocheCaeUtterance,
   ocasoUtterance, outroText, outroUtterance, pendingUtterance, refreshCloseUtterance, refreshOpenUtterance,
+  shotUtterance,
 } from './compose';
 
 export interface Snap {
@@ -133,7 +134,16 @@ async function pausedScene(ctx: Ctx): Promise<void> {
 
 async function endScene(ctx: Ctx): Promise<void> {
   const game = g(ctx);
-  await ctx.sayOnce(`end:${game.winner}`, () => finUtterance(game));
+  // Teatro final: si la partida se decide AL AMANECER (p. ej. los lobos matan a
+  // su última víctima), la noche transcurre entera —los lobos cierran los ojos,
+  // la bruja despierta aunque no tenga pociones— y la victoria NO se resuelve
+  // hasta el alba. Aquí primero se despierta al pueblo y se anuncian las muertes
+  // de la noche; solo después se proclama la victoria. Si algo salvó a la
+  // víctima, no se llega a esta escena: la noche resolvió que no había ganador.
+  // (sayOnce se salta el amanecer si ya se narró: fin por linchamiento de día.)
+  if (game.lastDawn) await ctx.sayOnce(`d${game.dayNum}:dawn`, () => dawnUtterance(g(ctx)));
+  await announceShot(ctx);
+  await ctx.sayOnce(`end:${game.winner}`, () => finUtterance(g(ctx)));
 }
 
 async function revealScene(ctx: Ctx): Promise<void> {
@@ -349,9 +359,20 @@ async function nightStepScene(ctx: Ctx, stepId: StepId, stepIdx: number): Promis
   await A.advanceGhostStep(stepIdx);
 }
 
+// La flecha del Cazador se anuncia por voz (con el rol de la víctima) tras
+// producirse, en cualquier escena de día a la que lleve el disparo. El nonce
+// del ledger garantiza un solo anuncio por disparo.
+async function announceShot(ctx: Ctx): Promise<void> {
+  const game = g(ctx);
+  if (game.lastShot && game.lastShot.length) {
+    await ctx.sayOnce(`d${game.dayNum}:shot:${game.shotNonce || 0}`, () => shotUtterance(g(ctx)));
+  }
+}
+
 async function dayPendingScene(ctx: Ctx, pKey: string): Promise<void> {
   const game = g(ctx);
   await ctx.sayOnce(`d${game.dayNum}:dawn`, () => dawnUtterance(g(ctx)));
+  await announceShot(ctx); // si una flecha en cadena mató antes de este pendiente
   const head = (g(ctx).pending || [])[0];
   if (!head) return;
   const u = pendingUtterance(g(ctx), pKey, head.type);
@@ -367,6 +388,7 @@ async function dayPendingScene(ctx: Ctx, pKey: string): Promise<void> {
 async function dayDebateScene(ctx: Ctx, withJuez: boolean): Promise<void> {
   const game = g(ctx);
   await ctx.sayOnce(`d${game.dayNum}:dawn`, () => dawnUtterance(g(ctx)));
+  await announceShot(ctx); // el Cazador murió de noche y ya disparó → víctima antes del debate
   await ctx.sayOnce(`d${game.dayNum}:debate:${game.votesLeft}${withJuez ? ':juez' : ''}`, () => debateUtterance(g(ctx), withJuez));
 }
 
@@ -374,4 +396,5 @@ async function dayOcasoScene(ctx: Ctx): Promise<void> {
   const game = g(ctx);
   await ctx.sayOnce(`d${game.dayNum}:dawn`, () => dawnUtterance(g(ctx)));
   await ctx.sayOnce(`d${game.dayNum}:ocaso`, () => ocasoUtterance(g(ctx)));
+  await announceShot(ctx); // el Cazador linchado disparó → «X era el Cazador. La flecha alcanza a Y…»
 }

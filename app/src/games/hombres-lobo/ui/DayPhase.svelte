@@ -1,7 +1,7 @@
 <script lang="ts">
   // Fase de día (port de dayPhase() + juezButton() de la v1): narración del
   // debate, pendientes, votación y cierre del día.
-  import { app, isMaster, setFlash } from '../../../core/sync/store.svelte';
+  import { app, setFlash } from '../../../core/sync/store.svelte';
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
   import { narr } from '../texts/corpus';
@@ -34,6 +34,6 @@
 {:else}
   <div class="card"><h3>🌆 El día ha terminado</h3>
     <p class="small-note">Comentad la jugada con calma. Cuando estéis listos, que alguien mande al pueblo a dormir.</p>
-    {#if my.alive || isMaster()}<button class="primary block" data-a="begin-night" onclick={() => guard(A.startNextNight)}>🌙 Empezar la noche</button>{/if}</div>
+    {#if my.alive}<button class="primary block" data-a="begin-night" onclick={() => guard(A.startNextNight)}>🌙 Empezar la noche</button>{/if}</div>
 {/if}
 <PlayersGrid {players} title="🏘️ El pueblo" showAlguacil={game.alguacilId || null} viewer={my} />

@@ -7,7 +7,7 @@
 import type { Segment, Utterance } from '../../../core/audio/player';
 import {
   ABRID_OJOS, ENAMORADOS_INTRO, ENAMORADOS_TAIL, ENC_FRAME, ENCANTADOS_TAIL, KW_LEAD, LISTOS,
-  NAG_GENERIC, NAGS, REFRESH_CLOSE, REFRESH_OPEN, aaNote, deathLine, hashStr, improv, kwClip,
+  NAG_GENERIC, NAGS, REFRESH_CLOSE, REFRESH_OPEN, aaNote, deathLine, hashStr, hunterKillLine, improv, kwClip,
   loveDeathLine, lynchNote, narr, narrParts, nagEnamoradosKw, nagEncantadosKw, outro, outroParts, KW_NOTE,
 } from '../texts/corpus';
 import { ROLES } from '../roles';
@@ -155,6 +155,21 @@ export function ocasoUtterance(game: GameState): Utterance {
   parts.push(clip(improv('ocaso', `${game.seed}:d${game.dayNum}`)));
   return {
     id: `d${game.dayNum}:ocaso`,
+    segments: parts,
+    display: parts.filter((s): s is Extract<Segment, { kind: 'clip' }> => s.kind === 'clip').map((s) => s.text).join(' '),
+  };
+}
+
+/** Anuncio de las muertes por la flecha del Cazador (nombre + rol si se revela). */
+export function shotUtterance(game: GameState): Utterance {
+  const salt = `${game.seed}:d${game.dayNum}:shot${game.shotNonce || 0}`;
+  const parts: Segment[] = [];
+  for (const d of game.lastShot || []) {
+    const roleName = game.revealDead && !d.hideRole && d.role ? ROLES[d.role]?.name || null : null;
+    parts.push(clip(hunterKillLine(d.name || '', roleName, salt)));
+  }
+  return {
+    id: `d${game.dayNum}:shot:${game.shotNonce || 0}`,
     segments: parts,
     display: parts.filter((s): s is Extract<Segment, { kind: 'clip' }> => s.kind === 'clip').map((s) => s.text).join(' '),
   };

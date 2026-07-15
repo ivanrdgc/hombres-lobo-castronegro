@@ -880,6 +880,10 @@ export async function hunterShoot(targetId: string | null): Promise<void> {
     const chain = applyDeathsChain(copy, [{ pid: targetId, cause: 'flecha' }], game);
     annotateDeaths(chain.deaths, byId, game.log!, game);
     game.log!.push(...chain.logs);
+    // Registra las muertes de la flecha para que la voz las anuncie con su rol
+    // (el ocaso/amanecer solo vocaliza el linchamiento; esto añade a la víctima).
+    game.lastShot = chain.deaths.map((d) => ({ name: byId[d.pid].name, role: d.role, hideRole: !!d.hideRole }));
+    game.shotNonce = (game.shotNonce || 0) + 1;
     game.pending = (chain.pendings || []).concat(game.pending);
     game.powersLost = chain.powersLost;
     game.wolfDeathOccurred = game.wolfDeathOccurred || chain.wolfDeath;

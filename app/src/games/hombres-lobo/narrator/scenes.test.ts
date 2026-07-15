@@ -151,3 +151,30 @@ test('durmiendo: colchón y avance sin locución propia', async () => {
   expect(events[0]).toBe('▶cae'); // «cae la noche…»
   expect(events).toContain('advance');
 });
+
+test('teatro de victoria: los lobos ganan al amanecer → se despierta al pueblo y LUEGO se proclama', async () => {
+  // La partida terminó en el amanecer (winner ya resuelto), con una muerte
+  // nocturna sin anunciar. Debe sonar el amanecer antes que la victoria.
+  const world = makeWorld(mkSnap({
+    phase: 'end', winner: 'lobos', dayNum: 1,
+    lastDawn: { deaths: [{ name: 'Aldo', role: 'aldeano' }] },
+  }, [
+    { id: 'p-l', name: 'Lobo', role: 'hombre_lobo', alive: true, inGame: true, order: 1, powers: {} },
+  ]));
+  world.narrator.tick();
+  await vi.advanceTimersByTimeAsync(6000);
+  const plays = world.timeline.filter(([e]) => e.startsWith('▶')).map(([e]) => e);
+  expect(plays).toEqual(['▶dawn', '▶lobos']); // amanecer primero, victoria después
+});
+
+test('fin sin amanecer pendiente (partida forzada): solo la victoria', async () => {
+  const world = makeWorld(mkSnap({
+    phase: 'end', winner: 'pueblo', dayNum: 1, lastDawn: null,
+  }, [
+    { id: 'p-a', name: 'Aldo', role: 'aldeano', alive: true, inGame: true, order: 1, powers: {} },
+  ]));
+  world.narrator.tick();
+  await vi.advanceTimersByTimeAsync(6000);
+  const plays = world.timeline.filter(([e]) => e.startsWith('▶')).map(([e]) => e);
+  expect(plays).toEqual(['▶pueblo']); // sin lastDawn no se narra ningún amanecer
+});

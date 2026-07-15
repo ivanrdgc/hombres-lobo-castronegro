@@ -6,7 +6,6 @@
   import { ROLES, wolfCountFor, OFFICIAL_MIN_PLAYERS } from '../games/hombres-lobo/roles';
   import type { GroupDoc, PlayerDoc } from '../core/sync/schema';
   import Flash from './Flash.svelte';
-  import DevicesCard from './DevicesCard.svelte';
 
   const { group }: { group: GroupDoc; my: PlayerDoc } = $props();
 
@@ -21,7 +20,6 @@
   <span style="display:flex;gap:6px"><button class="small ghost" data-a="change-game" onclick={() => (app.ui.lobbyView = 'catalog')}>🎲 Otro juego</button><button class="small ghost" data-a="leave" onclick={() => (app.ui.modal = { type: 'confirm-leave' })}>🚪 Salir</button></span>
 </div>
 <Flash />
-<DevicesCard group={group} />
 <div class="card">
   <h3>📖 ¿Primera vez?</h3>
   <p class="small-note">Una introducción ambientada y cómo se juega desde el móvil — con lectura en voz alta en el dispositivo narrador.</p>
@@ -39,6 +37,6 @@
 <div class="card">
   <h3>🎬 Empezar</h3>
   <button class="block" data-a="open-settings" onclick={() => (app.ui.modal = { type: 'settings' })}>🔧 Ajustes de partida</button>
-  <button class="primary block" data-a="open-start" onclick={() => { app.ui.seatingOk = false; app.ui.modal = { type: 'start' }; }}>🎬 Empezar partida</button>
+  <button class="primary block" data-a="open-start" onclick={() => (app.ui.modal = { type: 'start' })}>🎬 Empezar partida</button>
   <button class="danger block" data-a="confirm-delete-group" onclick={() => (app.ui.modal = { type: 'confirm-delete' })}>🗑️ Eliminar la mesa</button>
 </div>

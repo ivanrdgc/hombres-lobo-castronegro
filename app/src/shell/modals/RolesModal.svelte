@@ -4,8 +4,10 @@
   import { app } from '../../core/sync/store.svelte';
   import { guard } from '../../core/sync/guard';
   import * as A from '../../games/hombres-lobo/actions';
-  import { ROLES, EXPANSIONS, wolfCountFor } from '../../games/hombres-lobo/roles';
+  import { ROLES, EXPANSIONS, wolfCountFor, NEIGHBOR_ROLES } from '../../games/hombres-lobo/roles';
   import type { RoleDef, RoleId } from '../../games/hombres-lobo/roles';
+
+  const NEIGHBOR = NEIGHBOR_ROLES as string[];
   import type { TableSettings } from '../../core/sync/schema';
 
   const ALL_ROLES: RoleDef[] = Object.values(ROLES);
@@ -92,13 +94,14 @@
     {:else}
       {@const on = extra.includes(r.id)}
       {@const minWarn = !!r.minPlayers && nJugWarn < r.minPlayers}
+      {@const neighborWarn = NEIGHBOR.includes(r.id)}
       <div class="roletoggle {on ? 'on' : ''}" data-a="toggle-role" data-p={r.id}
         onclick={() => toggleRole(r.id)}
         role="button" tabindex="0"
         onkeydown={(e) => { if (e.key === 'Enter') toggleRole(r.id); }}>
         <span class="remoji">{r.emoji}</span>
         <div class="rinfo"><div class="rname">{r.name}{#if r.multi}{sp}<small>(×{r.multi} cartas)</small>{/if}{#if r.minPlayers}{sp}<small>(regla: ≥{r.minPlayers} jugadores)</small>{/if}</div>
-        <div class="rdesc">{r.desc}{#if minWarn && on}{sp}<b>⚠️ Ahora mismo no hay jugadores suficientes: no se repartirá.</b>{/if}</div></div>
+        <div class="rdesc">{r.desc}{#if minWarn && on}{sp}<b>⚠️ Ahora mismo no hay jugadores suficientes: no se repartirá.</b>{/if}{#if neighborWarn && on}{sp}<b>⚠️ Este rol depende de quién se sienta al lado de quién: asegúrate de que el orden de los jugadores en la pantalla de la mesa coincide con cómo estáis sentados de verdad.</b>{/if}</div></div>
         <span class="state">{on ? '✅' : '⬜'}</span></div>
     {/if}
   {/each}

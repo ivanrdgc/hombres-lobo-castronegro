@@ -963,6 +963,19 @@ export function loveDeathLine(a: string | null, b: string, salt = ''): string {
   return ' ' + tpl.replace('{a}', a || 'su amor').replace('{b}', b);
 }
 
+// La flecha del Cazador se lleva a su víctima: se anuncia por voz (con el rol
+// de la víctima si la mesa revela a los muertos). {name} se sustituye.
+const HUNTER_KILL_LINES: string[] = [
+  'La flecha del Cazador surca el aire y alcanza a {name}.',
+  'El último disparo del Cazador da en el blanco: cae {name}.',
+  'La flecha no perdona: {name} se desploma, alcanzado por el Cazador.',
+  'Silba la flecha del Cazador y {name} cae con ella.',
+];
+export function hunterKillLine(name: string, roleName: string | null, salt = ''): string {
+  const tpl = HUNTER_KILL_LINES[hashStr('shot|' + salt + name) % HUNTER_KILL_LINES.length];
+  return tpl.replace('{name}', name) + (roleName ? ` Era ${roleName}.` : '');
+}
+
 // ————————————————————————————————————————————————————————————————————————
 // Textos que en la v1 vivían inline en conductor.js. Aquí son la única fuente:
 // las escenas del narrador (F5) y la pre-generación de clips (F6) los importan.

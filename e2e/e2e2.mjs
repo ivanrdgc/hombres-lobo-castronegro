@@ -149,9 +149,14 @@ async function drivePending(st) {
         check(revealed >= 1, 'el jugador muerto puede revelar roles tocando a la gente');
       }
       // Dispara al primer objetivo de la lista.
+      const victimName = (await pg.locator('.actionpanel .player.selectable >> nth=0').innerText()).trim();
       await pg.click('.actionpanel .player.selectable >> nth=0');
       await pg.click('button[data-a=cazador-shoot]');
       ok('el cazador dispara su última flecha');
+      // La víctima se registra para que la voz la anuncie (con su rol).
+      await pg.waitForFunction(() => (window.__hlc.group?.game?.lastShot || []).length > 0, { timeout: 15000 });
+      const shot = await pg.evaluate(() => window.__hlc.group.game.lastShot);
+      check(shot.some((d) => d.name === victimName), 'la víctima del cazador se registra para anunciarla por voz');
       return;
     }
     case 'sirvienta': {
@@ -222,8 +227,8 @@ try {
   await ana.click('button[data-a=manual-toggle-dead]');
   await pages.carla.waitForSelector('text=/Carla ha muerto/');
   ok('muerte marcada por el máster y anunciada en la crónica');
-  st = await hlc(ana);
-  check(st.players.find((p) => p.name === 'Carla').alive === false, 'Carla figura como muerta');
+  st = await waitState(ana, (s) => s.players.find((p) => p.name === 'Carla')?.alive === false, 'Carla marcada muerta');
+  ok('Carla figura como muerta');
 
   // Revivir (mismo botón, control absoluto).
   await ana.click('.player[data-a=manual-player]:has-text("Carla")');
