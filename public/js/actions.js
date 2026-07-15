@@ -47,10 +47,14 @@ export async function selectGame(gameId) {
   await updateDoc(gref(state.route.slug), { currentGame: gameId || null });
 }
 
-// Elegir desde la mesa el dispositivo que narrará las partidas automáticas
-// (se recuerda para todos los juegos; al empezar se puede cambiar igualmente).
+// Elegir el dispositivo que narrará las partidas automáticas (se recuerda para
+// todos los juegos). Durante una partida automática en curso, el narrador ES el
+// máster: al cambiarlo se traspasa el mando y el nuevo dispositivo toma la voz.
 export async function setNarratorDevice(pid) {
-  await updateDoc(gref(state.route.slug), { lastNarratorId: pid || null });
+  const g = state.group || {};
+  const patch = { lastNarratorId: pid || null };
+  if (pid && g.status === 'playing' && g.game && g.game.mode === 'auto') patch.masterId = pid;
+  await updateDoc(gref(state.route.slug), patch);
 }
 
 // Pedir que la explicación del juego se lea en voz alta: la reproduce el

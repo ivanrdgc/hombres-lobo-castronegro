@@ -7,7 +7,7 @@ import { NARRATION, narr, listSpanishVoices, getVoiceConfig, CLOUD_VOICES, cloud
 import { isMuted } from './conductor.js';
 
 // Sello de versión visible (para verificar despliegues en los móviles).
-export const APP_VERSION = 'v2026-07-15.5';
+export const APP_VERSION = 'v2026-07-15.6';
 
 // Generador de nombres de grupo con sabor a Castronegro.
 const NAME_GROUPS = ['Los Lobos', 'La Manada', 'El Aquelarre', 'Los Aullidos', 'La Camada', 'Los Colmillos', 'Las Garras', 'Los Susurros', 'La Niebla', 'Las Sombras'];
@@ -1124,7 +1124,7 @@ function masterToolsBar(g) {
     ${btn('repeat-last', '🔁 Repetir', 'ghost')}
     ${btn('end-game', '🏳️ Fin', 'ghost')}
   </div></div>
-  ${narrator ? '<p class="small-note" style="text-align:center">🔊 Mantén esta pantalla encendida: tu dispositivo es el narrador.</p>' : ''}`;
+  ${narrator ? '<p class="small-note" style="text-align:center">🔊 Eres el narrador: mantén la pantalla encendida y la app en primer plano. Si bloqueas el móvil o cambias de aplicación, la voz se detiene (limitación del navegador). Otro dispositivo puede tomar el relevo desde 🗣️ Voz.</p>' : ''}`;
 }
 
 function logPanel(game) {
@@ -1405,8 +1405,19 @@ function voiceModal() {
   const cloud = cfg.engine !== 'device' && cloudAvailable();
   const voices = listSpanishVoices();
   const current = cfg.voiceURI || (voices[0] && voices[0].voiceURI) || '';
+  const g = state.group || {};
+  const inAutoGame = g.status === 'playing' && g.game && g.game.mode === 'auto';
+  // Cambiar de narrador en plena partida: el nuevo lo toma desde SU dispositivo
+  // (así el toque desbloquea su audio) y el conductor pasa a narrar desde aquí.
+  const handover = inAutoGame && !isMaster()
+    ? `<div class="card" style="border-color:var(--accent)">
+        <div class="sname">🔊 Tomar la narración</div>
+        <p class="small-note">Ahora mismo narra otro dispositivo. Si quieres que la voz suene desde aquí (por ejemplo, si a ese móvil se le acaba la batería), tómala tú.</p>
+        ${btn('become-narrator', '🔊 Narrar desde este dispositivo', 'violet block')}
+      </div>` : '';
   return `<h3>🗣️ Voz del narrador</h3>
     <p class="small-note" style="text-align:center;opacity:.6">${APP_VERSION}</p>
+    ${handover}
     <div class="settingrow"><div class="sinfo"><div class="sname">🔊 Voz activada</div><div class="sdesc">Silencia la locución sin pausar la partida.</div></div>
       <div class="switch ${isMuted() ? '' : 'on'}" data-a="toggle-mute"></div></div>
     <div class="settingrow"><div class="sinfo"><div class="sname">🎵 Ambiente de fondo</div><div class="sdesc">Viento, grillos y búhos de noche; pájaros de día. Se atenúa al hablar.</div></div>

@@ -186,6 +186,13 @@ const handlers = {
   'select-game': (p) => guard(() => A.selectGame(p)),
   'change-game': () => guard(() => A.selectGame(null)),
   'narrator-device': (p) => { state.ui.modal = null; return guard(() => A.setNarratorDevice(p)); },
+  'become-narrator': () => {
+    try { unlockAudioPlayback(); } catch { /* el toque desbloquea el audio de este dispositivo */ }
+    const my = me();
+    if (!my) return;
+    state.ui.modal = null;
+    return guard(() => A.setNarratorDevice(my.id));
+  },
   'open-explain': () => { state.ui.modal = { type: 'explain' }; render(); },
   'open-game-roles': () => { state.ui.modal = { type: 'game-roles' }; render(); },
   'explain-speak': () => guard(() => A.requestExplain()),

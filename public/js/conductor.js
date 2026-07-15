@@ -15,6 +15,7 @@ let spoken = new Set();
 let timer = null;
 let timerKey = null;
 let wakeLock = null;
+let wasMaster = false; // para detectar cuándo este dispositivo toma la narración
 let muted = false;
 let nagCounts = {};
 let fillerPlan = {};
@@ -199,6 +200,11 @@ let explainSeen = null; // `${grupo}:${nonce}` — para no releer al recargar
 export function conductorTick() {
   const g = state.group;
   const game = g && g.game;
+  // Relevo de narrador en plena partida: si este dispositivo acaba de tomar el
+  // mando, olvida lo ya dicho para volver a narrar el paso actual desde aquí.
+  const amMaster = !!(g && game && game.mode === 'auto' && isMaster());
+  if (amMaster && !wasMaster) { spoken.clear(); stopSpeech(); }
+  wasMaster = amMaster;
   // Explicación en voz alta (en el lobby): la lee el dispositivo narrador
   // elegido en la mesa; si no hay, el dispositivo que la pidió.
   if (g && g.explain && g.explain.nonce) {
