@@ -941,10 +941,10 @@ export function loveDeathLine(a, b, salt = '') {
 }
 
 let watchdog = null;
-const VOICE_LS = 'hlc_voice_v2'; // v2: por defecto Neural2 (ágil) en vez de Chirp3-HD (lenta)
+const VOICE_LS = 'hlc_voice_v3'; // v3: por defecto Studio (locutor); la latencia se cubre pre-generando
 let voiceCfg = {
   engine: 'cloud', // 'cloud' (neuronal, muy humana) o 'device' (la del móvil)
-  cloudVoice: 'es-ES-Neural2-F', // masculina grave, muy natural y ~5x más rápida que Chirp3-HD
+  cloudVoice: 'es-ES-Studio-F', // voz «Studio» de Google: calidad de locutor profesional
   voiceURI: null, rate: 0.95, pitch: 0.9,
   ambience: true, // paisaje sonoro de fondo en el narrador
 };
@@ -952,20 +952,21 @@ try { Object.assign(voiceCfg, JSON.parse(localStorage.getItem(VOICE_LS)) || {});
 
 // Voz neuronal en la nube (Google TTS). La clave está restringida a esta API y al
 // dominio del juego, y el audio se cachea en el dispositivo: cada frase fija se
-// sintetiza (y factura) una sola vez por narrador. Las Neural2 son igual de
-// naturales pero se sintetizan en ~0,2 s (vs ~1 s de Chirp3-HD), así que el juego
-// fluye mucho mejor; las Chirp3-HD quedan como opción «HD» para quien prefiera
-// aún más expresividad a costa de velocidad.
+// sintetiza (y factura) una sola vez por narrador. Las voces «Studio» son las de
+// mayor calidad (locución profesional) pero lentas de sintetizar (~1,5 s); no
+// pasa nada porque el conductor PRE-GENERA las locuciones de la noche mientras la
+// gente mira su carta, así suenan al instante. Neural2 queda como opción ágil por
+// si algún dispositivo no alcanza a pre-generar.
 const TTS_KEY = (typeof window !== 'undefined' && window.TTS_KEY) || null;
 export const CLOUD_VOICES = [
-  { id: 'es-ES-Neural2-F', label: 'Ágil · masculina grave (recomendada)' },
-  { id: 'es-ES-Neural2-G', label: 'Ágil · masculina' },
-  { id: 'es-ES-Neural2-A', label: 'Ágil · femenina clara' },
-  { id: 'es-ES-Neural2-E', label: 'Ágil · femenina' },
-  { id: 'es-ES-Neural2-H', label: 'Ágil · femenina cálida' },
-  { id: 'es-ES-Chirp3-HD-Charon', label: 'HD · masculina grave (más lenta)' },
-  { id: 'es-ES-Chirp3-HD-Kore', label: 'HD · femenina clara (más lenta)' },
-  { id: 'es-ES-Chirp3-HD-Sulafat', label: 'HD · femenina cálida (más lenta)' },
+  { id: 'es-ES-Studio-F', label: '🎙️ Studio · masculina (locutor, recomendada)' },
+  { id: 'es-ES-Studio-C', label: '🎙️ Studio · femenina (locutora)' },
+  { id: 'es-ES-Chirp3-HD-Charon', label: '🎬 HD · masculina grave' },
+  { id: 'es-ES-Chirp3-HD-Enceladus', label: '🎬 HD · masculina serena' },
+  { id: 'es-ES-Chirp3-HD-Kore', label: '🎬 HD · femenina clara' },
+  { id: 'es-ES-Chirp3-HD-Sulafat', label: '🎬 HD · femenina cálida' },
+  { id: 'es-ES-Neural2-F', label: '⚡ Ágil · masculina (sin pre-generar)' },
+  { id: 'es-ES-Neural2-A', label: '⚡ Ágil · femenina' },
 ];
 
 const memCache = new Map(); // texto|voz → objectURL
@@ -1102,6 +1103,29 @@ function pumpCloud() {
     speakDevice(item.text, { onstart: item.onstart });
     finish();
   });
+}
+
+// Pre-generación: sintetiza en segundo plano (puebla la caché) SIN reproducir,
+// para adelantar las locuciones previsibles de la noche. Cuando el conductor las
+// pida, ya estarán en caché y sonarán al instante, aunque la voz sea de las
+// lentas (Studio). Cola con poca concurrencia para no competir con lo que suena.
+let prewarmQueue = [];
+let prewarmActive = 0;
+export function prewarm(text, ssml) {
+  if (!text || voiceCfg.engine !== 'cloud' || !TTS_KEY) return;
+  const k = voiceCfg.cloudVoice + '|' + (ssml || text);
+  if (memCache.has(k)) return; // ya sintetizada
+  if (prewarmQueue.some((q) => (q.ssml || q.text) === (ssml || text))) return; // ya en cola
+  prewarmQueue.push({ text, ssml });
+  pumpPrewarm();
+}
+function pumpPrewarm() {
+  while (prewarmActive < 3 && prewarmQueue.length) {
+    const it = prewarmQueue.shift();
+    prewarmActive++;
+    synthCloud(it.text, it.ssml).catch(() => { /* se sintetizará al pedirla */ })
+      .finally(() => { prewarmActive--; pumpPrewarm(); });
+  }
 }
 
 // ¿Está sonando (o pendiente) la narración? Para atenuar el ambiente y para

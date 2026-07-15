@@ -2,10 +2,10 @@
 // Narra la partida con voz sintetizada y avanza los pasos que no requieren acción
 // (roles muertos, pausas dramáticas, amanecer, transiciones de fase).
 import { state, isMaster } from './store.js';
-import { stepActors, stepNeedsGhostAnnounce, NIGHT_STEPS, WINNER_LABELS } from './engine.js';
+import { stepActors, stepNeedsGhostAnnounce, computeNightSteps, NIGHT_STEPS, WINNER_LABELS } from './engine.js';
 import { ROLES } from './roles.js';
 import { buildExplainSpeech } from './explain.js';
-import { NARRATION, narr, outro, deathLine, loveDeathLine, improv, speak, stopSpeech, initVoice, getVoiceConfig, isNarratorSpeaking } from './narration.js';
+import { NARRATION, narr, outro, deathLine, loveDeathLine, improv, speak, stopSpeech, initVoice, getVoiceConfig, isNarratorSpeaking, prewarm } from './narration.js';
 import { ensureAmbience, stopAmbience } from './ambience.js';
 import {
   startFirstNight, advanceGhostStep, runDawn, startNextNight, resolveSirvienta, startRoleRefresh, finishRoleRefreshClose,
@@ -21,6 +21,14 @@ let nagCounts = {};
 let fillerPlan = {};
 let repeatSeen = null; // nonce de «repetir última locución»
 let lastSpokenText = ''; // última narración principal pronunciada
+
+// Cuando todos han visto su carta: la voz anima a comenzar la primera noche.
+const LISTOS = [
+  'Ya todos conocéis vuestro papel. Guardad bien el secreto… y cuando el pueblo esté listo, que alguien dé comienzo a la primera noche.',
+  'Todo Castronegro ha visto ya su carta. Respirad hondo: la primera noche está a punto de caer. Empezadla cuando queráis.',
+  'Los papeles están repartidos y bien guardados. Cuando estéis preparados, dad comienzo a la noche.',
+  'Cada cual conoce su destino. Que nadie lo revele… y, cuando queráis, que caiga la primera noche sobre Castronegro.',
+];
 
 // Frases de insistencia: si nadie actúa en ~30 s, la voz anima a seguir.
 // Admiten varias variantes para que cada aviso suene distinto.
@@ -132,15 +140,37 @@ function outroFor(stepId, game) {
   return outro(stepId, `${game.seed}:n${game.night}:s${game.stepIdx}`);
 }
 
+// Adelanta la síntesis de las locuciones previsibles de una noche (entradas de
+// cada rol, despedidas y amanecer) mientras la gente aún mira su carta. Es «best
+// effort»: usa los mismos textos y sales deterministas que reproducirá el
+// conductor, así que aciertan en caché; lo que no acierte, se sintetiza al pedirlo.
+function prewarmNight(game, players, night) {
+  try {
+    const base = { ...game, night, stepIdx: 0 };
+    const steps = computeNightSteps(base, players);
+    prewarm(narr('noche_cae', `${game.seed}:n${night}`));
+    steps.forEach((stepId, idx) => {
+      if (stepId === 'durmiendo' || stepId === 'amanecer') return;
+      const def = NIGHT_STEPS.find((s) => s.id === stepId);
+      const g2 = { ...game, night, stepIdx: idx, steps };
+      if (def && def.silent) { prewarm(outroFor(stepId, g2)); return; }
+      prewarm(narr(stepId, `${game.seed}:n${night}:s${idx}:${stepId}`));
+      prewarm(outroFor(stepId, g2));
+    });
+    prewarm(narr('amanecer_sin_muertes', `${game.seed}:d${night}`));
+    prewarm(narr('amanecer_con_muertes', `${game.seed}:d${night}`));
+  } catch { /* la pre-generación es opcional: si algo falla, se sintetiza al vuelo */ }
+}
+
 function chainOutro(key, outroTxt, waitMs, stepIdx) {
   const adv = () => advanceGhostStep(stepIdx);
-  if (!outroTxt) { scheduleAfterSpeech(key + ':adv', 900, adv); return; }
+  if (!outroTxt) { scheduleAfterSpeech(key + ':adv', 700, adv); return; }
   const oKey = key + ':outro';
-  if (spoken.has(oKey)) { scheduleAfterSpeech(key + ':adv', 3200 + Math.random() * 800, adv); return; }
+  if (spoken.has(oKey)) { scheduleAfterSpeech(key + ':adv', 2000 + Math.random() * 700, adv); return; }
   scheduleAfterSpeech(oKey + ':t', waitMs, async () => {
     say(oKey, outroTxt);
     // El «cerrad los ojos» debe SONAR entero antes de la espera de bloqueo.
-    scheduleAfterSpeech(key + ':adv', 3200 + Math.random() * 800, adv);
+    scheduleAfterSpeech(key + ':adv', 2000 + Math.random() * 700, adv);
   });
 }
 
@@ -260,8 +290,13 @@ export function conductorTick() {
       ? ` Y una certeza antes de dormir: la carta de ${aa.name} tiene dos caras, y ambas muestran un aldeano. ${aa.name} es el Aldeano-Aldeano: su inocencia está fuera de toda duda.`
       : '';
     say('reveal', narr('bienvenida', String(game.seed)) + kwNote + aaNote);
-    // Aunque todos hayan confirmado, la primera noche también espera al botón:
-    // la gente sigue mirando su carta y comentando con los ojos abiertos.
+    // Mientras la gente mira su carta, adelantamos la síntesis de la primera noche.
+    if (!spoken.has('pw:n1')) { spoken.add('pw:n1'); prewarmNight(game, players, 1); }
+    // Cuando todos han visto su carta, la voz anima a empezar la noche (pero el
+    // avance sigue esperando al botón: la gente comenta con los ojos abiertos).
+    if (players.length && players.every((p) => p.roleSeen)) {
+      say('reveal:listos', LISTOS[Math.floor(Math.random() * LISTOS.length)]);
+    }
     cancelTimer();
     return;
   }
@@ -286,19 +321,23 @@ export function conductorTick() {
     }
 
     if (game.stepIdx === 0) {
-      const flavor = Math.random() < 0.55 ? ' ' + improv('noche') : '';
-      say(`n${game.night}:cae`, narr('noche_cae', `${game.seed}:n${game.night}`) + flavor);
+      // Sin adornos aleatorios: así el texto coincide con el pre-generado y la
+      // intro de la noche suena al instante (su variedad ya es alta de por sí).
+      say(`n${game.night}:cae`, narr('noche_cae', `${game.seed}:n${game.night}`));
+      // Adelanta la síntesis del resto de la noche (por si el reveal no llegó).
+      const pk = `pw:n${game.night}`;
+      if (!spoken.has(pk)) { spoken.add(pk); prewarmNight(game, players, game.night); }
     }
 
     if (stepId === 'amanecer') {
       say(key, '', null);
-      scheduleAfterSpeech(key, 1500, runDawn);
+      scheduleAfterSpeech(key, 1200, runDawn);
       return;
     }
     // Colchón inicial: la misma pantalla de sueño para todos mientras suena
     // «cae la noche»; el primer rol no despierta hasta que todos duermen.
     if (stepId === 'durmiendo') {
-      scheduleAfterSpeech(key, 6000 + Math.random() * 3000, () => advanceGhostStep(game.stepIdx));
+      scheduleAfterSpeech(key, 3000 + Math.random() * 1800, () => advanceGhostStep(game.stepIdx));
       return;
     }
     // Encantados: se les llama por palabras clave y el juego ESPERA a que cada
@@ -328,9 +367,9 @@ export function conductorTick() {
           ? [decoys[base], decoys[(base + 1) % decoys.length]]
           : players.filter((p) => p.alive && p.keyword).slice(0, 2).map((p) => p.keyword);
         say(key, `${encIntro} Todos con los ojos cerrados. Si oyes tu palabra clave, la música te ha atrapado: abre los ojos con disimulo y mira tu pantalla. Las palabras son: … ${fake.join('… y ')}. Cuando lo hayáis visto, volved a cerrar los ojos.`);
-        scheduleAfterSpeech(key, 6000, () => advanceGhostStep(game.stepIdx));
+        scheduleAfterSpeech(key, 4000, () => advanceGhostStep(game.stepIdx));
       } else {
-        schedule(key, 1200, () => advanceGhostStep(game.stepIdx));
+        schedule(key, 900, () => advanceGhostStep(game.stepIdx));
       }
       return;
     }
@@ -354,7 +393,7 @@ export function conductorTick() {
       const fake = (game.kwDecoys || []).slice(0, 2);
       if (fake.length === 2) {
         say(key, `Cupido ha disparado sus flechas. Todos con los ojos cerrados y atentos. Si oyes tu palabra clave, abre los ojos con disimulo y mira tu pantalla: … ${fake.join('… y ')}. Enamorados, descubrid a vuestro amor en silencio… y volved a cerrar los ojos.`);
-        scheduleAfterSpeech(key, 7000 + Math.random() * 3000, () => advanceGhostStep(game.stepIdx));
+        scheduleAfterSpeech(key, 4500 + Math.random() * 2000, () => advanceGhostStep(game.stepIdx));
         return;
       }
     }
@@ -386,11 +425,11 @@ export function conductorTick() {
     const outro = outroFor(stepId, game);
     if (stepNeedsGhostAnnounce(stepId, game, players)) {
       if (text) say(key, text);
-      chainOutro(key, outro, 2500 + Math.random() * 2500, game.stepIdx);
+      chainOutro(key, outro, 1600 + Math.random() * 1600, game.stepIdx);
     } else if (['enamorados', 'lobos_reconocen', 'lobos'].includes(stepId)) {
-      chainOutro(key, outro, 900, game.stepIdx); // pasos vivos ya completados
+      chainOutro(key, outro, 700, game.stepIdx); // pasos vivos ya completados
     } else {
-      schedule(key, 1200, () => advanceGhostStep(game.stepIdx)); // rol públicamente muerto
+      schedule(key, 900, () => advanceGhostStep(game.stepIdx)); // rol públicamente muerto
     }
     return;
   }
