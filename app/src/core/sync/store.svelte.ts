@@ -33,6 +33,13 @@ export interface UiState {
   seatingOk?: boolean;
   narratorPick?: string | null;
   voiceUnlocked?: boolean;
+  /**
+   * Navegación LOCAL del lobby: qué mira este dispositivo antes de empezar.
+   * 'catalog' = la mesa (catálogo de juegos); 'game' = el lobby del juego.
+   * Es local a propósito: en el lobby cada uno navega libre y nadie arrastra a
+   * los demás de pantalla; la sincronización solo llega al iniciar la partida.
+   */
+  lobbyView?: 'catalog' | 'game';
   deadPeek?: Record<string, boolean>;
   suggestedGroup?: string | null;
   explainAudio?: 'loading' | 'playing' | null;

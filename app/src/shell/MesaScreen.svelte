@@ -51,7 +51,7 @@
     <div class="card" style="margin:10px 0 4px">
       <h3>{j.emoji} {j.name}</h3>
       <p class="small-note">{j.desc}</p>
-      <button class="primary block" data-a="select-game" data-p={j.id} onclick={() => guard(() => A.selectGame(j.id))}>{j.emoji} Jugar a esto</button>
+      <button class="primary block" data-a="select-game" data-p={j.id} onclick={() => { app.ui.lobbyView = 'game'; guard(() => A.selectGame(j.id)); }}>{j.emoji} Jugar a esto</button>
     </div>
   {/each}
   <p class="small-note">Más juegos, próximamente… Cualquiera puede elegir: la mesa entera entra al juego con los usuarios y el orden ya puestos.</p>

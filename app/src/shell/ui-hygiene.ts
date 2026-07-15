@@ -16,6 +16,17 @@ export function installUiHygiene(): void {
     const ctx = contextSignature();
     if (ctx === lastCtx) return;
     lastCtx = ctx;
+    // Navegación del lobby: al entrar en el lobby se «congela» qué mira este
+    // dispositivo (según el juego seleccionado de la mesa), y a partir de ahí
+    // los cambios remotos ya no le mueven de pantalla. Al empezar la partida se
+    // olvida, para que al volver al lobby se recoloque en el lobby del juego.
+    if (state.group && state.group.status === 'lobby') {
+      if (state.ui.lobbyView === undefined) {
+        state.ui.lobbyView = state.group.currentGame ? 'game' : 'catalog';
+      }
+    } else if (state.group && state.group.status === 'playing') {
+      state.ui.lobbyView = undefined;
+    }
     state.ui.sel = null;
     state.ui.actorPower = null;
     state.ui.brujaHeal = false;

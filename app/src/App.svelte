@@ -10,7 +10,13 @@
   let hash = $state(location.hash);
   window.addEventListener('hashchange', () => (hash = location.hash));
 
-  const inLobos = $derived(!!app.group && (app.group.currentGame === 'hombres_lobo' || app.group.status === 'playing'));
+  // El título sigue la navegación LOCAL: si este dispositivo mira el catálogo,
+  // «Juegos digitales» aunque la mesa ya tenga un juego seleccionado.
+  const inLobos = $derived(
+    !!app.group
+      && (app.group.status === 'playing'
+        || (app.ui.lobbyView ?? (app.group.currentGame ? 'game' : 'catalog')) === 'game'),
+  );
   $effect(() => {
     document.title = inLobos ? 'Los Hombres Lobo de Castronegro' : 'Juegos digitales';
   });

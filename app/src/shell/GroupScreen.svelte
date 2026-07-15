@@ -14,6 +14,9 @@
 
   const g = $derived(app.group);
   const my = $derived(me());
+  // Qué pantalla ve ESTE dispositivo en el lobby (navegación local). El fallback
+  // cubre el primer render antes de que ui-hygiene la congele.
+  const lobbyView = $derived(app.ui.lobbyView ?? (g?.currentGame ? 'game' : 'catalog'));
 </script>
 
 {#if app.groupMissing}
@@ -33,7 +36,7 @@
     <JoinScreen group={g} />
   {/if}
 {:else if g.status === 'lobby'}
-  {#if g.currentGame === 'hombres_lobo'}
+  {#if lobbyView === 'game'}
     <LobbyScreen group={g} my={my} />
   {:else}
     <MesaScreen group={g} my={my} />

@@ -129,8 +129,14 @@ try {
   console.log('— Configuración —');
   await ana.click('button[data-a=select-game]');
   await ana.waitForSelector('[data-a=open-roles]');
+  // Navegación libre en el lobby: quien elige el juego entra al lobby de
+  // Castronegro; los demás NO saltan (siguen en el catálogo) hasta que empiece
+  // la partida o entren por su cuenta.
+  await pages.bruno.waitForSelector('text=¿A qué jugamos?');
+  check((await pages.bruno.locator('[data-a=open-roles]').count()) === 0, 'elegir juego NO arrastra a los demás: navegan libres hasta empezar');
+  await pages.bruno.click('button[data-a=select-game]');
   await pages.bruno.waitForSelector('[data-a=open-roles]', { timeout: 45000 });
-  ok('elegir juego lleva a toda la mesa al lobby de Castronegro');
+  ok('cada dispositivo entra al lobby de Castronegro cuando quiere');
 
   // Narrador: el creador lo es por defecto y solo se ofrece cambiarlo.
   await ana.waitForSelector('.player:has-text("Ana"):has-text("🔊 narrador")');
@@ -330,8 +336,10 @@ try {
   await paco.waitForSelector('.player:has-text("Paco")');
   ok('Paco entra en el grupo existente desde la portada');
   await paco.click('button[data-a=select-game]');
+  await paco.waitForSelector('[data-a=open-start]', { timeout: 45000 });
+  await ana.click('button[data-a=select-game]'); // Ana entra al lobby cuando quiere
   await ana.waitForSelector('[data-a=open-start]', { timeout: 45000 });
-  ok('cualquiera elige juego e inicia (Ana ve empezar sin ser máster)');
+  ok('en el lobby, cualquiera elige juego y ve «empezar» (no hay máster hasta iniciar)');
   await paco.click('[data-a=confirm-delete-group]');
   await paco.click('[data-a=delete-group-confirm]');
   await paco.waitForURL(BASE + '/');

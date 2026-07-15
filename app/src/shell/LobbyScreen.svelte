@@ -3,8 +3,6 @@
   // (port de lobbyScreen v1). En el lobby no hay máster: cualquier dispositivo
   // configura e inicia.
   import { app } from '../core/sync/store.svelte';
-  import { guard } from '../core/sync/guard';
-  import * as A from '../games/hombres-lobo/actions';
   import { ROLES, wolfCountFor, OFFICIAL_MIN_PLAYERS } from '../games/hombres-lobo/roles';
   import type { GroupDoc, PlayerDoc } from '../core/sync/schema';
   import Flash from './Flash.svelte';
@@ -20,7 +18,7 @@
 
 <div class="topbar">
   <h2>🌕 {group.name}</h2>
-  <span style="display:flex;gap:6px"><button class="small ghost" data-a="change-game" onclick={() => guard(() => A.selectGame(null))}>🎲 Otro juego</button><button class="small ghost" data-a="leave" onclick={() => (app.ui.modal = { type: 'confirm-leave' })}>🚪 Salir</button></span>
+  <span style="display:flex;gap:6px"><button class="small ghost" data-a="change-game" onclick={() => (app.ui.lobbyView = 'catalog')}>🎲 Otro juego</button><button class="small ghost" data-a="leave" onclick={() => (app.ui.modal = { type: 'confirm-leave' })}>🚪 Salir</button></span>
 </div>
 <Flash />
 <DevicesCard group={group} />
