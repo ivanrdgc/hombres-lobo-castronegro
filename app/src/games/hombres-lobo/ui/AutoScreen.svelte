@@ -58,7 +58,6 @@
   <div class="topbar">
     <h2>{group.name}</h2>
     <PhaseChip {game} />
-    {#if game.phase !== 'end' && !game.paused}<button class="small ghost" data-a="pause-game" aria-label="Pausar" title="Pausar" onclick={() => guard(A.pauseGame)}>⏸️</button>{/if}
     <GameMenu {group} />
   </div>
   {#if !my.alive && game.phase !== 'end' && my.inGame}<div class="flash">💀 Has muerto. Sigue mirando en silencio… y no desveles nada.</div>{/if}

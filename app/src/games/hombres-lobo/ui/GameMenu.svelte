@@ -42,6 +42,10 @@
     void guard(A.requestRepeat);
     close();
   }
+  function pause() {
+    void guard(A.pauseGame);
+    close();
+  }
 </script>
 
 {#if canUse}
@@ -51,6 +55,7 @@
       <button class="menu-scrim" aria-label="Cerrar menú" onclick={close}></button>
       <div class="menu-pop" role="menu">
         {#if auto}
+          {#if !game?.paused}<button role="menuitem" data-a="pause-game" onclick={pause}>⏸️ Pausar</button>{/if}
           <button role="menuitem" data-a="voice-open" onclick={voiceOpen}>{app.ui.muted ? '🔇 Voz' : '🗣️ Voz'}</button>
           <button role="menuitem" data-a="repeat-last" onclick={repeat}>🔁 Repetir</button>
         {/if}

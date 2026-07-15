@@ -251,6 +251,8 @@ try {
   const wolfName = st.players.find((p) => p.role === 'hombre_lobo').name;
 
   // Pausa global: cualquiera pausa, todo se congela, cualquiera reanuda.
+  // (Pausar vive ahora en el menú ⋯ de la cabecera; reanudar sigue en el cuerpo.)
+  await pages.david.click('[data-a=game-menu]');
   await pages.david.click('button[data-a=pause-game]');
   await pages.carla.waitForSelector('text=Partida en pausa');
   ok('cualquier jugador puede pausar y todos lo ven');
