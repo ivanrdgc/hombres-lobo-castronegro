@@ -6,6 +6,9 @@ import { EXPLANATIONS } from './explain.js';
 import { NARRATION, narr, listSpanishVoices, getVoiceConfig, CLOUD_VOICES, cloudAvailable } from './narration.js';
 import { isMuted } from './conductor.js';
 
+// Sello de versión visible (para verificar despliegues en los móviles).
+export const APP_VERSION = 'v2026-07-15.1';
+
 // Generador de nombres de grupo con sabor a Castronegro.
 const NAME_GROUPS = ['Los Lobos', 'La Manada', 'El Aquelarre', 'Los Aullidos', 'La Camada', 'Los Colmillos', 'Las Garras', 'Los Susurros', 'La Niebla', 'Las Sombras'];
 const NAME_PLACES = ['Medianoche', 'Luna Llena', 'Castronegro', 'la Niebla', 'el Páramo', 'la Colina', 'el Bosque Viejo', 'la Taberna', 'el Molino', 'Otoño'];
@@ -1410,6 +1413,7 @@ function voiceModal() {
   const voices = listSpanishVoices();
   const current = cfg.voiceURI || (voices[0] && voices[0].voiceURI) || '';
   return `<h3>🗣️ Voz del narrador</h3>
+    <p class="small-note" style="text-align:center;opacity:.6">${APP_VERSION}</p>
     <div class="settingrow"><div class="sinfo"><div class="sname">🔊 Voz activada</div><div class="sdesc">Silencia la locución sin pausar la partida.</div></div>
       <div class="switch ${isMuted() ? '' : 'on'}" data-a="toggle-mute"></div></div>
     <div class="settingrow"><div class="sinfo"><div class="sname">🎵 Ambiente de fondo</div><div class="sdesc">Viento, grillos y búhos de noche; pájaros de día. Se atenúa al hablar.</div></div>
