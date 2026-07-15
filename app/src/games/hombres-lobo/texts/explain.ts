@@ -133,31 +133,13 @@ export interface ExplainSpeech {
   segments: { text: string; ssml: string }[];
 }
 
-// Locución de la explicación a partir del MISMO texto que muestra el modal
-// (título + todas las secciones, incluidos roles y ajustes). Añade pausas entre
-// secciones y párrafos, y una pausa tras cada encabezado, para que suene como un
-// narrador humano. El SSML lo aprovecha la voz neuronal; el texto plano queda
-// para la voz del dispositivo. Como la API de síntesis limita cada petición a
-// 5000 bytes, la troceamos en segmentos que se reproducen encadenados.
-// Devuelve { text, segments: [{ text, ssml }] }.
-export function buildExplainSpeech(group: ExplainGroup = {}): ExplainSpeech {
-  const ex = EXPLANATIONS[group.currentGame || ''] || EXPLANATIONS.hombres_lobo;
-  // tokens: { t: texto, pause: ms de silencio antes }
-  const tokens: SpeechToken[] = [{ t: toSpeech(ex.title), pause: 0 }];
-  explainSections(group).forEach((sec, si) => {
-    if (sec.heading) tokens.push({ t: toSpeech(sec.heading), pause: si === 0 ? 900 : 1100 });
-    (sec.items || []).forEach((it, ii) => {
-      const t = toSpeech(it);
-      if (!t) return;
-      const pause = ii === 0
-        ? (sec.heading ? 450 : (si === 0 ? 900 : 1100))
-        : 700;
-      tokens.push({ t, pause });
-    });
-  });
-  const clean = tokens.filter((x) => x.t);
+/** Qué parte de la explicación leer: todo (voz completa, contrato del golden),
+ *  solo la introducción ambientada, o solo el «cómo se juega» (resto). */
+export type ExplainPart = 'all' | 'intro' | 'howto';
+
+// Agrupa los tokens en segmentos bajo el límite de la API (holgura sobre 5000 bytes).
+function segmentTokens(clean: SpeechToken[]): ExplainSpeech {
   const text = clean.map((x) => x.t).join(' ');
-  // Agrupa tokens en segmentos bajo el límite (holgura sobre los 5000 bytes).
   const LIMIT = 3200;
   const segments: { text: string; ssml: string }[] = [];
   let cur: SpeechToken[] = [];
@@ -176,4 +158,33 @@ export function buildExplainSpeech(group: ExplainGroup = {}): ExplainSpeech {
   }
   flush();
   return { text, segments };
+}
+
+// Locución de la explicación a partir del MISMO texto que se muestra. Añade
+// pausas entre secciones y párrafos, y una pausa tras cada encabezado, para que
+// suene como un narrador humano. El SSML lo aprovecha la voz neuronal; el texto
+// plano queda para la voz del dispositivo. Se trocea en segmentos encadenados.
+// `part` selecciona qué leer; 'all' (por defecto) mantiene la voz completa e
+// idéntica a la v1 (golden). Devuelve { text, segments: [{ text, ssml }] }.
+export function buildExplainSpeech(group: ExplainGroup = {}, part: ExplainPart = 'all'): ExplainSpeech {
+  const ex = EXPLANATIONS[group.currentGame || ''] || EXPLANATIONS.hombres_lobo;
+  const allSecs = explainSections(group);
+  const secs = part === 'intro' ? allSecs.filter((s) => s.kind === 'intro')
+    : part === 'howto' ? allSecs.filter((s) => s.kind !== 'intro')
+      : allSecs;
+  // tokens: { t: texto, pause: ms de silencio antes }. El título encabeza salvo
+  // en 'howto' (que ya arranca con su propio «Cómo se juega»).
+  const tokens: SpeechToken[] = part === 'howto' ? [] : [{ t: toSpeech(ex.title), pause: 0 }];
+  secs.forEach((sec, si) => {
+    if (sec.heading) tokens.push({ t: toSpeech(sec.heading), pause: si === 0 ? 900 : 1100 });
+    (sec.items || []).forEach((it, ii) => {
+      const t = toSpeech(it);
+      if (!t) return;
+      const pause = ii === 0
+        ? (sec.heading ? 450 : (si === 0 ? 900 : 1100))
+        : 700;
+      tokens.push({ t, pause });
+    });
+  });
+  return segmentTokens(tokens.filter((x) => x.t));
 }

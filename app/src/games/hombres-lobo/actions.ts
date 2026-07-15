@@ -69,12 +69,6 @@ export async function setNarratorDevice(pid: string | null): Promise<void> {
   await updateDoc(gref(mySlug()), patch);
 }
 
-// Pedir que la explicación del juego se lea en voz alta: la reproduce el
-// dispositivo narrador (o, si no hay, el que la pidió).
-export async function requestExplain(): Promise<void> {
-  await updateDoc(gref(mySlug()), { explain: { nonce: Date.now(), by: myPid() } });
-}
-
 export async function createGroup(userName: string, groupName: string): Promise<void> {
   const slug = slugify(groupName);
   if (!slug) throw new Error('Nombre de grupo no válido.');

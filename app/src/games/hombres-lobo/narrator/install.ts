@@ -8,7 +8,6 @@ import type { Utterance } from '../../../core/audio/player';
 import { ensureAmbience, stopAmbience } from '../../../core/audio/ambience';
 import { getVoiceConfig } from '../../../core/audio/voice-config';
 import { onChange, state } from '../../../core/sync/store.svelte';
-import { buildExplainSpeech } from '../texts/explain';
 import * as A from '../actions';
 import { amNarrator, gameIdOf, sceneOf, type Snap } from './scenes';
 
@@ -44,7 +43,6 @@ export function installNarrator(): void {
 
   let wasNarrator = false;
   let repeatSeen: number | null = null;
-  let explainSeen: string | null = null;
   let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
 
   onChange(() => {
@@ -78,32 +76,9 @@ export function installNarrator(): void {
       }
     }
 
-    // Explicación en voz alta (en el lobby): la lee el dispositivo narrador
-    // elegido en la mesa; si no hay, el dispositivo que la pidió.
-    if (g && g.explain && g.explain.nonce) {
-      const cur = `${g.id}:${g.explain.nonce}`;
-      if (explainSeen === null || explainSeen.split(':')[0] !== g.id) {
-        explainSeen = cur; // primera vista del grupo: no releer peticiones viejas
-      } else if (explainSeen !== cur) {
-        explainSeen = cur;
-        const myPid = s.session?.pid;
-        const narrOk = s.players.some((p) => p.id === g.lastNarratorId);
-        const shouldSpeak = narrOk ? myPid === g.lastNarratorId : myPid === g.explain.by;
-        if (shouldSpeak && g.status === 'lobby') {
-          const { segments } = buildExplainSpeech(g);
-          stopSpeech('hard');
-          const u: Utterance = {
-            id: 'explain',
-            segments: segments.flatMap((seg, i) => (i
-              ? [{ kind: 'gap' as const, ms: 700 }, { kind: 'clip' as const, text: seg.text }]
-              : [{ kind: 'clip' as const, text: seg.text }])),
-          };
-          setTimeout(() => {
-            play(u, { muted: !!state.ui.muted }).catch(() => { /* nada */ });
-          }, 250);
-        }
-      }
-    }
+    // (La explicación ya no se lee en el narrador: antes de empezar la partida
+    // nunca se reproduce nada en él. La lectura es siempre local, en el
+    // dispositivo que la pide, desde el lobby o su modal.)
 
     // Paisaje sonoro y pantalla encendida, solo en el dispositivo narrador.
     const wantAmbience = master && !!game && getVoiceConfig().ambience && !state.ui.muted

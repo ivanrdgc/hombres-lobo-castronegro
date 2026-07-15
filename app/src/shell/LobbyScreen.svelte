@@ -4,6 +4,8 @@
   // configura e inicia.
   import { app } from '../core/sync/store.svelte';
   import { ROLES, wolfCountFor, OFFICIAL_MIN_PLAYERS } from '../games/hombres-lobo/roles';
+  import { EXPLANATIONS } from '../games/hombres-lobo/texts/explain';
+  import { explainAudioState, toggleExplainAudio } from './explain-audio';
   import type { GroupDoc, PlayerDoc } from '../core/sync/schema';
   import Flash from './Flash.svelte';
 
@@ -13,6 +15,9 @@
   const nJug = $derived(app.players.filter((p) => p.isPlayer !== false).length);
   const wolvesFixed = $derived((group.settings || {}).wolvesCount || null);
   const lobos = $derived(Math.max(1, Math.min(Math.max(nJug - 1, 1), wolvesFixed || wolfCountFor(nJug || 1))));
+  // Introducción ambientada, mostrada directamente en el lobby con lectura local.
+  const ex = $derived(EXPLANATIONS[group.currentGame || ''] || EXPLANATIONS.hombres_lobo);
+  const introAudio = $derived(explainAudioState('intro'));
 </script>
 
 <div class="topbar">
@@ -22,9 +27,18 @@
 </div>
 <Flash />
 <div class="card">
-  <h3>📖 ¿Primera vez?</h3>
-  <p class="small-note">Una introducción ambientada y cómo se juega desde el móvil — con lectura en voz alta en el dispositivo narrador.</p>
-  <button class="block" data-a="open-explain" onclick={() => (app.ui.modal = { type: 'explain' })}>📖 Explicación del juego</button>
+  <div style="display:flex;align-items:center;gap:8px">
+    <h3 style="flex:1;margin:0">{ex.title}</h3>
+    {#if introAudio === 'playing'}
+      <button class="small ghost" data-a="explain-play-intro" aria-label="Detener la lectura" title="Detener" onclick={() => toggleExplainAudio(group, 'intro')}>⏹️</button>
+    {:else if introAudio === 'loading'}
+      <button class="small ghost" aria-label="Preparando la voz" disabled><span class="spinner"></span></button>
+    {:else}
+      <button class="small ghost" data-a="explain-play-intro" aria-label="Escuchar la introducción" title="Escuchar" style="font-size:1.1rem;line-height:1" onclick={() => toggleExplainAudio(group, 'intro')}>▶️</button>
+    {/if}
+  </div>
+  {#each ex.intro as p, i (i)}<p style="margin:9px 0">{p}</p>{/each}
+  <button class="block" data-a="open-explain" onclick={() => (app.ui.modal = { type: 'explain' })}>🎲 Cómo se juega</button>
 </div>
 <div class="card">
   <h3>🎴 Roles de la partida</h3>

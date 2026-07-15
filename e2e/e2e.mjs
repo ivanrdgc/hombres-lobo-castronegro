@@ -158,12 +158,14 @@ try {
   ok('y vuelve a Ana para el resto de la batería');
   await ana.click('button[data-a=select-game]'); // Ana vuelve al lobby a configurar
   await ana.waitForSelector('[data-a=open-roles]');
+  // La introducción ambientada está en el lobby, con botón de escucha local.
+  check(await pages.bruno.isVisible('button[data-a=explain-play-intro]'), 'intro ambientada con botón de escucha en el lobby');
+  // «Cómo se juega» abre el resto (instrucciones, roles y ajustes) con lectura local.
   await pages.bruno.click('[data-a=open-explain]');
   await pages.bruno.waitForSelector('text=Cómo se juega');
-  check(await pages.bruno.isVisible('button[data-a=explain-speak-local]'), 'explicación: opción de leer en este dispositivo');
-  await pages.bruno.click('button[data-a=explain-speak]'); // leer en el narrador (Ana)
-  await pages.bruno.waitForFunction(() => window.__hlc.group && window.__hlc.group.explain && window.__hlc.group.explain.nonce > 0);
-  ok('explicación: petición de lectura enviada al narrador');
+  check(await pages.bruno.isVisible('button[data-a=explain-speak-local]'), 'cómo se juega: opción de leer en este dispositivo');
+  check((await pages.bruno.locator('button[data-a=explain-speak]').count()) === 0, 'ya no se lee en el narrador antes de empezar');
+  ok('explicación: intro en el lobby y «cómo se juega» con lectura local');
   await pages.bruno.click('button[data-a=close-modal]');
   await pace(pages.bruno);
   await ana.click('[data-a=open-roles]');
