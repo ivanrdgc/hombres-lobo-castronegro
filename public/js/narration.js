@@ -960,6 +960,36 @@ let cloudBusy = false;
 // conserva el permiso. En escritorio no molesta.
 let sharedAudio = null;
 let audioUnlocked = false; // true cuando una reproducción ha SALIDO bien
+let lastCloudError = null; // último fallo del circuito neuronal (diagnóstico)
+export function getLastCloudError() { return lastCloudError; }
+
+// Prueba integral del circuito neuronal: clave → síntesis → reproducción.
+// Pensada para ejecutarse desde el modal de Voz y ver dónde rompe (iOS…).
+export async function testCloudVoice() {
+  const report = { key: !!TTS_KEY, engine: voiceCfg.engine, unlockedBefore: audioUnlocked };
+  if (!TTS_KEY) { report.synth = 'sin clave TTS en este despliegue'; return report; }
+  try {
+    const url = await synthCloud('Prueba de voz neuronal completada. Castronegro te oye alto y claro.');
+    report.synth = 'ok';
+    try {
+      if (!sharedAudio) sharedAudio = new Audio();
+      sharedAudio.onended = null;
+      sharedAudio.onerror = null;
+      sharedAudio.src = url;
+      await sharedAudio.play();
+      audioUnlocked = true;
+      report.play = 'ok';
+    } catch (e) {
+      report.play = `${(e && e.name) || 'Error'}: ${(e && e.message) || e}`;
+      lastCloudError = `reproducción — ${report.play}`;
+    }
+  } catch (e) {
+    report.synth = report.synth === 'ok' ? report.synth : `${(e && e.message) || e}`;
+    if (lastCloudError) report.synthDetail = lastCloudError;
+  }
+  report.unlockedAfter = audioUnlocked;
+  return report;
+}
 const SILENT_WAV = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQQAAACAgICA';
 
 export function unlockAudioPlayback() {
@@ -1006,7 +1036,9 @@ async function synthCloud(text) {
       }),
     });
     if (!res.ok) {
-      console.warn('TTS neuronal falló:', res.status, await res.text().catch(() => ''));
+      const detail = (await res.text().catch(() => '')).slice(0, 300);
+      lastCloudError = `síntesis ${res.status}: ${detail}`;
+      console.warn('TTS neuronal falló:', res.status, detail);
       throw new Error('tts ' + res.status);
     }
     const data = await res.json();
@@ -1036,7 +1068,8 @@ function pumpCloud() {
     cloudAudio.onended = finish;
     cloudAudio.onerror = finish;
     cloudAudio.src = url;
-    cloudAudio.play().then(() => { audioUnlocked = true; }).catch(() => {
+    cloudAudio.play().then(() => { audioUnlocked = true; }).catch((e) => {
+      lastCloudError = `reproducción — ${(e && e.name) || 'Error'}: ${(e && e.message) || e}`;
       cloudAudio.onended = null;
       cloudAudio.onerror = null;
       speakDevice(item.text, {});

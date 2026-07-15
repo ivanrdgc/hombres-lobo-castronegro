@@ -3,7 +3,7 @@ import { state, onChange, applyRoute, navigate, me, isMaster, setFlash } from '.
 import { render, invalidateRender, esc, randomGroupName } from './ui.js';
 import * as A from './actions.js';
 import { conductorTick, conductorReset, initConductor, setMuted, isMuted } from './conductor.js';
-import { speak, stopSpeech, unlockAudioPlayback, setVoiceConfig, getVoiceConfig } from './narration.js';
+import { speak, stopSpeech, unlockAudioPlayback, testCloudVoice, setVoiceConfig, getVoiceConfig } from './narration.js';
 import { EXPLANATIONS } from './explain.js';
 import { kickAmbience, stopAmbience, ensureAmbience } from './ambience.js';
 import { aliveNeighbors, isWolfSide, wolfCountFor } from './roles.js';
@@ -412,7 +412,12 @@ const handlers = {
     if (!isMuted()) speak('La voz del narrador está activada.');
     render();
   },
-  'voice-open': () => { state.ui.modal = { type: 'voice' }; render(); },
+  'voice-open': () => { state.ui.modal = { type: 'voice' }; state.ui.voiceTest = null; render(); },
+  'voice-test-cloud': () => {
+    state.ui.voiceTest = 'running';
+    render();
+    testCloudVoice().then((r) => { state.ui.voiceTest = r; render(); });
+  },
   'narrator-who': () => {
     state.ui.narratorWho = true;
     clearTimeout(narratorWhoTimer);

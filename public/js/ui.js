@@ -1433,7 +1433,14 @@ function voiceModal() {
     <input type="range" id="voice-rate" data-vs="rate" min="0.6" max="1.3" step="0.05" value="${cfg.rate}" style="width:100%">
     ${cloud ? '' : `<label for="voice-pitch">Tono</label>
     <input type="range" id="voice-pitch" data-vs="pitch" min="0.5" max="1.3" step="0.05" value="${cfg.pitch}" style="width:100%">`}
-    <div class="btnrow">${btn('voice-test', '▶️ Probar la voz', 'violet')}${btn('close-modal', '✔️ Listo', 'primary')}</div>
+    <div class="btnrow">${btn('voice-test', '▶️ Probar la voz', 'violet')}${(() => {
+      const t = state.ui.voiceTest;
+      if (!t) return btn('voice-test-cloud', '🧪 Diagnóstico neuronal', 'ghost');
+      if (t === 'running') return '<p class="small-note" style="text-align:center">🧪 Probando… (sintetiza y reproduce una frase)</p>';
+      const row = (k, v) => `<div class="small-note">${k}: <b>${esc(String(v))}</b></div>`;
+      return `<div class="card">${row('🔑 Clave', t.key ? 'presente' : 'AUSENTE')}${row('🔓 Desbloqueado antes', t.unlockedBefore ? 'sí' : 'no')}${row('🗣️ Síntesis', t.synth || '—')}${t.synthDetail ? row('· Detalle', t.synthDetail) : ''}${row('▶️ Reproducción', t.play || '—')}${row('🔓 Desbloqueado después', t.unlockedAfter ? 'sí' : 'no')}</div>${btn('voice-test-cloud', '🧪 Repetir diagnóstico', 'ghost block')}`;
+    })()}
+    ${btn('close-modal', '✔️ Listo', 'primary')}</div>
     ${cloudAvailable() ? '' : '<p class="small-note">⚠️ Esta instancia no tiene clave de voz neuronal configurada (js/tts-key.js): se usa la voz del dispositivo.</p>'}
     <p class="small-note">La voz neuronal suena en cuanto llega de la nube (usa caché: cada frase se descarga una sola vez). Si falla la red, cae automáticamente a la voz del dispositivo.</p>`;
 }
