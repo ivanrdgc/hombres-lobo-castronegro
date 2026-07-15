@@ -14,9 +14,9 @@
 
   const g = $derived(app.group);
   const my = $derived(me());
-  // Qué pantalla ve ESTE dispositivo en el lobby (navegación local). El fallback
-  // cubre el primer render antes de que ui-hygiene la congele.
-  const lobbyView = $derived(app.ui.lobbyView ?? (g?.currentGame ? 'game' : 'catalog'));
+  // Qué pantalla ve ESTE dispositivo en el lobby (navegación local). Por defecto
+  // la mesa (página principal); al lobby del juego se entra a mano.
+  const lobbyView = $derived(app.ui.lobbyView ?? 'catalog');
 </script>
 
 {#if app.groupMissing}

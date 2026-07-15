@@ -308,12 +308,11 @@ try {
   // ——— 7. Volver al lobby y eliminar grupo ———
   console.log('— Lobby y limpieza —');
   await ana.click('[data-a=back-lobby]');
-  await pages.bruno.waitForSelector('[data-a=leave]');
-  ok('vuelta al lobby para todos');
-  // Los dispositivos viven en la mesa: Ana va al catálogo para comprobarlos.
-  await ana.click('[data-a=change-game]');
+  // La página principal del grupo es la mesa: al volver de la partida caen ahí.
   await ana.waitForSelector('text=Dispositivos (5)');
   check(await ana.isVisible('.player:has-text("Ana"):has-text("no juega")'), 'la marca de no-jugador se recuerda tras la partida');
+  await pages.bruno.waitForSelector('[data-a=leave]');
+  ok('vuelta a la mesa para todos');
 
   // Un jugador abandona.
   await pages.david.click('[data-a=leave]');

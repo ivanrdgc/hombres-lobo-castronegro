@@ -42,8 +42,8 @@ export interface UiState {
   lobbyView?: 'catalog' | 'game';
   deadPeek?: Record<string, boolean>;
   suggestedGroup?: string | null;
-  /** Lectura en voz alta de la explicación (local): qué parte y en qué estado. */
-  explainAudio?: { part: 'intro' | 'howto'; phase: 'loading' | 'playing' } | null;
+  /** Lectura en voz alta de la explicación (local): qué sección y en qué estado. */
+  explainAudio?: { part: 'intro' | 'how' | 'roles' | 'settings'; phase: 'loading' | 'playing' } | null;
   voiceTest?: 'running' | Record<string, unknown> | null;
   muted?: boolean;
 }

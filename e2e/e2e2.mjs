@@ -249,7 +249,7 @@ try {
   await pages.bruno.waitForSelector('text=/El Pueblo ha ganado/');
   ok('fin manual con ganador elegido');
   await ana.click('button[data-a=back-lobby]');
-  await ana.waitForSelector('[data-a=open-start]');
+  await ana.waitForSelector('text=/Dispositivos/'); // la página principal es la mesa
   await ana.click('[data-a=confirm-delete-group]');
   await ana.click('button[data-a=delete-group-confirm]');
   await ana.waitForURL(BASE + '/');
@@ -391,7 +391,7 @@ try {
 
   // Limpieza.
   await ana.click('button[data-a=back-lobby]');
-  await ana.waitForSelector('[data-a=open-start]', { timeout: 45000 });
+  await ana.waitForSelector('text=/Dispositivos/', { timeout: 45000 }); // la página principal es la mesa
   await ana.click('[data-a=confirm-delete-group]');
   await ana.click('button[data-a=delete-group-confirm]');
   await ana.waitForURL(BASE + '/');

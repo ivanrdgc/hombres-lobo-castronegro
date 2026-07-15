@@ -21,9 +21,10 @@ export function installUiHygiene(): void {
     // los cambios remotos ya no le mueven de pantalla. Al empezar la partida se
     // olvida, para que al volver al lobby se recoloque en el lobby del juego.
     if (state.group && state.group.status === 'lobby') {
-      if (state.ui.lobbyView === undefined) {
-        state.ui.lobbyView = state.group.currentGame ? 'game' : 'catalog';
-      }
+      // La página principal del grupo es SIEMPRE la mesa (dispositivos, voz,
+      // catálogo). Al lobby de un juego se entra a mano («Jugar a esto»), aunque
+      // el grupo ya tenga un juego seleccionado de una vez anterior.
+      if (state.ui.lobbyView === undefined) state.ui.lobbyView = 'catalog';
     } else if (state.group && state.group.status === 'playing') {
       state.ui.lobbyView = undefined;
     }

@@ -73,7 +73,7 @@ await pages.coco.click('button[data-a=end-game]');
 await pages.coco.click('button[data-a=end-game-confirm]');
 await ana.waitForSelector('button[data-a=back-lobby]', { timeout: 60000 });
 await ana.click('button[data-a=back-lobby]');
-await ana.waitForSelector('[data-a=open-start]');
+await ana.waitForSelector('text=/Dispositivos/'); // la página principal es la mesa
 const s2 = await seating(ana);
 if (s2 && s2[s2.length - 1] === 'p-bea') ok('el orden de mesa persiste tras la partida'); else bad('orden perdido: ' + JSON.stringify(s2));
 await ana.click('[data-a=confirm-delete-group]');

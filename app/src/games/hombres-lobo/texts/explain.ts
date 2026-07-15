@@ -79,21 +79,24 @@ export function explainRoleItems(group: ExplainGroup = {}): string[] {
   return ids.map((id) => `${ROLES[id].emoji} <b>${ROLES[id].name}</b> — ${ROLES[id].desc}`);
 }
 
+export type SectionId = 'intro' | 'how' | 'roles' | 'settings';
+
 export interface ExplainSection {
+  id: SectionId;
   heading: string | null;
   items: string[];
   kind: 'intro' | 'bullet' | 'plain';
 }
 
 // Secciones de la explicación, en el mismo orden que el modal. Cada una:
-// { heading, items, kind }. kind guía el estilo del modal y no afecta a la voz.
+// { id, heading, items, kind }. kind guía el estilo del modal y no afecta a la voz.
 export function explainSections(group: ExplainGroup = {}): ExplainSection[] {
   const ex = EXPLANATIONS[group.currentGame || ''] || EXPLANATIONS.hombres_lobo;
   return [
-    { heading: null, items: ex.intro, kind: 'intro' },
-    { heading: '🎲 Cómo se juega', items: ex.how, kind: 'bullet' },
-    { heading: '🎴 Roles activados en esta mesa', items: explainRoleItems(group), kind: 'plain' },
-    { heading: '🔧 Cómo se jugará', items: settingsSummary(group.settings || {}), kind: 'bullet' },
+    { id: 'intro', heading: null, items: ex.intro, kind: 'intro' },
+    { id: 'how', heading: '🎲 Cómo se juega', items: ex.how, kind: 'bullet' },
+    { id: 'roles', heading: '🎴 Roles activados en esta mesa', items: explainRoleItems(group), kind: 'plain' },
+    { id: 'settings', heading: '🔧 Cómo se jugará', items: settingsSummary(group.settings || {}), kind: 'bullet' },
   ];
 }
 
@@ -134,8 +137,8 @@ export interface ExplainSpeech {
 }
 
 /** Qué parte de la explicación leer: todo (voz completa, contrato del golden),
- *  solo la introducción ambientada, o solo el «cómo se juega» (resto). */
-export type ExplainPart = 'all' | 'intro' | 'howto';
+ *  el «cómo se juega» entero, o una sección concreta (intro/how/roles/settings). */
+export type ExplainPart = 'all' | 'howto' | SectionId;
 
 // Agrupa los tokens en segmentos bajo el límite de la API (holgura sobre 5000 bytes).
 function segmentTokens(clean: SpeechToken[]): ExplainSpeech {
@@ -169,12 +172,12 @@ function segmentTokens(clean: SpeechToken[]): ExplainSpeech {
 export function buildExplainSpeech(group: ExplainGroup = {}, part: ExplainPart = 'all'): ExplainSpeech {
   const ex = EXPLANATIONS[group.currentGame || ''] || EXPLANATIONS.hombres_lobo;
   const allSecs = explainSections(group);
-  const secs = part === 'intro' ? allSecs.filter((s) => s.kind === 'intro')
-    : part === 'howto' ? allSecs.filter((s) => s.kind !== 'intro')
-      : allSecs;
-  // tokens: { t: texto, pause: ms de silencio antes }. El título encabeza salvo
-  // en 'howto' (que ya arranca con su propio «Cómo se juega»).
-  const tokens: SpeechToken[] = part === 'howto' ? [] : [{ t: toSpeech(ex.title), pause: 0 }];
+  const secs = part === 'all' ? allSecs
+    : part === 'howto' ? allSecs.filter((s) => s.id !== 'intro')
+      : allSecs.filter((s) => s.id === part); // 'intro' o una sección concreta
+  // tokens: { t: texto, pause: ms de silencio antes }. El título solo encabeza
+  // la voz completa y la introducción; las demás partes arrancan en su sección.
+  const tokens: SpeechToken[] = part === 'all' || part === 'intro' ? [{ t: toSpeech(ex.title), pause: 0 }] : [];
   secs.forEach((sec, si) => {
     if (sec.heading) tokens.push({ t: toSpeech(sec.heading), pause: si === 0 ? 900 : 1100 });
     (sec.items || []).forEach((it, ii) => {

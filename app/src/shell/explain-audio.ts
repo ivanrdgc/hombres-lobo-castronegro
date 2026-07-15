@@ -5,9 +5,10 @@ import { state } from '../core/sync/store.svelte';
 import { play, stopSpeech } from '../core/audio/player';
 import type { Segment } from '../core/audio/player';
 import { buildExplainSpeech } from '../games/hombres-lobo/texts/explain';
-import type { ExplainGroup, ExplainPart } from '../games/hombres-lobo/texts/explain';
+import type { ExplainGroup, SectionId } from '../games/hombres-lobo/texts/explain';
 
-type LocalPart = Exclude<ExplainPart, 'all'>;
+// Solo se leen secciones concretas (nunca 'all'/'howto' desde un botón).
+type LocalPart = SectionId;
 
 export function explainAudioState(part: LocalPart): 'idle' | 'loading' | 'playing' {
   const a = state.ui.explainAudio;
