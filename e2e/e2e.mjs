@@ -237,7 +237,9 @@ try {
   let st = await waitState(ana, (s) => s.phase === 'night', 'noche 1');
   check(!st.players.find((p) => p.name === 'Ana').role, 'el máster no recibe rol en automático');
 
-  // Chuleta de cartas: cualquier jugador consulta qué roles hay en la partida.
+  // Chuleta de cartas: cualquier jugador consulta qué roles hay en la partida
+  // (Cartas vive ahora en el menú ⋯ de la cabecera).
+  await pages.bruno.click('[data-a=game-menu]');
   await pages.bruno.click('button[data-a=open-game-roles]');
   await pages.bruno.waitForSelector('text=Cartas de la partida');
   check(await pages.bruno.isVisible('text=/Composición pública/i'), 'chuleta 🎴: composición pública visible');
@@ -351,6 +353,8 @@ try {
   await ana.click('button[data-a=select-game]'); // Ana entra al lobby cuando quiere
   await ana.waitForSelector('[data-a=open-start]', { timeout: 45000 });
   ok('en el lobby, cualquiera elige juego y ve «empezar» (no hay máster hasta iniciar)');
+  await paco.click('[data-a=change-game]'); // vuelve a la mesa: «eliminar» ya no está en el lobby
+  await paco.waitForSelector('[data-a=confirm-delete-group]');
   await paco.click('[data-a=confirm-delete-group]');
   await paco.click('[data-a=delete-group-confirm]');
   await paco.waitForURL(BASE + '/');

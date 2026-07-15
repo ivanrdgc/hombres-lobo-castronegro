@@ -1,5 +1,6 @@
 <script lang="ts">
   import { app } from './core/sync/store.svelte';
+  import { GAMES } from './shell/ui-helpers';
   import Landing from './shell/Landing.svelte';
   import GroupScreen from './shell/GroupScreen.svelte';
   import ModalHost from './shell/modals/ModalHost.svelte';
@@ -10,15 +11,14 @@
   let hash = $state(location.hash);
   window.addEventListener('hashchange', () => (hash = location.hash));
 
-  // El título sigue la navegación LOCAL: si este dispositivo mira el catálogo,
-  // «Juegos digitales» aunque la mesa ya tenga un juego seleccionado.
-  const inLobos = $derived(
-    !!app.group
-      && (app.group.status === 'playing'
-        || (app.ui.lobbyView ?? (app.group.currentGame ? 'game' : 'catalog')) === 'game'),
+  // El título sigue la navegación LOCAL: en el catálogo (o la mesa), «Juegos
+  // digitales»; dentro del lobby o la partida de un juego, el nombre del juego.
+  const currentGameName = $derived(GAMES.find((x) => x.id === app.group?.currentGame)?.name);
+  const inGame = $derived(
+    !!app.group && (app.group.status === 'playing' || (app.ui.lobbyView ?? 'catalog') === 'game'),
   );
   $effect(() => {
-    document.title = inLobos ? 'Los Hombres Lobo de Castronegro' : 'Juegos digitales';
+    document.title = inGame && currentGameName ? currentGameName : 'Juegos digitales';
   });
 </script>
 

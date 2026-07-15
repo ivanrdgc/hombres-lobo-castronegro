@@ -44,11 +44,11 @@
 
   function voiceTest() {
     unlockAudio();
-    play({ id: 'voice-test', segments: [{ kind: 'clip', text: 'Bienvenidos a Castronegro. Cae la noche y los lobos aúllan a lo lejos.' }] }).catch(() => {});
+    play({ id: 'voice-test', segments: [{ kind: 'clip', text: 'Esta es la voz del narrador. Uno, dos, tres. La voz funciona correctamente.' }] }).catch(() => {});
   }
 
   // Prueba integral del circuito neuronal: clave → síntesis → reproducción.
-  const DIAG_TEXT = 'Prueba de voz neuronal completada. Castronegro te oye alto y claro.';
+  const DIAG_TEXT = 'Prueba de voz neuronal completada. Se te oye alto y claro.';
   async function voiceTestCloud() {
     app.ui.voiceTest = 'running';
     const report: Record<string, unknown> = { key: cloudAvailable() };

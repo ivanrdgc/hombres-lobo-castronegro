@@ -41,17 +41,15 @@
   <button class="block" data-a="open-explain" onclick={() => (app.ui.modal = { type: 'explain' })}>🎲 Cómo se juega</button>
 </div>
 <div class="card">
-  <h3>🎴 Roles de la partida</h3>
+  <h3>🎴 Roles y configuración</h3>
   <p class="small-note">Con {nJug} jugador{nJug === 1 ? '' : 'es'} marcado{nJug === 1 ? '' : 's'}: <b>{lobos} 🐺 lobo{lobos > 1 ? 's' : ''}</b>{wolvesFixed ? ' (fijado)' : ''}{#if (group.settings || {}).villagersCount != null}, <b>{(group.settings || {}).villagersCount} 🧑‍🌾</b> reservados{/if} y el resto según los roles activados (los huecos se rellenan con 🧑‍🌾 aldeanos; si sobran roles, se sortean). En guiado/manual el narrador no juega aunque esté marcado.</p>
   {#if nJug < OFFICIAL_MIN_PLAYERS && !(group.settings || {}).casual}<p class="small-note">⚠️ Las reglas oficiales piden de {OFFICIAL_MIN_PLAYERS} a 18 jugadores además del narrador. Para jugar con menos, activad el <b>modo casual</b> en los ajustes.</p>{/if}
   <div class="btnrow" style="margin-top:6px">
     {#if extra.length}{#each extra as r (r)}{#if ROLES[r]}<span class="chip">{ROLES[r].emoji} {ROLES[r].name}</span>{/if}{/each}{:else}<span class="chip">Solo lobos y aldeanos</span>{/if}{#if (group.settings || {}).alguacil}<span class="chip">⭐ Alguacil</span>{/if}
   </div>
   <button class="block" data-a="open-roles" onclick={() => (app.ui.modal = { type: 'roles' })}>⚙️ Elegir roles</button>
+  <button class="block" data-a="open-settings" onclick={() => (app.ui.modal = { type: 'settings' })}>🔧 Ajustes de partida</button>
 </div>
 <div class="card">
-  <h3>🎬 Empezar</h3>
-  <button class="block" data-a="open-settings" onclick={() => (app.ui.modal = { type: 'settings' })}>🔧 Ajustes de partida</button>
   <button class="primary block" data-a="open-start" onclick={() => (app.ui.modal = { type: 'start' })}>🎬 Empezar partida</button>
-  <button class="danger block" data-a="confirm-delete-group" onclick={() => (app.ui.modal = { type: 'confirm-delete' })}>🗑️ Eliminar la mesa</button>
 </div>

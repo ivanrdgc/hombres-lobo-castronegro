@@ -20,7 +20,7 @@
   import RevealGate from './RevealGate.svelte';
   import RoleCard from './RoleCard.svelte';
   import EndPhase from './EndPhase.svelte';
-  import MasterTools from './MasterTools.svelte';
+  import GameMenu from './GameMenu.svelte';
 
   const { group, my }: { group: GroupDoc; my: PlayerDoc } = $props();
 
@@ -99,15 +99,10 @@
   <LogPanel game={game} />
 {:else if master}
   <!-- Narrador guiado: guion en pantalla y registro de decisiones. -->
-  <div class="topbar"><h2>{group.name}</h2><PhaseChip game={game} /></div>
+  <div class="topbar"><h2>{group.name}</h2><PhaseChip game={game} /><GameMenu group={group} /></div>
   <Flash />
   <div class="card"><h3>📖 Narrador guiado</h3>
-    <p class="small-note">La app no habla: te va marcando los pasos y tú registras las decisiones. Los jugadores solo ven su carta.</p>
-    <div class="btnrow">
-      <button class="ghost small" data-a="view-roles" onclick={() => (app.ui.modal = { type: 'view-roles' })}>👁 Roles</button>
-      <button class="ghost small" data-a="open-game-roles" onclick={() => (app.ui.modal = { type: 'game-roles' })}>🎴 Cartas</button>
-      <button class="ghost small" data-a="end-game" onclick={() => (app.ui.modal = { type: 'end-game' })}>🏳️ Terminar</button>
-    </div>
+    <p class="small-note">La app no habla: te va marcando los pasos y tú registras las decisiones. Los jugadores solo ven su carta. Herramientas (roles, cartas, terminar) en el menú ⋯ de arriba.</p>
   </div>
   {#if game.phase === 'reveal'}
     {@const pend = players.filter((p) => !p.roleSeen).map((p) => p.name)}
@@ -187,7 +182,7 @@
   </div>
 {:else}
   <!-- Jugador: solo su carta (oculta por defecto); el narrador dirige en persona. -->
-  <div class="topbar"><h2>{group.name}</h2><PhaseChip game={game} /></div>
+  <div class="topbar"><h2>{group.name}</h2><PhaseChip game={game} /><GameMenu group={group} /></div>
   {#if !my.alive && my.inGame && game.phase !== 'reveal'}<div class="flash">💀 Has muerto. Sigue mirando en silencio…</div>{/if}
   <Flash />
   {#if game.phase === 'reveal' && my.inGame && !my.roleSeen}
@@ -198,5 +193,4 @@
   {/if}
   <PlayersGrid players={players} title="🏘️ El pueblo" showAlguacil={game.alguacilId} viewer={my} />
   <LogPanel game={game} />
-  <MasterTools group={group} />
 {/if}

@@ -19,7 +19,7 @@
   import EndPhase from './EndPhase.svelte';
   import PlayersGrid from './PlayersGrid.svelte';
   import LogPanel from './LogPanel.svelte';
-  import MasterTools from './MasterTools.svelte';
+  import GameMenu from './GameMenu.svelte';
 
   const { group, my }: { group: GroupDoc; my: PlayerDoc } = $props();
 
@@ -32,7 +32,7 @@
 
   function unlockVoice() {
     unlockAudio();
-    play({ id: 'unlock', segments: [{ kind: 'clip', text: 'El pueblo de Castronegro abre sus puertas.' }] }).catch(() => {});
+    play({ id: 'unlock', segments: [{ kind: 'clip', text: 'Que empiece la partida.' }] }).catch(() => {});
     app.ui.voiceUnlocked = true;
   }
 </script>
@@ -58,7 +58,8 @@
   <div class="topbar">
     <h2>{group.name}</h2>
     <PhaseChip {game} />
-    {#if game.phase !== 'end' && !game.paused}<button class="small ghost" data-a="pause-game" onclick={() => guard(A.pauseGame)}>⏸️</button>{/if}
+    {#if game.phase !== 'end' && !game.paused}<button class="small ghost" data-a="pause-game" aria-label="Pausar" title="Pausar" onclick={() => guard(A.pauseGame)}>⏸️</button>{/if}
+    <GameMenu {group} />
   </div>
   {#if !my.alive && game.phase !== 'end' && my.inGame}<div class="flash">💀 Has muerto. Sigue mirando en silencio… y no desveles nada.</div>{/if}
   <Flash />
@@ -81,5 +82,4 @@
     <EndPhase {group} {my} />
   {/if}
   <LogPanel {game} />
-  <MasterTools {group} />
 {/if}

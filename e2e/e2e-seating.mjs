@@ -68,7 +68,8 @@ const beaOrder = playing.find((x) => x[0] === 'Bea')?.[1];
 const maxPlaying = Math.max(...playing.map((x) => x[1]));
 if (beaOrder === maxPlaying) ok('player.order sigue el orden de mesa (Bea, la última, con el asiento mayor)'); else bad('order incorrecto: ' + JSON.stringify(o));
 
-// Terminar y comprobar persistencia del orden.
+// Terminar y comprobar persistencia del orden (Terminar vive en el menú ⋯).
+await pages.coco.click('[data-a=game-menu]');
 await pages.coco.click('button[data-a=end-game]');
 await pages.coco.click('button[data-a=end-game-confirm]');
 await ana.waitForSelector('button[data-a=back-lobby]', { timeout: 60000 });

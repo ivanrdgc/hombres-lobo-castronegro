@@ -28,7 +28,7 @@
     // El gesto solo desbloquea el audio en el dispositivo que narra.
     if (chosen && chosen === meId) {
       unlockAudio();
-      play({ id: 'unlock', segments: [{ kind: 'clip', text: 'El pueblo de Castronegro abre sus puertas.' }] }).catch(() => {});
+      play({ id: 'unlock', segments: [{ kind: 'clip', text: 'Que empiece la partida.' }] }).catch(() => {});
       app.ui.voiceUnlocked = true;
     }
     guard(() => A.startGame('auto', chosen));

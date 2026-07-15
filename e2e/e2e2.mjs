@@ -243,7 +243,8 @@ try {
   ok('rol a pantalla completa desde el menú del máster');
   await ana.click('button[data-a=close-modal]');
 
-  // Fin de partida manual.
+  // Fin de partida manual (Terminar vive ahora en el menú ⋯ de la cabecera).
+  await ana.click('[data-a=game-menu]');
   await ana.click('button[data-a=end-game]');
   await ana.click('button[data-a=end-game-confirm][data-p=pueblo]');
   await pages.bruno.waitForSelector('text=/El Pueblo ha ganado/');

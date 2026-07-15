@@ -1,14 +1,14 @@
 // Utilidades del shell: catálogo de juegos, nombres de mesa y orden de asiento.
 import type { GroupDoc, PlayerDoc } from '../core/sync/schema';
 
-// Generador de nombres de grupo con sabor a Castronegro.
-const NAME_GROUPS = ['Los Lobos', 'La Manada', 'El Aquelarre', 'Los Aullidos', 'La Camada', 'Los Colmillos', 'Las Garras', 'Los Susurros', 'La Niebla', 'Las Sombras'];
-const NAME_PLACES = ['Medianoche', 'Luna Llena', 'Castronegro', 'la Niebla', 'el Páramo', 'la Colina', 'el Bosque Viejo', 'la Taberna', 'el Molino', 'Otoño'];
+// Generador de nombres de mesa (grupo de amigos), sin tema de ningún juego.
+const NAME_GROUPS = ['La Peña', 'La Cuadrilla', 'El Grupo', 'Los Cracks', 'La Panda', 'El Equipo', 'La Tribu', 'La Banda', 'Los Colegas', 'La Mesa'];
+const NAME_PLACES = ['del Jueves', 'del Finde', 'de Siempre', 'del Sofá', 'de la Tarde', 'del Barrio', 'de la Uni', 'de Toda la Vida', 'del Garito', 'de la Merienda'];
 
 export function randomGroupName(): string {
   const g = NAME_GROUPS[Math.floor(Math.random() * NAME_GROUPS.length)];
   const p = NAME_PLACES[Math.floor(Math.random() * NAME_PLACES.length)];
-  return `${g} de ${p}`;
+  return `${g} ${p}`;
 }
 
 // Catálogo de juegos de la mesa. La mesa (usuarios + orden) es común; cada

@@ -11,7 +11,7 @@
   import RevealGate from './RevealGate.svelte';
   import RoleCard from './RoleCard.svelte';
   import EndPhase from './EndPhase.svelte';
-  import MasterTools from './MasterTools.svelte';
+  import GameMenu from './GameMenu.svelte';
 
   const { group, my }: { group: GroupDoc; my: PlayerDoc } = $props();
 
@@ -37,7 +37,7 @@
     <p class="small-note">Este dispositivo no participa. La pantalla cambiará sola cuando termine.</p>
   </div>
 {:else}
-  <div class="topbar"><h2>{group.name}</h2><PhaseChip game={game} /></div>
+  <div class="topbar"><h2>{group.name}</h2><PhaseChip game={game} /><GameMenu group={group} /></div>
   <Flash />
   {#if master}
     <div class="card">
@@ -64,14 +64,10 @@
         {/each}
       </div>
     </div>
-    <div class="btnrow">
-      <button class="danger" data-a="end-game" onclick={() => (app.ui.modal = { type: 'end-game' })}>🏳️ Terminar partida</button>
-    </div>
   {:else}
     {#if my.inGame && !my.roleSeen}<RevealGate group={group} my={my} />{/if}
     {#if my.inGame && my.roleSeen}<RoleCard player={my} group={group} mini={true} />{/if}
     <PlayersGrid players={players} title="🏘️ El pueblo" viewer={my} />
   {/if}
   <LogPanel game={game} />
-  <MasterTools group={group} />
 {/if}

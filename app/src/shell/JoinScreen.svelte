@@ -29,12 +29,15 @@
   import { guard } from '../core/sync/guard';
   import * as A from '../games/hombres-lobo/actions';
   import type { GroupDoc } from '../core/sync/schema';
+  import { GAMES } from './ui-helpers';
   import Flash from './Flash.svelte';
 
   const { group }: { group: GroupDoc } = $props();
 
   // La sesión guardada ya no vale (te conectaste desde otro o te expulsaron).
   const hadSession = !!app.session;
+  // Si la mesa ya tiene un juego elegido, se nombra; si no, invitación genérica.
+  const gameName = $derived(GAMES.find((x) => x.id === group.currentGame)?.name);
 
   let name = $state('');
   readName = () => name.trim();
@@ -50,7 +53,7 @@
 
 <span class="moon">🌕</span>
 <h1 class="title-hero">{group.name}</h1>
-<p class="subtitle">Te han invitado a una partida de Los Hombres Lobo de Castronegro</p>
+<p class="subtitle">{gameName ? `Te han invitado a jugar a ${gameName}` : 'Te han invitado a una mesa de juegos'}</p>
 <Flash />
 {#if hadSession}<div class="flash">Tu sesión ya no es válida en este dispositivo (quizá te conectaste desde otro o te expulsaron).</div>{/if}
 <div class="card">
@@ -60,6 +63,6 @@
   <div id="form-error">
     {#if app.ui.formError}<div class="flash error">{app.ui.formError}</div>{/if}
   </div>
-  <button class="primary block" data-a="join" onclick={unirme}>🐺 Unirme</button>
+  <button class="primary block" data-a="join" onclick={unirme}>🚪 Unirme</button>
   <p class="small-note">Jugadores en el grupo: {app.players.map((p) => p.name).join(', ') || 'ninguno todavía'}</p>
 </div>

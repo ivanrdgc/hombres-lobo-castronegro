@@ -47,7 +47,7 @@
   const fraseSuelta = () =>
     timedPlay('frase suelta', {
       id: 'lab:frase',
-      segments: [{ kind: 'clip', text: 'Bienvenidos a Castronegro. La voz del narrador funciona correctamente.' }],
+      segments: [{ kind: 'clip', text: 'La voz del narrador funciona correctamente. Uno, dos, tres.' }],
     });
 
   const cadenaTresPiezas = () =>
@@ -80,7 +80,7 @@
 
   async function probarSynth() {
     log('sintetizando (sin reproducir)…');
-    const r = await testCloudSynth('Prueba de síntesis de Castronegro, ' + new Date().getSeconds() + '.');
+    const r = await testCloudSynth('Prueba de síntesis número ' + new Date().getSeconds() + '.');
     log(r.ok ? `síntesis ok en ${r.ms} ms` : `síntesis FALLÓ (${r.ms} ms): ${r.error}`);
   }
 

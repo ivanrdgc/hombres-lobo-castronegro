@@ -65,7 +65,8 @@ else bad('rol revelado incorrecto: ' + txt);
 const alivePeek = await wolfPage.locator('.player[data-a=dead-peek]').count();
 if (alivePeek === 0) ok('los vivos no tienen la opción de espiar roles');
 else bad('un jugador vivo puede espiar roles');
-// El narrador-altavoz no tiene botones: termina un jugador vivo.
+// El narrador-altavoz no tiene botones: un jugador vivo termina desde el menú ⋯.
+await wolfPage.click('[data-a=game-menu]');
 await wolfPage.click('button[data-a=end-game]');
 await wolfPage.click('button[data-a=end-game-confirm]');
 await wait(ana, (s) => s.phase === 'end', 'fin');
