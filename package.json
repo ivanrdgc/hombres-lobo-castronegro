@@ -7,5 +7,8 @@
     "test": "node --test tests/engine.test.mjs && npm --prefix app test",
     "deploy:v2": "npm --prefix app run build && firebase deploy --only hosting:v2 --project castronegro-zui5sg",
     "deploy:prod": "firebase deploy --only hosting:prod --project castronegro-zui5sg"
+  },
+  "devDependencies": {
+    "playwright": "^1.61.1"
   }
 }

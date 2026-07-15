@@ -11,20 +11,25 @@
   const active = $derived(!!p && p.isPlayer !== false);
   const isNarr = $derived(!!p && app.group?.lastNarratorId === p.id);
 
+  // Ojo: pid es un $derived de app.ui.modal — hay que CAPTURARLO antes de
+  // cerrar el modal, o llegaría vacío a la acción.
   function togglePlayer() {
-    const cur = app.players.find((x) => x.id === pid);
+    const id = pid;
+    const cur = app.players.find((x) => x.id === id);
     app.ui.modal = null;
-    guard(() => A.setPlayerActive(pid, cur ? cur.isPlayer === false : true));
+    guard(() => A.setPlayerActive(id, cur ? cur.isPlayer === false : true));
   }
 
   function narratorDevice() {
+    const id = pid;
     app.ui.modal = null;
-    guard(() => A.setNarratorDevice(pid));
+    guard(() => A.setNarratorDevice(id));
   }
 
   function kick() {
+    const id = pid;
     app.ui.modal = null;
-    guard(() => A.kickPlayer(pid));
+    guard(() => A.kickPlayer(id));
   }
 </script>
 

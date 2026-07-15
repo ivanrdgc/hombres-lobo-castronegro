@@ -62,29 +62,50 @@ Lobos y aldeanos se reparten automáticamente según el número de jugadores (1 
 - **Castigo del Anciano**: además de los poderes nocturnos, desarma la flecha del Cazador y el poder del Juez.
 - **Zorro/Domador/Caballero**: la «vecindad» es el círculo según el **orden de la mesa** (el de la lista de dispositivos, ajustable arrastrando), saltando muertos; con roles de vecindad en juego, el orden se confirma justo antes de empezar.
 
-## Estructura técnica
+## Estructura técnica (v2)
+
+La app es una SPA en **Svelte 5 + TypeScript + Vite** (carpeta `app/`), con Firestore como
+backend en tiempo real y una **biblioteca de audio pre-generada** para el narrador.
 
 ```
-public/
-  index.html         Shell de la SPA
-  css/styles.css     Tema nocturno
-  js/fb.js           Init de Firebase (Firestore, SDK por CDN, sin build)
-  js/roles.js        Catálogo de roles + reparto (puro, testeable)
-  js/engine.js       Motor: pasos de noche, amanecer, votos, victorias (puro)
-  js/narration.js    Locuciones en español + síntesis de voz (Web Speech API)
-  js/store.js        Sesión (localStorage), rutas y listeners de Firestore
-  js/actions.js      Todas las escrituras (transacciones)
-  js/conductor.js    «Narrador» del modo automático (solo dispositivo del máster)
-  js/ui.js           Renderizado
-  js/main.js         Enrutado y eventos
-tests/engine.test.mjs  54 tests del motor (node --test tests/engine.test.mjs)
-e2e/                   Pruebas de extremo a extremo con Playwright (URL por variable de entorno):
-                       cd e2e && npm i playwright && npx playwright install chromium
-                       BASE=https://TU-SITIO.web.app node e2e.mjs
+app/
+  src/core/            Plataforma genérica (sin conocimiento del juego)
+    sync/              Firestore tipado, store reactivo (runes), sesión y guard
+    audio/             WebAudio: unlock iOS, player por segmentos, síntesis TTS,
+                       biblioteca de clips, voz del dispositivo, ambientación
+    narrator/          Secuenciador de escenas (reconciliador), ledger y PACING
+  src/games/hombres-lobo/
+    roles.ts engine.ts Motor puro del juego (port bit-idéntico de la v1, con tests)
+    texts/corpus.ts    TODO el corpus de narración (única fuente de texto y clips)
+    narrator/          Composición de locuciones + escenas del narrador
+    actions.ts         Todas las escrituras (transacciones)
+    ui/                Pantallas del juego (Svelte)
+  src/shell/           Mesa, lobby, modales y componentes comunes
+  public/clips/<voz>/  ~870 clips MP3 pre-generados + manifest (committeados)
+  scripts/             build-clips.mts (pre-generación) y capture-golden.mjs
+public/                v1 original (vanilla JS, referencia histórica)
+docs/PARIDAD.md        Inventario de paridad v1→v2
+tests/engine.test.mjs  Tests del motor de la v1 (node --test)
+e2e/                   Pruebas de extremo a extremo con Playwright:
+                       npm i && npx playwright install chromium
+                       BASE=https://TU-SITIO.web.app node e2e/e2e.mjs
 ```
 
-- **Firebase**: proyecto `castronegro-zui5sg`, Firestore (eur3) + Hosting. Deploy: `firebase deploy --project castronegro-zui5sg`.
-- **Datos**: `groups/{slug}` (doc del grupo con el estado de la partida) + `groups/{slug}/players/{p-nombre}`. Todos los clientes escuchan ambos con `onSnapshot`.
+- **Comandos**: `npm run dev` (HMR), `npm test` (v1 + v2), `npm run deploy:prod` /
+  `npm run deploy:v2` (siempre con `--project castronegro-zui5sg`).
+- **Narrador v2**: sin sondeos — cada snapshot se proyecta a una «clave de escena» y un programa
+  async lineal la ejecuta (audio por eventos, esperas por push). Los colchones viven en una tabla
+  PACING con perfiles (rápido/normal/teatral); los de disimulo no se escalan nunca, y un
+  test-simulador verifica que un paso real y su turno fantasma producen la misma línea temporal.
+- **Audio**: un AudioContext compartido (narración + ambientación con atenuación por eventos).
+  Todas las piezas estáticas del corpus están pre-generadas como clips content-addressed
+  (SHA-256 de voz|rate|texto): la noche entera suena sin llamadas a la API; solo las frases con
+  nombres se sintetizan en vivo, pre-calentadas en cuanto el dato existe. La clave de Cloud TTS
+  vive en `app/.env.local` (`VITE_TTS_KEY`, restringida por dominio, fuera del repo); los clips se
+  regeneran con `cd app && npm run clips` al cambiar textos o voz.
+- **Firebase**: proyecto `castronegro-zui5sg`, Firestore (eur3) + Hosting multi-site (targets
+  `prod` y `v2` de pruebas). Deploy: `npm run deploy:prod`.
+- **Datos**: `groups/{slug}` (doc del grupo con el estado de la partida) + `groups/{slug}/players/{p-nombre}`. Todos los clientes escuchan ambos con `onSnapshot`. Mismo esquema que la v1.
 - **Sin autenticación**: reglas abiertas limitadas a `groups/**`. Los roles son técnicamente legibles con las DevTools; es un juego amistoso entre amigos y se asume buena fe (la UI solo muestra a cada uno lo suyo).
 - **Concurrencia**: todas las acciones sensibles usan transacciones de Firestore (la primera elección gana; los pasos avanzan de forma atómica).
-- El modo automático necesita el dispositivo del máster despierto (usa Wake Lock cuando el navegador lo permite).
+- El modo automático necesita el dispositivo del narrador despierto (usa Wake Lock cuando el navegador lo permite); si su latido de presencia se pierde, los demás dispositivos ofrecen tomar la narración.

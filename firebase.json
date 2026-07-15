@@ -2,11 +2,9 @@
   "hosting": [
     {
       "target": "prod",
-      "public": "public",
+      "public": "app/dist",
       "ignore": [
-        "firebase.json",
-        "**/.*",
-        "**/node_modules/**"
+        "**/.*"
       ],
       "rewrites": [
         {
@@ -16,8 +14,12 @@
       ],
       "headers": [
         {
-          "source": "**/*.@(js|css)",
+          "source": "**",
           "headers": [
+            {
+              "key": "X-Robots-Tag",
+              "value": "noindex, nofollow"
+            },
             {
               "key": "Cache-Control",
               "value": "no-cache"
@@ -25,12 +27,34 @@
           ]
         },
         {
-          "source": "**",
+          "source": "/assets/**",
           "headers": [
             {
               "key": "X-Robots-Tag",
               "value": "noindex, nofollow"
             },
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        },
+        {
+          "source": "/clips/**",
+          "headers": [
+            {
+              "key": "X-Robots-Tag",
+              "value": "noindex, nofollow"
+            },
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        },
+        {
+          "source": "/clips/**/manifest.json",
+          "headers": [
             {
               "key": "Cache-Control",
               "value": "no-cache"
