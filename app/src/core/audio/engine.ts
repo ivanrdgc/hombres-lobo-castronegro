@@ -13,6 +13,7 @@ export interface AudioEngine {
 
 let engine: AudioEngine | null = null;
 let unlocked = false;
+let speechPrimed = false;
 
 type StateListener = (s: { unlocked: boolean; state: AudioContextState | 'sin-audio' }) => void;
 const stateListeners = new Set<StateListener>();
@@ -79,8 +80,11 @@ export function unlockAudio(): void {
       };
       src.start(0);
     }
-    // Desbloquea también la voz del dispositivo (fallback sin clave TTS).
-    if (typeof speechSynthesis !== 'undefined' && !speechSynthesis.speaking && !speechSynthesis.pending) {
+    // Desbloquea la voz del dispositivo (fallback) SOLO UNA VEZ. En iOS, arrancar
+    // speechSynthesis activa la sesión de audio del sistema y atenúa el audio
+    // neuronal (WebAudio); hacerlo en cada toque bajaba el volumen a cada toque.
+    if (!speechPrimed && typeof speechSynthesis !== 'undefined' && !speechSynthesis.speaking && !speechSynthesis.pending) {
+      speechPrimed = true;
       const u = new SpeechSynthesisUtterance(' ');
       u.volume = 0;
       speechSynthesis.speak(u);
