@@ -192,6 +192,8 @@ button:disabled { opacity: 0.45; cursor: default; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
 button.rolechip { cursor: pointer; font-size: 0.85rem; padding: 7px 12px; background: var(--card2); border: 1px solid var(--border); border-radius: var(--r-full); color: var(--text); }
 button.rolechip:active { border-color: var(--accent); }
+/* Cartas cuyos jugadores ya cayeron (con el rol público): en gris y tachadas. */
+button.rolechip.fallen { opacity: 0.45; text-decoration: line-through; color: var(--muted); }
 .roleinfo { border: none; background: transparent; padding: 2px 6px; font-size: 0.95rem; align-self: center; }
 
 .actionpanel { background: var(--card); border: 2px solid var(--accent); border-radius: var(--r-2); padding: 14px; margin: 12px 0; box-shadow: var(--shadow-1); }

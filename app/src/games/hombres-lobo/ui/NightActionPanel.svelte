@@ -293,8 +293,10 @@
             onkeydown={(e) => { if (e.key === 'Enter') app.ui.brujaHeal = !app.ui.brujaHeal; }}></div></div>
       {/if}
       {#if canPoison}
-        <p class="hint" style="margin-top:8px">☠️ Poción de muerte (opcional): toca a quién envenenar.</p>
-        <ActionGrid {players} selKey={key} canPick={notMe} />
+        <p class="hint" style="margin-top:8px">☠️ Poción de muerte (opcional): toca a quién envenenar. Puedes envenenarte a ti misma.</p>
+        <!-- Sin exclusiones: la bruja puede envenenarse a sí misma (también la
+             noche en que los lobos la han elegido a ella). -->
+        <ActionGrid {players} selKey={key} />
       {/if}
       <button class="primary block" data-a="act-bruja-done" onclick={brujaDone}>{sel1Name ? `☠️ Envenenar a ${sel1Name} y terminar` : '🧪 Terminar mi turno'}</button>
     </div>

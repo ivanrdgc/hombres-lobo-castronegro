@@ -80,6 +80,13 @@ await wolfPage.waitForSelector('text=/abandona la partida y muestra su carta/');
 ok('el abandono se anuncia en la crónica con el rol revelado');
 if (await leaverPage.isVisible('text=/Has abandonado la partida/')) ok('quien se va ve su aviso de abandono'); else bad('falta el aviso de abandono en su pantalla');
 
+// La tira de cartas marca las caídas ya reveladas (†)… y siguen siendo clicables.
+await wolfPage.waitForSelector('.rolechip:has-text("†")');
+await wolfPage.click('.rolechip:has-text("†") >> nth=0');
+await wolfPage.waitForSelector('text=Cómo se juega');
+ok('la tira marca las cartas caídas (†) y siguen abriendo su detalle');
+await wolfPage.click('button[data-a=close-modal]');
+
 // El narrador-altavoz ahora SIGUE la partida (parrilla + crónica) y puede terminarla.
 await ana.waitForSelector('text=El pueblo');
 ok('el dispositivo que no juega ve la parrilla del pueblo');
