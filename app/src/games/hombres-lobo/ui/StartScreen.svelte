@@ -7,7 +7,7 @@
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
   import { isActiveDevice } from '../../../core/sync/presence';
-  import { seatingOrder } from '../../../shell/ui-helpers';
+  import { defaultNarrator, seatingOrder } from '../../../shell/ui-helpers';
   import { seatInsertIndex } from '../../../core/util/seat-insert';
   import { wolfCountFor, OFFICIAL_MIN_PLAYERS, CASUAL_MIN_PLAYERS } from '../roles';
   import { unlockAudio } from '../../../core/audio/engine';
@@ -116,9 +116,16 @@
   let mode = $state<'auto' | 'guiado' | 'manual'>('auto');
 
   let narrPick = $state<string | null>(null);
-  const narrator = $derived(narrPick
-    ?? ((app.players.some((p) => p.id === group.lastNarratorId) ? group.lastNarratorId : meId) ?? null));
+  // Por defecto, el altavoz recordado SOLO si sigue activo: si su dispositivo
+  // duerme, la voz se mueve sola a este (que abre la pantalla y está activo).
+  const narrator = $derived(narrPick ?? defaultNarrator(app.players, group.lastNarratorId, meId, now0));
   const narratorP = $derived(app.players.find((p) => p.id === narrator));
+  // Aviso cuando la voz se ha movido por inactividad del altavoz anterior.
+  const displaced = $derived.by(() => {
+    if (narrPick) return null; // elección explícita: sin avisos
+    const rem = app.players.find((p) => p.id === group.lastNarratorId);
+    return rem && !isActiveDevice(rem, now0) && rem.id !== meId ? rem : null;
+  });
 
   // ——— Resumen y validación ———
   const chosen = $derived(rows.filter((p) => isSel(p)));
@@ -203,6 +210,9 @@
         </button>
       {/each}
     </div>
+    {#if displaced}
+      <p class="small-note">💤 <b>{displaced.name}</b> ponía la voz la última vez, pero su dispositivo está inactivo: la voz pasa a este. Si vuelve, tócalo arriba.</p>
+    {/if}
     <p class="small-note">
       {#if narratorP && isSel(narratorP)}🔊 <b>{narratorP.name}</b> pone la voz y también juega (mismo móvil).{:else if narratorP}🔊 <b>{narratorP.name}</b> solo pone la voz (tele o altavoz): no recibe carta.{/if}
       Mantened ese dispositivo con la pantalla encendida y volumen alto.
