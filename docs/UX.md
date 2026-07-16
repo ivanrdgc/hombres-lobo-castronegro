@@ -91,10 +91,12 @@ Una sola página, tres bloques y un botón:
 ### Abandonar la partida (nuevo)
 
 `leaveGame()`: marca `alive=false`, `causeOfDeath='abandono'`, log público
-«🚪 X abandona la partida y muestra su carta: era 🐺 Hombre Lobo.» Sin cadena
-de muerte (ni cazador, ni enamorado, ni sucesión de alguacil: si era alguacil,
-el cargo queda vacante). Limpia sus `pending` y, en auto/guiado, re-chequea el
-ganador. En manual no auto-termina (el narrador manda).
+«🚪 X abandona la partida y muestra su carta: era 🐺 Hombre Lobo.» — solo si
+la mesa juega con «revelar rol al morir»; con roles ocultos, la carta se queda
+boca abajo como en cualquier otra muerte. Sin cadena de muerte (ni cazador, ni
+enamorado, ni sucesión de alguacil: si era alguacil, el cargo queda vacante).
+Limpia sus `pending` y, en auto/guiado, re-chequea el ganador. En manual no
+auto-termina (el narrador manda).
 
 ### Ayuda de roles estructurada
 

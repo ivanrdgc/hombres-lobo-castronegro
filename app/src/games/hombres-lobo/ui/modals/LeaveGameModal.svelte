@@ -8,6 +8,8 @@
 
   const my = $derived(me());
   const r = $derived(my?.role ? ROLES[my.role] : null);
+  // Con roles ocultos al morir, el abandono tampoco revela la carta.
+  const reveals = $derived(app.group?.game?.revealDead !== false);
 
   function confirm() {
     app.ui.modal = null;
@@ -16,6 +18,6 @@
 </script>
 
 <h3>🚪 Abandonar la partida</h3>
-<p class="small-note">Tu carta se revelará a todo el pueblo{#if r} (eres <b>{r.emoji} {r.name}</b>){/if} y quedas fuera al instante, <b>sin efectos de última hora</b>: ni flecha del Cazador, ni muertes de pena. La partida sigue sin ti y no se puede volver a entrar.</p>
+<p class="small-note">{#if reveals}Tu carta se revelará a todo el pueblo{#if r} (eres <b>{r.emoji} {r.name}</b>){/if} y quedas{:else}Tu carta se queda boca abajo (la mesa juega con roles ocultos) y quedas{/if} fuera al instante, <b>sin efectos de última hora</b>: ni flecha del Cazador, ni muertes de pena. La partida sigue sin ti y no se puede volver a entrar.</p>
 <button class="danger block" data-a="leave-game-confirm" onclick={confirm}>🚪 Sí, abandono</button>
 <button class="ghost block" data-a="close-modal" onclick={() => (app.ui.modal = null)}>Sigo jugando</button>

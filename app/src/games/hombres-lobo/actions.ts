@@ -395,8 +395,13 @@ export async function leaveGame(): Promise<void> {
     const ps = inGamePlayers(players);
     const meP = ps.find((p) => p.id === myPid());
     if (!meP || meP.alive === false) return null;
+    // El abandono respeta el ajuste de la mesa: con «revelar rol al morir» se
+    // muestra la carta; con roles ocultos, se queda boca abajo como cualquier
+    // otra muerte.
     const def = meP.role ? ROLES[meP.role] : null;
-    game.log!.push({ kind: 'muerte', txt: `🚪 ${meP.name} abandona la partida y muestra su carta: era ${def ? `${def.emoji} ${def.name}` : 'un misterio'}.` });
+    game.log!.push({ kind: 'muerte', txt: game.revealDead !== false
+      ? `🚪 ${meP.name} abandona la partida y muestra su carta: era ${def ? `${def.emoji} ${def.name}` : 'un misterio'}.`
+      : `🚪 ${meP.name} abandona la partida. Su carta se queda boca abajo.` });
     meP.alive = false;
     meP.causeOfDeath = 'abandono';
     meP.deathAt = Date.now();

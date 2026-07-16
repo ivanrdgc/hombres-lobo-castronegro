@@ -26,14 +26,13 @@
   const open = (id: string) => (app.ui.modal = { type: 'role-detail', role: id });
 
   // Roles caídos PÚBLICAMENTE: solo se tacha lo que la mesa ya sabe — muertos
-  // con el rol anunciado (ajuste «revelar rol al morir») y abandonos (siempre
-  // se revelan). Con composición secreta o roles ocultos, ni una pista.
+  // (o abandonos) con el rol anunciado por el ajuste «revelar rol al morir».
+  // Con composición secreta o roles ocultos, ni una pista.
   const fallen = $derived.by(() => {
     const counts: Record<string, number> = {};
-    if (!pub) return counts;
+    if (!pub || !game.revealDead) return counts;
     for (const p of app.players) {
       if (!p.inGame || p.alive !== false || !p.role) continue;
-      if (!game.revealDead && p.causeOfDeath !== 'abandono') continue;
       counts[p.role] = (counts[p.role] || 0) + 1;
     }
     return counts;

@@ -73,7 +73,7 @@
     <PhaseChip {game} />
     <GameMenu {group} />
   </div>
-  {#if !my.alive && game.phase !== 'end' && my.inGame}<div class="flash">{my.causeOfDeath === 'abandono' ? '🚪 Has abandonado la partida: tu carta quedó revelada y el pueblo sigue sin ti.' : '💀 Has muerto. Sigue mirando en silencio… y no desveles nada.'}</div>{/if}
+  {#if !my.alive && game.phase !== 'end' && my.inGame}<div class="flash">{my.causeOfDeath === 'abandono' ? '🚪 Has abandonado la partida: el pueblo sigue sin ti.' : '💀 Has muerto. Sigue mirando en silencio… y no desveles nada.'}</div>{/if}
   <Flash />
   <NarratorPresence {group} />
   {#if game.paused && game.phase !== 'end'}
