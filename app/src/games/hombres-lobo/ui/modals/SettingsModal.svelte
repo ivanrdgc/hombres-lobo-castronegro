@@ -40,7 +40,7 @@
   <div class="btnrow" style="margin-top:8px">
     {#each [['rapido', '⚡ Rápido'], ['normal', '🌙 Normal'], ['teatral', '🎭 Teatral']] as [k, label] (k)}
       <button
-        class="small {((s.pacing as string) || 'normal') === k ? 'primary' : 'ghost'}"
+        class="small {((s.pacing as string) || 'teatral') === k ? 'primary' : 'ghost'}"
         style="flex:1;min-width:90px"
         data-a="set-pacing"
         data-p={k}

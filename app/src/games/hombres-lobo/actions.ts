@@ -50,6 +50,7 @@ export const DEFAULT_SETTINGS: TableSettings = {
   villagersCount: null, // null = los aldeanos rellenan los huecos libres
   videnteSoloBando: false, // la vidente solo ve si es lobo o no
   ocultarCausas: false, // no anunciar la causa de las muertes nocturnas
+  pacing: 'teatral', // ritmo por defecto: pausas amplias y guion con ambientación
 };
 
 // ——— Lobby ———

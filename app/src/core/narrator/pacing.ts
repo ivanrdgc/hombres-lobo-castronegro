@@ -53,8 +53,10 @@ export function pauseMs(key: PacingKey, profile: PacingProfile = 'normal', rnd: 
   return Math.round(e.scaled ? base * (PACING_PROFILES[profile] ?? 1) : base);
 }
 
+// Sin elección explícita, la mesa narra en TEATRAL (pausas amplias y guion
+// con ambientación): es la experiencia por defecto; rápido/normal se eligen.
 export function profileOf(raw: unknown): PacingProfile {
-  return raw === 'rapido' || raw === 'teatral' ? raw : 'normal';
+  return raw === 'rapido' || raw === 'normal' ? raw : 'teatral';
 }
 
 /**
@@ -68,5 +70,5 @@ export function profileOf(raw: unknown): PacingProfile {
 export type Density = 'min' | 'std' | 'max';
 
 export function narrationDensity(raw: unknown): Density {
-  return raw === 'rapido' ? 'min' : raw === 'teatral' ? 'max' : 'std';
+  return raw === 'rapido' ? 'min' : raw === 'normal' ? 'std' : 'max';
 }
