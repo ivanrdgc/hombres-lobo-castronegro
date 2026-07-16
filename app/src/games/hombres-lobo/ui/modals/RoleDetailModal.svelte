@@ -15,7 +15,9 @@
   const team = $derived(r ? TEAMS[r.team] : null);
 
   function close() {
-    app.ui.modal = back ? { type: back } : null;
+    // Devuelve también el scroll que tenía el modal de origen.
+    const scroll = app.ui.modal?.backScroll;
+    app.ui.modal = back ? { type: back, scroll } : null;
   }
 </script>
 

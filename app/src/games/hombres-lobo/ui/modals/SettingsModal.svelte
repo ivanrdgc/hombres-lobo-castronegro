@@ -30,15 +30,18 @@
     role="switch" aria-checked={!!s[row.k]} aria-label={row.name} tabindex="0"
     onkeydown={(e) => { if (e.key === 'Enter') toggleSetting(row.k); }}></div></div>
 {/each}
-<div class="settingrow">
+<!-- Ritmo: descripción a ancho completo y las opciones en su propia fila
+     (apretadas al lado del texto quedaban en columna y comían media pantalla). -->
+<div class="settingrow" style="display:block">
   <div class="sinfo">
     <div class="sname">🎚️ Ritmo del narrador</div>
     <div class="sdesc">Duración de las pausas de la voz entre pasos. Las esperas de disimulo no cambian nunca (no delatan nada).</div>
   </div>
-  <div class="btnrow" style="margin:0">
+  <div class="btnrow" style="margin-top:8px">
     {#each [['rapido', '⚡ Rápido'], ['normal', '🌙 Normal'], ['teatral', '🎭 Teatral']] as [k, label] (k)}
       <button
         class="small {((s.pacing as string) || 'normal') === k ? 'primary' : 'ghost'}"
+        style="flex:1;min-width:90px"
         data-a="set-pacing"
         data-p={k}
         onclick={() => guard(() => A.setSettings({ pacing: k as string }))}
