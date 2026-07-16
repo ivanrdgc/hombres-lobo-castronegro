@@ -1,18 +1,26 @@
 <script lang="ts">
-  // La mesa: usuarios y orden ya configurados; desde aquí se elige el juego
-  // (port de mesaScreen v1).
-  import { app } from '../core/sync/store.svelte';
+  // La mesa: SOLO personas (quién está, invitar, expulsar) y el catálogo de
+  // juegos. Quién juega, el orden y el narrador se eligen al empezar cada
+  // partida (pantalla «Empezar partida» del juego).
+  import { app, me } from '../core/sync/store.svelte';
   import { guard } from '../core/sync/guard';
   import * as A from '../games/hombres-lobo/actions';
+  import { isActiveDevice } from '../core/sync/presence';
   import { GAMES } from './ui-helpers';
   import type { GroupDoc, PlayerDoc } from '../core/sync/schema';
   import Flash from './Flash.svelte';
-  import DevicesCard from './DevicesCard.svelte';
 
   const { group }: { group: GroupDoc; my: PlayerDoc } = $props();
 
   const shareUrl = $derived(location.origin + '/g/' + group.id);
   let copied = $state(false);
+
+  // Presencia viva para el badge 💤.
+  let now = $state(Date.now());
+  $effect(() => {
+    const t = setInterval(() => (now = Date.now()), 10000);
+    return () => clearInterval(t);
+  });
 
   // Copia el enlace de la mesa (con fallback execCommand sobre #share-url).
   async function copyUrl() {
@@ -44,11 +52,26 @@
   </div>
 </div>
 <Flash />
-<DevicesCard group={group} />
 <div class="card">
-  <h3>🗣️ Configuración de voz</h3>
-  <p class="small-note">La voz se usa al narrar en automático y al leer la explicación del juego: configúrala en el dispositivo que hará de narrador.</p>
-  <button class="ghost block" data-a="voice-open" onclick={() => { app.ui.modal = { type: 'voice' }; app.ui.voiceTest = null; }}>🗣️ Configurar la voz de este dispositivo</button>
+  <h3>📱 Dispositivos ({app.players.length})</h3>
+  <div class="players">
+    {#each app.players as p (p.id)}
+      <div
+        class="player selectable"
+        data-a="player-menu"
+        data-p={p.id}
+        onclick={() => (app.ui.modal = { type: 'player-menu', pid: p.id })}
+        role="button"
+        tabindex="0"
+        onkeydown={(e) => { if (e.key === 'Enter') app.ui.modal = { type: 'player-menu', pid: p.id }; }}
+      >
+        <span class="pname">{p.name}</span>
+        {#if !isActiveDevice(p, now)}<span class="badge zz" title="Sin señales recientes de este dispositivo">💤</span>{/if}
+        {#if me() && p.id === me()!.id}<span class="badge you">Tú</span>{/if}
+      </div>
+    {/each}
+  </div>
+  <p class="small-note">Quién juega, el orden de la mesa y quién narra se eligen al empezar cada partida. Toca un dispositivo para expulsarlo.</p>
 </div>
 <div class="card">
   <h3>🎮 ¿A qué jugamos?</h3>
@@ -59,7 +82,7 @@
       <button class="primary block" data-a="select-game" data-p={j.id} onclick={() => { app.ui.lobbyView = 'game'; guard(() => A.selectGame(j.id)); }}>{j.emoji} Jugar a esto</button>
     </div>
   {/each}
-  <p class="small-note">Más juegos, próximamente… Cualquiera puede elegir: la mesa entera entra al juego con los usuarios y el orden ya puestos.</p>
+  <p class="small-note">Más juegos, próximamente… Cualquiera puede elegir: la mesa entera entra al juego.</p>
 </div>
 <div class="card">
   <button class="danger block" data-a="confirm-delete-group" onclick={() => (app.ui.modal = { type: 'confirm-delete' })}>🗑️ Eliminar la mesa</button>

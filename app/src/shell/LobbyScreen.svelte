@@ -6,13 +6,21 @@
   import { ROLES, wolfCountFor, OFFICIAL_MIN_PLAYERS } from '../games/hombres-lobo/roles';
   import { EXPLANATIONS } from '../games/hombres-lobo/texts/explain';
   import { explainAudioState, toggleExplainAudio } from './explain-audio';
+  import { isActiveDevice } from '../core/sync/presence';
   import type { GroupDoc, PlayerDoc } from '../core/sync/schema';
   import Flash from './Flash.svelte';
 
   const { group }: { group: GroupDoc; my: PlayerDoc } = $props();
 
   const extra = $derived(group.extraRoles || []);
-  const nJug = $derived(app.players.filter((p) => p.isPlayer !== false).length);
+  // Estimación de cuántos jugarán (los activos no excluidos): la selección
+  // definitiva se hace en la pantalla «Empezar partida».
+  let now = $state(Date.now());
+  $effect(() => {
+    const t = setInterval(() => (now = Date.now()), 10000);
+    return () => clearInterval(t);
+  });
+  const nJug = $derived(app.players.filter((p) => p.isPlayer !== false && isActiveDevice(p, now)).length);
   const wolvesFixed = $derived((group.settings || {}).wolvesCount || null);
   const lobos = $derived(Math.max(1, Math.min(Math.max(nJug - 1, 1), wolvesFixed || wolfCountFor(nJug || 1))));
   // Introducción ambientada, mostrada directamente en el lobby con lectura local.
@@ -42,7 +50,7 @@
 </div>
 <div class="card">
   <h3>🎴 Roles y configuración</h3>
-  <p class="small-note">Con {nJug} jugador{nJug === 1 ? '' : 'es'} marcado{nJug === 1 ? '' : 's'}: <b>{lobos} 🐺 lobo{lobos > 1 ? 's' : ''}</b>{wolvesFixed ? ' (fijado)' : ''}{#if (group.settings || {}).villagersCount != null}, <b>{(group.settings || {}).villagersCount} 🧑‍🌾</b> reservados{/if} y el resto según los roles activados (los huecos se rellenan con 🧑‍🌾 aldeanos; si sobran roles, se sortean). En guiado/manual el narrador no juega aunque esté marcado.</p>
+  <p class="small-note">Ahora mismo jugarían {nJug} (la selección definitiva se hace al empezar): <b>{lobos} 🐺 lobo{lobos > 1 ? 's' : ''}</b>{wolvesFixed ? ' (fijado)' : ''}{#if (group.settings || {}).villagersCount != null}, <b>{(group.settings || {}).villagersCount} 🧑‍🌾</b> reservados{/if} y el resto según los roles activados (los huecos se rellenan con 🧑‍🌾 aldeanos; si sobran roles, se sortean).</p>
   {#if nJug < OFFICIAL_MIN_PLAYERS && !(group.settings || {}).casual}<p class="small-note">⚠️ Las reglas oficiales piden de {OFFICIAL_MIN_PLAYERS} a 18 jugadores además del narrador. Para jugar con menos, activad el <b>modo casual</b> en los ajustes.</p>{/if}
   <div class="btnrow" style="margin-top:6px">
     {#if extra.length}{#each extra as r (r)}{#if ROLES[r]}<span class="chip">{ROLES[r].emoji} {ROLES[r].name}</span>{/if}{/each}{:else}<span class="chip">Solo lobos y aldeanos</span>{/if}{#if (group.settings || {}).alguacil}<span class="chip">⭐ Alguacil</span>{/if}
@@ -51,5 +59,5 @@
   <button class="block" data-a="open-settings" onclick={() => (app.ui.modal = { type: 'settings' })}>🔧 Ajustes de partida</button>
 </div>
 <div class="card">
-  <button class="primary block" data-a="open-start" onclick={() => (app.ui.modal = { type: 'start' })}>🎬 Empezar partida</button>
+  <button class="primary block" data-a="open-start" onclick={() => (app.ui.lobbyView = 'start')}>🎬 Empezar partida</button>
 </div>

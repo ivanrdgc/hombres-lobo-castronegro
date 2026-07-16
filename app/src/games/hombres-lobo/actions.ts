@@ -233,11 +233,14 @@ export async function makeMaster(pid: string): Promise<void> {
 
 // ——— Inicio y fin de partida ———
 
-// El máster (narrador) se decide AQUÍ, al arrancar:
+// El máster (narrador) y QUIÉNES juegan se deciden AQUÍ, al arrancar (pantalla
+// «Empezar partida»):
 //   auto            → narratorId es el dispositivo elegido para narrar
 //   manual / guiado → el máster es quien pulsa empezar (state.session.pid)
-// En todos los casos el máster narra y no recibe rol.
-export async function startGame(mode: 'auto' | 'manual' | 'guiado', narratorId?: string | null): Promise<void> {
+// playerIds es la selección explícita de quién recibe rol. En automático el
+// narrador puede además jugar (mismo móvil) o solo narrar (tele/altavoz); en
+// guiado/manual el narrador humano nunca juega.
+export async function startGame(mode: 'auto' | 'manual' | 'guiado', narratorId: string | null, playerIds: string[]): Promise<void> {
   const slug = mySlug();
   const ids = state.players.map((p) => p.id);
   await txWithRetry(async (tx) => {
@@ -248,10 +251,6 @@ export async function startGame(mode: 'auto' | 'manual' | 'guiado', narratorId?:
     const snaps = await Promise.all(ids.map((id) => tx.get(pref(slug, id))));
     const players = snaps.filter((s) => s.exists()).map((s) => ({ id: s.id, ...s.data() }) as PlayerDoc);
     if (!players.some((p) => p.id === masterId)) throw new Error('El narrador elegido ya no está en el grupo.');
-    // Solo juegan los dispositivos marcados como jugadores. En automático, el
-    // narrador puede además jugar (mismo móvil) o solo narrar (tele/altavoz);
-    // en guiado/manual el narrador humano nunca juega.
-    const isP = (p: PlayerDoc) => p.isPlayer !== false;
     // Orden de mesa: el guardado en el grupo manda; los nuevos se añaden al final.
     const savedSeating = Array.isArray(g.seating) ? g.seating : [];
     const seatOrder = savedSeating.filter((id) => players.some((p) => p.id === id))
@@ -259,13 +258,13 @@ export async function startGame(mode: 'auto' | 'manual' | 'guiado', narratorId?:
         .sort((a, b) => (a.order || 0) - (b.order || 0)).map((p) => p.id));
     const seatIdx = Object.fromEntries(seatOrder.map((id, i) => [id, i]));
     for (const p of players) p.order = seatIdx[p.id] ?? p.order;
-    const eligible = players.filter((p) => isP(p) && (mode === 'auto' || p.id !== masterId));
+    const eligible = players.filter((p) => playerIds.includes(p.id) && (mode === 'auto' || p.id !== masterId));
     const settings0 = g.settings || DEFAULT_SETTINGS;
     // Reglas oficiales: de 8 a 18 jugadores además del narrador.
     const minP = settings0.casual ? CASUAL_MIN_PLAYERS : OFFICIAL_MIN_PLAYERS;
     if (eligible.length < minP) {
       throw new Error(settings0.casual
-        ? `Hacen falta al menos ${CASUAL_MIN_PLAYERS} dispositivos marcados como jugadores.`
+        ? `Hacen falta al menos ${CASUAL_MIN_PLAYERS} jugadores seleccionados.`
         : `Las reglas oficiales piden al menos ${OFFICIAL_MIN_PLAYERS} jugadores. Puedes activar el «modo casual» en los ajustes para jugar desde ${CASUAL_MIN_PLAYERS}.`);
     }
 

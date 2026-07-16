@@ -15,7 +15,7 @@
   // digitales»; dentro del lobby o la partida de un juego, el nombre del juego.
   const currentGameName = $derived(GAMES.find((x) => x.id === app.group?.currentGame)?.name);
   const inGame = $derived(
-    !!app.group && (app.group.status === 'playing' || (app.ui.lobbyView ?? 'catalog') === 'game'),
+    !!app.group && (app.group.status === 'playing' || (app.ui.lobbyView ?? 'catalog') !== 'catalog'),
   );
   $effect(() => {
     document.title = inGame && currentGameName ? currentGameName : 'Juegos digitales';

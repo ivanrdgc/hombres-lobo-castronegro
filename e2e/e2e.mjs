@@ -138,24 +138,14 @@ try {
   await pages.bruno.waitForSelector('[data-a=open-roles]', { timeout: 45000 });
   ok('cada dispositivo entra al lobby de Castronegro cuando quiere');
 
-  // Narrador y dispositivos se gestionan en la MESA: Ana vuelve al catálogo.
+  // La mesa ya no gestiona narrador ni quién juega: eso vive en «Empezar partida».
   await ana.click('[data-a=change-game]');
   await ana.waitForSelector('text=¿A qué jugamos?');
-  await ana.waitForSelector('.player:has-text("Ana"):has-text("🔊 narrador")');
-  ok('el primer dispositivo (creador) es el narrador por defecto');
   await ana.click('.player[data-a=player-menu]:has-text("Ana")');
-  await ana.waitForSelector('text=Este dispositivo es el narrador');
-  check(!(await ana.isVisible('button[data-a=narrator-device]')), 'el narrador actual no puede «dejar de serlo», solo cambiarse');
+  check(!(await ana.isVisible('button[data-a=narrator-device]')) && !(await ana.isVisible('button[data-a=toggle-player]')),
+    'la mesa solo gestiona personas: sin narrador ni jugará/no jugará');
   await ana.click('button[data-a=close-modal]');
   await pace(ana);
-  await ana.click('.player[data-a=player-menu]:has-text("Bruno")');
-  await ana.click('button[data-a=narrator-device]');
-  await ana.waitForSelector('.player:has-text("Bruno"):has-text("🔊 narrador")');
-  ok('el narrador se cambia eligiendo a otro dispositivo');
-  await ana.click('.player[data-a=player-menu]:has-text("Ana")');
-  await ana.click('button[data-a=narrator-device]');
-  await ana.waitForSelector('.player:has-text("Ana"):has-text("🔊 narrador")');
-  ok('y vuelve a Ana para el resto de la batería');
   await ana.click('button[data-a=select-game]'); // Ana vuelve al lobby a configurar
   await ana.waitForSelector('[data-a=open-roles]');
   // La introducción ambientada está en el lobby, con botón de escucha local.
@@ -186,27 +176,32 @@ try {
 
   // ——— 6. Partida automática ———
   console.log('— Partida automática —');
-  // Ana narrará sin jugar: se desmarca como jugadora (en la mesa).
-  await ana.click('[data-a=change-game]');
-  await ana.waitForSelector('text=¿A qué jugamos?');
-  await ana.click('.player[data-a=player-menu]:has-text("Ana")');
-  await ana.click('button[data-a=toggle-player]');
-  await ana.waitForSelector('.player:has-text("Ana"):has-text("no juega")');
-  ok('Ana marcada como solo-narradora (se recuerda entre partidas)');
-  await ana.click('button[data-a=select-game]'); // de vuelta al lobby para empezar
-  await ana.waitForSelector('[data-a=open-start]');
-  // Reglas oficiales: con 4 jugadores no deja empezar sin modo casual.
+  // La pantalla «Empezar partida» concentra jugadores, orden, narrador y modo.
   await ana.click('[data-a=open-start]');
-  await ana.click('[data-a=start-auto]');
-  await ana.waitForSelector('text=/reglas oficiales piden al menos 8/i');
-  ok('mínimo oficial de 8 jugadores aplicado');
-  await ana.click('button[data-a=close-modal]');
+  await ana.waitForSelector('.player[data-a=start-player][data-p=p-ana].selected');
+  ok('empezar partida: los dispositivos activos vienen preseleccionados');
+  check(await ana.isVisible('button.primary[data-a=pick-narrator][data-p=p-ana]'), 'el narrador por defecto es el creador (chip elegido)');
+  await ana.click('button[data-a=pick-narrator][data-p=p-bruno]');
+  await ana.waitForSelector('button.primary[data-a=pick-narrator][data-p=p-bruno]');
+  await ana.click('button[data-a=pick-narrator][data-p=p-ana]');
+  await ana.waitForSelector('button.primary[data-a=pick-narrator][data-p=p-ana]');
+  ok('el narrador se cambia con chips en la propia pantalla');
+  // Ana narrará sin jugar: se toca a sí misma para quedar fuera.
+  await ana.click('.player[data-a=start-player][data-p=p-ana]');
+  await ana.waitForSelector('.player[data-a=start-player][data-p=p-ana].off');
+  ok('Ana marcada como solo-narradora (se recuerda para la próxima)');
+  // Reglas oficiales: con 4 jugadores el botón queda deshabilitado sin modo casual.
+  await ana.waitForSelector('text=/Mínimo 8 jugadores/');
+  check((await ana.locator('[data-a=start-auto][disabled]').count()) === 1, 'mínimo oficial de 8 jugadores aplicado (botón deshabilitado)');
+  await ana.click('[data-a=back-lobby-game]');
   await ana.click('[data-a=open-settings]');
   await ana.click('.switch[data-a=toggle-setting][data-p=casual]');
   await ana.waitForSelector('.switch.on[data-a=toggle-setting][data-p=casual]');
   await ana.click('button[data-a=close-modal]');
   ok('modo casual activado para jugar con menos de 8');
   await ana.click('[data-a=open-start]');
+  await ana.waitForSelector('.player[data-a=start-player][data-p=p-ana].off');
+  ok('la exclusión de Ana se recuerda al reabrir la pantalla');
   await ana.click('[data-a=start-auto]');
   await waitState(ana, (s) => s.status === 'playing' && s.phase === 'reveal', 'fase de reparto');
   ok('partida iniciada en modo automático');
@@ -314,7 +309,8 @@ try {
   await ana.click('[data-a=back-lobby]');
   // La página principal del grupo es la mesa: al volver de la partida caen ahí.
   await ana.waitForSelector('text=Dispositivos (5)');
-  check(await ana.isVisible('.player:has-text("Ana"):has-text("no juega")'), 'la marca de no-jugador se recuerda tras la partida');
+  const anaPref = await ana.evaluate(() => window.__hlc.players.find((p) => p.id === 'p-ana')?.isPlayer);
+  check(anaPref === false, 'la exclusión de Ana (no juega) se recuerda tras la partida');
   await pages.bruno.waitForSelector('[data-a=leave]');
   ok('vuelta a la mesa para todos');
 

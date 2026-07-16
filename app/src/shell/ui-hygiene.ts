@@ -43,7 +43,7 @@ export function installUiHygiene(): void {
     if (state.ui.modal && ['vote-confirm', 'view-roles', 'manual-player'].includes(state.ui.modal.type) === false
       && state.group && state.group.status === 'playing') {
       // los modales de lobby se cierran si empieza/acaba una partida
-      if (['roles', 'settings', 'start', 'player-menu'].includes(state.ui.modal.type)) state.ui.modal = null;
+      if (['roles', 'settings', 'player-menu'].includes(state.ui.modal.type)) state.ui.modal = null;
     }
   });
 

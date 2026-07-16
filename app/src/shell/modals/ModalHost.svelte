@@ -4,7 +4,6 @@
   import { app } from '../../core/sync/store.svelte';
   import RolesModal from './RolesModal.svelte';
   import SettingsModal from './SettingsModal.svelte';
-  import StartModal from './StartModal.svelte';
   import PlayerMenuModal from './PlayerMenuModal.svelte';
   import ConfirmLeaveModal from './ConfirmLeaveModal.svelte';
   import ConfirmDeleteModal from './ConfirmDeleteModal.svelte';
@@ -23,7 +22,6 @@
   const COMPONENTS: Record<string, unknown> = {
     roles: RolesModal,
     settings: SettingsModal,
-    start: StartModal,
     'player-menu': PlayerMenuModal,
     'confirm-leave': ConfirmLeaveModal,
     'confirm-delete': ConfirmDeleteModal,

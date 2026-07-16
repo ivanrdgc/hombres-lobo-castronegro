@@ -19,10 +19,8 @@ await ana.fill('#inp-name', 'Ana'); await ana.fill('#inp-group', GROUP);
 await ana.click('[data-a=create-group]'); await ana.waitForURL('**/g/**');
 const url = ana.url();
 for (const n of ['Bea', 'Coco', 'Dani']) { const p = await mk(n.toLowerCase()); await p.goto(url); await p.fill('#inp-name', n); await p.click('[data-a=join]'); await p.waitForSelector('text=/Dispositivos/'); }
-// Ana narra sin jugar.
-await ana.click('.player[data-a=player-menu]:has-text("Ana")');
-await ana.click('button[data-a=toggle-player]');
-await ana.waitForSelector('.player:has-text("Ana"):has-text("no juega")');
+// La mesa ya no tiene asas de arrastre: el orden se pone al empezar la partida.
+if ((await ana.locator('.draghandle').count()) === 0) ok('la mesa ya no reordena: el orden vive en «Empezar partida»'); else bad('la mesa sigue mostrando asas de arrastre');
 
 // El Zorro (rol de vecindad) avisa sobre el orden de la mesa dentro del modal de roles.
 await ana.click('button[data-a=select-game]');
@@ -37,15 +35,12 @@ await ana.click('[data-a=open-settings]');
 await ana.click('.switch[data-a=toggle-setting][data-p=casual]');
 await ana.waitForSelector('.switch.on[data-a=toggle-setting][data-p=casual]');
 await ana.click('button[data-a=close-modal]');
-// Empezar ya no pide confirmar el orden: aparecen los modos directamente.
-await ana.click('[data-a=open-start]');
-await ana.waitForSelector('[data-a=start-auto]');
-if ((await ana.locator('text=Orden de la mesa').count()) === 0) ok('activar un rol de vecindad ya NO fuerza confirmar el orden al empezar'); else bad('sigue apareciendo la confirmación de orden');
-await ana.click('button[data-a=close-modal]');
 
-// Reordenar arrastrando en la MESA: Bea baja al final de la lista.
-await ana.click('[data-a=change-game]');
+// Pantalla «Empezar partida»: Ana narra sin jugar y Bea baja al final arrastrando.
+await ana.click('[data-a=open-start]');
 await ana.waitForSelector('.players.seatable');
+await ana.click('.player[data-a=start-player][data-p=p-ana]');
+await ana.waitForSelector('.player[data-a=start-player][data-p=p-ana].off');
 await ana.locator('.draghandle[data-drag=p-bea]').hover();
 await ana.mouse.down();
 const list = await ana.locator('.players.seatable').boundingBox();
@@ -56,9 +51,6 @@ const s1 = await seating(ana);
 if (s1 && s1[s1.length - 1] === 'p-bea') ok('arrastrar el asa reordena y guarda el orden: ' + s1.join(',')); else bad('el arrastre no colocó a Bea al final: ' + JSON.stringify(s1));
 
 // Empezar: player.order sigue el orden de la mesa.
-await ana.click('button[data-a=select-game]');
-await ana.waitForSelector('[data-a=open-start]');
-await ana.click('[data-a=open-start]');
 await ana.click('[data-a=start-auto]');
 await ana.waitForSelector('text=Este dispositivo narra la partida', { timeout: 60000 });
 const o = await orders(ana);

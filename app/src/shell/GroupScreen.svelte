@@ -8,6 +8,7 @@
   import BlockedScreen from './BlockedScreen.svelte';
   import MesaScreen from './MesaScreen.svelte';
   import LobbyScreen from './LobbyScreen.svelte';
+  import StartScreen from '../games/hombres-lobo/ui/StartScreen.svelte';
   import AutoScreen from '../games/hombres-lobo/ui/AutoScreen.svelte';
   import ManualScreen from '../games/hombres-lobo/ui/ManualScreen.svelte';
   import GuidedScreen from '../games/hombres-lobo/ui/GuidedScreen.svelte';
@@ -36,7 +37,9 @@
     <JoinScreen group={g} />
   {/if}
 {:else if g.status === 'lobby'}
-  {#if lobbyView === 'game'}
+  {#if lobbyView === 'start'}
+    <StartScreen group={g} my={my} />
+  {:else if lobbyView === 'game'}
     <LobbyScreen group={g} my={my} />
   {:else}
     <MesaScreen group={g} my={my} />

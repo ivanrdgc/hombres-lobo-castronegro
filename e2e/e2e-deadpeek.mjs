@@ -25,9 +25,6 @@ for (const n of ['Bea', 'Coco', 'Dani', 'Enzo']) {
 }
 await ana.waitForSelector('text=Dispositivos (5)');
 // quitar los roles extra para tener solo 1 lobo + 2 aldeanos (muerte segura noche 1)
-await ana.click('.player[data-a=player-menu]:has-text("Ana")');
-await ana.click('button[data-a=toggle-player]');
-await ana.waitForSelector('.player:has-text("Ana"):has-text("no juega")');
 await ana.click('button[data-a=select-game]');
 await ana.waitForSelector('[data-a=open-roles]');
 await ana.click('[data-a=open-roles]');
@@ -39,6 +36,10 @@ await ana.click('.switch[data-a=toggle-setting][data-p=casual]');
 await ana.waitForSelector('.switch.on[data-a=toggle-setting][data-p=casual]');
 await ana.click('button[data-a=close-modal]');
 await ana.click('[data-a=open-start]');
+// Ana narra sin jugar: se excluye en la pantalla de empezar.
+await ana.waitForSelector('.player[data-a=start-player][data-p=p-ana].selected');
+await ana.click('.player[data-a=start-player][data-p=p-ana]');
+await ana.waitForSelector('.player[data-a=start-player][data-p=p-ana].off');
 await ana.click('[data-a=start-auto]');
 let st = await wait(ana, (s) => s.phase === 'reveal', 'reparto');
 for (const p of ['bea', 'coco', 'dani', 'enzo']) { await pages[p].waitForSelector('[data-a=open-reveal-role]'); await pages[p].click('[data-a=open-reveal-role]'); await pages[p].click('[data-a=confirm-role-seen]'); }

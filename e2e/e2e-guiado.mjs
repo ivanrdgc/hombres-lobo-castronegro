@@ -32,6 +32,7 @@ try {
   await ana.waitForSelector('.switch.on[data-a=toggle-setting][data-p=casual]');
   await ana.click('button[data-a=close-modal]');
   await ana.click('[data-a=open-start]');
+  await ana.click('[data-a=start-mode][data-p=guiado]'); // elige el modo guiado
   await ana.click('button[data-a=start-guided]');
   let st = await wait(ana, (s) => s.phase === 'reveal', 'reparto');
   ok('partida guiada iniciada');

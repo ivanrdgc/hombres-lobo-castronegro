@@ -146,6 +146,12 @@ button:disabled { opacity: 0.45; cursor: default; }
 .player .pname { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .badge { font-size: 0.7rem; background: var(--bg); border-radius: 6px; padding: 2px 6px; color: var(--accent); border: 1px solid var(--accent); }
 .badge.you { color: var(--ok); border-color: var(--ok); }
+.badge.zz { color: var(--muted); border-color: var(--border); }
+
+/* Pantalla «Empezar partida»: filas con marca de inclusión */
+.player .selmark { font-size: 1.05rem; }
+.player.off { opacity: 0.55; }
+.player.off .pname { color: var(--muted); }
 
 .rolecard {
   background: linear-gradient(160deg, color-mix(in srgb, var(--accent2) 22%, var(--bg-1)), color-mix(in srgb, var(--accent2) 6%, var(--bg-0)));
