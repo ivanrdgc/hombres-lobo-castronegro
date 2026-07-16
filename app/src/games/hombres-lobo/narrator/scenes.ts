@@ -4,7 +4,7 @@
 // contrato de disimulo (un ÚNICO programa sirve pasos reales, fantasma y sin
 // poder), sin sondeos y con los colchones en la tabla PACING.
 import type { SceneCtx, SceneDef } from '../../../core/narrator/sequencer';
-import { NAG_ESCALATE_COUNT } from '../../../core/narrator/pacing';
+import { NAG_ESCALATE_COUNT, narrationDensity } from '../../../core/narrator/pacing';
 import { prewarmSynth } from '../../../core/audio/clips';
 import type { GroupDoc, PlayerDoc, Session } from '../../../core/sync/schema';
 import * as A from '../actions';
@@ -30,6 +30,10 @@ export interface Snap {
 type Ctx = SceneCtx<Snap>;
 
 const inGame = (players: PlayerDoc[]) => players.filter((p) => p.inGame);
+
+// Densidad del guion según el perfil de ritmo de la mesa (settings.pacing):
+// teatral añade ambientación, rápido deja solo lo esencial.
+const den = (ctx: Ctx) => narrationDensity(ctx.state().group?.settings?.pacing);
 
 /** ¿Este dispositivo narra? (partida automática y masterId = mi sesión válida) */
 export function amNarrator(s: Snap): boolean {
@@ -141,7 +145,7 @@ async function endScene(ctx: Ctx): Promise<void> {
   // de la noche; solo después se proclama la victoria. Si algo salvó a la
   // víctima, no se llega a esta escena: la noche resolvió que no había ganador.
   // (sayOnce se salta el amanecer si ya se narró: fin por linchamiento de día.)
-  if (game.lastDawn) await ctx.sayOnce(`d${game.dayNum}:dawn`, () => dawnUtterance(g(ctx)));
+  if (game.lastDawn) await ctx.sayOnce(`d${game.dayNum}:dawn`, () => dawnUtterance(g(ctx), den(ctx)));
   await announceShot(ctx);
   await ctx.sayOnce(`end:${game.winner}`, () => finUtterance(g(ctx)));
 }
@@ -180,7 +184,7 @@ async function nightStepScene(ctx: Ctx, stepId: StepId, stepIdx: number): Promis
   const uid = (part: string) => `n${game0.night}:s${stepIdx}:${stepId}:rf${game0.refreshNonce || 0}:${part}`;
 
   if (stepIdx === 0) {
-    await ctx.sayOnce(`n${game0.night}:cae`, () => nocheCaeUtterance(game0));
+    await ctx.sayOnce(`n${game0.night}:cae`, () => nocheCaeUtterance(game0, den(ctx)));
     prewarmNightTexts(game0, ps(ctx), game0.night);
   }
 
@@ -257,7 +261,7 @@ async function nightStepScene(ctx: Ctx, stepId: StepId, stepIdx: number): Promis
         return;
       }
     }
-    const ou = outroUtterance(g(ctx), stepId);
+    const ou = outroUtterance(g(ctx), stepId, den(ctx));
     if (ou) await ctx.sayOnce(uid('outro'), () => ou);
     await ctx.pause('advanceGap');
     await A.advanceGhostStep(stepIdx);
@@ -268,7 +272,7 @@ async function nightStepScene(ctx: Ctx, stepId: StepId, stepIdx: number): Promis
   if (stepId === 'infecto_decision') {
     await ctx.waitFor((s) => !actorsPending(stepId, g(ctx), inGame(s.players)));
     await ctx.pause('deadSkip');
-    const ou = outroUtterance(g(ctx), stepId);
+    const ou = outroUtterance(g(ctx), stepId, den(ctx));
     if (ou) await ctx.sayOnce(uid('outro'), () => ou);
     await ctx.pause('advanceGap');
     await A.advanceGhostStep(stepIdx);
@@ -293,10 +297,10 @@ async function nightStepScene(ctx: Ctx, stepId: StepId, stepIdx: number): Promis
         prewarmSynth(kwTexts(kws));
         await ctx.sayOnce(uid('call'), () => enamoradosCallUtterance(uid('call'), kws));
       } else {
-        await ctx.sayOnce(uid('intro'), () => introUtterance(game, stepId));
+        await ctx.sayOnce(uid('intro'), () => introUtterance(game, stepId, den(ctx)));
       }
     } else {
-      await ctx.sayOnce(uid('intro'), () => introUtterance(game, stepId));
+      await ctx.sayOnce(uid('intro'), () => introUtterance(game, stepId, den(ctx)));
     }
     // Mientras esperan, adelanta la despedida de este paso y la entrada del siguiente.
     const nextId = game.steps[stepIdx + 1];
@@ -310,7 +314,7 @@ async function nightStepScene(ctx: Ctx, stepId: StepId, stepIdx: number): Promis
       nagKey: uid('nags'),
       escalateAfter: NAG_ESCALATE_COUNT,
       nag: (n) => nagUtterance(g(ctx), ctx.state().players, stepId, n),
-      filler: fillerUtterance(game, stepId),
+      filler: fillerUtterance(game, stepId, den(ctx)),
     });
     if (res === 'escalate') {
       await A.startRoleRefresh();
@@ -341,7 +345,7 @@ async function nightStepScene(ctx: Ctx, stepId: StepId, stepIdx: number): Promis
         await ctx.pause('outroKnown'); // enamorados ya confirmados (o sin pareja)
       }
     } else if (ghost) {
-      await ctx.sayOnce(uid('intro'), () => introUtterance(game, stepId));
+      await ctx.sayOnce(uid('intro'), () => introUtterance(game, stepId, den(ctx)));
       await ctx.pause('postActionHold');
     } else if (['lobos_reconocen', 'lobos'].includes(stepId)) {
       await ctx.pause('outroKnown'); // paso vivo ya completado
@@ -353,7 +357,7 @@ async function nightStepScene(ctx: Ctx, stepId: StepId, stepIdx: number): Promis
     }
   }
 
-  const ou = outroUtterance(g(ctx), stepId);
+  const ou = outroUtterance(g(ctx), stepId, den(ctx));
   if (ou) await ctx.sayOnce(uid('outro'), () => ou);
   await ctx.pause('advanceGap');
   await A.advanceGhostStep(stepIdx);
@@ -371,7 +375,7 @@ async function announceShot(ctx: Ctx): Promise<void> {
 
 async function dayPendingScene(ctx: Ctx, pKey: string): Promise<void> {
   const game = g(ctx);
-  await ctx.sayOnce(`d${game.dayNum}:dawn`, () => dawnUtterance(g(ctx)));
+  await ctx.sayOnce(`d${game.dayNum}:dawn`, () => dawnUtterance(g(ctx), den(ctx)));
   await announceShot(ctx); // si una flecha en cadena mató antes de este pendiente
   const head = (g(ctx).pending || [])[0];
   if (!head) return;
@@ -387,14 +391,14 @@ async function dayPendingScene(ctx: Ctx, pKey: string): Promise<void> {
 
 async function dayDebateScene(ctx: Ctx, withJuez: boolean): Promise<void> {
   const game = g(ctx);
-  await ctx.sayOnce(`d${game.dayNum}:dawn`, () => dawnUtterance(g(ctx)));
+  await ctx.sayOnce(`d${game.dayNum}:dawn`, () => dawnUtterance(g(ctx), den(ctx)));
   await announceShot(ctx); // el Cazador murió de noche y ya disparó → víctima antes del debate
-  await ctx.sayOnce(`d${game.dayNum}:debate:${game.votesLeft}${withJuez ? ':juez' : ''}`, () => debateUtterance(g(ctx), withJuez));
+  await ctx.sayOnce(`d${game.dayNum}:debate:${game.votesLeft}${withJuez ? ':juez' : ''}`, () => debateUtterance(g(ctx), withJuez, den(ctx)));
 }
 
 async function dayOcasoScene(ctx: Ctx): Promise<void> {
   const game = g(ctx);
-  await ctx.sayOnce(`d${game.dayNum}:dawn`, () => dawnUtterance(g(ctx)));
+  await ctx.sayOnce(`d${game.dayNum}:dawn`, () => dawnUtterance(g(ctx), den(ctx)));
   await ctx.sayOnce(`d${game.dayNum}:ocaso`, () => ocasoUtterance(g(ctx)));
   await announceShot(ctx); // el Cazador linchado disparó → «X era el Cazador. La flecha alcanza a Y…»
 }

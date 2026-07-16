@@ -56,3 +56,17 @@ export function pauseMs(key: PacingKey, profile: PacingProfile = 'normal', rnd: 
 export function profileOf(raw: unknown): PacingProfile {
   return raw === 'rapido' || raw === 'teatral' ? raw : 'normal';
 }
+
+/**
+ * Densidad del GUION según el perfil: además de las pausas, el ritmo controla
+ * cuánta narración suena. 'max' (teatral) añade ambientación y dramatiza las
+ * llamadas; 'min' (rápido) recorta improvisaciones y coletillas y deja solo lo
+ * esencial; 'std' (normal) es la salida clásica, bit-idéntica a la v1.
+ * Los añadidos/recortes solo dependen de semilla y paso: NUNCA de quién viva
+ * o actúe (anti-pistas), y jamás tocan las llamadas por palabra clave.
+ */
+export type Density = 'min' | 'std' | 'max';
+
+export function narrationDensity(raw: unknown): Density {
+  return raw === 'rapido' ? 'min' : raw === 'teatral' ? 'max' : 'std';
+}

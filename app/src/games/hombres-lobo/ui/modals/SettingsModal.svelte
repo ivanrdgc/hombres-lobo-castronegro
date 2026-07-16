@@ -35,7 +35,7 @@
 <div class="settingrow" style="display:block">
   <div class="sinfo">
     <div class="sname">🎚️ Ritmo del narrador</div>
-    <div class="sdesc">Duración de las pausas de la voz entre pasos. Las esperas de disimulo no cambian nunca (no delatan nada).</div>
+    <div class="sdesc">Pausas Y cantidad de narración. ⚡ Rápido: pausas cortas y solo lo esencial. 🎭 Teatral: pausas amplias, más ambientación y llamadas dramatizadas. Las esperas de disimulo no cambian nunca (no delatan nada).</div>
   </div>
   <div class="btnrow" style="margin-top:8px">
     {#each [['rapido', '⚡ Rápido'], ['normal', '🌙 Normal'], ['teatral', '🎭 Teatral']] as [k, label] (k)}

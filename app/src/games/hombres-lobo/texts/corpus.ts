@@ -752,6 +752,128 @@ export const IMPROV: Record<string, string[]> = {
   ],
 };
 
+// ————————————————————————————————————————————————————————————————————————
+// Dramatizaciones del perfil TEATRAL (settings.pacing = 'teatral'): una
+// pincelada exagerada ANTES de la llamada de cada paso. Solo dependen de la
+// semilla y del paso — jamás de quién viva o actúe (anti-pistas) — y suenan
+// idénticas en pasos reales y fantasma. El perfil rápido hace lo contrario:
+// compose.ts recorta improvisaciones y coletillas y deja solo lo esencial.
+// ————————————————————————————————————————————————————————————————————————
+export const DRAMA: Record<string, string[]> = {
+  ladron: [
+    'Dos cartas huérfanas esperan sobre la mesa del destino… y unos dedos largos las miran de reojo.',
+    'En la posada hay quien nunca paga. Esta noche, quizá, tampoco conserve su nombre.',
+    'Cruje el suelo junto al arcón de las cartas. Qué casualidad.',
+  ],
+  cupido: [
+    'Un arquero regordete afina la puntería entre las chimeneas. Nadie está a salvo del amor.',
+    'Esta noche dos corazones quedarán cosidos con el mismo hilo… para quererse o para condenarse juntos.',
+    'Se oye afinar un violín invisible: el amor está a punto de cometer una de las suyas.',
+  ],
+  enamorados: [
+    'El aire huele de pronto a rosas… y a tragedia anunciada.',
+    'Dos destinos acaban de anudarse en la oscuridad. Y los nudos de Castronegro no se deshacen.',
+    'Hay suspiros flotando sobre la plaza. Que nadie pregunte de quién son.',
+  ],
+  nino_salvaje: [
+    'Entre los matorrales, unos ojos pequeños y salvajes buscan a quién parecerse.',
+    'Dicen que lo criaron los lobos… y que aún no ha decidido a quién quiere de familia.',
+    'Pisadas descalzas rodean el pueblo: el pequeño salvaje husmea su futuro.',
+  ],
+  perro_lobo: [
+    'En el establo, algo gruñe con dos voces distintas: una pide caricias, la otra pide luna.',
+    'Un animal fiel se mira esta noche en el agua del arroyo… y duda de su reflejo.',
+    'Cadena o bosque, hogar o manada: hay decisiones que solo se toman a oscuras.',
+  ],
+  dos_hermanas: [
+    'Dos cunas mecidas por la misma mano; dos secretos con la misma sangre.',
+    'En Castronegro hasta los lazos de familia se anudan a escondidas.',
+    'Esta noche dos miradas se buscarán en la oscuridad como velas gemelas.',
+  ],
+  tres_hermanos: [
+    'Tres sillas en la misma mesa, tres sombras del mismo apellido.',
+    'La sangre llama a la sangre… y esta noche llama tres veces.',
+    'Dicen que su madre los distinguía por el ronquido. Esta noche tendrán que reconocerse con menos.',
+  ],
+  actor: [
+    'Entre bambalinas invisibles, alguien elige máscara: ¿la del ojo que todo lo ve, la del escudo o la del pico negro?',
+    'El telón de la noche se alza para un intérprete de mil caras.',
+    'Se oye aplaudir a nadie: el teatro de Castronegro abre función secreta.',
+  ],
+  defensor: [
+    'Una armadura camina de puntillas entre las casas, eligiendo qué puerta guardar del zarpazo.',
+    'El acero de un escudo brilla un instante bajo la luna: alguien velará el sueño de un vecino.',
+    'Esta noche una puerta tendrá dos cerrojos: el suyo… y una sombra con escudo.',
+  ],
+  vidente: [
+    'Una bola de cristal se enciende sola en algún desván, y el futuro se arrima a mirar.',
+    'Los posos del café dibujan colmillos esta noche… o quizá margaritas. Alguien va a salir de dudas.',
+    'Un tercer ojo se abre en la oscuridad y el velo de los secretos tiembla.',
+  ],
+  zorro: [
+    'Un hocico astuto olisquea el aire: huele a pan, a humo… ¿y a lobo?',
+    'Una cola roja se desliza entre tres casas dormidas sin que ninguna se entere.',
+    'Los gallineros contienen la respiración: el zorro está de ronda, pero hoy no busca plumas.',
+  ],
+  cuervo: [
+    'Un aleteo negro sobrevuela los tejados buscando dónde soltar su graznido acusador.',
+    'El pájaro de mal agüero afila el pico contra la veleta: mañana alguien amanecerá señalado.',
+    'Dos ojos de azabache eligen tejado esta noche… y no traen buenas noticias.',
+  ],
+  lobos_reconocen: [
+    'Bajo la luna, las bestias alzan la cabeza y se cuentan los colmillos unas a otras.',
+    'La manada se huele, se mide… y se sonríe con demasiados dientes.',
+    'Los ojos amarillos se encienden de dos en dos, como farolas del infierno.',
+  ],
+  lobos: [
+    'Se oyen pasos blandos sobre los tejados, y un aliento que empaña los cristales.',
+    'Un aullido largo raja la noche en dos. Las velas se apagan solas.',
+    'Garras pacientes arañan la madera, puerta por puerta, como quien elige fruta en el mercado.',
+  ],
+  lobo_feroz: [
+    'La bestia grande no se conforma: su estómago ruge más fuerte que la tormenta.',
+    'Hay hambres que no se sacian con una sola cena. Esta es de esas.',
+    'El suelo tiembla bajo unas zarpas del tamaño de palas.',
+  ],
+  lobo_albino: [
+    'Un pelaje blanco cruza el cementerio como una luna caída… y hambrienta.',
+    'Entre las bestias también hay traiciones: la más pálida afila hoy los dientes.',
+    'La nieve no es lo único blanco que se mueve esta noche.',
+  ],
+  bruja: [
+    'En la choza torcida hierve el caldero: burbujea la vida en un frasco y la muerte en el otro.',
+    'Huele a azufre, a romero y a decisiones difíciles.',
+    'Dos redomas tintinean en la oscuridad: una brilla dorada; la otra, mejor no probarla.',
+  ],
+  gaitero: [
+    'Una melodía imposible se cuela por las rendijas, y los sueños empiezan a bailar sin permiso.',
+    'El músico maldito pasea su tonada: quien la oiga de cerca ya no querrá oír otra cosa.',
+    'Las notas trepan por las ventanas como enredaderas: dulces, pegajosas, imposibles de arrancar.',
+  ],
+  encantados: [
+    'La música ya tiene dueños nuevos: sus pies se moverán solos aunque no quieran.',
+    'Alguien más tararea dormido una canción que ayer no conocía.',
+    'El hechizo se enrosca en los oídos elegidos como un gato junto al fuego.',
+  ],
+  gitana: [
+    'Las cartas se barajan solas y los espíritus carraspean, listos para el interrogatorio.',
+    'Un velo se descorre entre este mundo y el otro: los muertos escuchan.',
+    'Huele a incienso y a secretos rancios: esta noche el más allá responde preguntas.',
+  ],
+  amanecer: [
+    'El gallo canta con un hilo de voz, como pidiendo perdón por despertar a nadie.',
+    'La primera luz se asoma con miedo por encima del bosque, contando tejados.',
+    'La escarcha brilla sobre la plaza como mil ojos pequeños que lo vieron todo.',
+  ],
+};
+
+/** Dramatización teatral del paso (o '' si no tiene): estable por sal. */
+export function drama(stepId: string, salt = ''): string {
+  const v = DRAMA[stepId] || [];
+  if (!v.length) return '';
+  return v[hashStr('drama|' + stepId + '|' + salt) % v.length];
+}
+
 // En la v2 las improvisaciones también se eligen de forma determinista cuando
 // hay sal (así son pre-generables y estables al repetir); sin sal, al azar
 // como en la v1.
@@ -1161,6 +1283,7 @@ export function allStaticPieces(): StaticPiece[] {
   for (const [key, list] of Object.entries(NAGS)) for (const t of list) push('nag:' + key, t);
   for (const t of NAG_GENERIC) push('nag:generic', t);
   for (const [key, list] of Object.entries(IMPROV)) for (const t of list) push('improv:' + key, t);
+  for (const [key, list] of Object.entries(DRAMA)) for (const t of list) push('drama:' + key, t);
   for (const t of [
     ENAMORADOS_INTRO, ENAMORADOS_TAIL, ENC_FRAME, ENCANTADOS_TAIL, KW_LEAD,
     ABRID_OJOS, REFRESH_OPEN, REFRESH_CLOSE, KW_NOTE, VOICE_TEST_LINE, UNLOCK_LINE, VOICE_ON_LINE,

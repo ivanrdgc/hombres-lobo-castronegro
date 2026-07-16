@@ -7,9 +7,10 @@
 import type { Segment, Utterance } from '../../../core/audio/player';
 import {
   ABRID_OJOS, ENAMORADOS_INTRO, ENAMORADOS_TAIL, ENC_FRAME, ENCANTADOS_TAIL, KW_LEAD, LISTOS,
-  NAG_GENERIC, NAGS, REFRESH_CLOSE, REFRESH_OPEN, aaNote, deathLine, hashStr, hunterKillLine, improv, kwClip,
+  NAG_GENERIC, NAGS, REFRESH_CLOSE, REFRESH_OPEN, aaNote, deathLine, drama, hashStr, hunterKillLine, improv, kwClip,
   loveDeathLine, lynchNote, narr, narrParts, nagEnamoradosKw, nagEncantadosKw, outro, outroParts, KW_NOTE,
 } from '../texts/corpus';
+import type { Density } from '../../../core/narrator/pacing';
 import { ROLES } from '../roles';
 import { WINNER_LABELS } from '../engine';
 import type { GameState, StepId } from '../types';
@@ -37,8 +38,15 @@ export function introParts(game: GameState, stepId: StepId): string[] {
   return narrParts(stepId, stepSalt(game, stepId));
 }
 
-export function introUtterance(game: GameState, stepId: StepId): Utterance {
-  return fromParts(`n${game.night}:s${game.stepIdx}:${stepId}:intro`, introParts(game, stepId));
+// La densidad del guion la marca el perfil de ritmo: 'max' (teatral) antepone
+// una dramatización del paso; 'min' (rápido) deja la llamada esencial tal cual.
+export function introUtterance(game: GameState, stepId: StepId, density: Density = 'std'): Utterance {
+  const parts = introParts(game, stepId);
+  if (density === 'max') {
+    const d = drama(stepId, stepSalt(game, stepId));
+    if (d) return fromParts(`n${game.night}:s${game.stepIdx}:${stepId}:intro`, [d, ...parts]);
+  }
+  return fromParts(`n${game.night}:s${game.stepIdx}:${stepId}:intro`, parts);
 }
 
 // Despedida del paso («…vuelve a cerrar los ojos») + coletilla. Se dice
@@ -49,15 +57,19 @@ export function outroText(game: GameState, stepId: StepId): string | null {
   return outro(stepId, outroSalt(game));
 }
 
-export function outroUtterance(game: GameState, stepId: StepId): Utterance | null {
+export function outroUtterance(game: GameState, stepId: StepId, density: Density = 'std'): Utterance | null {
   if (stepId === 'lobos' && game.steps[game.stepIdx + 1] === 'infecto_decision') return null;
   const parts = outroParts(stepId, outroSalt(game));
   if (!parts) return null;
-  return fromParts(`n${game.night}:s${game.stepIdx}:${stepId}:outro`, parts);
+  // Rápido: la despedida esencial, sin coletilla.
+  return fromParts(`n${game.night}:s${game.stepIdx}:${stepId}:outro`, density === 'min' ? parts.slice(0, 1) : parts);
 }
 
-export function nocheCaeUtterance(game: GameState): Utterance {
-  return fromParts(`n${game.night}:cae`, narrParts('noche_cae', `${game.seed}:n${game.night}`));
+export function nocheCaeUtterance(game: GameState, density: Density = 'std'): Utterance {
+  const parts = narrParts('noche_cae', `${game.seed}:n${game.night}`);
+  // Teatral: la noche cae con una pincelada ambiental extra.
+  if (density === 'max') parts.push(improv('noche', `${game.seed}:n${game.night}`));
+  return fromParts(`n${game.night}:cae`, parts);
 }
 
 export function bienvenidaUtterance(game: GameState, players: PlayerDoc[]): Utterance {
@@ -101,17 +113,20 @@ export function encantadosCallUtterance(game: GameState, id: string, kws: string
 }
 
 /** Amanecer: marco fijo + parte de muertes (nombres en vivo) + anuncios. */
-export function dawnUtterance(game: GameState): Utterance {
+export function dawnUtterance(game: GameState, density: Density = 'std'): Utterance {
   const salt = `${game.seed}:d${game.dayNum}`;
   const deaths = game.lastDawn?.deaths || [];
   const parts: Segment[] = [clip(ABRID_OJOS)];
+  // Teatral: el alba también se dramatiza.
+  if (density === 'max') parts.push(clip(drama('amanecer', salt)));
   const kind = deaths.length ? 'amanecer_con_muertes' : 'amanecer_sin_muertes';
   for (const p of narrParts(kind, salt)) parts.push(clip(p));
   for (const d of deaths) parts.push(clip(deathLine(d.name, d.role, salt)));
   if (game.lastDawn?.cuervo) parts.push(clip(game.lastDawn.cuervo));
   if (game.lastDawn?.oso) parts.push(clip(game.lastDawn.oso));
   if (game.lastDawn?.gitana) parts.push(clip(game.lastDawn.gitana));
-  if (hashStr('impAm|' + salt) % 2 === 0) parts.push(clip(improv('amanecer', salt)));
+  // Improvisación matinal: siempre en teatral, a veces en normal, nunca en rápido.
+  if (density === 'max' || (density === 'std' && hashStr('impAm|' + salt) % 2 === 0)) parts.push(clip(improv('amanecer', salt)));
   return {
     id: `d${game.dayNum}:dawn`,
     segments: parts,
@@ -130,13 +145,14 @@ export function dawnDynamicTexts(game: GameState): string[] {
   return out;
 }
 
-export function debateUtterance(game: GameState, withJuez: boolean): Utterance {
+export function debateUtterance(game: GameState, withJuez: boolean, density: Density = 'std'): Utterance {
   const vKey = `d${game.dayNum}:debate:${game.votesLeft}`;
   const kind = (game.lastDawn?.deaths || []).length ? 'dia_debate' : 'dia_debate_tranquilo';
   const parts: Segment[] = [];
   if (withJuez) for (const p of narrParts('juez_segunda', `${game.seed}:${vKey}`)) parts.push(clip(p));
   for (const p of narrParts(kind, `${game.seed}:d${game.dayNum}:${game.votesLeft}`)) parts.push(clip(p));
-  if (hashStr('impDeb|' + vKey) % 5 < 2) parts.push(clip(improv('debate', `${game.seed}:${vKey}`)));
+  // Cotilleos del debate: siempre en teatral, a veces en normal, nunca en rápido.
+  if (density === 'max' || (density === 'std' && hashStr('impDeb|' + vKey) % 5 < 2)) parts.push(clip(improv('debate', `${game.seed}:${vKey}`)));
   return {
     id: vKey + (withJuez ? ':juez' : ''),
     segments: parts,
@@ -224,10 +240,12 @@ export function nagUtterance(game: GameState, players: PlayerDoc[], nagId: strin
   return { id: `nag:${nagId}:${n}`, segments: [clip(text)], display: text, priority: 'low' };
 }
 
-export function fillerUtterance(game: GameState, stepId: string): Utterance | null {
+export function fillerUtterance(game: GameState, stepId: string, density: Density = 'std'): Utterance | null {
   // A veces, un murmullo ambiental antes del primer aviso (despista y ambienta).
+  // Rápido: nunca; normal: ~30%; teatral: ~60%.
+  if (density === 'min') return null;
   const salt = `${game.seed}:n${game.night}:s${game.stepIdx}:${stepId}`;
-  if (hashStr('filler|' + salt) % 10 >= 3) return null; // ~30%
+  if (hashStr('filler|' + salt) % 10 >= (density === 'max' ? 6 : 3)) return null;
   const t = improv('relleno', salt);
   return { id: `filler:${salt}`, segments: [clip(t)], display: t, priority: 'low' };
 }

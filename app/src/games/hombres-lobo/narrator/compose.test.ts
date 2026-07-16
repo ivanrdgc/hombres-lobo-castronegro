@@ -42,3 +42,36 @@ test('shotUtterance: anuncia toda la cadena de la flecha (p. ej. enamorado que m
   expect(u.display).toMatch(/Beto/);
   expect(u.display).toMatch(/Ana/);
 });
+
+// ——— Densidad del guion por perfil de ritmo (rápido/normal/teatral) ———
+import { introUtterance, outroUtterance, nocheCaeUtterance, fillerUtterance } from './compose';
+import { DRAMA, IMPROV } from '../texts/corpus';
+
+test('densidad: teatral antepone una dramatización del paso; normal queda intacto', () => {
+  const game = mkGame({ night: 1, stepIdx: 2, steps: ['durmiendo', 'lobos_reconocen', 'vidente'] as GameState['steps'] });
+  const std = introUtterance(game, 'vidente');
+  const max = introUtterance(game, 'vidente', 'max');
+  expect(max.display.endsWith(std.display)).toBe(true); // solo añade DELANTE
+  expect(DRAMA.vidente.some((d) => max.display.startsWith(d))).toBe(true);
+  // La dramatización no depende de quién viva: misma para el mismo paso y sal.
+  expect(introUtterance(game, 'vidente', 'max').display).toBe(max.display);
+});
+
+test('densidad: rápido deja la despedida esencial (sin coletilla) y sin rellenos', () => {
+  const game = mkGame({ night: 1, stepIdx: 2, steps: ['durmiendo', 'lobos_reconocen', 'vidente'] as GameState['steps'] });
+  const std = outroUtterance(game, 'vidente')!;
+  const min = outroUtterance(game, 'vidente', 'min')!;
+  expect(min.segments.length).toBe(1);
+  expect(std.display.startsWith(min.display)).toBe(true);
+  expect(fillerUtterance(game, 'vidente', 'min')).toBeNull();
+});
+
+test('densidad: teatral añade ambientación a la caída de la noche', () => {
+  const game = mkGame({ night: 2 });
+  const std = nocheCaeUtterance(game);
+  const max = nocheCaeUtterance(game, 'max');
+  expect(max.segments.length).toBe(std.segments.length + 1);
+  const last = max.segments[max.segments.length - 1];
+  expect(last.kind).toBe('clip');
+  expect(IMPROV.noche).toContain((last as { kind: 'clip'; text: string }).text);
+});
