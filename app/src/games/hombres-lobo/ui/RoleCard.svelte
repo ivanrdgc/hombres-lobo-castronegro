@@ -4,6 +4,7 @@
   // a los 12 s: los móviles quedan boca arriba sobre la mesa.
   import { app } from '../../../core/sync/store.svelte';
   import { ROLES, TEAMS, isWolfSide } from '../roles';
+  import { ROLE_HELP } from '../texts/role-help';
   import type { RoleId } from '../roles';
   import type { GroupDoc, PlayerDoc } from '../../../core/sync/schema';
   import type { GameState } from '../types';
@@ -12,6 +13,7 @@
 
   const game = $derived<Partial<GameState>>(group.game || {});
   const r = $derived(player.role ? ROLES[player.role] : null);
+  const help = $derived(player.role ? ROLE_HELP[player.role] : null);
   const team = $derived.by(() => {
     if (!r || !player.role) return null;
     return player.role === 'perro_lobo' && player.wolfSide
@@ -58,8 +60,18 @@
       <span class="rname">{r.name}</span>
       <div class="rteam">{team.emoji} Bando: {team.name}</div>
       <div class="rdesc">{r.desc}</div>
+      {#if help}
+        <div class="rhow"><b>🧭 Qué harás</b>
+          <ol>{#each help.steps as s, i (i)}<li>{s}</li>{/each}</ol>
+        </div>
+      {/if}
       {#if player.keyword}
-        <div class="rextra">🔑 Tu palabra clave{#if player.kwRenewedNight != null} <b>se RENOVÓ la noche {player.kwRenewedNight}</b> (la anterior ya se pronunció). Ahora es{/if}: <b>{player.keyword}</b>. Si el narrador la pronuncia, el mensaje va por ti: abre los ojos con disimulo y mira tu pantalla.</div>
+        <!-- La palabra clave, imposible de pasar por alto: recuadro destacado. -->
+        <div class="kwbox">
+          <span class="kwlabel">🔑 Tu palabra clave{#if player.kwRenewedNight != null} — <b>RENOVADA la noche {player.kwRenewedNight}</b> (la anterior ya sonó){/if}</span>
+          <span class="kw">{player.keyword}</span>
+          <span class="kwhint">Si la voz la pronuncia de noche, va por ti: abre los ojos con disimulo y mira tu pantalla.</span>
+        </div>
       {/if}
       {#if (player.videnteLog || []).length}
         <div class="rextra">🔮 Tus visiones: {#each player.videnteLog || [] as e, i (i)}{i ? ' · ' : ''}{#if e.role !== undefined}noche {e.night}: <b>{nameOf(e.pid)}</b> es {roleDef(e.role)?.emoji || ''} {roleDef(e.role)?.name || '¿?'}{:else}noche {e.night}: <b>{nameOf(e.pid)}</b> {e.wolf ? 'ES LOBO 🐺' : 'no es lobo 🏡'}{/if}{/each}</div>

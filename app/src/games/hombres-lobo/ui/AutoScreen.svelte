@@ -17,6 +17,7 @@
   import DayPhase from './DayPhase.svelte';
   import EndPhase from './EndPhase.svelte';
   import PlayersGrid from './PlayersGrid.svelte';
+  import RolesStrip from './RolesStrip.svelte';
   import LogPanel from './LogPanel.svelte';
   import GameMenu from './GameMenu.svelte';
 
@@ -64,6 +65,7 @@
     </div>
   {/if}
   <PlayersGrid players={app.players.filter((p) => p.inGame)} title="🏘️ El pueblo" viewer={my} />
+  <RolesStrip {game} />
   <LogPanel {game} />
 {:else}
   <div class="topbar">
@@ -90,5 +92,6 @@
   {:else if game.phase === 'end'}
     <EndPhase {group} {my} />
   {/if}
+  {#if game.phase !== 'end'}<RolesStrip {game} />{/if}
   <LogPanel {game} />
 {/if}

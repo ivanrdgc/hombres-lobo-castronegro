@@ -8,6 +8,7 @@
   import PhaseChip from './PhaseChip.svelte';
   import LogPanel from './LogPanel.svelte';
   import PlayersGrid from './PlayersGrid.svelte';
+  import RolesStrip from './RolesStrip.svelte';
   import RevealGate from './RevealGate.svelte';
   import RoleCard from './RoleCard.svelte';
   import EndPhase from './EndPhase.svelte';
@@ -38,6 +39,7 @@
     <p class="small-note">Este dispositivo no juega esta partida: puedes seguirla desde aquí. Si hiciera falta, cualquiera puede terminarla desde el menú ⋯.</p>
   </div>
   <PlayersGrid players={players} title="🏘️ El pueblo" />
+  <RolesStrip game={game} />
   <LogPanel game={game} />
 {:else}
   <div class="topbar"><h2>{group.name}</h2><PhaseChip game={game} /><GameMenu group={group} /></div>
@@ -71,6 +73,7 @@
     {#if my.inGame && !my.roleSeen}<RevealGate group={group} my={my} />{/if}
     {#if my.inGame && my.roleSeen}<RoleCard player={my} group={group} mini={true} />{/if}
     <PlayersGrid players={players} title="🏘️ El pueblo" viewer={my} />
+    <RolesStrip game={game} />
   {/if}
   <LogPanel game={game} />
 {/if}

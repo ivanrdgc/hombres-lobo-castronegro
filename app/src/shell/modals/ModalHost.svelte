@@ -17,7 +17,7 @@
   import ShowRoleModal from './ShowRoleModal.svelte';
   import ThiefSwapModal from './ThiefSwapModal.svelte';
   import ExplainModal from './ExplainModal.svelte';
-  import GameRolesModal from './GameRolesModal.svelte';
+  import RoleDetailModal from './RoleDetailModal.svelte';
 
   const COMPONENTS: Record<string, unknown> = {
     roles: RolesModal,
@@ -35,7 +35,7 @@
     'show-role': ShowRoleModal,
     'thief-swap': ThiefSwapModal,
     explain: ExplainModal,
-    'game-roles': GameRolesModal,
+    'role-detail': RoleDetailModal,
   };
 
   const Current = $derived(app.ui.modal ? (COMPONENTS[app.ui.modal.type] as typeof RolesModal | undefined) : undefined);

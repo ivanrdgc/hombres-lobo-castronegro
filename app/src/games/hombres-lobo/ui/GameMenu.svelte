@@ -1,8 +1,7 @@
 <script lang="ts">
-  // Menú de herramientas de la partida (sustituye la barra fija inferior
-  // masterToolsBar de la v1): un botón ⋯ en la cabecera despliega Voz, Repetir,
-  // Cartas, Ver roles y Terminar según el modo y si este dispositivo narra. Así
-  // el cuerpo del juego recupera el alto que ocupaba la barra.
+  // Menú ⋯ de la partida: SOLO funciones de juego (pausar, voz, repetir, ver
+  // roles, abandonar, terminar) según el modo y quién es este dispositivo. La
+  // información de cartas vive abajo, en la tira «Cartas en juego».
   import { app, me, isMaster } from '../../../core/sync/store.svelte';
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
@@ -29,10 +28,6 @@
   function voiceOpen() {
     app.ui.modal = { type: 'voice' };
     app.ui.voiceTest = null;
-    close();
-  }
-  function openGameRoles() {
-    app.ui.modal = { type: 'game-roles' };
     close();
   }
   function viewRoles() {
@@ -67,7 +62,6 @@
         {#if narrator && game?.mode === 'guiado'}
           <button role="menuitem" data-a="view-roles" onclick={viewRoles}>👁 Ver roles</button>
         {/if}
-        <button role="menuitem" data-a="open-game-roles" onclick={openGameRoles}>🎴 Cartas</button>
         {#if inPlay}
           <button role="menuitem" class="danger-text" data-a="leave-game" onclick={leaveOpen}>🚪 Abandonar la partida</button>
         {/if}

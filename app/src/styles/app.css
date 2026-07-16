@@ -167,6 +167,32 @@ button:disabled { opacity: 0.45; cursor: default; }
 .rolecard .rteam { color: var(--accent2); font-size: 0.85rem; margin: 2px 0 8px; }
 .rolecard .rdesc { color: var(--muted); font-size: 0.9rem; }
 .rolecard .rextra { margin-top: 10px; font-size: 0.9rem; color: #d8ccf5; background: color-mix(in srgb, var(--accent2) 12%, transparent); border-radius: 8px; padding: 8px; }
+.rolecard .rhow { margin-top: 10px; text-align: left; font-size: 0.88rem; color: #d8ccf5; background: color-mix(in srgb, var(--accent2) 12%, transparent); border-radius: 8px; padding: 10px 12px; }
+.rolecard .rhow ol { margin: 6px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+
+/* La palabra clave, en un recuadro que no se puede pasar por alto */
+.kwbox {
+  margin-top: 10px;
+  border: 2px solid var(--accent);
+  border-radius: var(--r-2);
+  background: color-mix(in srgb, var(--accent) 13%, var(--bg-1));
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: center;
+}
+.kwbox .kwlabel { font-size: 0.75rem; color: var(--moon); font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
+.kwbox .kw { font-size: 1.45rem; font-weight: 800; color: var(--moon); font-family: var(--font-display); }
+.kwbox .kwhint { font-size: 0.78rem; color: var(--muted); }
+
+/* Detalle de rol y tira de cartas en juego */
+.howlist { margin: 8px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; font-size: 0.92rem; }
+.howlist li { line-height: 1.45; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+button.rolechip { cursor: pointer; font-size: 0.85rem; padding: 7px 12px; background: var(--card2); border: 1px solid var(--border); border-radius: var(--r-full); color: var(--text); }
+button.rolechip:active { border-color: var(--accent); }
+.roleinfo { border: none; background: transparent; padding: 2px 6px; font-size: 0.95rem; align-self: center; }
 
 .actionpanel { background: var(--card); border: 2px solid var(--accent); border-radius: var(--r-2); padding: 14px; margin: 12px 0; box-shadow: var(--shadow-1); }
 .actionpanel h3 { color: var(--moon); margin-bottom: 6px; }

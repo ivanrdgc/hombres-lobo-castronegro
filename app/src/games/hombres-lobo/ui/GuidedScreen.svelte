@@ -16,6 +16,7 @@
   import LogPanel from './LogPanel.svelte';
   import PlayersGrid from './PlayersGrid.svelte';
   import ActionGrid from './ActionGrid.svelte';
+  import RolesStrip from './RolesStrip.svelte';
   import NightActionPanel from './NightActionPanel.svelte';
   import RevealGate from './RevealGate.svelte';
   import RoleCard from './RoleCard.svelte';
@@ -104,7 +105,7 @@
   <div class="topbar"><h2>{group.name}</h2><PhaseChip game={game} /><GameMenu group={group} /></div>
   <Flash />
   <div class="card"><h3>📖 Narrador guiado</h3>
-    <p class="small-note">La app no habla: te va marcando los pasos y tú registras las decisiones. Los jugadores solo ven su carta. Herramientas (roles, cartas, terminar) en el menú ⋯ de arriba.</p>
+    <p class="small-note">La app no habla: te va marcando los pasos y tú registras las decisiones. Los jugadores solo ven su carta. Herramientas (ver roles, terminar) en el menú ⋯ de arriba; las cartas en juego, abajo.</p>
   </div>
   {#if game.phase === 'reveal'}
     {@const pend = players.filter((p) => !p.roleSeen).map((p) => p.name)}
@@ -173,6 +174,7 @@
     {/if}
   {/if}
   <PlayersGrid players={players} title="🏘️ El pueblo" showAlguacil={game.alguacilId} />
+  <RolesStrip game={game} />
   <LogPanel game={game} />
 {:else if !my.inGame}
   <!-- Espectador: sigue la partida y puede terminarla desde el menú ⋯ si hace falta. -->
@@ -184,6 +186,7 @@
     <p class="small-note">Este dispositivo no juega esta partida: puedes seguirla desde aquí. Si hiciera falta, cualquiera puede terminarla desde el menú ⋯.</p>
   </div>
   <PlayersGrid players={players} title="🏘️ El pueblo" showAlguacil={game.alguacilId} />
+  <RolesStrip game={game} />
   <LogPanel game={game} />
 {:else}
   <!-- Jugador: solo su carta (oculta por defecto); el narrador dirige en persona. -->
@@ -197,5 +200,6 @@
     {#if my.inGame}<RoleCard player={my} group={group} mini={true} />{/if}
   {/if}
   <PlayersGrid players={players} title="🏘️ El pueblo" showAlguacil={game.alguacilId} viewer={my} />
+  <RolesStrip game={game} />
   <LogPanel game={game} />
 {/if}
