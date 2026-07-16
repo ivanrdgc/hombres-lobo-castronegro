@@ -2,7 +2,7 @@
   // La mesa: SOLO personas (quién está, invitar, expulsar) y el catálogo de
   // juegos. Quién juega, el orden y el narrador se eligen al empezar cada
   // partida (pantalla «Empezar partida» del juego).
-  import { app, me } from '../core/sync/store.svelte';
+  import { app, me, navigate } from '../core/sync/store.svelte';
   import { guard } from '../core/sync/guard';
   import * as A from '../games/hombres-lobo/actions';
   import { isActiveDevice } from '../core/sync/presence';
@@ -79,7 +79,7 @@
     <div class="card" style="margin:10px 0 4px">
       <h3>{j.emoji} {j.name}</h3>
       <p class="small-note">{j.desc}</p>
-      <button class="primary block" data-a="select-game" data-p={j.id} onclick={() => { app.ui.lobbyView = 'game'; guard(() => A.selectGame(j.id)); }}>{j.emoji} Jugar a esto</button>
+      <button class="primary block" data-a="select-game" data-p={j.id} onclick={() => { navigate(`/g/${group.id}/${j.id}`); guard(() => A.selectGame(j.id)); }}>{j.emoji} Jugar a esto</button>
     </div>
   {/each}
   <p class="small-note">Más juegos, próximamente… Cualquiera puede elegir: la mesa entera entra al juego.</p>

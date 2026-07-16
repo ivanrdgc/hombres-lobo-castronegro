@@ -9,6 +9,16 @@ const LS_KEY = 'hlc_sessions_v1';
 export interface Route {
   view: 'landing' | 'group';
   slug: string | null;
+  /**
+   * Navegación del lobby POR URL (única y recargable):
+   *   /g/<slug>                   → la mesa (game = null)
+   *   /g/<slug>/<gameId>          → lobby de ese juego
+   *   /g/<slug>/<gameId>/empezar  → pantalla «Empezar partida»
+   * Cada dispositivo navega libre (su URL es suya); la sincronización de
+   * pantalla solo llega al empezar la partida (status del grupo).
+   */
+  game: string | null;
+  start: boolean;
 }
 
 export interface ModalState {
@@ -31,14 +41,6 @@ export interface UiState {
   formError?: string | null;
   dragging?: boolean;
   voiceUnlocked?: boolean;
-  /**
-   * Navegación LOCAL del lobby: qué mira este dispositivo antes de empezar.
-   * 'catalog' = la mesa (catálogo de juegos); 'game' = el lobby del juego;
-   * 'start' = la pantalla «Empezar partida» (jugadores, orden, narrador, modo).
-   * Es local a propósito: en el lobby cada uno navega libre y nadie arrastra a
-   * los demás de pantalla; la sincronización solo llega al iniciar la partida.
-   */
-  lobbyView?: 'catalog' | 'game' | 'start';
   deadPeek?: Record<string, boolean>;
   suggestedGroup?: string | null;
   /** Lectura en voz alta de la explicación (local): qué sección y en qué estado. */
@@ -61,7 +63,7 @@ export interface AppState {
 // un binding llamado `state` eclipsa la runa $state); en módulos .ts puede
 // usarse el alias `state` (mismo objeto).
 export const app: AppState = $state({
-  route: { view: 'landing', slug: null },
+  route: { view: 'landing', slug: null, game: null, start: false },
   group: null,
   groupMissing: false,
   players: [],
@@ -115,17 +117,23 @@ export function clearSession(slug: string): void {
 // ——— Rutas ———
 export function parseRoute(): Route {
   const path = location.pathname;
-  // La mesa es lo primero: /g/<slug> es la URL canónica del grupo.
-  let m = path.match(/^\/g\/([a-z0-9-]+)\/?$/);
-  if (m) return { view: 'group', slug: m[1] };
+  // Pantalla «Empezar partida» de un juego: /g/<slug>/<gameId>/empezar
+  let m = path.match(/^\/g\/([a-z0-9-]+)\/([a-z0-9_]+)\/empezar\/?$/);
+  if (m) return { view: 'group', slug: m[1], game: m[2], start: true };
+  // Lobby de un juego concreto: /g/<slug>/<gameId> (única y recargable).
+  m = path.match(/^\/g\/([a-z0-9-]+)\/([a-z0-9_]+)\/?$/);
+  if (m) return { view: 'group', slug: m[1], game: m[2], start: false };
+  // La mesa: /g/<slug> es la URL canónica del grupo.
+  m = path.match(/^\/g\/([a-z0-9-]+)\/?$/);
+  if (m) return { view: 'group', slug: m[1], game: null, start: false };
   // Enlaces antiguos con prefijo de juego: redirigir en silencio.
   m = path.match(/^\/hombres_lobo\/g\/([a-z0-9-]+)\/?$/);
   if (m) {
     history.replaceState(null, '', '/g/' + m[1]);
-    return { view: 'group', slug: m[1] };
+    return { view: 'group', slug: m[1], game: null, start: false };
   }
   if (/^\/hombres_lobo\/?$/.test(path)) history.replaceState(null, '', '/');
-  return { view: 'landing', slug: null }; // portada: crear la mesa
+  return { view: 'landing', slug: null, game: null, start: false }; // portada: crear la mesa
 }
 
 export function navigate(path: string): void {
@@ -135,7 +143,17 @@ export function navigate(path: string): void {
 
 export function applyRoute(): void {
   const route = parseRoute();
+  // Navegación DENTRO del mismo grupo (mesa ↔ lobby de juego ↔ empezar):
+  // se conservan suscripciones y estado; solo cambia la vista (y se cierra
+  // cualquier modal abierto). Así no parpadea «Buscando el grupo…».
+  const sameGroup = state.route.view === 'group' && route.view === 'group'
+    && state.route.slug === route.slug;
   state.route = route;
+  if (sameGroup) {
+    state.ui.modal = null;
+    notify();
+    return;
+  }
   state.group = null;
   state.groupMissing = false;
   state.players = [];

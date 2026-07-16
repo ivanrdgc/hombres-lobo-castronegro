@@ -35,11 +35,28 @@ if (!(await has(coco, '[data-a=open-roles]'))) ok('Coco NO salta: sigue en el ca
 await coco.click('button[data-a=select-game]');
 await coco.waitForSelector('[data-a=open-roles]');
 ok('cada dispositivo entra al lobby cuando quiere');
+// La navegación vive en la URL: el lobby del juego tiene URL propia y recargable.
+if (/\/g\/[a-z0-9-]+\/hombres_lobo$/.test(coco.url())) ok('el lobby del juego tiene URL propia: ' + new URL(coco.url()).pathname); else bad('URL inesperada en el lobby: ' + coco.url());
+await coco.reload();
+await coco.waitForSelector('[data-a=open-roles]', { timeout: 30000 });
+ok('recargar mantiene a Coco en el lobby del juego (URL única)');
 await coco.click('button[data-a=change-game]');
 await coco.waitForSelector('text=¿A qué jugamos?');
 ok('y vuelve al catálogo libremente');
+await coco.reload();
+await coco.waitForSelector('text=¿A qué jugamos?', { timeout: 30000 });
+if (!(await has(coco, '[data-a=open-roles]'))) ok('recargar en la mesa deja a Coco en la mesa'); else bad('la recarga movió a Coco de pantalla');
 // Ana no se ha movido de su lobby mientras Coco navegaba.
 if (await has(ana, '[data-a=open-roles]')) ok('nadie arrastra a Ana fuera de su lobby'); else bad('Ana fue arrastrada fuera del lobby');
+// La pantalla «Empezar partida» también es URL propia y recargable.
+await ana.click('[data-a=open-start]');
+await ana.waitForSelector('[data-a=start-auto]');
+if (/\/empezar$/.test(new URL(ana.url()).pathname)) ok('empezar partida tiene URL propia: …/empezar'); else bad('URL inesperada al empezar: ' + ana.url());
+await ana.reload();
+await ana.waitForSelector('[data-a=start-auto]', { timeout: 30000 });
+ok('recargar mantiene la pantalla de empezar');
+await ana.click('[data-a=back-lobby-game]');
+await ana.waitForSelector('[data-a=open-roles]');
 
 // 3. Al EMPEZAR la partida, todos convergen — incluido Bruno, que sigue en el
 //    catálogo. Modo casual (3 jugadores); Ana narra y juega desde su móvil.

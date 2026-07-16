@@ -16,18 +16,8 @@ export function installUiHygiene(): void {
     const ctx = contextSignature();
     if (ctx === lastCtx) return;
     lastCtx = ctx;
-    // Navegación del lobby: al entrar en el lobby se «congela» qué mira este
-    // dispositivo (según el juego seleccionado de la mesa), y a partir de ahí
-    // los cambios remotos ya no le mueven de pantalla. Al empezar la partida se
-    // olvida, para que al volver al lobby se recoloque en el lobby del juego.
-    if (state.group && state.group.status === 'lobby') {
-      // La página principal del grupo es SIEMPRE la mesa (dispositivos, voz,
-      // catálogo). Al lobby de un juego se entra a mano («Jugar a esto»), aunque
-      // el grupo ya tenga un juego seleccionado de una vez anterior.
-      if (state.ui.lobbyView === undefined) state.ui.lobbyView = 'catalog';
-    } else if (state.group && state.group.status === 'playing') {
-      state.ui.lobbyView = undefined;
-    }
+    // (La navegación del lobby vive en la URL — /g/<mesa>[/<juego>[/empezar]] —
+    // así que aquí ya no hay vista local que congelar.)
     state.ui.sel = null;
     state.ui.actorPower = null;
     state.ui.brujaHeal = false;

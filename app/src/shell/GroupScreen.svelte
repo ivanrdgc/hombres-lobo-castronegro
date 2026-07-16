@@ -4,7 +4,7 @@
   // GameDefinition del juego seleccionado en la mesa.
   import { app, me } from '../core/sync/store.svelte';
   import { navigate } from '../core/sync/store.svelte';
-  import { gameDef } from '../games/registry';
+  import { GAME_DEFS, gameDef } from '../games/registry';
   import Flash from './Flash.svelte';
   import JoinScreen from './JoinScreen.svelte';
   import BlockedScreen from './BlockedScreen.svelte';
@@ -12,10 +12,10 @@
 
   const g = $derived(app.group);
   const my = $derived(me());
+  // En partida manda el juego del GRUPO; en el lobby, la URL de ESTE
+  // dispositivo (/g/<mesa>/<juego>[/empezar]): única y recargable.
   const def = $derived(gameDef(g?.currentGame));
-  // Qué pantalla ve ESTE dispositivo en el lobby (navegación local). Por defecto
-  // la mesa (página principal); al lobby del juego se entra a mano.
-  const lobbyView = $derived(app.ui.lobbyView ?? 'catalog');
+  const urlDef = $derived(app.route.game ? (GAME_DEFS.find((d) => d.id === app.route.game) ?? null) : null);
 </script>
 
 {#if app.groupMissing}
@@ -35,10 +35,10 @@
     <JoinScreen group={g} />
   {/if}
 {:else if g.status === 'lobby'}
-  {#if lobbyView === 'start'}
-    <def.Start group={g} my={my} />
-  {:else if lobbyView === 'game'}
-    <def.Lobby group={g} my={my} />
+  {#if urlDef && app.route.start}
+    <urlDef.Start group={g} my={my} />
+  {:else if urlDef}
+    <urlDef.Lobby group={g} my={my} />
   {:else}
     <MesaScreen group={g} my={my} />
   {/if}

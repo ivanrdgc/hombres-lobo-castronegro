@@ -2,7 +2,7 @@
   // Lobby de Los Hombres Lobo: solo la configuración específica del juego
   // (port de lobbyScreen v1). En el lobby no hay máster: cualquier dispositivo
   // configura e inicia.
-  import { app } from '../../../core/sync/store.svelte';
+  import { app, navigate } from '../../../core/sync/store.svelte';
   import { ROLES, wolfCountFor, OFFICIAL_MIN_PLAYERS } from '../roles';
   import { EXPLANATIONS } from '../texts/explain';
   import { explainAudioState, toggleExplainAudio } from '../../../shell/explain-audio';
@@ -29,7 +29,7 @@
 </script>
 
 <div class="topbar">
-  <button class="small ghost" data-a="change-game" aria-label="Volver a la mesa" title="Volver a la mesa" style="font-size:1.25rem;line-height:1;padding:6px 12px" onclick={() => (app.ui.lobbyView = 'catalog')}>←</button>
+  <button class="small ghost" data-a="change-game" aria-label="Volver a la mesa" title="Volver a la mesa" style="font-size:1.25rem;line-height:1;padding:6px 12px" onclick={() => navigate(`/g/${group.id}`)}>←</button>
   <h2>🌕 {group.name}</h2>
   <button class="small ghost" data-a="leave" onclick={() => (app.ui.modal = { type: 'confirm-leave' })}>🚪 Salir</button>
 </div>
@@ -59,5 +59,5 @@
   <button class="block" data-a="open-settings" onclick={() => (app.ui.modal = { type: 'settings' })}>🔧 Ajustes de partida</button>
 </div>
 <div class="card">
-  <button class="primary block" data-a="open-start" onclick={() => (app.ui.lobbyView = 'start')}>🎬 Empezar partida</button>
+  <button class="primary block" data-a="open-start" onclick={() => navigate(`/g/${group.id}/hombres_lobo/empezar`)}>🎬 Empezar partida</button>
 </div>

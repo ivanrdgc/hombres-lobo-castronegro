@@ -11,14 +11,17 @@
   let hash = $state(location.hash);
   window.addEventListener('hashchange', () => (hash = location.hash));
 
-  // El título sigue la navegación LOCAL: en el catálogo (o la mesa), «Juegos
-  // digitales»; dentro del lobby o la partida de un juego, el nombre del juego.
-  const currentGameName = $derived(GAME_DEFS.find((x) => x.id === app.group?.currentGame)?.name);
-  const inGame = $derived(
-    !!app.group && (app.group.status === 'playing' || (app.ui.lobbyView ?? 'catalog') !== 'catalog'),
-  );
+  // El título sigue la URL: en la portada o la mesa, «Juegos digitales»;
+  // dentro del lobby (/g/<mesa>/<juego>) o la partida, el nombre del juego.
+  const playingName = $derived(GAME_DEFS.find((x) => x.id === app.group?.currentGame)?.name);
+  const urlName = $derived(GAME_DEFS.find((x) => x.id === app.route.game)?.name);
+  const title = $derived.by(() => {
+    if (app.group?.status === 'playing' && playingName) return playingName;
+    if (app.group && urlName) return urlName;
+    return 'Juegos digitales';
+  });
   $effect(() => {
-    document.title = inGame && currentGameName ? currentGameName : 'Juegos digitales';
+    document.title = title;
   });
 </script>
 

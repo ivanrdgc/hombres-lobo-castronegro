@@ -36,8 +36,9 @@
 
   // La sesión guardada ya no vale (te conectaste desde otro o te expulsaron).
   const hadSession = !!app.session;
-  // Si la mesa ya tiene un juego elegido, se nombra; si no, invitación genérica.
-  const gameName = $derived(GAME_DEFS.find((x) => x.id === group.currentGame)?.name);
+  // Si te invitaron con la URL de un juego (o la mesa ya tiene uno elegido),
+  // se nombra; si no, invitación genérica.
+  const gameName = $derived(GAME_DEFS.find((x) => x.id === (app.route.game ?? group.currentGame))?.name);
 
   let name = $state('');
   readName = () => name.trim();

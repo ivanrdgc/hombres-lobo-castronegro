@@ -3,7 +3,7 @@
   // qué orden se sientan, quién narra y en qué modo. La mesa ya no configura
   // personas: los valores por defecto son sensatos (dispositivos activos,
   // orden y narrador recordados) y casi siempre basta con pulsar Empezar.
-  import { app, me } from '../../../core/sync/store.svelte';
+  import { app, me, navigate } from '../../../core/sync/store.svelte';
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
   import { isActiveDevice } from '../../../core/sync/presence';
@@ -148,7 +148,7 @@
 <svelte:document onpointermove={onPointerMove} onpointerup={onPointerUp} onpointercancel={onPointerUp} />
 
 <div class="topbar">
-  <button class="small ghost" data-a="back-lobby-game" aria-label="Volver" title="Volver" style="font-size:1.25rem;line-height:1;padding:6px 12px" onclick={() => (app.ui.lobbyView = 'game')}>←</button>
+  <button class="small ghost" data-a="back-lobby-game" aria-label="Volver" title="Volver" style="font-size:1.25rem;line-height:1;padding:6px 12px" onclick={() => navigate(`/g/${group.id}/hombres_lobo`)}>←</button>
   <h2>🎬 Empezar partida</h2>
 </div>
 <Flash />

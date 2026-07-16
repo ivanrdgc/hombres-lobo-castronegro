@@ -1,7 +1,7 @@
 <script lang="ts">
   // Fin de partida (port de endPhase() de la v1): pancarta del ganador,
   // revelado de todos los roles y vuelta al lobby.
-  import { app } from '../../../core/sync/store.svelte';
+  import { app, navigate } from '../../../core/sync/store.svelte';
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
   import { ROLES } from '../roles';
@@ -30,4 +30,6 @@
     </div>
   {/each}
 </div></div>
-<button class="primary block" data-a="back-lobby" onclick={() => guard(A.backToLobby)}>🔁 Volver al lobby</button>
+<!-- Volver = a la mesa: además de reabrir el lobby del grupo, este dispositivo
+     navega a /g/<mesa> (con URLs por juego, cada pantalla es una URL). -->
+<button class="primary block" data-a="back-lobby" onclick={() => { navigate(`/g/${group.id}`); guard(A.backToLobby); }}>🔁 Volver al lobby</button>
