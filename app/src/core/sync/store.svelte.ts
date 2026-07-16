@@ -10,10 +10,12 @@ export interface Route {
   view: 'landing' | 'group';
   slug: string | null;
   /**
-   * Navegación del lobby POR URL (única y recargable):
+   * Navegación POR URL (única y recargable):
    *   /g/<slug>                   → la mesa (game = null)
    *   /g/<slug>/<gameId>          → lobby de ese juego
    *   /g/<slug>/<gameId>/empezar  → pantalla «Empezar partida»
+   *   /g/<slug>/<gameId>/partida  → la partida en curso (se recoloca sola al
+   *                                 empezar; al terminar, vuelve al lobby)
    * Cada dispositivo navega libre (su URL es suya); la sincronización de
    * pantalla solo llega al empezar la partida (status del grupo).
    */
@@ -120,6 +122,10 @@ export function parseRoute(): Route {
   // Pantalla «Empezar partida» de un juego: /g/<slug>/<gameId>/empezar
   let m = path.match(/^\/g\/([a-z0-9-]+)\/([a-z0-9_]+)\/empezar\/?$/);
   if (m) return { view: 'group', slug: m[1], game: m[2], start: true };
+  // Partida en curso: /g/<slug>/<gameId>/partida (la vista real la decide el
+  // status del grupo; con el grupo en lobby, esta URL cae al lobby del juego).
+  m = path.match(/^\/g\/([a-z0-9-]+)\/([a-z0-9_]+)\/partida\/?$/);
+  if (m) return { view: 'group', slug: m[1], game: m[2], start: false };
   // Lobby de un juego concreto: /g/<slug>/<gameId> (única y recargable).
   m = path.match(/^\/g\/([a-z0-9-]+)\/([a-z0-9_]+)\/?$/);
   if (m) return { view: 'group', slug: m[1], game: m[2], start: false };

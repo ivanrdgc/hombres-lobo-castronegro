@@ -17,21 +17,24 @@ export function installUiHygiene(): void {
     const ctx = contextSignature();
     if (ctx === lastCtx) return;
     lastCtx = ctx;
-    // Al TERMINAR una partida (playing → lobby en el MISMO grupo), todos los
-    // dispositivos aterrizan en el lobby del juego recién jugado (listos para
-    // la revancha), vengan de donde vengan (/g/x, /empezar…). replaceState:
-    // sin ensuciar el historial; la URL sigue mandando a partir de ahí.
+    // Transiciones de partida en el MISMO grupo (replaceState: sin ensuciar el
+    // historial; la URL sigue mandando a partir de ahí):
+    //  · lobby → playing: los miembros aterrizan en /g/<mesa>/<juego>/partida
+    //    (la partida es su propia página).
+    //  · playing → lobby: todos al lobby del juego recién jugado, vengan de
+    //    donde vengan (/g/x, /empezar…), listos para la revancha.
     const slug = state.route.slug ?? '';
     const status = state.group?.status ?? '';
-    const endedGame = slug && lastStatusKey === slug + '|playing' && status === 'lobby'
-      ? state.group?.currentGame : null;
+    const gameId = state.group?.currentGame;
+    const member = !!state.session && state.players.some((p) => p.id === state.session!.pid);
+    const target = slug && gameId && member
+      ? (lastStatusKey === slug + '|playing' && status === 'lobby' ? `/g/${slug}/${gameId}`
+        : lastStatusKey === slug + '|lobby' && status === 'playing' ? `/g/${slug}/${gameId}/partida` : null)
+      : null;
     lastStatusKey = slug + '|' + status;
-    if (endedGame) {
-      const target = `/g/${slug}/${endedGame}`;
-      if (location.pathname !== target) {
-        history.replaceState(null, '', target);
-        applyRoute();
-      }
+    if (target && location.pathname !== target) {
+      history.replaceState(null, '', target);
+      applyRoute();
     }
     state.ui.sel = null;
     state.ui.actorPower = null;
