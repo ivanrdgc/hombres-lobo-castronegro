@@ -89,6 +89,8 @@ await ana.click('button[data-a=end-game-confirm]');
 await wait(ana, (s) => s.phase === 'end', 'fin');
 ok('un dispositivo que NO juega termina la partida desde su menú ⋯');
 await ana.click('button[data-a=back-lobby]');
+await ana.waitForSelector('[data-a=open-start]'); // tras la partida: lobby del JUEGO
+await ana.click('[data-a=change-game]'); // a la mesa para eliminar el grupo
 await ana.waitForSelector('[data-a=confirm-delete-group]');
 await ana.click('[data-a=confirm-delete-group]');
 await ana.click('[data-a=delete-group-confirm]');

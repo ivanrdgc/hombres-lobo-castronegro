@@ -8,7 +8,7 @@ import type { Segment, Utterance } from '../../../core/audio/player';
 import {
   ABRID_OJOS, ENAMORADOS_INTRO, ENAMORADOS_TAIL, ENC_FRAME, ENCANTADOS_TAIL, KW_LEAD, LISTOS,
   NAG_GENERIC, NAGS, REFRESH_CLOSE, REFRESH_OPEN, aaNote, deathLine, drama, hashStr, hunterKillLine, improv, kwClip,
-  loveDeathLine, lynchNote, narr, narrParts, nagEnamoradosKw, nagEncantadosKw, outro, outroParts, KW_NOTE,
+  loveDeathLine, lynchNote, narr, narrParts, narrPartsMin, nagEnamoradosKw, nagEncantadosKw, outro, outroParts, KW_NOTE,
 } from '../texts/corpus';
 import type { Density } from '../../../core/narrator/pacing';
 import { ROLES } from '../roles';
@@ -31,17 +31,19 @@ const stepSalt = (game: GameState, stepId: string) => `${game.seed}:n${game.nigh
 const outroSalt = (game: GameState) => `${game.seed}:n${game.night}:s${game.stepIdx}`;
 
 /** Entrada de un paso de noche (o null si no tiene locución propia). */
-export function introParts(game: GameState, stepId: StepId): string[] {
+export function introParts(game: GameState, stepId: StepId, density: Density = 'std'): string[] {
+  const pick = density === 'min' ? narrPartsMin : narrParts;
   if (stepId === 'lobos' && game.night === 1 && !game.noKillNight1) {
-    return narrParts('lobos_noche1', `${game.seed}:n1:lobos`);
+    return pick('lobos_noche1', `${game.seed}:n1:lobos`);
   }
-  return narrParts(stepId, stepSalt(game, stepId));
+  return pick(stepId, stepSalt(game, stepId));
 }
 
 // La densidad del guion la marca el perfil de ritmo: 'max' (teatral) antepone
-// una dramatización del paso; 'min' (rápido) deja la llamada esencial tal cual.
+// una dramatización del paso; 'min' (rápido) recorta la floritura central y
+// deja llamada e instrucción.
 export function introUtterance(game: GameState, stepId: StepId, density: Density = 'std'): Utterance {
-  const parts = introParts(game, stepId);
+  const parts = introParts(game, stepId, density);
   if (density === 'max') {
     const d = drama(stepId, stepSalt(game, stepId));
     if (d) return fromParts(`n${game.night}:s${game.stepIdx}:${stepId}:intro`, [d, ...parts]);
@@ -66,18 +68,23 @@ export function outroUtterance(game: GameState, stepId: StepId, density: Density
 }
 
 export function nocheCaeUtterance(game: GameState, density: Density = 'std'): Utterance {
-  const parts = narrParts('noche_cae', `${game.seed}:n${game.night}`);
+  const parts = density === 'min'
+    ? narrPartsMin('noche_cae', `${game.seed}:n${game.night}`)
+    : narrParts('noche_cae', `${game.seed}:n${game.night}`);
   // Teatral: la noche cae con una pincelada ambiental extra.
   if (density === 'max') parts.push(improv('noche', `${game.seed}:n${game.night}`));
   return fromParts(`n${game.night}:cae`, parts);
 }
 
-export function bienvenidaUtterance(game: GameState, players: PlayerDoc[]): Utterance {
+// Bienvenida del reparto. En rápido va directa al grano: «mirad vuestra carta
+// en secreto y confirmad» (+ la nota de palabras clave, que es esencial).
+export function bienvenidaUtterance(game: GameState, players: PlayerDoc[], density: Density = 'std'): Utterance {
   const extra: Segment[] = [];
   if (game.keywordsActive) extra.push(clip(KW_NOTE.trim()));
   const aa = players.find((p) => p.role === 'aldeano_aldeano');
   if (aa && aa.name) extra.push(clip(aaNote(aa.name).trim()));
-  return fromParts('reveal:bienvenida', narrParts('bienvenida', String(game.seed)), extra);
+  const parts = density === 'min' ? narrPartsMin('bienvenida', String(game.seed)) : narrParts('bienvenida', String(game.seed));
+  return fromParts('reveal:bienvenida', parts, extra);
 }
 
 export function listosUtterance(game: GameState): Utterance {
@@ -120,7 +127,7 @@ export function dawnUtterance(game: GameState, density: Density = 'std'): Uttera
   // Teatral: el alba también se dramatiza.
   if (density === 'max') parts.push(clip(drama('amanecer', salt)));
   const kind = deaths.length ? 'amanecer_con_muertes' : 'amanecer_sin_muertes';
-  for (const p of narrParts(kind, salt)) parts.push(clip(p));
+  for (const p of (density === 'min' ? narrPartsMin(kind, salt) : narrParts(kind, salt))) parts.push(clip(p));
   for (const d of deaths) parts.push(clip(deathLine(d.name, d.role, salt)));
   if (game.lastDawn?.cuervo) parts.push(clip(game.lastDawn.cuervo));
   if (game.lastDawn?.oso) parts.push(clip(game.lastDawn.oso));
@@ -150,7 +157,7 @@ export function debateUtterance(game: GameState, withJuez: boolean, density: Den
   const kind = (game.lastDawn?.deaths || []).length ? 'dia_debate' : 'dia_debate_tranquilo';
   const parts: Segment[] = [];
   if (withJuez) for (const p of narrParts('juez_segunda', `${game.seed}:${vKey}`)) parts.push(clip(p));
-  for (const p of narrParts(kind, `${game.seed}:d${game.dayNum}:${game.votesLeft}`)) parts.push(clip(p));
+  for (const p of (density === 'min' ? narrPartsMin(kind, `${game.seed}:d${game.dayNum}:${game.votesLeft}`) : narrParts(kind, `${game.seed}:d${game.dayNum}:${game.votesLeft}`))) parts.push(clip(p));
   // Cotilleos del debate: siempre en teatral, a veces en normal, nunca en rápido.
   if (density === 'max' || (density === 'std' && hashStr('impDeb|' + vKey) % 5 < 2)) parts.push(clip(improv('debate', `${game.seed}:${vKey}`)));
   return {

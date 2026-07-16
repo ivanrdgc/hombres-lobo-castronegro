@@ -1065,6 +1065,34 @@ export function narr(key: string, salt = ''): string {
   return narrParts(key, salt).join(' ');
 }
 
+// ————————————————————————————————————————————————————————————————————————
+// Perfil RÁPIDO: ranuras esenciales de cada locución compuesta. La ranura
+// central es (casi siempre) la floritura ambiental; se conservan la llamada,
+// la instrucción y la información de reglas. Con excepciones explícitas:
+// la regla de los enamorados o el parte del alba SÍ son esenciales.
+// Se eligen las MISMAS variantes que narrParts (misma sal y generador) y
+// luego se filtran: las piezas siguen siendo clips pre-generados.
+// ————————————————————————————————————————————————————————————————————————
+const MIN_SLOTS: Record<string, number[]> = {
+  bienvenida: [2], // directo: «mirad vuestra carta en secreto y confirmad»
+  noche_cae: [0, 2],
+  enamorados: [0, 1, 2], // «si uno muere, el otro muere de pena» es regla, no adorno
+  amanecer_sin_muertes: [0, 1], // «nadie ha muerto» es el parte
+  amanecer_con_muertes: [0, 1],
+  dia_debate: [0, 2],
+  dia_debate_tranquilo: [0, 2],
+  lobos_noche1: [0, 2],
+  fin_partida: [0, 1],
+};
+
+export function narrPartsMin(key: string, salt = ''): string[] {
+  const all = narrParts(key, salt);
+  // Por defecto, en las composiciones de 3 piezas cae la central (floritura).
+  const keep = MIN_SLOTS[key] ?? (all.length === 3 ? [0, 2] : null);
+  if (!keep) return all;
+  return keep.filter((i) => i < all.length).map((i) => all[i]);
+}
+
 export function deathLine(name: string, roleName: string | null | undefined, salt = ''): string {
   const tpl = DEATH_LINES[hashStr('death|' + salt + name) % DEATH_LINES.length];
   return tpl.replace('{name}', name).replace('{role}', roleName ? ` Era ${roleName}.` : '');

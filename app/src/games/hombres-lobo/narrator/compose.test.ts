@@ -44,7 +44,7 @@ test('shotUtterance: anuncia toda la cadena de la flecha (p. ej. enamorado que m
 });
 
 // ——— Densidad del guion por perfil de ritmo (rápido/normal/teatral) ———
-import { introUtterance, outroUtterance, nocheCaeUtterance, fillerUtterance } from './compose';
+import { bienvenidaUtterance, introUtterance, outroUtterance, nocheCaeUtterance, fillerUtterance } from './compose';
 import { DRAMA, IMPROV } from '../texts/corpus';
 
 test('densidad: teatral antepone una dramatización del paso; normal queda intacto', () => {
@@ -64,6 +64,19 @@ test('densidad: rápido deja la despedida esencial (sin coletilla) y sin relleno
   expect(min.segments.length).toBe(1);
   expect(std.display.startsWith(min.display)).toBe(true);
   expect(fillerUtterance(game, 'vidente', 'min')).toBeNull();
+});
+
+test('densidad: rápido va al grano — bienvenida directa (instrucción + palabras clave) y llamadas sin floritura', () => {
+  const game = mkGame({ keywordsActive: true } as Partial<GameState>);
+  const std = bienvenidaUtterance(game, []);
+  const min = bienvenidaUtterance(game, [], 'min');
+  expect(std.segments.length).toBe(4); // 3 piezas + nota de palabras clave
+  expect(min.segments.length).toBe(2); // instrucción directa + palabras clave
+  expect(std.display.includes(min.display.split(' ').slice(0, 4).join(' '))).toBe(true);
+
+  const g2 = mkGame({ night: 1, stepIdx: 2, steps: ['durmiendo', 'lobos_reconocen', 'vidente'] as GameState['steps'] });
+  const intro = introUtterance(g2, 'vidente', 'min');
+  expect(intro.segments.length).toBe(2); // llamada + instrucción, sin la pieza central
 });
 
 test('densidad: teatral añade ambientación a la caída de la noche', () => {

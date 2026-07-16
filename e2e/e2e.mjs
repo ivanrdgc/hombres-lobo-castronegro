@@ -308,21 +308,24 @@ try {
   // ——— 7. Volver al lobby y eliminar grupo ———
   console.log('— Lobby y limpieza —');
   await ana.click('[data-a=back-lobby]');
-  // La página principal del grupo es la mesa: al volver de la partida caen ahí.
-  await ana.waitForSelector('text=Dispositivos (5)');
+  // Tras la partida, TODOS aterrizan en el lobby del juego recién jugado.
+  await ana.waitForSelector('[data-a=open-start]');
+  if (/\/hombres_lobo$/.test(new URL(ana.url()).pathname)) ok('al terminar se vuelve al lobby del juego (URL del juego)'); else bad('URL inesperada tras la partida: ' + ana.url());
   const anaPref = await ana.evaluate(() => window.__hlc.players.find((p) => p.id === 'p-ana')?.isPlayer);
   check(anaPref === false, 'la exclusión de Ana (no juega) se recuerda tras la partida');
-  await pages.bruno.waitForSelector('[data-a=leave]');
-  ok('vuelta a la mesa para todos');
+  await pages.bruno.waitForSelector('[data-a=open-start]');
+  ok('vuelta al lobby del juego para todos');
 
-  // Un jugador abandona.
+  // Un jugador abandona (el botón Salir también está en el lobby del juego).
   await pages.david.click('[data-a=leave]');
   await pages.david.click('[data-a=leave-confirm]');
   await pages.david.waitForURL(BASE + '/');
-  await ana.waitForSelector('text=Dispositivos (4)');
+  await waitState(ana, (s) => s.players.length === 4, 'grupo de 4');
   ok('abandonar grupo funciona');
 
-  // El máster elimina el grupo.
+  // El máster elimina el grupo (desde la mesa).
+  await ana.click('[data-a=change-game]');
+  await ana.waitForSelector('text=Dispositivos (4)');
   await ana.click('[data-a=confirm-delete-group]');
   await ana.click('[data-a=delete-group-confirm]');
   await ana.waitForURL(BASE + '/');

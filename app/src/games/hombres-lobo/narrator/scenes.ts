@@ -152,7 +152,7 @@ async function endScene(ctx: Ctx): Promise<void> {
 
 async function revealScene(ctx: Ctx): Promise<void> {
   const game = g(ctx);
-  await ctx.sayOnce('reveal:bienvenida', () => bienvenidaUtterance(game, ps(ctx)));
+  await ctx.sayOnce('reveal:bienvenida', () => bienvenidaUtterance(game, ps(ctx), den(ctx)));
   // Mientras la gente mira su carta, adelantamos la síntesis de la primera noche.
   prewarmNightTexts(game, ps(ctx), 1);
   await ctx.waitFor((s) => {

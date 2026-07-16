@@ -1,7 +1,7 @@
 // Higiene de estado efímero (port del bloque onChange de main.js v1): al
 // cambiar el contexto de juego se limpia la selección, avisos y modales de
 // lobby; Enter en un input pulsa el botón principal de su tarjeta.
-import { onChange, state } from '../core/sync/store.svelte';
+import { applyRoute, onChange, state } from '../core/sync/store.svelte';
 
 function contextSignature(): string {
   const g = state.group?.game;
@@ -12,12 +12,27 @@ function contextSignature(): string {
 
 export function installUiHygiene(): void {
   let lastCtx = '';
+  let lastStatusKey = ''; // «slug|status»: el cambio de grupo no es una transición
   onChange(() => {
     const ctx = contextSignature();
     if (ctx === lastCtx) return;
     lastCtx = ctx;
-    // (La navegación del lobby vive en la URL — /g/<mesa>[/<juego>[/empezar]] —
-    // así que aquí ya no hay vista local que congelar.)
+    // Al TERMINAR una partida (playing → lobby en el MISMO grupo), todos los
+    // dispositivos aterrizan en el lobby del juego recién jugado (listos para
+    // la revancha), vengan de donde vengan (/g/x, /empezar…). replaceState:
+    // sin ensuciar el historial; la URL sigue mandando a partir de ahí.
+    const slug = state.route.slug ?? '';
+    const status = state.group?.status ?? '';
+    const endedGame = slug && lastStatusKey === slug + '|playing' && status === 'lobby'
+      ? state.group?.currentGame : null;
+    lastStatusKey = slug + '|' + status;
+    if (endedGame) {
+      const target = `/g/${slug}/${endedGame}`;
+      if (location.pathname !== target) {
+        history.replaceState(null, '', target);
+        applyRoute();
+      }
+    }
     state.ui.sel = null;
     state.ui.actorPower = null;
     state.ui.brujaHeal = false;

@@ -251,7 +251,9 @@ try {
   await pages.bruno.waitForSelector('text=/El Pueblo ha ganado/');
   ok('fin manual con ganador elegido');
   await ana.click('button[data-a=back-lobby]');
-  await ana.waitForSelector('text=/Dispositivos/'); // la página principal es la mesa
+  await ana.waitForSelector('[data-a=open-start]'); // tras la partida: lobby del JUEGO
+  await ana.click('[data-a=change-game]'); // a la mesa para eliminar el grupo
+  await ana.waitForSelector('text=/Dispositivos/');
   await ana.click('[data-a=confirm-delete-group]');
   await ana.click('button[data-a=delete-group-confirm]');
   await ana.waitForURL(BASE + '/');
@@ -392,7 +394,9 @@ try {
 
   // Limpieza.
   await ana.click('button[data-a=back-lobby]');
-  await ana.waitForSelector('text=/Dispositivos/', { timeout: 45000 }); // la página principal es la mesa
+  await ana.waitForSelector('[data-a=open-start]', { timeout: 45000 }); // tras la partida: lobby del JUEGO
+  await ana.click('[data-a=change-game]'); // a la mesa para eliminar el grupo
+  await ana.waitForSelector('text=/Dispositivos/');
   await ana.click('[data-a=confirm-delete-group]');
   await ana.click('button[data-a=delete-group-confirm]');
   await ana.waitForURL(BASE + '/');
