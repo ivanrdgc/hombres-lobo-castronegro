@@ -1,12 +1,12 @@
 <script lang="ts">
   // Terminar la partida eligiendo el desenlace (port de endGameModal de la v1):
   // solo se ofrecen los desenlaces posibles con los roles de esta partida.
-  import { app } from '../../core/sync/store.svelte';
-  import { guard } from '../../core/sync/guard';
-  import * as A from '../../games/hombres-lobo/actions';
-  import { WINNER_LABELS } from '../../games/hombres-lobo/engine';
-  import type { RoleId } from '../../games/hombres-lobo/roles';
-  import type { WinnerId } from '../../games/hombres-lobo/types';
+  import { app } from '../../../../core/sync/store.svelte';
+  import { guard } from '../../../../core/sync/guard';
+  import * as A from '../../actions';
+  import { WINNER_LABELS } from '../../engine';
+  import type { RoleId } from '../../roles';
+  import type { WinnerId } from '../../types';
 
   const players = $derived(app.players.filter((p) => p.inGame));
   const relevant = $derived.by((): Partial<Record<WinnerId, boolean>> => {

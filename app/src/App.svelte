@@ -1,6 +1,6 @@
 <script lang="ts">
   import { app } from './core/sync/store.svelte';
-  import { GAMES } from './shell/ui-helpers';
+  import { GAME_DEFS } from './games/registry';
   import Landing from './shell/Landing.svelte';
   import GroupScreen from './shell/GroupScreen.svelte';
   import ModalHost from './shell/modals/ModalHost.svelte';
@@ -13,7 +13,7 @@
 
   // El título sigue la navegación LOCAL: en el catálogo (o la mesa), «Juegos
   // digitales»; dentro del lobby o la partida de un juego, el nombre del juego.
-  const currentGameName = $derived(GAMES.find((x) => x.id === app.group?.currentGame)?.name);
+  const currentGameName = $derived(GAME_DEFS.find((x) => x.id === app.group?.currentGame)?.name);
   const inGame = $derived(
     !!app.group && (app.group.status === 'playing' || (app.ui.lobbyView ?? 'catalog') !== 'catalog'),
   );

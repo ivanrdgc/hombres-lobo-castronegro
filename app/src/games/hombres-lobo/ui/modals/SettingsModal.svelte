@@ -1,10 +1,10 @@
 <script lang="ts">
   // Ajustes de partida: filas con interruptor (port de settingsModal v1).
-  import { app } from '../../core/sync/store.svelte';
-  import { guard } from '../../core/sync/guard';
-  import * as A from '../../games/hombres-lobo/actions';
-  import { OFFICIAL_MIN_PLAYERS } from '../../games/hombres-lobo/roles';
-  import type { TableSettings } from '../../core/sync/schema';
+  import { app } from '../../../../core/sync/store.svelte';
+  import { guard } from '../../../../core/sync/guard';
+  import * as A from '../../actions';
+  import { OFFICIAL_MIN_PLAYERS } from '../../roles';
+  import type { TableSettings } from '../../../../core/sync/schema';
 
   const s = $derived((app.group?.settings || {}) as Record<string, unknown>);
 

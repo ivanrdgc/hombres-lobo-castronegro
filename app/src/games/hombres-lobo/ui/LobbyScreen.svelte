@@ -2,13 +2,13 @@
   // Lobby de Los Hombres Lobo: solo la configuración específica del juego
   // (port de lobbyScreen v1). En el lobby no hay máster: cualquier dispositivo
   // configura e inicia.
-  import { app } from '../core/sync/store.svelte';
-  import { ROLES, wolfCountFor, OFFICIAL_MIN_PLAYERS } from '../games/hombres-lobo/roles';
-  import { EXPLANATIONS } from '../games/hombres-lobo/texts/explain';
-  import { explainAudioState, toggleExplainAudio } from './explain-audio';
-  import { isActiveDevice } from '../core/sync/presence';
-  import type { GroupDoc, PlayerDoc } from '../core/sync/schema';
-  import Flash from './Flash.svelte';
+  import { app } from '../../../core/sync/store.svelte';
+  import { ROLES, wolfCountFor, OFFICIAL_MIN_PLAYERS } from '../roles';
+  import { EXPLANATIONS } from '../texts/explain';
+  import { explainAudioState, toggleExplainAudio } from '../../../shell/explain-audio';
+  import { isActiveDevice } from '../../../core/sync/presence';
+  import type { GroupDoc, PlayerDoc } from '../../../core/sync/schema';
+  import Flash from '../../../shell/Flash.svelte';
 
   const { group }: { group: GroupDoc; my: PlayerDoc } = $props();
 

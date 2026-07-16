@@ -29,7 +29,7 @@
   import { guard } from '../core/sync/guard';
   import * as A from '../games/hombres-lobo/actions';
   import type { GroupDoc } from '../core/sync/schema';
-  import { GAMES } from './ui-helpers';
+  import { GAME_DEFS } from '../games/registry';
   import Flash from './Flash.svelte';
 
   const { group }: { group: GroupDoc } = $props();
@@ -37,7 +37,7 @@
   // La sesión guardada ya no vale (te conectaste desde otro o te expulsaron).
   const hadSession = !!app.session;
   // Si la mesa ya tiene un juego elegido, se nombra; si no, invitación genérica.
-  const gameName = $derived(GAMES.find((x) => x.id === group.currentGame)?.name);
+  const gameName = $derived(GAME_DEFS.find((x) => x.id === group.currentGame)?.name);
 
   let name = $state('');
   readName = () => name.trim();

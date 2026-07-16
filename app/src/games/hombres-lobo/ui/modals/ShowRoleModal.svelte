@@ -1,8 +1,8 @@
 <script lang="ts">
   // Carta de un jugador a pantalla completa, para enseñársela a quien toque
   // (port de showRoleModal de la v1).
-  import { app } from '../../core/sync/store.svelte';
-  import { ROLES } from '../../games/hombres-lobo/roles';
+  import { app } from '../../../../core/sync/store.svelte';
+  import { ROLES } from '../../roles';
 
   const pid = $derived(String(app.ui.modal?.pid ?? ''));
   const p = $derived(app.players.find((x) => x.id === pid));

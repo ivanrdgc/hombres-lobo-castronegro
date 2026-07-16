@@ -1,10 +1,10 @@
 <script lang="ts">
   // Menú del máster sobre un jugador en modo manual (port de manualPlayerModal
   // de la v1): muerte/vida, rol a pantalla completa, enamorado y Ladrón.
-  import { app } from '../../core/sync/store.svelte';
-  import { guard } from '../../core/sync/guard';
-  import * as A from '../../games/hombres-lobo/actions';
-  import { ROLES } from '../../games/hombres-lobo/roles';
+  import { app } from '../../../../core/sync/store.svelte';
+  import { guard } from '../../../../core/sync/guard';
+  import * as A from '../../actions';
+  import { ROLES } from '../../roles';
 
   const pid = $derived(String(app.ui.modal?.pid ?? ''));
   const p = $derived(app.players.find((x) => x.id === pid));

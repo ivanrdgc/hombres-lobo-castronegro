@@ -1,14 +1,14 @@
 <script lang="ts">
   // Composición de la partida: roles por expansión, número de lobos y aldeanos
   // reservados, y el alguacil (port de rolesModal v1 + handlers de main.js).
-  import { app } from '../../core/sync/store.svelte';
-  import { guard } from '../../core/sync/guard';
-  import * as A from '../../games/hombres-lobo/actions';
-  import { ROLES, EXPANSIONS, wolfCountFor, NEIGHBOR_ROLES } from '../../games/hombres-lobo/roles';
-  import type { RoleDef, RoleId } from '../../games/hombres-lobo/roles';
+  import { app } from '../../../../core/sync/store.svelte';
+  import { guard } from '../../../../core/sync/guard';
+  import * as A from '../../actions';
+  import { ROLES, EXPANSIONS, wolfCountFor, NEIGHBOR_ROLES } from '../../roles';
+  import type { RoleDef, RoleId } from '../../roles';
 
   const NEIGHBOR = NEIGHBOR_ROLES as string[];
-  import type { TableSettings } from '../../core/sync/schema';
+  import type { TableSettings } from '../../../../core/sync/schema';
 
   const ALL_ROLES: RoleDef[] = Object.values(ROLES);
   const rolesOf = (expId: string) => ALL_ROLES.filter((r) => r.expansion === expId);

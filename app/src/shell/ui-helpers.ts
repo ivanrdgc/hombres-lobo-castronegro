@@ -1,4 +1,5 @@
-// Utilidades del shell: catálogo de juegos, nombres de mesa y orden de asiento.
+// Utilidades del shell: nombres de mesa y orden de asiento.
+// (El catálogo de juegos vive en games/registry.ts: GAME_DEFS.)
 import type { GroupDoc, PlayerDoc } from '../core/sync/schema';
 
 // Generador de nombres de mesa (grupo de amigos), sin tema de ningún juego.
@@ -10,17 +11,6 @@ export function randomGroupName(): string {
   const p = NAME_PLACES[Math.floor(Math.random() * NAME_PLACES.length)];
   return `${g} ${p}`;
 }
-
-// Catálogo de juegos de la mesa. La mesa (usuarios + orden) es común; cada
-// juego aporta su propia configuración específica.
-export const GAMES = [
-  {
-    id: 'hombres_lobo',
-    emoji: '🐺',
-    name: 'Los Hombres Lobo de Castronegro',
-    desc: 'El clásico de roles ocultos: lobos contra el pueblo, con narrador automático por voz, modo guiado y todas las expansiones.',
-  },
-] as const;
 
 // Orden de mesa efectivo: el guardado, más los nuevos al final.
 export function seatingOrder(g: GroupDoc, players: PlayerDoc[]): string[] {

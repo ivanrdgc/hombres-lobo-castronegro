@@ -1,8 +1,8 @@
 <script lang="ts">
   // Chuleta del máster: los roles reales de toda la mesa (port de
   // viewRolesModal de la v1). Solo se abre desde pantallas del máster.
-  import { app } from '../../core/sync/store.svelte';
-  import { ROLES } from '../../games/hombres-lobo/roles';
+  import { app } from '../../../../core/sync/store.svelte';
+  import { ROLES } from '../../roles';
 
   const players = $derived(app.players.filter((p) => p.inGame));
 </script>

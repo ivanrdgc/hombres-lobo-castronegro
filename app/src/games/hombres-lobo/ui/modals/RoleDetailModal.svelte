@@ -2,10 +2,10 @@
   // Detalle de un rol: qué es, cuándo actúa y CÓMO se juega paso a paso.
   // Se abre desde la tira de cartas en partida, el ℹ️ de «Elegir roles» y
   // cualquier sitio que quiera explicar un rol. `back` devuelve al modal origen.
-  import { app } from '../../core/sync/store.svelte';
-  import { ROLES, TEAMS } from '../../games/hombres-lobo/roles';
-  import type { RoleId } from '../../games/hombres-lobo/roles';
-  import { ROLE_HELP, ALGUACIL_HELP } from '../../games/hombres-lobo/texts/role-help';
+  import { app } from '../../../../core/sync/store.svelte';
+  import { ROLES, TEAMS } from '../../roles';
+  import type { RoleId } from '../../roles';
+  import { ROLE_HELP, ALGUACIL_HELP } from '../../texts/role-help';
 
   const roleId = $derived(String(app.ui.modal?.role ?? ''));
   const back = $derived(app.ui.modal?.back as string | undefined);

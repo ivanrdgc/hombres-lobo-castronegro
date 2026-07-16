@@ -1,10 +1,10 @@
 <script lang="ts">
   // Confirmación de «Abandonar la partida»: salida inmediata con el rol
   // revelado y sin efectos de última hora.
-  import { app, me } from '../../core/sync/store.svelte';
-  import { guard } from '../../core/sync/guard';
-  import * as A from '../../games/hombres-lobo/actions';
-  import { ROLES } from '../../games/hombres-lobo/roles';
+  import { app, me } from '../../../../core/sync/store.svelte';
+  import { guard } from '../../../../core/sync/guard';
+  import * as A from '../../actions';
+  import { ROLES } from '../../roles';
 
   const my = $derived(me());
   const r = $derived(my?.role ? ROLES[my.role] : null);

@@ -1,44 +1,32 @@
 <script lang="ts">
   // Host de modales: hoja inferior con overlay (toca fuera para cerrar).
-  // El tipo vive en app.ui.modal.type; cada modal es un componente.
+  // El tipo vive en app.ui.modal.type. Los modales del SHELL (grupo, sesión,
+  // voz) viven aquí; los del juego los aporta su GameDefinition y tienen
+  // prioridad si comparten tipo.
   import { app } from '../../core/sync/store.svelte';
-  import RolesModal from './RolesModal.svelte';
-  import SettingsModal from './SettingsModal.svelte';
+  import { gameDef } from '../../games/registry';
   import PlayerMenuModal from './PlayerMenuModal.svelte';
   import ConfirmLeaveModal from './ConfirmLeaveModal.svelte';
   import ConfirmDeleteModal from './ConfirmDeleteModal.svelte';
   import TakeoverModal from './TakeoverModal.svelte';
   import GroupExistsModal from './GroupExistsModal.svelte';
   import VoiceModal from './VoiceModal.svelte';
-  import ViewRolesModal from './ViewRolesModal.svelte';
-  import EndGameModal from './EndGameModal.svelte';
-  import LeaveGameModal from './LeaveGameModal.svelte';
-  import ManualPlayerModal from './ManualPlayerModal.svelte';
-  import ShowRoleModal from './ShowRoleModal.svelte';
-  import ThiefSwapModal from './ThiefSwapModal.svelte';
-  import ExplainModal from './ExplainModal.svelte';
-  import RoleDetailModal from './RoleDetailModal.svelte';
 
-  const COMPONENTS: Record<string, unknown> = {
-    roles: RolesModal,
-    settings: SettingsModal,
+  const SHELL_MODALS: Record<string, unknown> = {
     'player-menu': PlayerMenuModal,
     'confirm-leave': ConfirmLeaveModal,
     'confirm-delete': ConfirmDeleteModal,
     takeover: TakeoverModal,
     'group-exists': GroupExistsModal,
     voice: VoiceModal,
-    'view-roles': ViewRolesModal,
-    'end-game': EndGameModal,
-    'leave-game': LeaveGameModal,
-    'manual-player': ManualPlayerModal,
-    'show-role': ShowRoleModal,
-    'thief-swap': ThiefSwapModal,
-    explain: ExplainModal,
-    'role-detail': RoleDetailModal,
   };
 
-  const Current = $derived(app.ui.modal ? (COMPONENTS[app.ui.modal.type] as typeof RolesModal | undefined) : undefined);
+  const Current = $derived.by(() => {
+    const type = app.ui.modal?.type;
+    if (!type) return undefined;
+    const game = gameDef(app.group?.currentGame).modals[type];
+    return (game ?? SHELL_MODALS[type]) as typeof PlayerMenuModal | undefined;
+  });
 
   function onOverlayClick(e: MouseEvent) {
     if (e.target === e.currentTarget) app.ui.modal = null;

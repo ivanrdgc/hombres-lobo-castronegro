@@ -3,9 +3,9 @@
   // y ajustes), sin la introducción ambientada (que ya está en el lobby). Cada
   // sección tiene su propio botón de lectura, SOLO en este dispositivo (nunca en
   // el narrador), para poder escuchar únicamente lo que interese.
-  import { app } from '../../core/sync/store.svelte';
-  import { EXPLANATIONS, explainSections } from '../../games/hombres-lobo/texts/explain';
-  import { explainAudioState, toggleExplainAudio } from '../explain-audio';
+  import { app } from '../../../../core/sync/store.svelte';
+  import { EXPLANATIONS, explainSections } from '../../texts/explain';
+  import { explainAudioState, toggleExplainAudio } from '../../../../shell/explain-audio';
 
   const g = $derived(app.group);
   const ex = $derived(EXPLANATIONS[g?.currentGame || ''] || EXPLANATIONS.hombres_lobo);

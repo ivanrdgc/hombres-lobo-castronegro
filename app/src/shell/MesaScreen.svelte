@@ -6,7 +6,7 @@
   import { guard } from '../core/sync/guard';
   import * as A from '../games/hombres-lobo/actions';
   import { isActiveDevice } from '../core/sync/presence';
-  import { GAMES } from './ui-helpers';
+  import { GAME_DEFS } from '../games/registry';
   import type { GroupDoc, PlayerDoc } from '../core/sync/schema';
   import Flash from './Flash.svelte';
 
@@ -75,7 +75,7 @@
 </div>
 <div class="card">
   <h3>🎮 ¿A qué jugamos?</h3>
-  {#each GAMES as j (j.id)}
+  {#each GAME_DEFS as j (j.id)}
     <div class="card" style="margin:10px 0 4px">
       <h3>{j.emoji} {j.name}</h3>
       <p class="small-note">{j.desc}</p>
