@@ -38,7 +38,8 @@ export type DeathCause =
   | 'pena_sin_disparo'
   | 'flecha'
   | 'oxido'
-  | 'sacrificio';
+  | 'sacrificio'
+  | 'abandono';
 
 export interface Powers {
   heal?: boolean;

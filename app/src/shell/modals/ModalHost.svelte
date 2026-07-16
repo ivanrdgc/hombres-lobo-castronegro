@@ -12,6 +12,7 @@
   import VoiceModal from './VoiceModal.svelte';
   import ViewRolesModal from './ViewRolesModal.svelte';
   import EndGameModal from './EndGameModal.svelte';
+  import LeaveGameModal from './LeaveGameModal.svelte';
   import ManualPlayerModal from './ManualPlayerModal.svelte';
   import ShowRoleModal from './ShowRoleModal.svelte';
   import ThiefSwapModal from './ThiefSwapModal.svelte';
@@ -30,6 +31,7 @@
     voice: VoiceModal,
     'view-roles': ViewRolesModal,
     'end-game': EndGameModal,
+    'leave-game': LeaveGameModal,
     'manual-player': ManualPlayerModal,
     'show-role': ShowRoleModal,
     'thief-swap': ThiefSwapModal,

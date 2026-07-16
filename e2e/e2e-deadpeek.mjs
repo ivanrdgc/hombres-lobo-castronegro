@@ -18,12 +18,12 @@ await ana.fill('#inp-group', GROUP);
 await ana.click('[data-a=create-group]');
 await ana.waitForURL('**/g/**');
 const url = ana.url();
-for (const n of ['Bea', 'Coco', 'Dani', 'Enzo']) {
+for (const n of ['Bea', 'Coco', 'Dani', 'Enzo', 'Fina']) {
   const p = await mk(n.toLowerCase());
   await p.goto(url); await p.fill('#inp-name', n); await p.click('[data-a=join]');
   await p.waitForSelector('text=/Dispositivos/');
 }
-await ana.waitForSelector('text=Dispositivos (5)');
+await ana.waitForSelector('text=Dispositivos (6)');
 // quitar los roles extra para tener solo 1 lobo + 2 aldeanos (muerte segura noche 1)
 await ana.click('button[data-a=select-game]');
 await ana.waitForSelector('[data-a=open-roles]');
@@ -42,7 +42,7 @@ await ana.click('.player[data-a=start-player][data-p=p-ana]');
 await ana.waitForSelector('.player[data-a=start-player][data-p=p-ana].off');
 await ana.click('[data-a=start-auto]');
 let st = await wait(ana, (s) => s.phase === 'reveal', 'reparto');
-for (const p of ['bea', 'coco', 'dani', 'enzo']) { await pages[p].waitForSelector('[data-a=open-reveal-role]'); await pages[p].click('[data-a=open-reveal-role]'); await pages[p].click('[data-a=confirm-role-seen]'); }
+for (const p of ['bea', 'coco', 'dani', 'enzo', 'fina']) { await pages[p].waitForSelector('[data-a=open-reveal-role]'); await pages[p].click('[data-a=open-reveal-role]'); await pages[p].click('[data-a=confirm-role-seen]'); }
 await pages.bea.waitForSelector('button[data-a=begin-first-night]');
 await pages.bea.click('button[data-a=begin-first-night]');
 st = await wait(ana, (s) => s.phase === 'night', 'noche');
@@ -66,11 +66,28 @@ else bad('rol revelado incorrecto: ' + txt);
 const alivePeek = await wolfPage.locator('.player[data-a=dead-peek]').count();
 if (alivePeek === 0) ok('los vivos no tienen la opción de espiar roles');
 else bad('un jugador vivo puede espiar roles');
-// El narrador-altavoz no tiene botones: un jugador vivo termina desde el menú ⋯.
-await wolfPage.click('[data-a=game-menu]');
-await wolfPage.click('button[data-a=end-game]');
-await wolfPage.click('button[data-a=end-game-confirm]');
+
+// 🚪 Abandonar a media partida: un aldeano vivo se va; su rol se revela y la partida sigue.
+st = await hlc(ana);
+const leaver = st.players.find((p) => p.alive && p.role === 'aldeano');
+const leaverPage = pages[leaver.name.toLowerCase()];
+await leaverPage.click('[data-a=game-menu]');
+await leaverPage.click('button[data-a=leave-game]');
+await leaverPage.click('button[data-a=leave-game-confirm]');
+st = await wait(ana, (s) => s.players.find((p) => p.name === leaver.name)?.alive === false, 'abandono registrado');
+if (st.phase === 'day') ok(`${leaver.name} abandona y la partida sigue (sin efectos póstumos)`); else bad('el abandono alteró la fase: ' + st.phase);
+await wolfPage.waitForSelector('text=/abandona la partida y muestra su carta/');
+ok('el abandono se anuncia en la crónica con el rol revelado');
+if (await leaverPage.isVisible('text=/Has abandonado la partida/')) ok('quien se va ve su aviso de abandono'); else bad('falta el aviso de abandono en su pantalla');
+
+// El narrador-altavoz ahora SIGUE la partida (parrilla + crónica) y puede terminarla.
+await ana.waitForSelector('text=El pueblo');
+ok('el dispositivo que no juega ve la parrilla del pueblo');
+await ana.click('[data-a=game-menu]');
+await ana.click('button[data-a=end-game]');
+await ana.click('button[data-a=end-game-confirm]');
 await wait(ana, (s) => s.phase === 'end', 'fin');
+ok('un dispositivo que NO juega termina la partida desde su menú ⋯');
 await ana.click('button[data-a=back-lobby]');
 await ana.waitForSelector('[data-a=confirm-delete-group]');
 await ana.click('[data-a=confirm-delete-group]');

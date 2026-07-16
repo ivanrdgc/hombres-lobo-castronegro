@@ -173,13 +173,16 @@
   <PlayersGrid players={players} title="🏘️ El pueblo" showAlguacil={game.alguacilId} />
   <LogPanel game={game} />
 {:else if !my.inGame}
-  <!-- Espectador: dispositivo que no juega ni narra (spectatorScreen de la v1). -->
-  <div class="topbar"><h2>{group.name}</h2><span class="chip">🌙 En curso</span></div>
+  <!-- Espectador: sigue la partida y puede terminarla desde el menú ⋯ si hace falta. -->
+  <div class="topbar"><h2>{group.name}</h2><PhaseChip game={game} /><GameMenu group={group} /></div>
+  <Flash />
   <div class="card" style="text-align:center">
-    <span class="moon">🌙</span>
+    <span class="moon">👀</span>
     <h3>Hay una partida en curso</h3>
-    <p class="small-note">Este dispositivo no participa. La pantalla cambiará sola cuando termine.</p>
+    <p class="small-note">Este dispositivo no juega esta partida: puedes seguirla desde aquí. Si hiciera falta, cualquiera puede terminarla desde el menú ⋯.</p>
   </div>
+  <PlayersGrid players={players} title="🏘️ El pueblo" showAlguacil={game.alguacilId} />
+  <LogPanel game={game} />
 {:else}
   <!-- Jugador: solo su carta (oculta por defecto); el narrador dirige en persona. -->
   <div class="topbar"><h2>{group.name}</h2><PhaseChip game={game} /><GameMenu group={group} /></div>

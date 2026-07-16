@@ -14,13 +14,18 @@
   const my = $derived(me());
   const narrator = $derived(isMaster());
   const auto = $derived(game?.mode === 'auto');
-  // Terminar: en automático, cualquiera en juego o el narrador; en guiado/manual,
-  // solo quien dirige (misma regla que la barra de la v1).
-  const canEnd = $derived(narrator || (auto && !!my?.inGame));
-  const canUse = $derived(!!game && game.phase !== 'end' && (narrator || !!my?.inGame));
+  // El menú es del GRUPO: cualquier dispositivo (juegue o no) puede pausar o
+  // terminar la partida — nadie queda bloqueado porque falte otro móvil.
+  const canUse = $derived(!!game && game.phase !== 'end');
+  // Abandonar: solo quien está en juego y vivo.
+  const inPlay = $derived(!!my?.inGame && my?.alive === true);
 
   let open = $state(false);
   const close = () => (open = false);
+  function leaveOpen() {
+    app.ui.modal = { type: 'leave-game' };
+    close();
+  }
   function voiceOpen() {
     app.ui.modal = { type: 'voice' };
     app.ui.voiceTest = null;
@@ -63,9 +68,10 @@
           <button role="menuitem" data-a="view-roles" onclick={viewRoles}>👁 Ver roles</button>
         {/if}
         <button role="menuitem" data-a="open-game-roles" onclick={openGameRoles}>🎴 Cartas</button>
-        {#if canEnd}
-          <button role="menuitem" class="danger-text" data-a="end-game" onclick={endGame}>🏳️ Terminar</button>
+        {#if inPlay}
+          <button role="menuitem" class="danger-text" data-a="leave-game" onclick={leaveOpen}>🚪 Abandonar la partida</button>
         {/if}
+        <button role="menuitem" class="danger-text" data-a="end-game" onclick={endGame}>🏳️ Terminar</button>
         {#if narrator && auto}
           <p class="menu-note">🔊 Narras tú: mantén la pantalla encendida y la app en primer plano, o la voz se detiene. Otro dispositivo puede tomar el relevo desde 🗣️ Voz.</p>
         {/if}

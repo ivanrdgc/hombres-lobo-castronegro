@@ -383,6 +383,55 @@ export async function backToLobby(): Promise<void> {
   await batch.commit();
 }
 
+// Abandonar la partida en curso (salida administrativa): el rol se revela a
+// todos y el jugador queda fuera AL INSTANTE, sin efectos de última hora (ni
+// flecha del Cazador, ni muerte de pena del enamorado, ni sucesión del
+// Alguacil). Si su marcha decide el ganador, la partida se cierra sola
+// (en manual no: allí manda el narrador).
+export async function leaveGame(): Promise<void> {
+  await gameTx((game, players) => {
+    if (game.phase === 'end') return null;
+    const ps = inGamePlayers(players);
+    const meP = ps.find((p) => p.id === myPid());
+    if (!meP || meP.alive === false) return null;
+    const def = meP.role ? ROLES[meP.role] : null;
+    game.log!.push({ kind: 'muerte', txt: `🚪 ${meP.name} abandona la partida y muestra su carta: era ${def ? `${def.emoji} ${def.name}` : 'un misterio'}.` });
+    meP.alive = false;
+    meP.causeOfDeath = 'abandono';
+    meP.deathAt = Date.now();
+    meP.roleSeen = true; // el reparto no debe esperarle
+    // Sus asuntos pendientes desaparecen sin resolverse.
+    const hadSirvienta = (game.pending || []).some((h) => h.type === 'sirvienta' && h.targetId === meP.id);
+    game.pending = (game.pending || []).filter((h) => h.pid !== meP.id && h.targetId !== meP.id);
+    if (hadSirvienta) game.vote = null; // el juicio se disuelve: el condenado ya no está
+    if (game.alguacilId === meP.id) {
+      game.alguacilId = null;
+      game.log!.push({ kind: 'evento', txt: '⭐ El pueblo se queda sin Alguacil.' });
+    }
+    if (game.soloVoteId === meP.id) game.soloVoteId = null;
+    // Repaso de roles: sin él puede que ya hayan confirmado todos los vivos.
+    if (game.roleRefresh && !game.roleRefresh.closing) {
+      const alive = ps.filter((p) => p.alive);
+      if (alive.length && alive.every((p) => (game.roleRefresh!.confirmed || {})[p.id])) {
+        game.roleRefresh = { closing: true, at: Date.now() };
+      }
+    }
+    // ¿Su marcha decide la partida? (en manual decide el narrador)
+    if (game.mode !== 'manual') {
+      const w = checkWinner(ps);
+      if (w) {
+        game.winner = w;
+        game.phase = 'end';
+        game.paused = null;
+      }
+    }
+    return {
+      game,
+      playerPatches: { [meP.id]: { alive: false, causeOfDeath: 'abandono', deathAt: meP.deathAt, roleSeen: true } },
+    };
+  }, { allowPaused: true });
+}
+
 export async function endGameNow(winner: WinnerId | null): Promise<void> {
   await gameTx((game, players) => {
     game.winner = winner || checkWinner(players.filter((p) => p.inGame)) || 'nadie';

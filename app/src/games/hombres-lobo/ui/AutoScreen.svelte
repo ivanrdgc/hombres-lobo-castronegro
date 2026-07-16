@@ -12,7 +12,6 @@
   import Flash from '../../../shell/Flash.svelte';
   import NarratorPresence from '../../../shell/NarratorPresence.svelte';
   import PhaseChip from './PhaseChip.svelte';
-  import NarratorPanel from './NarratorPanel.svelte';
   import RevealPhase from './RevealPhase.svelte';
   import NightPhase from './NightPhase.svelte';
   import DayPhase from './DayPhase.svelte';
@@ -25,10 +24,6 @@
 
   const game = $derived(group.game!);
   const needsUnlock = $derived(!app.ui.voiceUnlocked && !app.ui.muted);
-  // Como en la v1: el panel del narrador acompaña al cuerpo de la partida si el
-  // dispositivo no juega (en la práctica, las pantallas mínimas de arriba lo
-  // cubren antes; se conserva por paridad con autoScreen()).
-  const showNarratorPanel = $derived(!my.inGame && game.phase !== 'end' && !game.paused);
 
   function unlockVoice() {
     unlockAudio();
@@ -37,33 +32,48 @@
   }
 </script>
 
-{#if !my.inGame && game.phase !== 'end' && isMaster()}
-  <!-- Narrador que no juega (tele/altavoz): solo el aviso + la voz del juego. -->
-  <div class="topbar"><h2>{group.name}</h2><span class="chip">🔊 Narrador</span></div>
-  <div class="card" style="text-align:center">
-    <span class="moon">🔊</span>
-    <h3>Este dispositivo narra la partida</h3>
-    <p class="small-note">Hay una partida en curso. Deja este dispositivo con la pantalla encendida y el volumen alto: nadie necesita tocarlo.</p>
-    {#if needsUnlock}<button class="primary block" data-a="unlock-voice" onclick={unlockVoice}>🔊 Activar la narración</button>{/if}
+{#if !my.inGame && game.phase !== 'end'}
+  <!-- Dispositivo que no juega: narrador-altavoz o espectador. Ambos siguen la
+       partida y tienen el menú ⋯ (pausar/terminar) por si quien jugaba no está. -->
+  <div class="topbar">
+    <h2>{group.name}</h2>
+    <PhaseChip {game} />
+    <GameMenu {group} />
   </div>
-{:else if !my.inGame && game.phase !== 'end'}
-  <!-- Dispositivo que no juega ni narra: solo el aviso de partida en curso. -->
-  <div class="topbar"><h2>{group.name}</h2><span class="chip">🌙 En curso</span></div>
-  <div class="card" style="text-align:center">
-    <span class="moon">🌙</span>
-    <h3>Hay una partida en curso</h3>
-    <p class="small-note">Este dispositivo no participa. La pantalla cambiará sola cuando termine.</p>
-  </div>
+  <Flash />
+  {#if isMaster()}
+    <div class="card" style="text-align:center">
+      <span class="moon">🔊</span>
+      <h3>Este dispositivo narra la partida</h3>
+      <p class="small-note">Déjalo con la pantalla encendida y el volumen alto: nadie necesita tocarlo.</p>
+      {#if needsUnlock}<button class="primary block" data-a="unlock-voice" onclick={unlockVoice}>🔊 Activar la narración</button>{/if}
+    </div>
+  {:else}
+    <div class="card" style="text-align:center">
+      <span class="moon">👀</span>
+      <h3>Hay una partida en curso</h3>
+      <p class="small-note">Este dispositivo no juega esta partida: puedes seguirla desde aquí. Si quien jugaba no está, cualquiera puede pausarla o terminarla desde el menú ⋯.</p>
+    </div>
+    <NarratorPresence {group} />
+  {/if}
+  {#if game.paused}
+    <div class="card" style="text-align:center;border-color:var(--accent)">
+      <h3>⏸️ Partida en pausa</h3>
+      <p class="small-note">La pausó <b>{game.paused.name || 'alguien'}</b>.</p>
+      <button class="primary block" data-a="resume-game" onclick={() => guard(A.resumeGame)}>▶️ Reanudar la partida</button>
+    </div>
+  {/if}
+  <PlayersGrid players={app.players.filter((p) => p.inGame)} title="🏘️ El pueblo" viewer={my} />
+  <LogPanel {game} />
 {:else}
   <div class="topbar">
     <h2>{group.name}</h2>
     <PhaseChip {game} />
     <GameMenu {group} />
   </div>
-  {#if !my.alive && game.phase !== 'end' && my.inGame}<div class="flash">💀 Has muerto. Sigue mirando en silencio… y no desveles nada.</div>{/if}
+  {#if !my.alive && game.phase !== 'end' && my.inGame}<div class="flash">{my.causeOfDeath === 'abandono' ? '🚪 Has abandonado la partida: tu carta quedó revelada y el pueblo sigue sin ti.' : '💀 Has muerto. Sigue mirando en silencio… y no desveles nada.'}</div>{/if}
   <Flash />
   <NarratorPresence {group} />
-  {#if showNarratorPanel}<NarratorPanel {group} />{/if}
   {#if game.paused && game.phase !== 'end'}
     <!-- Pausa global: se congela todo hasta que alguien reanude. -->
     <div class="card" style="text-align:center;border-color:var(--accent)">
