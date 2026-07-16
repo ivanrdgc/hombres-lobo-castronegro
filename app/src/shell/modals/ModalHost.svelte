@@ -16,7 +16,6 @@
   import ManualPlayerModal from './ManualPlayerModal.svelte';
   import ShowRoleModal from './ShowRoleModal.svelte';
   import ThiefSwapModal from './ThiefSwapModal.svelte';
-  import VoteConfirmModal from './VoteConfirmModal.svelte';
   import ExplainModal from './ExplainModal.svelte';
   import GameRolesModal from './GameRolesModal.svelte';
 
@@ -35,7 +34,6 @@
     'manual-player': ManualPlayerModal,
     'show-role': ShowRoleModal,
     'thief-swap': ThiefSwapModal,
-    'vote-confirm': VoteConfirmModal,
     explain: ExplainModal,
     'game-roles': GameRolesModal,
   };

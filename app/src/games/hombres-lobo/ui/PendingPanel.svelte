@@ -1,14 +1,13 @@
 <script lang="ts">
-  // Resoluciones pendientes del día (port de pendingPanel() de la v1): disparo
-  // del Cazador, decisión de la Sirvienta (con cuenta atrás), Alguacil y
-  // Cabeza de Turco.
-  import { setFlash } from '../../../core/sync/store.svelte';
+  // Resoluciones pendientes del día: disparo del Cazador, decisión de la
+  // Sirvienta (con cuenta atrás), Alguacil y Cabeza de Turco. Las que piden
+  // elegir jugador usan ActionGrid (una sola lista, confirmación con nombre).
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
-  import { sel1 } from '../../../shell/selection';
+  import { selIds, sel1 } from '../../../shell/selection';
   import type { GroupDoc, PlayerDoc } from '../../../core/sync/schema';
   import type { PendingEntry } from '../types';
-  import PickList from './PickList.svelte';
+  import ActionGrid from './ActionGrid.svelte';
   import Countdown from './Countdown.svelte';
 
   // El grupo forma parte del contrato de props (mismas firmas que la v1),
@@ -21,16 +20,16 @@
   } = $props();
 
   const key = $derived(`pend:${head.type}`);
-
-  const needSel = () => setFlash('Selecciona primero a un jugador de la lista.');
+  const selName = $derived(players.find((p) => p.id === selIds(key)[0])?.name ?? null);
+  const notMe = (p: PlayerDoc) => p.id !== my.id;
 </script>
 
 {#if head.type === 'cazador'}
   {#if my.id === head.pid}
     <div class="actionpanel"><h3>🏹 ¡Tu última flecha!</h3>
       <p class="hint">Has caído, pero puedes llevarte a alguien contigo.</p>
-      <PickList {players} exclude={[my.id]} selKey={key} />
-      <button class="danger block" data-a="cazador-shoot" onclick={() => (sel1(key) ? guard(() => A.hunterShoot(sel1(key))) : needSel())}>🏹 Disparar</button>
+      <ActionGrid {players} selKey={key} canPick={notMe} />
+      <button class="danger block" data-a="cazador-shoot" disabled={!selName} onclick={() => (sel1(key) ? guard(() => A.hunterShoot(sel1(key))) : undefined)}>🏹 {selName ? `Disparar a ${selName}` : 'Disparar'}</button>
       <button class="ghost block" data-a="cazador-skip" onclick={() => guard(() => A.hunterShoot(null))}>No disparar</button></div>
   {:else}
     {@const hunter = players.find((p) => p.id === head.pid)}
@@ -48,27 +47,27 @@
 {:else if head.type === 'alguacil_elect'}
   {#if my.alive}
     <div class="actionpanel"><h3>⭐ Elección del Alguacil</h3>
-      <p class="hint">Debatid quién será el Alguacil (su voto vale doble). Cualquiera registra el resultado.</p>
-      <PickList {players} selKey={key} />
-      <button class="primary block" data-a="alguacil-pick" onclick={() => (sel1(key) ? guard(() => A.pickAlguacil(sel1(key)!)) : needSel())}>⭐ Nombrar Alguacil</button></div>
+      <p class="hint">Debatid quién será el Alguacil (su voto vale doble) y tocadlo. Cualquiera registra el resultado.</p>
+      <ActionGrid {players} selKey={key} />
+      <button class="primary block" data-a="alguacil-pick" disabled={!selName} onclick={() => (sel1(key) ? guard(() => A.pickAlguacil(sel1(key)!)) : undefined)}>⭐ {selName ? `Nombrar Alguacil a ${selName}` : 'Nombrar Alguacil'}</button></div>
   {:else}
     <div class="narration">⭐ El pueblo elige a su Alguacil…</div>
   {/if}
 {:else if head.type === 'alguacil_pick'}
   {#if my.id === head.pid}
     <div class="actionpanel"><h3>⭐ Tu último acto como Alguacil</h3>
-      <p class="hint">Señala a tu sucesor.</p>
-      <PickList {players} exclude={[my.id]} selKey={key} />
-      <button class="primary block" data-a="alguacil-pick" onclick={() => (sel1(key) ? guard(() => A.pickAlguacil(sel1(key)!)) : needSel())}>⭐ Nombrar sucesor</button></div>
+      <p class="hint">Toca a tu sucesor.</p>
+      <ActionGrid {players} selKey={key} canPick={notMe} />
+      <button class="primary block" data-a="alguacil-pick" disabled={!selName} onclick={() => (sel1(key) ? guard(() => A.pickAlguacil(sel1(key)!)) : undefined)}>⭐ {selName ? `Nombrar sucesor a ${selName}` : 'Nombrar sucesor'}</button></div>
   {:else}
     <div class="narration">⭐ El Alguacil caído señala a su sucesor…</div>
   {/if}
 {:else if head.type === 'cabeza_pick'}
   {#if my.id === head.pid}
     <div class="actionpanel"><h3>🐐 Tu sacrificio no será en vano</h3>
-      <p class="hint">Regla oficial: anuncia en voz alta quiénes tendrán derecho a votar mañana (los demás callan en la votación). En la app, elige además quién registrará esa decisión.</p>
-      <PickList {players} exclude={[my.id]} selKey={key} />
-      <button class="primary block" data-a="cabeza-pick" onclick={() => (sel1(key) ? guard(() => A.cabezaPick(sel1(key))) : needSel())}>👉 Será quien registre el voto</button>
+      <p class="hint">Regla oficial: anuncia en voz alta quiénes tendrán derecho a votar mañana (los demás callan en la votación). En la app, toca además a quien registrará esa decisión.</p>
+      <ActionGrid {players} selKey={key} canPick={notMe} />
+      <button class="primary block" data-a="cabeza-pick" disabled={!selName} onclick={() => (sel1(key) ? guard(() => A.cabezaPick(sel1(key))) : undefined)}>👉 {selName ? `Registrará el voto: ${selName}` : 'Será quien registre el voto'}</button>
       <button class="ghost block" data-a="cabeza-skip" onclick={() => guard(() => A.cabezaPick(null))}>Que vote todo el pueblo</button></div>
   {:else}
     <div class="narration">🐐 El Cabeza de Turco toma su última decisión…</div>

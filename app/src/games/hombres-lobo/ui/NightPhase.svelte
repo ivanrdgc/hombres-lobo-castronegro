@@ -55,12 +55,16 @@
   <div class="narration">🌙 {stepId === 'amanecer' ? 'Los primeros rayos de sol acarician los tejados…' : narrText}</div>
   <RoleCard player={my} {group} mini={true} />
   {#if isActor}
+    <!-- El actor solo ve su panel: la lista de objetivos YA es el pueblo entero
+         (ActionGrid), sin parrilla duplicada debajo. -->
     <NightActionPanel stepId={stepId!} {group} {my} {players} />
-  {:else if stepId === 'enamorados' || stepId === 'encantados' || stepId === 'lobos_reconocen'}
-    <!-- Pasos con palabras clave o reconocimiento físico: los que no actúan
-         mantienen la vista en su pantalla con esta indicación neutral. -->
-    <div class="actionpanel"><h3>👂 Atención al narrador</h3>
-      <p class="hint">{#if stepId === 'lobos_reconocen'}Ojos cerrados: los lobos se están reconociendo. No mires.{:else}Ojos cerrados y oídos atentos. Si suena <b>tu palabra clave</b>, ábrelos con disimulo: tendrás un mensaje aquí.{/if}</p></div>
+  {:else}
+    {#if stepId === 'enamorados' || stepId === 'encantados' || stepId === 'lobos_reconocen'}
+      <!-- Pasos con palabras clave o reconocimiento físico: los que no actúan
+           mantienen la vista en su pantalla con esta indicación neutral. -->
+      <div class="actionpanel"><h3>👂 Atención al narrador</h3>
+        <p class="hint">{#if stepId === 'lobos_reconocen'}Ojos cerrados: los lobos se están reconociendo. No mires.{:else}Ojos cerrados y oídos atentos. Si suena <b>tu palabra clave</b>, ábrelos con disimulo: tendrás un mensaje aquí.{/if}</p></div>
+    {/if}
+    <PlayersGrid {players} title="🏘️ El pueblo" viewer={my} />
   {/if}
-  <PlayersGrid {players} title="🏘️ El pueblo" viewer={my} />
 {/if}

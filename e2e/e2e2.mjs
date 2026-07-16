@@ -149,7 +149,7 @@ async function drivePending(st) {
         check(revealed >= 1, 'el jugador muerto puede revelar roles tocando a la gente');
       }
       // Dispara al primer objetivo de la lista.
-      const victimName = (await pg.locator('.actionpanel .player.selectable >> nth=0').innerText()).trim();
+      const victimName = (await pg.locator('.actionpanel .player.selectable >> nth=0 >> .pname').innerText()).trim();
       await pg.click('.actionpanel .player.selectable >> nth=0');
       await pg.click('button[data-a=cazador-shoot]');
       ok('el cazador dispara su última flecha');
@@ -374,8 +374,7 @@ try {
             try {
               await pg.waitForSelector('.actionpanel:has-text("juicio")', { timeout: 8000 });
               await pg.click(`.actionpanel .player.selectable:has-text("${wolf.name}")`);
-              await pg.click('button[data-a=vote-confirm]');
-              await pg.click('button[data-a=vote-final]');
+              await pg.click('button[data-a=vote-confirm]'); // confirmación inline con nombre
             } catch (e) { console.log('  voto err', e.message.slice(0, 80)); }
           }
         }

@@ -1,6 +1,8 @@
 <script lang="ts">
-  // Panel de acción nocturna del actor del paso en curso: port COMPLETO del
-  // switch de nightActionPanel() de la v1 con los handlers act-* de main.js.
+  // Panel de acción nocturna del actor del paso en curso. La lista de objetivos
+  // es ActionGrid (el pueblo entero, elegibles tocables): no hay una segunda
+  // parrilla debajo, y el botón de confirmar dice el nombre elegido y queda
+  // deshabilitado hasta que haya elección. Dos toques por acción.
   // Nota: los roles vivos SIEMPRE despiertan aunque no puedan usar su poder
   // (pociones gastadas, olfato perdido, castigo del Anciano): su panel de
   // disimulo mantiene el comportamiento externo idéntico.
@@ -11,7 +13,7 @@
   import { GITANA_QUESTIONS } from '../engine';
   import { selIds, sel1 } from '../../../shell/selection';
   import type { GroupDoc, PlayerDoc } from '../../../core/sync/schema';
-  import PickList from './PickList.svelte';
+  import ActionGrid from './ActionGrid.svelte';
 
   const { stepId, group, my, players }: {
     stepId: string;
@@ -21,11 +23,12 @@
   } = $props();
 
   const game = $derived(group.game!);
-  const others = $derived(players.filter((p) => p.id !== my.id));
   const key = $derived(`n${game.night}:${stepId}`);
   const sel = $derived(selIds(key));
+  const selNames = $derived(sel.map((id) => players.find((p) => p.id === id)?.name || '').filter(Boolean));
+  const sel1Name = $derived(selNames[0] ?? null);
 
-  const needSel = () => setFlash('Selecciona primero a un jugador de la lista.');
+  const needSel = () => setFlash('Toca primero a un jugador de la lista.');
 
   // Texto de disimulo compartido cuando el pueblo mató al Anciano.
   const ANCIANO = 'La muerte del Anciano os arrebató los poderes. Que nadie lo note: espera un instante, disimula… y termina tu turno.';
@@ -33,6 +36,8 @@
   const ACTOR_POWERS: ['vidente' | 'defensor' | 'cuervo', string][] = [
     ['vidente', '🔮 Ver un rol'], ['defensor', '🛡️ Proteger'], ['cuervo', '🐦‍⬛ Señalar (+2 votos)'],
   ];
+
+  const notMe = (p: PlayerDoc) => p.id !== my.id;
 
   function cupidoShoot() {
     const s = selIds(key);
@@ -99,9 +104,9 @@
   </div>
 {:else if stepId === 'cupido'}
   <div class="actionpanel"><h3>💘 Cupido</h3>
-    <p class="hint">Elige a dos personas (puedes incluirte). Quedarán enamoradas para siempre.</p>
-    <PickList {players} max={2} selKey={key} />
-    <button class="primary block" data-a="act-cupido" onclick={cupidoShoot}>🏹 Enamorar{sel.length === 2 ? '' : ' (elige 2)'}</button>
+    <p class="hint">Toca a las dos personas que quedarán enamoradas para siempre (puedes incluirte).</p>
+    <ActionGrid {players} max={2} selKey={key} />
+    <button class="primary block" data-a="act-cupido" disabled={sel.length !== 2} onclick={cupidoShoot}>🏹 {sel.length === 2 ? `Enamorar a ${selNames.join(' y ')}` : 'Enamorar (elige a 2)'}</button>
   </div>
 {:else if stepId === 'enamorados'}
   {@const partner = players.find((p) => p.lover && p.id !== my.id)}
@@ -111,9 +116,9 @@
   </div>
 {:else if stepId === 'nino_salvaje'}
   <div class="actionpanel"><h3>🐾 El Niño Salvaje</h3>
-    <p class="hint">Elige a tu modelo. Si muere, te convertirás en hombre lobo.</p>
-    <PickList players={others} selKey={key} />
-    <button class="primary block" data-a="act-nino" onclick={() => (sel1(key) ? guard(() => A.actNinoSalvaje(sel1(key))) : needSel())}>🌟 Elegir modelo</button>
+    <p class="hint">Toca a tu modelo a seguir. Si muere, te convertirás en hombre lobo.</p>
+    <ActionGrid {players} selKey={key} canPick={notMe} />
+    <button class="primary block" data-a="act-nino" disabled={!sel1Name} onclick={() => (sel1(key) ? guard(() => A.actNinoSalvaje(sel1(key))) : needSel())}>🌟 {sel1Name ? `Mi modelo: ${sel1Name}` : 'Elegir modelo'}</button>
   </div>
 {:else if stepId === 'perro_lobo'}
   <div class="actionpanel"><h3>🐕 El Perro Lobo</h3>
@@ -158,9 +163,9 @@
     </div>
   {:else}
     <div class="actionpanel"><h3>🎭 El Actor: {ACTOR_POWERS.find(([p]) => p === app.ui.actorPower)?.[1]}</h3>
-      <p class="hint">Ahora elige tu objetivo.</p>
-      <PickList players={app.ui.actorPower === 'defensor' ? players : others} selKey={key} />
-      <button class="primary block" data-a="act-actor-confirm" onclick={actorConfirm}>🎭 Actuar</button>
+      <p class="hint">Ahora toca a tu objetivo.</p>
+      <ActionGrid {players} selKey={key} canPick={app.ui.actorPower === 'defensor' ? () => true : notMe} />
+      <button class="primary block" data-a="act-actor-confirm" disabled={!sel1Name} onclick={actorConfirm}>🎭 {sel1Name ? `Actuar sobre ${sel1Name}` : 'Actuar'}</button>
       <button class="ghost block" data-a="act-actor-power" data-p="" onclick={() => { app.ui.actorPower = null; app.ui.sel = null; }}>↩️ Cambiar papel</button>
     </div>
   {/if}
@@ -172,9 +177,9 @@
     </div>
   {:else}
     <div class="actionpanel"><h3>🛡️ El Defensor</h3>
-      <p class="hint">Elige a quién proteger esta noche (no puedes repetir al de anoche). Puedes protegerte a ti.</p>
-      <PickList {players} exclude={my.protectedLast ? [my.protectedLast] : []} selKey={key} />
-      <button class="primary block" data-a="act-defensor" onclick={() => (sel1(key) ? guard(() => A.actDefensor(sel1(key))) : needSel())}>🛡️ Proteger</button>
+      <p class="hint">Toca a quién proteger esta noche (no puedes repetir al de anoche; puedes protegerte a ti).</p>
+      <ActionGrid {players} selKey={key} canPick={(p) => p.id !== my.protectedLast} />
+      <button class="primary block" data-a="act-defensor" disabled={!sel1Name} onclick={() => (sel1(key) ? guard(() => A.actDefensor(sel1(key))) : needSel())}>🛡️ {sel1Name ? `Proteger a ${sel1Name}` : 'Proteger'}</button>
       <button class="ghost block" data-a="act-defensor-skip" onclick={() => guard(() => A.actDefensor(null))}>No proteger a nadie</button>
     </div>
   {/if}
@@ -200,9 +205,9 @@
     </div>
   {:else}
     <div class="actionpanel"><h3>🔮 La Vidente</h3>
-      <p class="hint">Elige a quién quieres descubrir esta noche.</p>
-      <PickList players={others} selKey={key} />
-      <button class="primary block" data-a="act-vidente" onclick={() => (sel1(key) ? guard(() => A.actVidente(sel1(key))) : needSel())}>🔮 Ver su rol</button>
+      <p class="hint">Toca a quien quieras descubrir esta noche.</p>
+      <ActionGrid {players} selKey={key} canPick={notMe} />
+      <button class="primary block" data-a="act-vidente" disabled={!sel1Name} onclick={() => (sel1(key) ? guard(() => A.actVidente(sel1(key))) : needSel())}>🔮 {sel1Name ? `Ver el rol de ${sel1Name}` : 'Ver un rol'}</button>
     </div>
   {/if}
 {:else if stepId === 'zorro'}
@@ -219,9 +224,9 @@
     </div>
   {:else}
     <div class="actionpanel"><h3>🦊 El Zorro</h3>
-      <p class="hint">Señala a un jugador: olfatearás su casa y las dos vecinas. Si no hay lobos, perderás tu olfato.</p>
-      <PickList players={others} selKey={key} />
-      <button class="primary block" data-a="act-zorro" onclick={zorroSniff}>🦊 Olfatear</button>
+      <p class="hint">Toca a un jugador: olfatearás su casa y las dos vecinas. Si no hay lobos, perderás tu olfato.</p>
+      <ActionGrid {players} selKey={key} canPick={notMe} />
+      <button class="primary block" data-a="act-zorro" disabled={!sel1Name} onclick={zorroSniff}>🦊 {sel1Name ? `Olfatear la casa de ${sel1Name}` : 'Olfatear'}</button>
       <button class="ghost block" data-a="act-zorro-skip" onclick={() => guard(() => A.actZorro(null, false))}>No olfatear</button>
     </div>
   {/if}
@@ -233,20 +238,19 @@
     </div>
   {:else}
     <div class="actionpanel"><h3>🐦‍⬛ El Cuervo</h3>
-      <p class="hint">Señala a un sospechoso: mañana cargará con 2 votos extra.</p>
-      <PickList players={others} selKey={key} />
-      <button class="primary block" data-a="act-cuervo" onclick={() => (sel1(key) ? guard(() => A.actCuervo(sel1(key))) : needSel())}>🐦‍⬛ Señalar</button>
+      <p class="hint">Toca a un sospechoso: mañana cargará con 2 votos extra.</p>
+      <ActionGrid {players} selKey={key} canPick={notMe} />
+      <button class="primary block" data-a="act-cuervo" disabled={!sel1Name} onclick={() => (sel1(key) ? guard(() => A.actCuervo(sel1(key))) : needSel())}>🐦‍⬛ {sel1Name ? `Señalar a ${sel1Name}` : 'Señalar'}</button>
       <button class="ghost block" data-a="act-cuervo-skip" onclick={() => guard(() => A.actCuervo(null))}>No señalar</button>
     </div>
   {/if}
 {:else if stepId === 'lobos'}
   {@const pack = players.filter((p) => p.alive && isWolfSide(p))}
-  {@const prey = players.filter((p) => p.alive)}
   <!-- La manada puede devorar a cualquiera… incluso a uno de los suyos. -->
   <div class="actionpanel"><h3>🐺 Los Hombres Lobo</h3>
     <p class="hint">Manada: <b>{pack.map((p) => p.name).join(', ')}</b>. Poneos de acuerdo (en silencio, con la mirada…): el primero que elija decide por todos.</p>
-    <PickList players={prey} selKey={key} />
-    <button class="danger block" data-a="act-lobos" onclick={() => (sel1(key) ? guard(() => A.actLobos(sel1(key))) : needSel())}>🩸 Devorar</button>
+    <ActionGrid {players} selKey={key} />
+    <button class="danger block" data-a="act-lobos" disabled={!sel1Name} onclick={() => (sel1(key) ? guard(() => A.actLobos(sel1(key))) : needSel())}>🩸 {sel1Name ? `Devorar a ${sel1Name}` : 'Devorar'}</button>
     <button class="ghost block" data-a="act-lobos-nadie" onclick={() => guard(() => A.actLobos(null))}>🤷 No nos ponemos de acuerdo (nadie muere)</button>
   </div>
 {:else if stepId === 'infecto_decision'}
@@ -256,19 +260,17 @@
     <div class="btnrow"><button class="violet" data-a="act-infecto" data-p="si" onclick={() => guard(() => A.actInfecto(true))}>🧛 Infectar</button><button class="danger" data-a="act-infecto" data-p="no" onclick={() => guard(() => A.actInfecto(false))}>🩸 Devorar sin más</button></div>
   </div>
 {:else if stepId === 'lobo_feroz'}
-  {@const prey = players.filter((p) => p.alive && p.id !== game.acts.wolfVictim && p.id !== my.id)}
   <div class="actionpanel"><h3>🐺🔥 El Gran Lobo Feroz</h3>
     <p class="hint">Ningún lobo ha muerto aún: tu hambre exige una segunda víctima.</p>
-    <PickList players={prey} selKey={key} />
-    <button class="danger block" data-a="act-feroz" onclick={() => (sel1(key) ? guard(() => A.actFeroz(sel1(key))) : needSel())}>🩸 Devorar también</button>
+    <ActionGrid {players} selKey={key} canPick={(p) => p.id !== game.acts.wolfVictim && p.id !== my.id} />
+    <button class="danger block" data-a="act-feroz" disabled={!sel1Name} onclick={() => (sel1(key) ? guard(() => A.actFeroz(sel1(key))) : needSel())}>🩸 {sel1Name ? `Devorar también a ${sel1Name}` : 'Devorar también'}</button>
     <button class="ghost block" data-a="act-feroz-skip" onclick={() => guard(() => A.actFeroz(null))}>Contener el hambre</button>
   </div>
 {:else if stepId === 'lobo_albino'}
-  {@const pack = players.filter((p) => p.alive && isWolfSide(p) && p.id !== my.id)}
   <div class="actionpanel"><h3>🌕 El Hombre Lobo Albino</h3>
     <p class="hint">Esta noche puedes devorar a un miembro de tu propia manada.</p>
-    <PickList players={pack} selKey={key} />
-    <button class="danger block" data-a="act-albino" onclick={() => (sel1(key) ? guard(() => A.actAlbino(sel1(key))) : needSel())}>🩸 Traicionar</button>
+    <ActionGrid {players} selKey={key} canPick={(p) => isWolfSide(p) && p.id !== my.id} />
+    <button class="danger block" data-a="act-albino" disabled={!sel1Name} onclick={() => (sel1(key) ? guard(() => A.actAlbino(sel1(key))) : needSel())}>🩸 {sel1Name ? `Traicionar a ${sel1Name}` : 'Traicionar'}</button>
     <button class="ghost block" data-a="act-albino-skip" onclick={() => guard(() => A.actAlbino(null))}>Ser leal (por ahora)</button>
   </div>
 {:else if stepId === 'bruja'}
@@ -291,10 +293,10 @@
             onkeydown={(e) => { if (e.key === 'Enter') app.ui.brujaHeal = !app.ui.brujaHeal; }}></div></div>
       {/if}
       {#if canPoison}
-        <p class="hint" style="margin-top:8px">☠️ Poción de muerte (opcional): elige a quién envenenar.</p>
-        <PickList {players} exclude={[my.id]} selKey={key} />
+        <p class="hint" style="margin-top:8px">☠️ Poción de muerte (opcional): toca a quién envenenar.</p>
+        <ActionGrid {players} selKey={key} canPick={notMe} />
       {/if}
-      <button class="primary block" data-a="act-bruja-done" onclick={brujaDone}>🧪 Terminar mi turno</button>
+      <button class="primary block" data-a="act-bruja-done" onclick={brujaDone}>{sel1Name ? `☠️ Envenenar a ${sel1Name} y terminar` : '🧪 Terminar mi turno'}</button>
     </div>
   {/if}
 {:else if stepId === 'gaitero'}
@@ -302,13 +304,8 @@
   {@const maxSel = Math.min(2, targets.length)}
   <div class="actionpanel"><h3>🎶 El Gaitero</h3>
     <p class="hint">Encanta a {maxSel} jugador{maxSel > 1 ? 'es' : ''} con tu música.</p>
-    <PickList players={targets} max={maxSel} selKey={key} />
-    <button class="violet block" data-a="act-gaitero" onclick={gaiteroCharm}>🎶 Encantar{sel.length === maxSel ? '' : ` (elige ${maxSel})`}</button>
-  </div>
-{:else if stepId === 'encantados'}
-  <div class="actionpanel"><h3>🎶 La música te ha atrapado</h3>
-    <p class="hint">Ahora estás <b>encantado</b> por el Gaitero. Encantados hasta ahora: <b>{players.filter((p) => p.charmed).map((p) => p.name).join(', ')}</b>. Confirma y vuelve a cerrar los ojos con disimulo.</p>
-    <button class="violet block" data-a="act-encantado-ok" onclick={() => guard(A.confirmEncantado)}>🎶 Entendido</button>
+    <ActionGrid {players} max={maxSel} selKey={key} canPick={(p) => !p.charmed && p.id !== my.id} />
+    <button class="violet block" data-a="act-gaitero" disabled={sel.length !== maxSel} onclick={gaiteroCharm}>🎶 {sel.length === maxSel ? `Encantar a ${selNames.join(' y ')}` : `Encantar (elige ${maxSel})`}</button>
   </div>
 {:else if stepId === 'gitana'}
   {#if game.powersLost}

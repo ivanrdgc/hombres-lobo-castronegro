@@ -16,6 +16,19 @@
   const game = $derived(group.game!);
   const players = $derived(app.players.filter((p) => p.inGame));
   const head = $derived((game.pending || [])[0]);
+  // ¿Este dispositivo tiene delante una lista de acción (ActionGrid)? Entonces
+  // esa YA es la parrilla del pueblo: no se repite otra debajo.
+  const actingHere = $derived.by(() => {
+    if (head) {
+      if (head.type === 'cazador' || head.type === 'alguacil_pick' || head.type === 'cabeza_pick') return my.id === head.pid;
+      if (head.type === 'alguacil_elect') return !!my.alive;
+      return false; // sirvienta: botones sí/no, sin lista
+    }
+    if ((game.votesLeft || 0) > 0 && !game.vote) {
+      return !!(my.alive && !my.revealedTonto && (!game.soloVoteId || game.soloVoteId === my.id));
+    }
+    return false;
+  });
 </script>
 
 <div class="narration">☀️ {narr(((game.lastDawn || {}).deaths || []).length ? 'dia_debate' : 'dia_debate_tranquilo', `${game.seed}:d${game.dayNum}:${game.votesLeft}`)}</div>
@@ -36,4 +49,6 @@
     <p class="small-note">Comentad la jugada con calma. Cuando estéis listos, que alguien mande al pueblo a dormir.</p>
     {#if my.alive}<button class="primary block" data-a="begin-night" onclick={() => guard(A.startNextNight)}>🌙 Empezar la noche</button>{/if}</div>
 {/if}
-<PlayersGrid {players} title="🏘️ El pueblo" showAlguacil={game.alguacilId || null} viewer={my} />
+{#if !actingHere}
+  <PlayersGrid {players} title="🏘️ El pueblo" showAlguacil={game.alguacilId || null} viewer={my} />
+{/if}

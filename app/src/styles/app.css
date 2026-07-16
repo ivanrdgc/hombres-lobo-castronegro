@@ -140,6 +140,7 @@ button:disabled { opacity: 0.45; cursor: default; }
   min-height: 46px;
 }
 .player.dead { opacity: 0.45; text-decoration: line-through; }
+.player.dim { opacity: 0.55; } /* no elegible en una lista de acción */
 .player.selectable { cursor: pointer; }
 .player.selectable:active { background: color-mix(in srgb, var(--accent2) 22%, var(--card2)); }
 .player.selected { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 18%, var(--bg-1)); }

@@ -15,7 +15,7 @@
   import PhaseChip from './PhaseChip.svelte';
   import LogPanel from './LogPanel.svelte';
   import PlayersGrid from './PlayersGrid.svelte';
-  import PickList from './PickList.svelte';
+  import ActionGrid from './ActionGrid.svelte';
   import NightActionPanel from './NightActionPanel.svelte';
   import RevealGate from './RevealGate.svelte';
   import RoleCard from './RoleCard.svelte';
@@ -31,12 +31,14 @@
   // Pasos en los que el máster solo confirma que el grupo ya se ha reconocido.
   const GUIDED_CONFIRM_STEPS = ['enamorados', 'dos_hermanas', 'tres_hermanos', 'lobos_reconocen', 'encantados'];
 
-  const needSel = () => setFlash('Selecciona primero a un jugador de la lista.');
+  const needSel = () => setFlash('Toca primero a un jugador de la lista.');
+  // Nombre del seleccionado bajo una clave (para confirmaciones con nombre).
+  const selName = (key: string) => players.find((p) => p.id === sel1(key))?.name ?? null;
 
-  function voteConfirm() {
+  function voteNow() {
     const pid = sel1('gvote');
     if (!pid) return needSel();
-    app.ui.modal = { type: 'vote-confirm', pid };
+    void guard(() => A.castVote(pid));
   }
   function cazadorShoot(key: string) {
     const pid = sel1(key);
@@ -61,8 +63,8 @@
   {#if head.type === 'cazador'}
     <div class="actionpanel"><h3>🏹 El Cazador dispara</h3>
       <p class="hint">{actorP?.name || 'El Cazador'} ha caído: pregúntale a quién se lleva.</p>
-      <PickList players={players} exclude={head.pid ? [head.pid] : []} selKey={key} />
-      <button class="danger block" data-a="cazador-shoot" onclick={() => cazadorShoot(key)}>🏹 Disparar</button>
+      <ActionGrid players={players} selKey={key} canPick={(p) => p.id !== head.pid} />
+      <button class="danger block" data-a="cazador-shoot" disabled={!selName(key)} onclick={() => cazadorShoot(key)}>🏹 {selName(key) ? `Disparar a ${selName(key)}` : 'Disparar'}</button>
       <button class="ghost block" data-a="cazador-skip" onclick={() => guard(() => A.hunterShoot(null))}>No dispara</button>
     </div>
   {:else if head.type === 'sirvienta'}
@@ -75,19 +77,19 @@
     </div>
   {:else if head.type === 'alguacil_elect'}
     <div class="actionpanel"><h3>⭐ Elección del Alguacil</h3>
-      <PickList players={players} selKey={key} />
-      <button class="primary block" data-a="alguacil-pick" onclick={() => alguacilPick(key)}>⭐ Nombrar</button>
+      <ActionGrid players={players} selKey={key} />
+      <button class="primary block" data-a="alguacil-pick" disabled={!selName(key)} onclick={() => alguacilPick(key)}>⭐ {selName(key) ? `Nombrar a ${selName(key)}` : 'Nombrar'}</button>
     </div>
   {:else if head.type === 'alguacil_pick'}
     <div class="actionpanel"><h3>⭐ Sucesión del Alguacil</h3>
       <p class="hint">{actorP?.name || ''} señala a su sucesor.</p>
-      <PickList players={players} exclude={head.pid ? [head.pid] : []} selKey={key} />
-      <button class="primary block" data-a="alguacil-pick" onclick={() => alguacilPick(key)}>⭐ Nombrar sucesor</button>
+      <ActionGrid players={players} selKey={key} canPick={(p) => p.id !== head.pid} />
+      <button class="primary block" data-a="alguacil-pick" disabled={!selName(key)} onclick={() => alguacilPick(key)}>⭐ {selName(key) ? `Sucesor: ${selName(key)}` : 'Nombrar sucesor'}</button>
     </div>
   {:else if head.type === 'cabeza_pick'}
     <div class="actionpanel"><h3>🐐 El Cabeza de Turco decide</h3>
-      <PickList players={players} exclude={head.pid ? [head.pid] : []} selKey={key} />
-      <button class="primary block" data-a="cabeza-pick" onclick={() => cabezaPick(key)}>👉 Elegir</button>
+      <ActionGrid players={players} selKey={key} canPick={(p) => p.id !== head.pid} />
+      <button class="primary block" data-a="cabeza-pick" disabled={!selName(key)} onclick={() => cabezaPick(key)}>👉 {selName(key) ? `Elegir a ${selName(key)}` : 'Elegir'}</button>
       <button class="ghost block" data-a="cabeza-skip" onclick={() => guard(() => A.cabezaPick(null))}>Que voten todos</button>
     </div>
   {/if}
@@ -156,9 +158,9 @@
       {@render pendingPanel(head)}
     {:else if (game.votesLeft || 0) > 0 && !game.vote}
       <div class="actionpanel"><h3>⚖️ El juicio del pueblo</h3>
-        <p class="hint">Dirige el debate y registra la decisión final.</p>
-        <PickList players={players} selKey="gvote" />
-        <button class="danger block" data-a="vote-confirm" onclick={voteConfirm}>⚖️ Condenar al seleccionado</button>
+        <p class="hint">Dirige el debate, toca al condenado y registra la decisión (es definitiva).</p>
+        <ActionGrid players={players} selKey="gvote" showAlguacil={game.alguacilId || null} />
+        <button class="danger block" data-a="vote-confirm" disabled={!selName('gvote')} onclick={voteNow}>⚖️ {selName('gvote') ? `Condenar a ${selName('gvote')}` : 'Condenar al elegido'}</button>
         <div class="btnrow">
           <button class="ghost" data-a="vote-nadie" onclick={() => guard(() => A.castVote('nadie'))}>🕊️ El pueblo perdona</button>
           <button class="ghost" data-a="vote-empate" onclick={() => guard(() => A.castVote('empate'))}>🤝 Hubo empate</button>

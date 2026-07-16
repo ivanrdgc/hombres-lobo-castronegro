@@ -296,8 +296,8 @@ try {
   // Día: el pueblo condena al lobo (vota Carla).
   await pages.carla.waitForSelector('.actionpanel:has-text("El juicio del pueblo")');
   await pages.carla.click(`.actionpanel .player.selectable:has-text("${wolfName}")`);
-  await pages.carla.click('[data-a=vote-confirm]');
-  await pages.carla.click('[data-a=vote-final]');
+  // La confirmación es inline y con nombre: sin modal intermedio.
+  await pages.carla.click(`[data-a=vote-confirm]:has-text("${wolfName}")`);
   st = await waitState(ana, (s) => s.phase === 'end', 'fin de partida', 30000);
   check(st.winner === 'pueblo', 'el pueblo gana al linchar al lobo');
   await pages.bruno.waitForSelector('text=/El Pueblo ha ganado/');

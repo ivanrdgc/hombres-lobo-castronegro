@@ -79,8 +79,7 @@ try {
   // Juicio: el máster registra la condena del lobo.
   await ana.waitForSelector('.actionpanel:has-text("juicio")');
   await ana.click(`.actionpanel .player.selectable:has-text("${wolf.name}")`);
-  await ana.click('button[data-a=vote-confirm]');
-  await ana.click('button[data-a=vote-final]');
+  await ana.click('button[data-a=vote-confirm]'); // confirmación inline con nombre
   st = await wait(ana, (s) => s.phase === 'end', 'fin');
   if (st.winner === 'pueblo') ok('el pueblo gana: partida guiada completa'); else bad('ganador inesperado: ' + st.winner);
   await ana.click('button[data-a=back-lobby]');
