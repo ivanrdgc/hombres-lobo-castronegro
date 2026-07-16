@@ -117,7 +117,7 @@ export async function takeOverPlayer(slug: string, userName: string): Promise<vo
   const token = randomId('t');
   const snap = await getDoc(pref(slug, pid));
   if (!snap.exists()) throw new CodedError('no-player');
-  await updateDoc(pref(slug, pid), { deviceToken: token });
+  await updateDoc(pref(slug, pid), { deviceToken: token, heartbeatAt: Date.now() });
   saveSession(slug, { pid, token, name: snap.data().name });
 }
 
@@ -136,7 +136,7 @@ export async function joinExistingGroup(groupName: string, userName: string, cla
     const p = await tx.get(pref(slug, pid));
     if (p.exists()) {
       joinedName = p.data().name;
-      tx.update(pref(slug, pid), { deviceToken: token });
+      tx.update(pref(slug, pid), { deviceToken: token, heartbeatAt: Date.now() });
     } else {
       if (g.data().status === 'playing') throw new CodedError('playing');
       tx.set(pref(slug, pid), basePlayer(userName, token));
@@ -152,6 +152,7 @@ function basePlayer(name: string, token: string) {
     name: name.trim(), deviceToken: token, order: Date.now(),
     role: null, alive: null, inGame: false,
     isPlayer: true, // por defecto todo dispositivo juega; se puede desactivar
+    heartbeatAt: Date.now(), // nace «activo»: el latido periódico lo mantiene
   };
 }
 

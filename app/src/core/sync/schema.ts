@@ -42,7 +42,7 @@ export interface GroupDoc {
 export interface PlayerDoc extends GamePlayer {
   deviceToken?: string;
   isPlayer?: boolean;
-  /** v2: latido de presencia del narrador (Date.now()). */
+  /** v2: latido de presencia del dispositivo (Date.now()); lo escriben todos. */
   heartbeatAt?: number;
 }
 

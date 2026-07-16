@@ -6,6 +6,7 @@ import { installUnlockGestures } from './core/audio/engine';
 import { loadClipManifest } from './core/audio/clips';
 import { initDeviceVoice } from './core/audio/device-voice';
 import { applyRoute, state } from './core/sync/store.svelte';
+import { installPresence } from './core/sync/presence';
 import { installUiHygiene } from './shell/ui-hygiene';
 import { installNarrator } from './games/hombres-lobo/narrator/install';
 
@@ -14,6 +15,7 @@ loadClipManifest(); // biblioteca de clips pre-generados (F6); sin ella, síntes
 initDeviceVoice();
 installUiHygiene();
 installNarrator();
+installPresence();
 
 window.addEventListener('popstate', applyRoute);
 applyRoute();
