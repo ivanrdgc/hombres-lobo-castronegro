@@ -28,6 +28,26 @@
     return (game ?? SHELL_MODALS[type]) as typeof PlayerMenuModal | undefined;
   });
 
+  let modalEl: HTMLElement | null = $state(null);
+
+  // Con un modal abierto, el fondo no debe desplazarse: se bloquea el scroll
+  // del body (y el propio modal contiene su rebote con overscroll-behavior).
+  $effect(() => {
+    const open = !!(app.ui.modal && Current);
+    document.body.classList.toggle('modal-open', open);
+    return () => document.body.classList.remove('modal-open');
+  });
+
+  // Un modal puede reabrirse pidiendo recuperar su scroll (p. ej. al volver del
+  // detalle de un rol): app.ui.modal.scroll trae la posición guardada.
+  $effect(() => {
+    const s = Number(app.ui.modal?.scroll ?? 0);
+    if (!s || !modalEl) return;
+    requestAnimationFrame(() => {
+      if (modalEl) modalEl.scrollTop = s;
+    });
+  });
+
   function onOverlayClick(e: MouseEvent) {
     if (e.target === e.currentTarget) app.ui.modal = null;
   }
@@ -35,7 +55,7 @@
 
 {#if app.ui.modal && Current}
   <div class="overlay" data-a="close-modal" onclick={onOverlayClick} role="presentation">
-    <div class="modal" data-a="noop" role="dialog">
+    <div class="modal" data-a="noop" role="dialog" bind:this={modalEl}>
       <Current />
     </div>
   </div>

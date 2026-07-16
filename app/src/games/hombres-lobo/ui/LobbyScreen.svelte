@@ -52,8 +52,9 @@
   <h3>🎴 Roles y configuración</h3>
   <p class="small-note">Ahora mismo jugarían {nJug} (la selección definitiva se hace al empezar): <b>{lobos} 🐺 lobo{lobos > 1 ? 's' : ''}</b>{wolvesFixed ? ' (fijado)' : ''}{#if (group.settings || {}).villagersCount != null}, <b>{(group.settings || {}).villagersCount} 🧑‍🌾</b> reservados{/if} y el resto según los roles activados (los huecos se rellenan con 🧑‍🌾 aldeanos; si sobran roles, se sortean).</p>
   {#if nJug < OFFICIAL_MIN_PLAYERS && !(group.settings || {}).casual}<p class="small-note">⚠️ Las reglas oficiales piden de {OFFICIAL_MIN_PLAYERS} a 18 jugadores además del narrador. Para jugar con menos, activad el <b>modo casual</b> en los ajustes.</p>{/if}
-  <div class="btnrow" style="margin-top:6px">
-    {#if extra.length}{#each extra as r (r)}{#if ROLES[r]}<span class="chip">{ROLES[r].emoji} {ROLES[r].name}</span>{/if}{/each}{:else}<span class="chip">Solo lobos y aldeanos</span>{/if}{#if (group.settings || {}).alguacil}<span class="chip">⭐ Alguacil</span>{/if}
+  <!-- Cada chip abre el detalle del rol (qué hace y cómo se juega). -->
+  <div class="chips" style="margin-top:6px">
+    {#if extra.length}{#each extra as r (r)}{#if ROLES[r]}<button class="chip rolechip" data-a="role-detail" data-p={r} onclick={() => (app.ui.modal = { type: 'role-detail', role: r })}>{ROLES[r].emoji} {ROLES[r].name}</button>{/if}{/each}{:else}<span class="chip">Solo lobos y aldeanos</span>{/if}{#if (group.settings || {}).alguacil}<button class="chip rolechip" data-a="role-detail" data-p="alguacil" onclick={() => (app.ui.modal = { type: 'role-detail', role: 'alguacil' })}>⭐ Alguacil</button>{/if}
   </div>
   <button class="block" data-a="open-roles" onclick={() => (app.ui.modal = { type: 'roles' })}>⚙️ Elegir roles</button>
   <button class="block" data-a="open-settings" onclick={() => (app.ui.modal = { type: 'settings' })}>🔧 Ajustes de partida</button>

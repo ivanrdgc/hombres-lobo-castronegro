@@ -71,12 +71,17 @@ export function settingsSummary(st: ExplainSettings = {}): string[] {
   return out;
 }
 
-// Roles activados en esta mesa (lobo + extras elegidos + aldeano), tal como se
-// listan en el modal: emoji, nombre en negrita y descripción.
-export function explainRoleItems(group: ExplainGroup = {}): string[] {
-  const ids = [...new Set(['hombre_lobo', ...(group.extraRoles || []), 'aldeano'])]
+// Ids de los roles que lista la explicación (lobo + extras + aldeano), en el
+// MISMO orden que los items: el modal los usa para el botón ℹ️ de cada rol.
+export function explainRoleIds(group: ExplainGroup = {}): RoleId[] {
+  return [...new Set(['hombre_lobo', ...(group.extraRoles || []), 'aldeano'])]
     .filter((id): id is RoleId => id in ROLES);
-  return ids.map((id) => `${ROLES[id].emoji} <b>${ROLES[id].name}</b> — ${ROLES[id].desc}`);
+}
+
+// Roles activados en esta mesa, tal como se listan en el modal (y se leen en
+// voz): emoji, nombre en negrita y descripción.
+export function explainRoleItems(group: ExplainGroup = {}): string[] {
+  return explainRoleIds(group).map((id) => `${ROLES[id].emoji} <b>${ROLES[id].name}</b> — ${ROLES[id].desc}`);
 }
 
 export type SectionId = 'intro' | 'how' | 'roles' | 'settings';

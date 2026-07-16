@@ -43,8 +43,8 @@ export interface UiState {
   voiceUnlocked?: boolean;
   deadPeek?: Record<string, boolean>;
   suggestedGroup?: string | null;
-  /** Lectura en voz alta de la explicación (local): qué sección y en qué estado. */
-  explainAudio?: { part: 'intro' | 'how' | 'roles' | 'settings'; phase: 'loading' | 'playing' } | null;
+  /** Lectura local en voz alta: qué suena ('intro', 'roles', 'role:vidente'…) y su estado. */
+  explainAudio?: { part: string; phase: 'loading' | 'playing' } | null;
   voiceTest?: 'running' | Record<string, unknown> | null;
   muted?: boolean;
 }

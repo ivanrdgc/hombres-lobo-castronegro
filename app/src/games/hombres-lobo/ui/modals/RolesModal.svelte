@@ -34,22 +34,12 @@
   }
 
   // Detalle «cómo se juega» de un rol; vuelve a este modal al cerrarse,
-  // restaurando la posición de scroll (la lista es larga).
+  // restaurando la posición de scroll (la restaura ModalHost via .scroll).
   function openDetail(e: Event, roleId: string) {
     e.stopPropagation();
     const scroll = (document.querySelector('.modal') as HTMLElement | null)?.scrollTop ?? 0;
     app.ui.modal = { type: 'role-detail', role: roleId, back: 'roles', backScroll: scroll };
   }
-
-  // Al volver del detalle, recolocar el scroll donde estaba.
-  $effect(() => {
-    const s = Number(app.ui.modal?.scroll ?? 0);
-    if (!s) return;
-    requestAnimationFrame(() => {
-      const el = document.querySelector('.modal');
-      if (el) el.scrollTop = s;
-    });
-  });
 
   function toggleSetting(key: string) {
     const cur = (app.group?.settings || {}) as Record<string, unknown>;

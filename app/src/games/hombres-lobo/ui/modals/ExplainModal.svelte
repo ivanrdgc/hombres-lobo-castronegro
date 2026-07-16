@@ -4,13 +4,21 @@
   // sección tiene su propio botón de lectura, SOLO en este dispositivo (nunca en
   // el narrador), para poder escuchar únicamente lo que interese.
   import { app } from '../../../../core/sync/store.svelte';
-  import { EXPLANATIONS, explainSections } from '../../texts/explain';
+  import { EXPLANATIONS, explainSections, explainRoleIds } from '../../texts/explain';
   import { explainAudioState, toggleExplainAudio } from '../../../../shell/explain-audio';
 
   const g = $derived(app.group);
   const ex = $derived(EXPLANATIONS[g?.currentGame || ''] || EXPLANATIONS.hombres_lobo);
   // Solo las secciones distintas de la intro: cómo se juega, roles y ajustes.
   const sections = $derived(explainSections(g || {}).filter((s) => s.id !== 'intro'));
+  // Ids paralelos a los items de la sección de roles (para el ℹ️ de cada uno).
+  const roleIds = $derived(explainRoleIds(g || {}));
+
+  // Detalle completo de un rol; al volver se restaura este modal y su scroll.
+  function openDetail(roleId: string) {
+    const scroll = (document.querySelector('.modal') as HTMLElement | null)?.scrollTop ?? 0;
+    app.ui.modal = { type: 'role-detail', role: roleId, back: 'explain', backScroll: scroll };
+  }
 </script>
 
 <h3>{ex.title}</h3>
@@ -30,7 +38,13 @@
     <!-- Los items vienen de nuestro propio módulo de textos (explain.ts), con
          negritas <b> incrustadas como en la v1: no hay entrada de usuario. -->
     <!-- eslint-disable svelte/no-at-html-tags -->
-    {#if sec.kind === 'plain'}
+    {#if sec.id === 'roles'}
+      <!-- Cada rol resumido lleva su ℹ️ con la ficha completa (pasos incluidos). -->
+      <div style="display:flex;align-items:flex-start;gap:6px;margin:7px 0">
+        <p class="small-note" style="margin:0;flex:1">{@html it}</p>
+        <button class="roleinfo" data-a="role-detail" data-p={roleIds[ii]} aria-label="Cómo se juega" title="Cómo se juega" onclick={() => openDetail(roleIds[ii])}>ℹ️</button>
+      </div>
+    {:else if sec.kind === 'plain'}
       <p class="small-note" style="margin:7px 0">{@html it}</p>
     {:else}
       <p class="small-note" style="margin:8px 0">• {@html it}</p>

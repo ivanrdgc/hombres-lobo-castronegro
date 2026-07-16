@@ -234,6 +234,7 @@ button.rolechip:active { border-color: var(--accent); }
   justify-content: center;
   z-index: 50;
   backdrop-filter: blur(3px);
+  overscroll-behavior: contain;
 }
 .modal {
   background: var(--card);
@@ -245,7 +246,10 @@ button.rolechip:active { border-color: var(--accent); }
   overflow-y: auto;
   padding: 18px 16px 26px;
   animation: up 0.18s ease;
+  overscroll-behavior: contain; /* su scroll no se encadena al fondo */
 }
+/* Con un modal abierto, la página de detrás no se desplaza. */
+body.modal-open { overflow: hidden; }
 @keyframes up { from { transform: translateY(40px); opacity: 0.5; } to { transform: none; opacity: 1; } }
 @media (min-width: 700px) {
   .overlay { align-items: center; }
