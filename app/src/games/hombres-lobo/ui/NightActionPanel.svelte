@@ -10,7 +10,6 @@
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
   import { ROLES, isWolfSide, isWolfTeamRole, aliveNeighbors } from '../roles';
-  import { GITANA_QUESTIONS } from '../engine';
   import { selIds, sel1 } from '../../../shell/selection';
   import type { GroupDoc, PlayerDoc } from '../../../core/sync/schema';
   import ActionGrid from './ActionGrid.svelte';
@@ -309,6 +308,12 @@
     <ActionGrid {players} max={maxSel} selKey={key} canPick={(p) => !p.charmed && p.id !== my.id} />
     <button class="violet block" data-a="act-gaitero" disabled={sel.length !== maxSel} onclick={gaiteroCharm}>🎶 {sel.length === maxSel ? `Encantar a ${selNames.join(' y ')}` : `Encantar (elige ${maxSel})`}</button>
   </div>
+{:else if stepId === 'encantados'}
+  {@const others = players.filter((p) => p.alive && p.charmed && p.id !== my.id)}
+  <div class="actionpanel"><h3>🎶 El Gaitero te ha encantado</h3>
+    <p class="hint">{#if others.length}Abrid los ojos con disimulo y reconoceos. Encantados: <b>{others.map((p) => p.name).join(', ')}</b>. Si todo el pueblo acaba encantado, el Gaitero gana. Cuando os hayáis reconocido, confirmad.{:else}Eres el único encantado por ahora. Si todo el pueblo acaba encantado, el Gaitero gana. Confirma y la noche sigue.{/if}</p>
+    <button class="primary block" data-a="act-encantado-ok" onclick={() => guard(A.confirmEncantado)}>🎶 Entendido</button>
+  </div>
 {:else if stepId === 'gitana'}
   {#if game.powersLost}
     <div class="actionpanel"><h3>🔯 La Gitana</h3>
@@ -317,13 +322,9 @@
     </div>
   {:else}
     <div class="actionpanel"><h3>🔯 La Gitana</h3>
-      <p class="hint">Escribe tu pregunta (de sí o no) o elige una sugerida: un espíritu (jugador muerto) la responderá al amanecer.</p>
+      <p class="hint">Escribe tu pregunta (de sí o no): un espíritu (jugador muerto) la responderá al amanecer.</p>
       <input type="text" id="gitana-q" maxlength="140" placeholder="Tu pregunta de sí o no…" autocomplete="off" bind:value={gitanaQ} />
       <button class="primary block" data-a="act-gitana-custom" onclick={gitanaCustom}>🕯️ Preguntar a los espíritus</button>
-      <p class="hint" style="margin-top:10px">O una sugerida:</p>
-      {#each GITANA_QUESTIONS as q, i (i)}
-        <button class="ghost block" data-a="act-gitana" data-p={String(i)} onclick={() => guard(() => A.actGitana(i))}>🕯️ {q}</button>
-      {/each}
       <button class="ghost block" data-a="act-gitana-skip" onclick={() => guard(() => A.actGitana(null))}>No preguntar</button>
     </div>
   {/if}

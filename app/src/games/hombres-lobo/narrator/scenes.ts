@@ -393,7 +393,10 @@ async function dayDebateScene(ctx: Ctx, withJuez: boolean): Promise<void> {
   const game = g(ctx);
   await ctx.sayOnce(`d${game.dayNum}:dawn`, () => dawnUtterance(g(ctx), den(ctx)));
   await announceShot(ctx); // el Cazador murió de noche y ya disparó → víctima antes del debate
-  await ctx.sayOnce(`d${game.dayNum}:debate:${game.votesLeft}${withJuez ? ':juez' : ''}`, () => debateUtterance(g(ctx), withJuez, den(ctx)));
+  await ctx.sayOnce(`d${game.dayNum}:debate:${game.votesLeft}${withJuez ? ':juez' : ''}`, () => {
+    const muted = ps(ctx).filter((p) => p.alive && p.revealedTonto).map((p) => p.name).filter((n): n is string => !!n);
+    return debateUtterance(g(ctx), withJuez, den(ctx), muted);
+  });
 }
 
 async function dayOcasoScene(ctx: Ctx): Promise<void> {

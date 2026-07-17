@@ -16,6 +16,7 @@
   const game = $derived(group.game!);
   const players = $derived(app.players.filter((p) => p.inGame));
   const head = $derived((game.pending || [])[0]);
+  const mutedTontos = $derived(players.filter((p) => p.alive && p.revealedTonto));
   // ¿Este dispositivo tiene delante una lista de acción (ActionGrid)? Entonces
   // esa YA es la parrilla del pueblo: no se repite otra debajo.
   const actingHere = $derived.by(() => {
@@ -25,13 +26,14 @@
       return false; // sirvienta: botones sí/no, sin lista
     }
     if ((game.votesLeft || 0) > 0 && !game.vote) {
-      return !!(my.alive && !my.revealedTonto && (!game.soloVoteId || game.soloVoteId === my.id));
+      return !!(my.alive && (!game.soloVoteId || game.soloVoteId === my.id));
     }
     return false;
   });
 </script>
 
 <div class="narration">☀️ {narr(((game.lastDawn || {}).deaths || []).length ? 'dia_debate' : 'dia_debate_tranquilo', `${game.seed}:d${game.dayNum}:${game.votesLeft}`)}</div>
+{#if mutedTontos.length}<div class="flash">🤪 {mutedTontos.map((p) => p.name).join(' y ')} {mutedTontos.length > 1 ? 'ya no votan' : 'ya no vota'} (Tonto del Pueblo al descubierto), aunque sigue{mutedTontos.length > 1 ? 'n' : ''} deliberando con el pueblo.</div>{/if}
 <RoleCard player={my} {group} mini={true} />
 {#if my.role === 'juez' && my.alive && my.powers?.juez !== false && game.phase === 'day'}
   <div class="card"><p class="small-note">⚖️ Solo tú ves esto: puedes exigir una segunda votación hoy (una vez por partida).</p>

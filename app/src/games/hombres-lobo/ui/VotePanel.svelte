@@ -26,7 +26,7 @@
   <div class="narration">🗳️ {#if solo}Hoy solo <b>{solo.name}</b> puede registrar la decisión (designado por el Cabeza de Turco).{:else}El pueblo delibera quién morirá hoy…{/if}</div>
 {:else}
   <div class="actionpanel"><h3>🗳️ El juicio del pueblo</h3>
-    <p class="hint">Debatid en voz alta y tocad al condenado. <b>Cualquiera</b> puede registrar la decisión, y la primera registrada es definitiva.</p>
+    <p class="hint">Debatid en voz alta y tocad al condenado. {#if solo}Te ha designado el <b>Cabeza de Turco</b>: hoy solo tú registras la decisión, y es definitiva.{:else}<b>Cualquiera</b> puede registrar la decisión, y la primera registrada es definitiva.{/if}</p>
     <ActionGrid {players} selKey={key} showAlguacil={game.alguacilId || null} />
     <button class="danger block" data-a="vote-confirm" disabled={!selP} onclick={voteNow}>⚖️ {selP ? `Condenar a ${selP.name}` : 'Condenar al elegido'}</button>
     <div class="btnrow"><button class="ghost" data-a="vote-nadie" onclick={() => guard(() => A.castVote('nadie'))}>🕊️ El pueblo perdona</button><button class="ghost" data-a="vote-empate" onclick={() => guard(() => A.castVote('empate'))}>🤝 Hubo empate</button></div></div>

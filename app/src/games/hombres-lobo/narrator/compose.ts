@@ -9,6 +9,7 @@ import {
   ABRID_OJOS, ENAMORADOS_INTRO, ENAMORADOS_TAIL, ENC_FRAME, ENCANTADOS_TAIL, KW_LEAD, LISTOS,
   NAG_GENERIC, NAGS, REFRESH_CLOSE, REFRESH_OPEN, aaNote, deathLine, drama, hashStr, hunterKillLine, improv, kwClip,
   loveDeathLine, lynchNote, narr, narrParts, narrPartsMin, nagEnamoradosKw, nagEncantadosKw, outro, outroParts, KW_NOTE,
+  soloVoteNote, tontoMutedNote, tontoNote,
 } from '../texts/corpus';
 import type { Density } from '../../../core/narrator/pacing';
 import { ROLES } from '../roles';
@@ -152,12 +153,21 @@ export function dawnDynamicTexts(game: GameState): string[] {
   return out;
 }
 
-export function debateUtterance(game: GameState, withJuez: boolean, density: Density = 'std'): Utterance {
+export function debateUtterance(game: GameState, withJuez: boolean, density: Density = 'std', mutedTontos: string[] = []): Utterance {
   const vKey = `d${game.dayNum}:debate:${game.votesLeft}`;
   const kind = (game.lastDawn?.deaths || []).length ? 'dia_debate' : 'dia_debate_tranquilo';
+  const salt = `${game.seed}:d${game.dayNum}:${game.votesLeft}`;
   const parts: Segment[] = [];
   if (withJuez) for (const p of narrParts('juez_segunda', `${game.seed}:${vKey}`)) parts.push(clip(p));
-  for (const p of (density === 'min' ? narrPartsMin(kind, `${game.seed}:d${game.dayNum}:${game.votesLeft}`) : narrParts(kind, `${game.seed}:d${game.dayNum}:${game.votesLeft}`))) parts.push(clip(p));
+  const body = density === 'min' ? narrPartsMin(kind, salt) : narrParts(kind, salt);
+  // Voto restringido por el Cabeza de Turco (info pública, sin fuga de pistas):
+  // la última pieza —«que cualquiera registre»— se sustituye por la designación
+  // del único votante. Sin soloVoteId, el debate queda bit-idéntico (golden).
+  const restricted = !!game.soloVoteId;
+  for (const p of (restricted ? body.slice(0, -1) : body)) parts.push(clip(p));
+  if (restricted) parts.push(clip(soloVoteNote(game.soloVoteName || 'la persona designada').trim()));
+  // Recordatorio si algún Tonto del Pueblo ya descubierto sigue en la plaza.
+  if (mutedTontos.length) parts.push(clip(tontoMutedNote(mutedTontos.join(' y ')).trim()));
   // Cotilleos del debate: siempre en teatral, a veces en normal, nunca en rápido.
   if (density === 'max' || (density === 'std' && hashStr('impDeb|' + vKey) % 5 < 2)) parts.push(clip(improv('debate', `${game.seed}:${vKey}`)));
   return {
@@ -173,6 +183,8 @@ export function ocasoUtterance(game: GameState): Utterance {
   if (game.revealDead && ll && ll.role && !ll.hideRole) {
     parts.push(clip(lynchNote(ll.name || '', ROLES[ll.role]?.name || String(ll.role)).trim()));
   }
+  // El pueblo linchó al Tonto del Pueblo: la voz lo explica (no muere, pierde voto).
+  if (game.lastTontoReveal) parts.push(clip(tontoNote(game.lastTontoReveal).trim()));
   const lv = game.lastLoveDeath;
   if (lv && lv.name) parts.push(clip(loveDeathLine(ll?.name || null, lv.name, `d${game.dayNum}`).trim()));
   parts.push(clip(improv('ocaso', `${game.seed}:d${game.dayNum}`)));

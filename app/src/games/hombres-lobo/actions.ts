@@ -351,7 +351,7 @@ export async function startGame(mode: 'auto' | 'manual' | 'guiado', narratorId: 
         kwPool, kwIdx: 0, kwDecoys,
         selectedRoles, fakeAllSelected, compositionPublic: !!settings0.showComposition,
         wolvesKnown: false, hermanasKnown: false, hermanosKnown: false,
-        alguacilId: null, soloVoteId: null, juezArmed: null,
+        alguacilId: null, soloVoteId: null, soloVoteName: null, juezArmed: null,
         powersLost: false, wolfDeathOccurred: false, caballeroRust: null,
         gitanaQ: null, deathTick: 0, lastDawn: null,
         revealDead: !!settings.revealDead,
@@ -414,7 +414,7 @@ export async function leaveGame(): Promise<void> {
       game.alguacilId = null;
       game.log!.push({ kind: 'evento', txt: '⭐ El pueblo se queda sin Alguacil.' });
     }
-    if (game.soloVoteId === meP.id) game.soloVoteId = null;
+    if (game.soloVoteId === meP.id) { game.soloVoteId = null; game.soloVoteName = null; }
     // Repaso de roles: sin él puede que ya hayan confirmado todos los vivos.
     if (game.roleRefresh && !game.roleRefresh.closing) {
       const alive = ps.filter((p) => p.alive);
@@ -820,7 +820,9 @@ export async function castVote(choice: string): Promise<void> {
     const guidedMaster = game.mode === 'guiado' && myId === g.masterId;
     const voter = ps.find((p) => p.id === myId);
     if (!guidedMaster) {
-      if (!voter || !voter.alive || voter.revealedTonto) return null;
+      // El Tonto del Pueblo descubierto no tiene voto, pero SÍ puede registrar
+      // la decisión colectiva (es quien la anota, no un voto ponderado).
+      if (!voter || !voter.alive) return null;
       if (game.soloVoteId && game.soloVoteId !== myId) return null;
     }
     if (choice !== 'nadie' && choice !== 'empate') {
@@ -851,6 +853,7 @@ function applyVoteResolution(game: GameState, ps: PlayerDoc[], choice: string): 
   game.vote = null;
   game.votesLeft = (game.votesLeft || 0) - 1;
   game.soloVoteId = null;
+  game.soloVoteName = null;
   if (res.winner) { game.winner = res.winner; game.phase = 'end'; }
   else if (game.juezArmed && (game.votesLeft || 0) <= 0) {
     game.votesLeft = 1;
@@ -972,6 +975,7 @@ export async function cabezaPick(pid: string | null): Promise<void> {
     if (pid) {
       const t = players.find((p) => p.id === pid);
       game.soloVoteId = pid;
+      game.soloVoteName = t ? t.name : null;
       if (t) game.log!.push({ kind: 'evento', txt: `🐐 El Cabeza de Turco decide: mañana solo ${t.name} podrá registrar la decisión del pueblo.` });
     }
     return { game };

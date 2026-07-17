@@ -516,6 +516,16 @@ test('checkWinner: paridad — 1 lobo + 1 aldeano termina con victoria lobuna', 
   assert.equal(checkWinner(mkPlayers(['hombre_lobo', 'aldeano', 'aldeano'])), null);
 });
 
+test('checkWinner: el Tonto descubierto no cuenta como votante en la paridad', () => {
+  // Tonto revelado + aldeano + lobo: solo queda 1 votante no-lobo frente a 1
+  // lobo → los lobos ya no pueden ser linchados → victoria lobuna.
+  const ps = mkPlayers(['hombre_lobo', 'aldeano', 'tonto']);
+  ps[2].revealedTonto = true;
+  assert.equal(checkWinner(ps), 'lobos');
+  // Si el tonto NO está descubierto, todavía vota: 1 lobo vs 2 → la partida sigue.
+  assert.equal(checkWinner(mkPlayers(['hombre_lobo', 'aldeano', 'tonto'])), null);
+});
+
 test('checkWinner: la paridad respeta al cazador y a la bruja con veneno', () => {
   assert.equal(checkWinner(mkPlayers(['hombre_lobo', 'cazador'])), null, 'el cazador aún puede llevarse al lobo');
   const conBruja = mkPlayers(['hombre_lobo', 'bruja']);

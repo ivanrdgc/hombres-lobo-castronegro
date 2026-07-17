@@ -169,6 +169,8 @@ export interface GameState {
   winner?: WinnerId | null;
   alguacilId?: string | null;
   soloVoteId?: string | null;
+  /** Nombre del único votante designado por el Cabeza de Turco (para la voz). */
+  soloVoteName?: string | null;
   juezArmed?: string | null;
   juezSecondActive?: boolean;
   deathTick?: number;
@@ -177,6 +179,8 @@ export interface GameState {
   caballeroRust?: CaballeroRust | null;
   lastLynch?: DeathNote | null;
   lastLoveDeath?: DeathNote | null;
+  /** Nombre del Tonto del Pueblo revelado hoy al ser linchado (voz del ocaso). */
+  lastTontoReveal?: string | null;
   /** Muertes por la flecha del Cazador, pendientes de anunciar por voz. */
   lastShot?: DeathNote[] | null;
   shotNonce?: number;

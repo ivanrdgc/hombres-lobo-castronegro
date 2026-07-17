@@ -42,7 +42,7 @@
     {#if app.ui.refreshOpen}
       <RoleCard player={my} {group} />
       <button class="primary block" data-a="confirm-role-refresh"
-        onclick={() => guard(async () => { await A.confirmRoleRefresh(); app.ui.refreshOpen = false; })}>✅ Revisado, estoy listo</button>
+        onclick={() => guard(async () => { await A.confirmRoleRefresh(); app.ui.refreshOpen = false; app.ui.roleOpen = false; })}>✅ Revisado, estoy listo</button>
     {:else}
       <div class="card"><p class="small-note">Toca para desplegar tu carta y tu palabra clave, repásalas y confirma.</p>
         <button class="primary block" data-a="open-role-refresh" onclick={() => (app.ui.refreshOpen = true)}>🔑 Confirmar mi rol</button></div>

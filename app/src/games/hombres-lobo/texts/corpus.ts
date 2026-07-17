@@ -1279,6 +1279,24 @@ export function lynchNote(name: string, roleName: string): string {
   return `Castronegro ha dictado sentencia: ${name} era ${roleName}. `;
 }
 
+// El pueblo linchó al Tonto del Pueblo: no muere, pero pierde el voto. Se narra
+// en el ocaso (texto dinámico con nombre: síntesis en runtime, no es un clip).
+export function tontoNote(name: string): string {
+  return `Pero un momento… ${name} no era ningún lobo, sino el Tonto del Pueblo. La horca lo perdona por bobalicón; se queda en la plaza, sano y salvo, aunque desde hoy su voto ya no cuenta: seguirá entre vosotros, mudo en las votaciones. `;
+}
+
+// Voto restringido por el Cabeza de Turco (info pública): solo la persona
+// designada registra el veredicto. Texto dinámico con nombre (síntesis runtime).
+export function soloVoteNote(name: string): string {
+  return `Y recordad la última voluntad del Cabeza de Turco: hoy, solo ${name} puede registrar el veredicto del pueblo. `;
+}
+
+// Recordatorio en cada debate posterior: el Tonto del Pueblo ya descubierto
+// sigue vivo pero sin voto (texto dinámico con nombres → síntesis runtime).
+export function tontoMutedNote(names: string): string {
+  return `Y no olvidéis: ${names}, ya al descubierto como Tonto del Pueblo, puede debatir y enredar cuanto quiera… pero su voto no cuenta. `;
+}
+
 export const UNLOCK_LINE = 'El pueblo de Castronegro abre sus puertas.';
 export const VOICE_ON_LINE = 'La voz del narrador está activada.';
 

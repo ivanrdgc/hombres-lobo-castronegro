@@ -51,8 +51,8 @@ test('densidad: teatral antepone una dramatización del paso; normal queda intac
   const game = mkGame({ night: 1, stepIdx: 2, steps: ['durmiendo', 'lobos_reconocen', 'vidente'] as GameState['steps'] });
   const std = introUtterance(game, 'vidente');
   const max = introUtterance(game, 'vidente', 'max');
-  expect(max.display.endsWith(std.display)).toBe(true); // solo añade DELANTE
-  expect(DRAMA.vidente.some((d) => max.display.startsWith(d))).toBe(true);
+  expect(max.display!.endsWith(std.display!)).toBe(true); // solo añade DELANTE
+  expect(DRAMA.vidente.some((d) => max.display!.startsWith(d))).toBe(true);
   // La dramatización no depende de quién viva: misma para el mismo paso y sal.
   expect(introUtterance(game, 'vidente', 'max').display).toBe(max.display);
 });
@@ -62,7 +62,7 @@ test('densidad: rápido deja la despedida esencial (sin coletilla) y sin relleno
   const std = outroUtterance(game, 'vidente')!;
   const min = outroUtterance(game, 'vidente', 'min')!;
   expect(min.segments.length).toBe(1);
-  expect(std.display.startsWith(min.display)).toBe(true);
+  expect(std.display!.startsWith(min.display!)).toBe(true);
   expect(fillerUtterance(game, 'vidente', 'min')).toBeNull();
 });
 
@@ -72,7 +72,7 @@ test('densidad: rápido va al grano — bienvenida directa (instrucción + palab
   const min = bienvenidaUtterance(game, [], 'min');
   expect(std.segments.length).toBe(4); // 3 piezas + nota de palabras clave
   expect(min.segments.length).toBe(2); // instrucción directa + palabras clave
-  expect(std.display.includes(min.display.split(' ').slice(0, 4).join(' '))).toBe(true);
+  expect(std.display!.includes(min.display!.split(' ').slice(0, 4).join(' '))).toBe(true);
 
   const g2 = mkGame({ night: 1, stepIdx: 2, steps: ['durmiendo', 'lobos_reconocen', 'vidente'] as GameState['steps'] });
   const intro = introUtterance(g2, 'vidente', 'min');

@@ -37,6 +37,10 @@
     ? app.players.find((p) => p.id === player.modelId) : undefined);
 
   function toggle() {
+    // Solo la carta «mini» alterna el desplegado. La carta completa (revelado y
+    // repaso nocturno) está siempre a la vista, así que tocarla no debe dejar
+    // marcado roleOpen: si no, al confirmar la mini aparecería ya abierta.
+    if (!mini) return;
     app.ui.roleOpen = !app.ui.roleOpen;
   }
 
@@ -115,7 +119,7 @@
         <div class="rextra">🧪 Pociones: {player.powers.heal !== false ? '💚 vida' : ''} {player.powers.poison !== false ? '☠️ muerte' : ''} {player.powers.heal === false && player.powers.poison === false ? 'ninguna' : ''}</div>
       {/if}
       {#if game.alguacilId === player.id}<div class="rextra">⭐ Eres el Alguacil: tu voto vale doble.</div>{/if}
-      {#if player.revealedTonto}<div class="rextra">🤪 Te has librado del linchamiento, pero ya no puedes votar.</div>{/if}
+      {#if player.revealedTonto}<div class="rextra">🤪 Te has librado del linchamiento: ya no votas, pero sí puedes registrar la decisión del pueblo en la app.</div>{/if}
       {#if game.powersLost && r.team === 'pueblo' && !['aldeano', 'tonto'].includes(player.role)}
         <div class="rextra">⚠️ El Anciano murió a manos del pueblo: los aldeanos habéis perdido vuestros poderes.</div>
       {/if}

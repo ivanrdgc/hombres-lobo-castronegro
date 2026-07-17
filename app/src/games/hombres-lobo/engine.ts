@@ -493,7 +493,10 @@ export function checkWinner(players: GamePlayer[]): WinnerId | null {
   const realWolves = alive.some((p) => isWolfSide(p) && p.role !== 'lobo_albino');
   const resistance = others.some((p) =>
     p.role === 'cazador' || (p.role === 'bruja' && (p.powers || {}).poison !== false));
-  if (realWolves && wolfish.length >= others.length && !resistance) return 'lobos';
+  // El Tonto del Pueblo descubierto ya no vota: no cuenta como resistencia en la
+  // paridad (no puede ayudar a linchar a un lobo en el día).
+  const voters = others.filter((p) => !p.revealedTonto);
+  if (realWolves && wolfish.length >= voters.length && !resistance) return 'lobos';
   return null;
 }
 
@@ -520,6 +523,7 @@ export interface VoteGame extends ChainGame {
 export interface VoteGameUpdates {
   lastLynch: DeathNote | null;
   lastLoveDeath: DeathNote | null;
+  lastTontoReveal?: string | null;
   powersLost?: boolean;
   wolfDeathOccurred?: boolean;
   caballeroRust?: CaballeroRust | null;
@@ -540,7 +544,7 @@ export function resolveVote(game: VoteGame, playersIn: GamePlayer[], choice: str
   const byId = Object.fromEntries(players.map((p) => [p.id, p]));
   const logs: LogEntry[] = [];
   let pendings: PendingEntry[] = [];
-  const gameUpdates: VoteGameUpdates = { lastLynch: null, lastLoveDeath: null }; // el ocaso anuncia el rol y la muerte por amor si proceden
+  const gameUpdates: VoteGameUpdates = { lastLynch: null, lastLoveDeath: null, lastTontoReveal: null }; // el ocaso anuncia el rol, el tonto y la muerte por amor si proceden
   let winner: WinnerId | null = null;
 
   if (choice === 'nadie') {
@@ -564,6 +568,7 @@ export function resolveVote(game: VoteGame, playersIn: GamePlayer[], choice: str
     if (!target || !target.alive) return null;
     if (target.role === 'tonto' && !target.revealedTonto) {
       target.revealedTonto = true;
+      gameUpdates.lastTontoReveal = target.name; // el ocaso lo explica en voz alta
       logs.push({ kind: 'dia', txt: `🤪 ¡${target.name} era el Tonto del Pueblo! Se salva del linchamiento, pero pierde su derecho a voto.` });
     } else if (target.role === 'angel' && game.dayNum === 1) {
       applyDeathsChain(players, [{ pid: target.id, cause: 'linchado' }], game);
