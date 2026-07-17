@@ -130,6 +130,11 @@ export function dawnUtterance(game: GameState, density: Density = 'std'): Uttera
   const kind = deaths.length ? 'amanecer_con_muertes' : 'amanecer_sin_muertes';
   for (const p of (density === 'min' ? narrPartsMin(kind, salt) : narrParts(kind, salt))) parts.push(clip(p));
   for (const d of deaths) parts.push(clip(deathLine(d.name, d.role, salt)));
+  // El Anciano cayó de noche por veneno o flecha (muerte pública): el pueblo
+  // pierde sus poderes y la voz avisa → la noche siguiente será rápida.
+  if (game.revealDead !== false && game.powersLost && deaths.some((d) => d.role === 'anciano')) {
+    parts.push(clip(improv('anciano', salt)));
+  }
   if (game.lastDawn?.cuervo) parts.push(clip(game.lastDawn.cuervo));
   if (game.lastDawn?.oso) parts.push(clip(game.lastDawn.oso));
   if (game.lastDawn?.gitana) parts.push(clip(game.lastDawn.gitana));
@@ -185,6 +190,10 @@ export function ocasoUtterance(game: GameState): Utterance {
   }
   // El pueblo linchó al Tonto del Pueblo: la voz lo explica (no muere, pierde voto).
   if (game.lastTontoReveal) parts.push(clip(tontoNote(game.lastTontoReveal).trim()));
+  // El Anciano linchado (muerte pública): el pueblo pierde sus poderes → aviso.
+  if (game.revealDead !== false && game.powersLost && ll?.role === 'anciano' && !ll.hideRole) {
+    parts.push(clip(improv('anciano', `${game.seed}:d${game.dayNum}`)));
+  }
   const lv = game.lastLoveDeath;
   if (lv && lv.name) parts.push(clip(loveDeathLine(ll?.name || null, lv.name, `d${game.dayNum}`).trim()));
   parts.push(clip(improv('ocaso', `${game.seed}:d${game.dayNum}`)));

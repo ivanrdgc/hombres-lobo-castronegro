@@ -726,6 +726,13 @@ export const IMPROV: Record<string, string[]> = {
     'El horizonte se traga el sol como la noche se tragará vuestras certezas. Adentro todos.',
     'Cae la tarde y suben los cerrojos. Que soñéis con cosas sin colmillos.',
   ],
+  // La muerte pública del Anciano: el pueblo pierde sus poderes → noche rápida.
+  anciano: [
+    'Con el Anciano muere la última chispa de magia de Castronegro: videntes, brujas y protectores quedan tan indefensos como cualquier aldeano. Esta noche solo las bestias tendrán algo que hacer… será corta.',
+    'Al caer el Anciano se apagan de golpe los poderes del pueblo. Ya nadie velará vuestros sueños salvo los lobos: la noche pasará en un suspiro.',
+    'La sabiduría del Anciano se ha ido con él, y con ella todos los dones del pueblo. Sin poderes que valgan, esta noche será breve y oscura: solo aullará la manada.',
+    'Muerto el Anciano, Castronegro despierta sin magia alguna. Guardad vuestros poderes inútiles: esta noche solo los colmillos siguen afilados, y será rápida.',
+  ],
   pocos: [
     'Quedáis tan pocos que el eco responde en la plaza.',
     'Las calles se ven muy vacías últimamente…',

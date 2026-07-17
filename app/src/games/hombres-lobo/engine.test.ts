@@ -179,6 +179,21 @@ test('computeNightSteps: lobo albino solo noches pares', () => {
   assert.ok(computeNightSteps(mkGame({ night: 2, composition: comp }), players).includes('lobo_albino'));
 });
 
+test('computeNightSteps: la muerte pública del Anciano salta los pasos de poder de pueblo', () => {
+  const comp = { hombre_lobo: 1, vidente: 1, defensor: 1, bruja: 1, aldeano: 3 };
+  const players = mkPlayers(['hombre_lobo', 'vidente', 'defensor', 'bruja', 'aldeano', 'aldeano', 'aldeano']);
+  // Noche 2 normal: los roles de pueblo con poder despiertan.
+  const normal = computeNightSteps(mkGame({ night: 2, composition: comp }), players);
+  assert.ok(normal.includes('vidente') && normal.includes('defensor') && normal.includes('bruja'));
+  // Anciano muerto y su muerte fue pública (revealDead): sus pasos se omiten…
+  const publico = computeNightSteps(mkGame({ night: 2, composition: comp, powersLost: true, revealDead: true }), players);
+  assert.ok(!publico.includes('vidente') && !publico.includes('defensor') && !publico.includes('bruja'), 'sin pasos de pueblo');
+  assert.ok(publico.includes('lobos'), 'los lobos siguen cazando');
+  // …pero si la muerte fue privada (revealDead=false) se mantiene el disimulo.
+  const privado = computeNightSteps(mkGame({ night: 2, composition: comp, powersLost: true, revealDead: false }), players);
+  assert.ok(privado.includes('vidente') && privado.includes('defensor'), 'muerte privada: siguen despertando');
+});
+
 test('generateKeywords: únicas, deterministas y suficientes', () => {
   const a = generateKeywords(18, 42);
   const b = generateKeywords(18, 42);

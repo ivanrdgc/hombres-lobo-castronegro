@@ -60,10 +60,18 @@ export interface StepsGame {
   fakeAllSelected?: boolean;
   selectedRoles?: (RoleId | string)[];
   composition?: Composition;
+  powersLost?: boolean;
+  revealDead?: boolean;
 }
 
 const roleDealt = (game: { composition?: Composition }, roleId: RoleId) =>
   (game.composition?.[roleId] ?? 0) > 0;
+
+// Pasos de roles de pueblo con poder que enmudecen al morir el Anciano. Si su
+// muerte es pública, se omiten por completo: nadie necesita disimular un poder
+// que todo el pueblo sabe perdido (noche rápida). Los lobos y roles solitarios
+// (gaitero…) no se ven afectados.
+const ANCIANO_MUTED_STEPS: StepId[] = ['actor', 'defensor', 'vidente', 'zorro', 'cuervo', 'bruja', 'gitana'];
 
 // Pasos que componen la noche `night` para esta partida.
 export function computeNightSteps(game: StepsGame, players: GamePlayer[]): StepId[] {
@@ -71,8 +79,12 @@ export function computeNightSteps(game: StepsGame, players: GamePlayer[]): StepI
   // Composición secreta: los roles activados pero NO repartidos también tienen
   // su paso (fantasma), para que la voz finja que juegan de verdad.
   const fakeSel = (r: RoleId) => !!(game.fakeAllSelected && (game.selectedRoles || []).includes(r));
+  // Muerte pública del Anciano: sus roles de pueblo ya no despiertan (ni real ni
+  // fantasma). Muerte privada: siguen despertando para disimular.
+  const powersPublic = !!game.powersLost && game.revealDead !== false;
   for (const s of NIGHT_STEPS) {
     if (s.firstNight && game.night !== 1) continue;
+    if (powersPublic && ANCIANO_MUTED_STEPS.includes(s.id)) continue;
     if (s.evenNights && game.night % 2 !== 0) continue;
     // Primera noche sin sangre: los lobos se reconocen, pero nadie devora.
     if (game.noKillNight1 && game.night === 1
