@@ -19,6 +19,8 @@ export interface TableSettings {
   ocultarCausas?: boolean;
   /** v2: perfil de ritmo del narrador (rapido | normal | teatral). */
   pacing?: string;
+  /** El Espía: duración de la ronda en minutos (oficial: 8). */
+  espiaMin?: number;
 }
 
 /** Doc del grupo (groups/{slug}) + id inyectado por el listener. */

@@ -27,7 +27,7 @@
 <script lang="ts">
   // Pantalla de invitación: unirse a un grupo existente (port de joinScreen v1).
   import { guard } from '../core/sync/guard';
-  import * as A from '../games/hombres-lobo/actions';
+  import * as A from '../core/sync/group-actions';
   import type { GroupDoc } from '../core/sync/schema';
   import { GAME_DEFS } from '../games/registry';
   import Flash from './Flash.svelte';

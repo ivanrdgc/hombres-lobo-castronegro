@@ -1,14 +1,14 @@
-// Acciones sobre Firestore: lobby, configuración y partida (modo automático y
+// Acciones de PARTIDA de Los Hombres Lobo sobre Firestore (modo automático y
 // manual). Port literal de public/js/actions.js con tipos; misma semántica de
-// transacciones «primero gana» y mismos documentos.
+// transacciones «primero gana» y mismos documentos. Las acciones de GRUPO
+// (crear/unirse/asientos/ajustes/narrador/latido…) viven en
+// core/sync/group-actions y aquí se re-exportan por compatibilidad.
+import { db, updateDoc, writeBatch } from '../../core/sync/fb';
+import { state } from '../../core/sync/store.svelte';
 import {
-  db, doc, getDoc, updateDoc, deleteDoc, runTransaction, writeBatch, getDocs, collection,
-} from '../../core/sync/fb';
-import type { Transaction } from 'firebase/firestore';
-import { state, saveSession, clearSession, navigate } from '../../core/sync/store.svelte';
-import { CodedError } from '../../core/sync/guard';
-import { slugify, randomId, playerIdFor } from '../../core/util/ids';
-import type { GroupDoc, PlayerDoc, TableSettings } from '../../core/sync/schema';
+  sanitize, txWithRetry, gref, pref, mySlug, myPid, DEFAULT_SETTINGS, DEFAULT_EXTRA_ROLES,
+} from '../../core/sync/group-actions';
+import type { GroupDoc, PlayerDoc } from '../../core/sync/schema';
 import { dealRoles, ROLES, isWolfSide, isWolfTeamRole, OFFICIAL_MIN_PLAYERS, CASUAL_MIN_PLAYERS, generateKeywords } from './roles';
 import type { RoleDef, RoleId } from './roles';
 import {
@@ -17,192 +17,15 @@ import {
 } from './engine';
 import type { GameState, StepId, WinnerId } from './types';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- JSON round-trip genérico
-const sanitize = <T>(x: T): any => JSON.parse(JSON.stringify(x === undefined ? null : x));
+// Re-export de las acciones de grupo: el código del juego (y cualquier import
+// antiguo) sigue funcionando con `import * as A from './actions'`.
+export {
+  DEFAULT_SETTINGS, DEFAULT_EXTRA_ROLES, selectGame, setNarratorDevice, createGroup, joinGroup,
+  takeOverPlayer, joinExistingGroup, setPlayerActive, leaveGroup, kickPlayer, deleteGroup,
+  setSeating, setSettings, makeMaster, heartbeat,
+} from '../../core/sync/group-actions';
 
-// Firestore puede devolver «resource-exhausted» en ráfagas puntuales:
-// se reintenta con espera creciente en vez de enseñar un error al jugador.
-async function txWithRetry<T>(body: (tx: Transaction) => Promise<T>): Promise<T> {
-  for (let attempt = 0; ; attempt++) {
-    try {
-      return await runTransaction(db, body);
-    } catch (e) {
-      if ((e as { code?: string })?.code === 'resource-exhausted' && attempt < 3) {
-        await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
-        continue;
-      }
-      throw e;
-    }
-  }
-}
-
-const gref = (slug: string) => doc(db, 'groups', slug);
-const pref = (slug: string, pid: string) => doc(db, 'groups', slug, 'players', pid);
-const mySlug = () => state.route.slug!;
-const myPid = () => state.session!.pid;
-
-// Composición recomendada por el reglamento para una primera partida.
-export const DEFAULT_EXTRA_ROLES: RoleId[] = ['vidente', 'bruja', 'cazador', 'cupido'];
-
-export const DEFAULT_SETTINGS: TableSettings = {
-  revealDead: true, showComposition: true, alguacil: false, casual: false,
-  primeraNocheTranquila: false, wolvesCount: null, // null = tabla oficial
-  villagersCount: null, // null = los aldeanos rellenan los huecos libres
-  videnteSoloBando: false, // la vidente solo ve si es lobo o no
-  ocultarCausas: false, // no anunciar la causa de las muertes nocturnas
-  pacing: 'teatral', // ritmo por defecto: pausas amplias y guion con ambientación
-};
-
-// ——— Lobby ———
-
-// Elegir (o cambiar) el juego de la mesa: lo ve todo el grupo al instante.
-export async function selectGame(gameId: string | null): Promise<void> {
-  await updateDoc(gref(mySlug()), { currentGame: gameId || null });
-}
-
-// Elegir el dispositivo que narrará las partidas automáticas (se recuerda para
-// todos los juegos). Durante una partida automática en curso, el narrador ES el
-// máster: al cambiarlo se traspasa el mando y el nuevo dispositivo toma la voz.
-export async function setNarratorDevice(pid: string | null): Promise<void> {
-  const g = state.group;
-  const patch: Record<string, unknown> = { lastNarratorId: pid || null };
-  if (pid && g?.status === 'playing' && g.game && g.game.mode === 'auto') patch.masterId = pid;
-  await updateDoc(gref(mySlug()), patch);
-}
-
-export async function createGroup(userName: string, groupName: string): Promise<void> {
-  const slug = slugify(groupName);
-  if (!slug) throw new Error('Nombre de grupo no válido.');
-  const pid = playerIdFor(userName);
-  if (!pid) throw new Error('Nombre de jugador no válido.');
-  const token = randomId('t');
-  await txWithRetry(async (tx) => {
-    const g = await tx.get(gref(slug));
-    if (g.exists()) throw new CodedError('group-taken');
-    tx.set(gref(slug), {
-      name: groupName.trim(),
-      createdAt: Date.now(),
-      masterId: null, // en el lobby no hay máster: todos configuran e inician
-      lastNarratorId: pid, // el primer dispositivo narra por defecto (cambiable)
-      currentGame: null, // la mesa elige juego después
-      status: 'lobby',
-      settings: DEFAULT_SETTINGS,
-      extraRoles: DEFAULT_EXTRA_ROLES,
-      game: null,
-    });
-    tx.set(pref(slug, pid), basePlayer(userName, token));
-  });
-  saveSession(slug, { pid, token, name: userName.trim() });
-  navigate('/g/' + slug);
-}
-
-export async function joinGroup(slug: string, userName: string): Promise<void> {
-  const pid = playerIdFor(userName);
-  if (!pid) throw new Error('Nombre de jugador no válido.');
-  const token = randomId('t');
-  await txWithRetry(async (tx) => {
-    const g = await tx.get(gref(slug));
-    if (!g.exists()) throw new CodedError('no-group');
-    const p = await tx.get(pref(slug, pid));
-    if (p.exists()) throw new CodedError('name-taken');
-    if (g.data().status === 'playing') throw new CodedError('playing');
-    tx.set(pref(slug, pid), basePlayer(userName, token));
-  });
-  saveSession(slug, { pid, token, name: userName.trim() });
-}
-
-// Reconectar como un jugador existente (desconecta el dispositivo anterior).
-export async function takeOverPlayer(slug: string, userName: string): Promise<void> {
-  const pid = playerIdFor(userName);
-  if (!pid) throw new CodedError('no-player');
-  const token = randomId('t');
-  const snap = await getDoc(pref(slug, pid));
-  if (!snap.exists()) throw new CodedError('no-player');
-  await updateDoc(pref(slug, pid), { deviceToken: token, heartbeatAt: Date.now() });
-  saveSession(slug, { pid, token, name: snap.data().name });
-}
-
-// Entrar en un grupo que ya existe desde la portada: como jugador o reclamando
-// el rol de máster (el máster anterior pasa a ser un jugador más). Si el nombre
-// ya está en uso dentro del grupo, se reconecta como ese jugador.
-export async function joinExistingGroup(groupName: string, userName: string, claimMaster: boolean): Promise<void> {
-  const slug = slugify(groupName);
-  const pid = playerIdFor(userName);
-  if (!slug || !pid) throw new Error('Nombre no válido.');
-  const token = randomId('t');
-  let joinedName = userName.trim();
-  await txWithRetry(async (tx) => {
-    const g = await tx.get(gref(slug));
-    if (!g.exists()) throw new CodedError('no-group');
-    const p = await tx.get(pref(slug, pid));
-    if (p.exists()) {
-      joinedName = p.data().name;
-      tx.update(pref(slug, pid), { deviceToken: token, heartbeatAt: Date.now() });
-    } else {
-      if (g.data().status === 'playing') throw new CodedError('playing');
-      tx.set(pref(slug, pid), basePlayer(userName, token));
-    }
-    if (claimMaster) tx.update(gref(slug), { masterId: pid });
-  });
-  saveSession(slug, { pid, token, name: joinedName });
-  navigate('/g/' + slug);
-}
-
-function basePlayer(name: string, token: string) {
-  return {
-    name: name.trim(), deviceToken: token, order: Date.now(),
-    role: null, alive: null, inGame: false,
-    isPlayer: true, // por defecto todo dispositivo juega; se puede desactivar
-    heartbeatAt: Date.now(), // nace «activo»: el latido periódico lo mantiene
-  };
-}
-
-// Activa/desactiva un dispositivo como jugador (se recuerda entre partidas).
-export async function setPlayerActive(pid: string, active: boolean): Promise<void> {
-  await updateDoc(pref(mySlug(), pid), { isPlayer: !!active });
-}
-
-export async function leaveGroup(): Promise<void> {
-  const slug = state.route.slug;
-  const myId = state.session?.pid;
-  if (!slug || !myId) return;
-  await txWithRetry(async (tx) => {
-    const g = await tx.get(gref(slug));
-    if (!g.exists()) return;
-    const others = state.players.filter((p) => p.id !== myId);
-    if (!others.length) {
-      tx.delete(pref(slug, myId));
-      tx.delete(gref(slug));
-      return;
-    }
-    if (g.data().masterId === myId) {
-      tx.update(gref(slug), { masterId: others[0].id });
-    }
-    tx.delete(pref(slug, myId));
-  });
-  clearSession(slug);
-  navigate('/');
-}
-
-export async function kickPlayer(pid: string): Promise<void> {
-  await deleteDoc(pref(mySlug(), pid));
-}
-
-export async function deleteGroup(): Promise<void> {
-  const slug = mySlug();
-  const ps = await getDocs(collection(db, 'groups', slug, 'players'));
-  const batch = writeBatch(db);
-  ps.forEach((d) => batch.delete(d.ref));
-  batch.delete(gref(slug));
-  await batch.commit();
-  clearSession(slug);
-  navigate('/');
-}
-
-// Orden de la mesa (sentido horario). Se guarda en el grupo y persiste entre partidas.
-export async function setSeating(order: string[]): Promise<void> {
-  await updateDoc(gref(mySlug()), { seating: order });
-}
+// ——— Configuración propia del juego ———
 
 export async function setExtraRoles(roles: RoleId[]): Promise<void> {
   await updateDoc(gref(mySlug()), { extraRoles: roles });
@@ -219,17 +42,6 @@ export async function resetGameSettings(): Promise<void> {
   const cur = state.group?.settings || {};
   const s = { ...DEFAULT_SETTINGS, wolvesCount: cur.wolvesCount ?? null, villagersCount: cur.villagersCount ?? null, alguacil: !!cur.alguacil };
   await updateDoc(gref(mySlug()), { settings: s });
-}
-
-export async function setSettings(patch: Partial<TableSettings>): Promise<void> {
-  // Escritura atómica por campo: dos cambios seguidos nunca se pisan entre sí.
-  const updates: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(patch)) updates['settings.' + k] = v === undefined ? null : v;
-  await updateDoc(gref(mySlug()), updates);
-}
-
-export async function makeMaster(pid: string): Promise<void> {
-  await updateDoc(gref(mySlug()), { masterId: pid });
 }
 
 // ——— Inicio y fin de partida ———
@@ -1015,11 +827,6 @@ export async function requestRepeat(): Promise<void> {
 }
 
 // ——— Presencia del narrador (v2): latido para detectar un narrador caído ———
-
-export async function heartbeat(): Promise<void> {
-  if (!state.session) return;
-  await updateDoc(pref(mySlug(), myPid()), { heartbeatAt: Date.now() });
-}
 
 // ——— Repaso de roles: si alguien se atasca 2 minutos, todo el pueblo revisa ———
 

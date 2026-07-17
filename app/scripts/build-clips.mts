@@ -11,6 +11,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { allKeywordCombos } from '../src/games/hombres-lobo/roles';
 import { allStaticPieces, corpusHash, kwClip } from '../src/games/hombres-lobo/texts/corpus';
+import { allEspiaStaticPieces } from '../src/games/espia/texts';
 import { buildSsml, ttsCacheKey } from '../src/core/audio/tts';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -51,7 +52,7 @@ interface Manifest {
 
 async function main(): Promise<void> {
   const kwTexts = allKeywordCombos().flatMap((kw) => [kwClip(kw, true), kwClip(kw, false)]);
-  const texts = [...new Set([...allStaticPieces().map((p) => p.text), ...kwTexts])];
+  const texts = [...new Set([...allStaticPieces().map((p) => p.text), ...kwTexts, ...allEspiaStaticPieces()])];
   const outDir = join(APP, 'public', 'clips', VOICE);
   mkdirSync(outDir, { recursive: true });
 

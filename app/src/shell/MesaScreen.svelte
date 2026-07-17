@@ -4,7 +4,7 @@
   // partida (pantalla «Empezar partida» del juego).
   import { app, me, navigate } from '../core/sync/store.svelte';
   import { guard } from '../core/sync/guard';
-  import * as A from '../games/hombres-lobo/actions';
+  import * as A from '../core/sync/group-actions';
   import { isActiveDevice } from '../core/sync/presence';
   import { GAME_DEFS } from '../games/registry';
   import type { GroupDoc, PlayerDoc } from '../core/sync/schema';

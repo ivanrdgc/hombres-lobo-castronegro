@@ -3,7 +3,7 @@
   // (port de groupExistsModal v1). Lee grupo y nombre de app.ui.modal.
   import { app } from '../../core/sync/store.svelte';
   import { guard } from '../../core/sync/guard';
-  import * as A from '../../games/hombres-lobo/actions';
+  import * as A from '../../core/sync/group-actions';
 
   const group = $derived((app.ui.modal?.group as string | undefined) ?? '');
   const name = $derived((app.ui.modal?.name as string | undefined) ?? '');

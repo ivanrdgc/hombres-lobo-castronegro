@@ -2,7 +2,7 @@
   // Confirmación de borrado del grupo entero (port de confirmDeleteModal v1).
   import { app } from '../../core/sync/store.svelte';
   import { guard } from '../../core/sync/guard';
-  import * as A from '../../games/hombres-lobo/actions';
+  import * as A from '../../core/sync/group-actions';
 
   function deleteConfirm() {
     app.ui.modal = null;

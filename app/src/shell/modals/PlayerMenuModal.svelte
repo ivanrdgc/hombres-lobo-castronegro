@@ -3,7 +3,7 @@
   // el narrador se deciden al empezar cada partida). Lee el pid de app.ui.modal.
   import { app, me } from '../../core/sync/store.svelte';
   import { guard } from '../../core/sync/guard';
-  import * as A from '../../games/hombres-lobo/actions';
+  import * as A from '../../core/sync/group-actions';
   import { isActiveDevice } from '../../core/sync/presence';
 
   const pid = $derived((app.ui.modal?.pid as string | undefined) ?? '');

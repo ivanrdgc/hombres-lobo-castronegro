@@ -6,7 +6,7 @@
   // - acciones envueltas en guard()
   import { app } from '../core/sync/store.svelte';
   import { guard } from '../core/sync/guard';
-  import * as A from '../games/hombres-lobo/actions';
+  import * as A from '../core/sync/group-actions';
   import { randomGroupName } from './ui-helpers';
   import Flash from './Flash.svelte';
 

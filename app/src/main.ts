@@ -9,12 +9,14 @@ import { applyRoute, state } from './core/sync/store.svelte';
 import { installPresence } from './core/sync/presence';
 import { installUiHygiene } from './shell/ui-hygiene';
 import { installNarrator } from './games/hombres-lobo/narrator/install';
+import { installEspiaNarrator } from './games/espia/narrator/install';
 
 installUnlockGestures();
 loadClipManifest(); // biblioteca de clips pre-generados (F6); sin ella, síntesis en vivo
 initDeviceVoice();
 installUiHygiene();
 installNarrator();
+installEspiaNarrator();
 installPresence();
 
 window.addEventListener('popstate', applyRoute);

@@ -2,7 +2,7 @@
   // Confirmación de abandono del grupo (port de confirmLeaveModal v1).
   import { app } from '../../core/sync/store.svelte';
   import { guard } from '../../core/sync/guard';
-  import * as A from '../../games/hombres-lobo/actions';
+  import * as A from '../../core/sync/group-actions';
 
   function leaveConfirm() {
     app.ui.modal = null;

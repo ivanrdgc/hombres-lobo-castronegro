@@ -3,7 +3,7 @@
   // dispositivo (port de takeoverModal v1). Lee el nombre de app.ui.modal.
   import { app } from '../../core/sync/store.svelte';
   import { guard } from '../../core/sync/guard';
-  import * as A from '../../games/hombres-lobo/actions';
+  import * as A from '../../core/sync/group-actions';
 
   const name = $derived((app.ui.modal?.name as string | undefined) ?? '');
 

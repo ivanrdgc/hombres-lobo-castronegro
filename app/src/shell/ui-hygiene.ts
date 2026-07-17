@@ -6,8 +6,11 @@ import { applyRoute, onChange, state } from '../core/sync/store.svelte';
 function contextSignature(): string {
   const g = state.group?.game;
   if (!g) return state.group ? state.group.status : 'none';
+  // Campos de El Espía (undefined en Hombres Lobo: inofensivos en la firma).
+  const e = g as unknown as { round?: number; voteSeq?: number; timeupTurn?: number | null };
   return [g.phase, g.night, g.stepIdx, g.dayNum, g.votesLeft, (g.pending || []).length,
-    ((g.pending || [])[0] || {}).type || '', g.roleRefresh ? 'rr' : '', g.refreshNonce || 0, g.paused ? 'p' : ''].join(':');
+    ((g.pending || [])[0] || {}).type || '', g.roleRefresh ? 'rr' : '', g.refreshNonce || 0, g.paused ? 'p' : '',
+    e.round ?? '', e.voteSeq ?? '', e.timeupTurn ?? ''].join(':');
 }
 
 export function installUiHygiene(): void {

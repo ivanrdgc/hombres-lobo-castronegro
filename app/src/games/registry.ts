@@ -5,6 +5,7 @@
 import type { Component } from 'svelte';
 import type { GroupDoc, PlayerDoc } from '../core/sync/schema';
 import { hombresLobo } from './hombres-lobo';
+import { espia } from './espia';
 
 /** Props que reciben las pantallas principales de un juego. */
 export type GameScreenProps = { group: GroupDoc; my: PlayerDoc };
@@ -26,7 +27,7 @@ export interface GameDefinition {
   modals: Record<string, Component<any>>;
 }
 
-export const GAME_DEFS: GameDefinition[] = [hombresLobo];
+export const GAME_DEFS: GameDefinition[] = [hombresLobo, espia];
 
 /** Definición del juego seleccionado en el grupo (por defecto, el primero). */
 export function gameDef(id: string | null | undefined): GameDefinition {

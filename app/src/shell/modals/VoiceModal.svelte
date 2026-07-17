@@ -4,7 +4,7 @@
   // en plena partida automática (port de voiceModal v1).
   import { app, me, isMaster } from '../../core/sync/store.svelte';
   import { guard } from '../../core/sync/guard';
-  import * as A from '../../games/hombres-lobo/actions';
+  import * as A from '../../core/sync/group-actions';
   import { getVoiceConfig, setVoiceConfig, onVoiceConfig, CLOUD_VOICES } from '../../core/audio/voice-config';
   import { listSpanishVoices } from '../../core/audio/device-voice';
   import { cloudAvailable, testCloudSynth, getLastCloudError } from '../../core/audio/tts';

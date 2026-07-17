@@ -3,7 +3,7 @@
   // (port de blockedScreen v1).
   import { app } from '../core/sync/store.svelte';
   import { guard } from '../core/sync/guard';
-  import * as A from '../games/hombres-lobo/actions';
+  import * as A from '../core/sync/group-actions';
   import type { GroupDoc } from '../core/sync/schema';
   import Flash from './Flash.svelte';
 

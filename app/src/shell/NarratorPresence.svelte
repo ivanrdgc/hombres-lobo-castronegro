@@ -4,7 +4,7 @@
   // (La v1 se quedaba muda sin aviso: mejora de la v2.)
   import { app, isMaster, me } from '../core/sync/store.svelte';
   import { guard } from '../core/sync/guard';
-  import * as A from '../games/hombres-lobo/actions';
+  import * as A from '../core/sync/group-actions';
   import { unlockAudio } from '../core/audio/engine';
   import type { GroupDoc } from '../core/sync/schema';
 
