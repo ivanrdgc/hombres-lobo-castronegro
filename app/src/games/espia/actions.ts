@@ -1,10 +1,13 @@
-// Acciones de El Espía sobre Firestore. Todo el estado vive en group.game
-// (transacciones «primero gana» sobre el doc del grupo); los docs de jugador
-// no se tocan. Las acciones de grupo (asientos, ajustes…) están en core.
-import { updateDoc } from '../../core/sync/fb';
+// Acciones de El Espía sobre Firestore. Todo el estado vive en el doc de SU
+// partida (transacciones «primero gana» sobre groups/<mesa>/matches/<mid>);
+// los docs de jugador no se tocan. Las acciones de grupo están en core.
+import { deleteDoc } from '../../core/sync/fb';
 import { state } from '../../core/sync/store.svelte';
-import { sanitize, txWithRetry, gref, mySlug, myPid } from '../../core/sync/group-actions';
-import type { GroupDoc } from '../../core/sync/schema';
+import {
+  sanitize, txWithRetry, gref, mref, mySlug, myPid, assertFree, ctxMatchId, newMatchId,
+  registerMatchTools,
+} from '../../core/sync/group-actions';
+import type { GroupDoc, MatchDoc } from '../../core/sync/schema';
 import {
   ESPIA_MIN_PLAYERS, ESPIA_MAX_PLAYERS, applyDelta, dealRound, resolveConviction, resolveGuess,
   resolveSpyLeft, resolveTimeout, tallyVote, timeupOrder,
@@ -12,28 +15,40 @@ import {
 import { LOCATIONS, locationById } from './locations';
 import type { EspiaOutcome, EspiaState } from './types';
 
-/** El estado de El Espía, si la partida en curso es de este juego. */
+/** El estado de El Espía, si la partida de la vista es de este juego. */
 export function espiaGame(g: GroupDoc | null): EspiaState | null {
   const game = g?.game as unknown as EspiaState | null;
   return game && game.espia ? game : null;
 }
 
-type EspiaTxFn = (game: EspiaState, g: GroupDoc) => EspiaState | null | undefined;
+interface EspiaTxExtra {
+  game: EspiaState;
+  members?: string[];
+  masterPatch?: string | null;
+}
 
-// Transacción sobre el doc del grupo: lee, aplica fn sobre una copia y escribe.
-// fn devuelve null para abortar sin cambios (otro dispositivo se adelantó).
-async function espiaTx(fn: EspiaTxFn): Promise<void> {
+type EspiaTxFn = (game: EspiaState, m: MatchDoc) => EspiaState | EspiaTxExtra | null | undefined;
+
+// Transacción sobre el doc de la partida: lee, aplica fn sobre una copia y
+// escribe. fn devuelve null para abortar sin cambios (otro se adelantó).
+async function espiaTx(fn: EspiaTxFn, mid?: string): Promise<void> {
   const slug = mySlug();
+  const id = mid ?? ctxMatchId('espia');
+  if (!id) return;
   await txWithRetry(async (tx) => {
-    const snap = await tx.get(gref(slug));
-    if (!snap.exists()) throw new Error('El grupo ya no existe');
-    const g = { id: snap.id, ...snap.data() } as GroupDoc;
-    const game = espiaGame(g);
-    if (!game) return;
+    const snap = await tx.get(mref(slug, id));
+    if (!snap.exists()) return; // la partida terminó mientras tanto
+    const m = { id: snap.id, ...snap.data() } as MatchDoc;
+    const game = m.game as unknown as EspiaState | null;
+    if (!game || !game.espia) return;
     const copy = JSON.parse(JSON.stringify(game)) as EspiaState;
-    const res = fn(copy, g);
+    const res = fn(copy, m);
     if (!res) return;
-    tx.update(gref(slug), { game: sanitize(res) });
+    const extra = ('game' in res ? res : { game: res }) as EspiaTxExtra;
+    const patch: Record<string, unknown> = { game: sanitize(extra.game) };
+    if (extra.members) patch.members = sanitize(extra.members);
+    if (extra.masterPatch !== undefined) patch.masterId = extra.masterPatch;
+    tx.update(mref(slug, id), patch);
   });
 }
 
@@ -43,12 +58,14 @@ const nameOf = (s: EspiaState, pid: string | null | undefined): string => (pid &
 
 export async function startEspia(playerIds: string[], speakerId: string | null, durationMin: number): Promise<void> {
   const slug = mySlug();
+  const mid = newMatchId();
   if (playerIds.length < ESPIA_MIN_PLAYERS) throw new Error(`El Espía necesita al menos ${ESPIA_MIN_PLAYERS} jugadores.`);
   if (playerIds.length > ESPIA_MAX_PLAYERS) throw new Error(`El Espía admite ${ESPIA_MAX_PLAYERS} jugadores como mucho.`);
   const names: Record<string, string> = {};
   for (const pid of playerIds) names[pid] = state.players.find((p) => p.id === pid)?.name || pid;
   const now = Date.now();
   const deal = dealRound(playerIds, 1, [], now);
+  const speaker = speakerId || myPid();
   const game: EspiaState = {
     espia: true, phase: 'reveal', startedAt: now, round: 1,
     playerIds, names,
@@ -61,10 +78,18 @@ export async function startEspia(playerIds: string[], speakerId: string | null, 
   await txWithRetry(async (tx) => {
     const snap = await tx.get(gref(slug));
     if (!snap.exists()) throw new Error('El grupo ya no existe');
-    if ((snap.data() as { status?: string }).status === 'playing') return; // otro se adelantó
-    tx.update(gref(slug), sanitize({
-      status: 'playing', currentGame: 'espia', game,
-      masterId: speakerId || myPid(), lastNarratorId: speakerId || myPid(),
+    // Nadie puede estar en dos partidas a la vez (la mesa admite varias).
+    await assertFree(tx, slug, [...new Set([...playerIds, speaker])]);
+    tx.update(gref(slug), { lastNarratorId: speaker });
+    tx.set(mref(slug, mid), sanitize({
+      gameId: 'espia',
+      createdAt: now,
+      members: [...new Set([...playerIds, speaker])],
+      masterId: speaker,
+      lastNarratorId: speaker,
+      settings: { espiaMin: Math.max(1, durationMin) },
+      extraRoles: [],
+      game,
     }));
   });
 }
@@ -234,22 +259,51 @@ export async function nextRound(): Promise<void> {
   });
 }
 
-/** Terminar el juego: la mesa vuelve al lobby de El Espía. */
-export async function endEspia(): Promise<void> {
-  await updateDoc(gref(mySlug()), { status: 'lobby', game: null, masterId: null });
+/** Terminar el juego: sus miembros quedan libres y vuelven al lobby de El Espía. */
+export async function endEspia(mid?: string): Promise<void> {
+  const id = mid ?? ctxMatchId('espia');
+  if (!id) return;
+  await deleteDoc(mref(mySlug(), id));
 }
 
-/** Dejar la ronda en curso (salida administrativa, sin puntos de última hora). */
-export async function leaveRound(): Promise<void> {
-  const me = myPid();
-  await espiaTx((game) => {
-    if (game.phase === 'end' || !game.playerIds.includes(me)) return null;
+// La mesa puede sacar a un miembro o terminar una partida desde fuera.
+registerMatchTools('espia', {
+  leave: (mid, pid) => leaveRound(pid, mid),
+  end: (mid) => endEspia(mid),
+});
+
+/** Dejar la ronda en curso (salida administrativa, sin puntos de última hora).
+ *  Con targetPid, saca a OTRO desde la mesa; quien sale queda libre. */
+export async function leaveRound(targetPid?: string, mid?: string): Promise<void> {
+  const me = targetPid || myPid();
+  await espiaTx((game, m) => {
+    const members = m.members || [];
+    const dropMembers = members.filter((x) => x !== me);
+    // La voz no se queda huérfana: si sale el altavoz, pasa a otro miembro
+    // (preferiblemente uno que juegue).
+    const wasMaster = m.masterId === me;
+    const masterPatch = !wasMaster ? undefined
+      : dropMembers.find((x) => game.playerIds.includes(x)) ?? dropMembers[0] ?? null;
+    const out = (g2: EspiaState): EspiaTxExtra =>
+      wasMaster ? { game: g2, members: dropMembers, masterPatch } : { game: g2, members: dropMembers };
+    if (!game.playerIds.includes(me)) {
+      // Altavoz puro (no juega): sale sin tocar la ronda.
+      if (!members.includes(me)) return null;
+      game.log.push({ txt: `🚪 ${nameOf(game, me)} deja la partida.` });
+      return out(game);
+    }
+    if (game.phase === 'end') {
+      // Entre rondas: sale de la partida (y de las rondas futuras).
+      game.playerIds = game.playerIds.filter((id) => id !== me);
+      game.log.push({ txt: `🚪 ${nameOf(game, me)} deja la partida.` });
+      return out(game);
+    }
     // El espía se marcha a mitad de ronda: victoria de los agentes (el delta se
     // calcula ANTES de sacarlo de la lista).
     if (game.spyId === me && game.phase !== 'reveal') {
       const outcome = resolveSpyLeft(game);
       game.playerIds = game.playerIds.filter((id) => id !== me);
-      return finishRound(game, outcome);
+      return out(finishRound(game, outcome));
     }
     const orderBefore = timeupOrder(game);
     const wasTurnHolder = game.phase === 'timeup' && game.timeupTurn !== null && orderBefore[game.timeupTurn] === me;
@@ -269,7 +323,7 @@ export async function leaveRound(): Promise<void> {
       };
       game.history.push({ round: game.round, locationId: game.locationId, spyId: game.spyId, txt: game.outcome.txt });
       game.log.push({ txt: game.outcome.txt });
-      return game;
+      return out(game);
     }
     if (game.phase === 'reveal') {
       // Aún sin empezar: se reparte de nuevo entre los que quedan (mismo lugar
@@ -282,22 +336,22 @@ export async function leaveRound(): Promise<void> {
       game.seen = {};
       game.usedLocations = [...game.usedLocations.slice(0, -1), deal.locationId];
       game.log.push({ txt: '🔀 Se reparten identidades nuevas entre los que quedan.' });
-      return game;
+      return out(game);
     }
     if (game.vote) {
       const v = game.vote;
       if (v.accuserId === me || v.accusedId === me) {
         // La acusación pierde una de sus partes: cae y el juego sigue.
         game.vote = null;
-        if (v.fromTimeup) return advanceTimeupTurn(game);
+        if (v.fromTimeup) return out(advanceTimeupTurn(game));
         game.deadline = Date.now() + v.frozenMs;
-        return game;
+        return out(game);
       }
       delete v.votes[me];
       const t = tallyVote(game.playerIds, v);
       if (t.allYes) {
         game.vote = null;
-        return finishRound(game, resolveConviction(game, v.accusedId, v.accuserId));
+        return out(finishRound(game, resolveConviction(game, v.accusedId, v.accuserId)));
       }
     }
     if (game.phase === 'timeup' && game.timeupTurn !== null) {
@@ -305,15 +359,15 @@ export async function leaveRound(): Promise<void> {
       const newOrder = timeupOrder(game);
       if (wasTurnHolder) {
         const stillBefore = orderBefore.slice(0, game.timeupTurn).filter((id) => game.playerIds.includes(id)).length;
-        if (stillBefore >= newOrder.length) return finishRound(game, resolveTimeout(game));
+        if (stillBefore >= newOrder.length) return out(finishRound(game, resolveTimeout(game)));
         game.timeupTurn = stillBefore;
       } else {
         const holder = orderBefore.slice(game.timeupTurn).find((id) => game.playerIds.includes(id));
         const idx = holder ? newOrder.indexOf(holder) : -1;
-        if (idx < 0) return finishRound(game, resolveTimeout(game));
+        if (idx < 0) return out(finishRound(game, resolveTimeout(game)));
         game.timeupTurn = idx;
       }
     }
-    return game;
-  });
+    return out(game);
+  }, mid);
 }

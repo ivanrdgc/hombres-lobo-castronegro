@@ -163,7 +163,8 @@
   {:else}
     <div class="actionpanel"><h3>🎭 El Actor: {ACTOR_POWERS.find(([p]) => p === app.ui.actorPower)?.[1]}</h3>
       <p class="hint">Ahora toca a tu objetivo.</p>
-      <ActionGrid {players} selKey={key} canPick={app.ui.actorPower === 'defensor' ? () => true : notMe} />
+      <!-- Como los roles que imita: nada prohíbe actuar sobre uno mismo. -->
+      <ActionGrid {players} selKey={key} />
       <button class="primary block" data-a="act-actor-confirm" disabled={!sel1Name} onclick={actorConfirm}>🎭 {sel1Name ? `Actuar sobre ${sel1Name}` : 'Actuar'}</button>
       <button class="ghost block" data-a="act-actor-power" data-p="" onclick={() => { app.ui.actorPower = null; app.ui.sel = null; }}>↩️ Cambiar papel</button>
     </div>
@@ -205,7 +206,7 @@
   {:else}
     <div class="actionpanel"><h3>🔮 La Vidente</h3>
       <p class="hint">Toca a quien quieras descubrir esta noche.</p>
-      <ActionGrid {players} selKey={key} canPick={notMe} />
+      <ActionGrid {players} selKey={key} />
       <button class="primary block" data-a="act-vidente" disabled={!sel1Name} onclick={() => (sel1(key) ? guard(() => A.actVidente(sel1(key))) : needSel())}>🔮 {sel1Name ? `Ver el rol de ${sel1Name}` : 'Ver un rol'}</button>
     </div>
   {/if}
@@ -223,8 +224,8 @@
     </div>
   {:else}
     <div class="actionpanel"><h3>🦊 El Zorro</h3>
-      <p class="hint">Toca a un jugador: olfatearás su casa y las dos vecinas. Si no hay lobos, perderás tu olfato.</p>
-      <ActionGrid {players} selKey={key} canPick={notMe} />
+      <p class="hint">Toca a un jugador (puedes tocarte a ti): olfatearás esa casa y las dos vecinas. Si no hay lobos, perderás tu olfato.</p>
+      <ActionGrid {players} selKey={key} />
       <button class="primary block" data-a="act-zorro" disabled={!sel1Name} onclick={zorroSniff}>🦊 {sel1Name ? `Olfatear la casa de ${sel1Name}` : 'Olfatear'}</button>
       <button class="ghost block" data-a="act-zorro-skip" onclick={() => guard(() => A.actZorro(null, false))}>No olfatear</button>
     </div>
@@ -237,8 +238,8 @@
     </div>
   {:else}
     <div class="actionpanel"><h3>🐦‍⬛ El Cuervo</h3>
-      <p class="hint">Toca a un sospechoso: mañana cargará con 2 votos extra.</p>
-      <ActionGrid {players} selKey={key} canPick={notMe} />
+      <p class="hint">Toca a un sospechoso (puedes señalarte a ti): mañana cargará con 2 votos extra.</p>
+      <ActionGrid {players} selKey={key} />
       <button class="primary block" data-a="act-cuervo" disabled={!sel1Name} onclick={() => (sel1(key) ? guard(() => A.actCuervo(sel1(key))) : needSel())}>🐦‍⬛ {sel1Name ? `Señalar a ${sel1Name}` : 'Señalar'}</button>
       <button class="ghost block" data-a="act-cuervo-skip" onclick={() => guard(() => A.actCuervo(null))}>No señalar</button>
     </div>
@@ -261,7 +262,7 @@
 {:else if stepId === 'lobo_feroz'}
   <div class="actionpanel"><h3>🐺🔥 El Gran Lobo Feroz</h3>
     <p class="hint">Ningún lobo ha muerto aún: tu hambre exige una segunda víctima.</p>
-    <ActionGrid {players} selKey={key} canPick={(p) => p.id !== game.acts.wolfVictim && p.id !== my.id} />
+    <ActionGrid {players} selKey={key} canPick={(p) => p.id !== game.acts.wolfVictim} />
     <button class="danger block" data-a="act-feroz" disabled={!sel1Name} onclick={() => (sel1(key) ? guard(() => A.actFeroz(sel1(key))) : needSel())}>🩸 {sel1Name ? `Devorar también a ${sel1Name}` : 'Devorar también'}</button>
     <button class="ghost block" data-a="act-feroz-skip" onclick={() => guard(() => A.actFeroz(null))}>Contener el hambre</button>
   </div>

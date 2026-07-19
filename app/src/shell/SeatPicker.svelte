@@ -3,17 +3,20 @@
   // de todos los juegos (extraída de Hombres Lobo al llegar el segundo juego):
   // tocar = incluir/excluir (recordado en isPlayer), arrastrar ⠿ = orden de
   // mesa (persistido en group.seating). Informa al padre con {order, chosen}.
-  import { app } from '../core/sync/store.svelte';
+  import { app, matchOf } from '../core/sync/store.svelte';
   import { guard } from '../core/sync/guard';
   import * as A from '../core/sync/group-actions';
   import { isActiveDevice } from '../core/sync/presence';
+  import { gameDef } from '../games/registry';
   import { seatingOrder } from './ui-helpers';
   import { seatInsertIndex } from '../core/util/seat-insert';
   import type { GroupDoc, PlayerDoc } from '../core/sync/schema';
 
-  const { group, meId, onState }: {
+  const { group, meId, gameId, onState }: {
     group: GroupDoc;
     meId: string | null | undefined;
+    /** Juego cuya partida se está montando (el recuerdo quién-juega es por juego). */
+    gameId: string;
     onState: (s: { order: string[]; chosen: string[] }) => void;
   } = $props();
 
@@ -26,14 +29,21 @@
     return () => clearInterval(t);
   });
 
-  // Selección local con preselección: activos que no estén marcados «no juega».
+  // Los ocupados por OTRA partida en curso no pueden entrar en esta.
+  const busyOf = (p: PlayerDoc) => matchOf(p.id);
+
+  // Selección local con preselección: activos que no estén marcados «no juega»
+  // PARA ESTE JUEGO (isPlayerFor.<gameId>; isPlayer heredado como respaldo).
   let local = $state<Record<string, boolean>>({});
-  const isSel = (p: PlayerDoc) => local[p.id] ?? (p.isPlayer !== false && isActiveDevice(p, now0));
+  const wants = (p: PlayerDoc) => (p.isPlayerFor?.[gameId] ?? p.isPlayer) !== false;
+  const isSel = (p: PlayerDoc) =>
+    !busyOf(p) && (local[p.id] ?? (wants(p) && isActiveDevice(p, now0)));
   function toggle(p: PlayerDoc) {
     if (moved) { moved = false; return; } // clic fantasma tras arrastrar
+    if (busyOf(p)) return; // está jugando otra partida: se libera desde la mesa
     const v = !isSel(p);
     local[p.id] = v;
-    void guard(() => A.setPlayerActive(p.id, v));
+    void guard(() => A.setPlayerActive(gameId, p.id, v));
   }
 
   // Reordenación por arrastre: durante el arrastre manda un orden local; al
@@ -108,7 +118,9 @@
   }
 
   // Aviso de dispositivos dormidos que quedan fuera por defecto.
-  const sleepy = $derived(app.players.filter((p) => !isSel(p) && p.isPlayer !== false && !isActiveDevice(p, now0)));
+  const sleepy = $derived(app.players.filter((p) => !busyOf(p) && !isSel(p) && wants(p) && !isActiveDevice(p, now0)));
+  // Y de los ocupados en otra partida.
+  const busyList = $derived(app.players.filter((p) => !!busyOf(p)));
 </script>
 
 <svelte:document onpointermove={onPointerMove} onpointerup={onPointerUp} onpointercancel={onPointerUp} />
@@ -128,13 +140,17 @@
     >
       <span class="draghandle" data-a="noop" data-drag={p.id} title="Arrastra para ordenar">⠿</span>
       <span class="pname">{p.name}</span>
+      {#if busyOf(p)}<span class="badge" title="Jugando a {gameDef(busyOf(p)!.gameId).name}">{gameDef(busyOf(p)!.gameId).emoji}</span>{/if}
       {#if !isActiveDevice(p, now)}<span class="badge zz" title="Sin señales recientes de este dispositivo">💤</span>{/if}
       {#if p.id === meId}<span class="badge you">Tú</span>{/if}
-      <span class="selmark">{isSel(p) ? '✅' : '⬜'}</span>
+      <span class="selmark">{busyOf(p) ? '⛔' : isSel(p) ? '✅' : '⬜'}</span>
     </div>
   {/each}
 </div>
 <p class="small-note">Toca a alguien para incluirlo o dejarlo fuera; arrastra el asa ⠿ para poner el orden de la mesa (sentido horario, como estáis sentados). Ambas cosas se recuerdan.</p>
+{#if busyList.length}
+  <p class="small-note">⛔ {busyList.map((p) => p.name).join(', ')} {busyList.length > 1 ? 'están' : 'está'} en otra partida: para incluirlos, sácalos antes desde la mesa.</p>
+{/if}
 {#if sleepy.length}
   <p class="small-note">💤 {sleepy.map((p) => p.name).join(', ')} {sleepy.length > 1 ? 'llevan' : 'lleva'} un rato sin dar señales: {sleepy.length > 1 ? 'quedan fuera' : 'queda fuera'} salvo que los toques.</p>
 {/if}

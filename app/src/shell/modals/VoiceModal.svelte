@@ -2,7 +2,7 @@
   // Voz de este dispositivo: silencio, ambiente, motor (neuronal/dispositivo),
   // voz, velocidad y tono, prueba y diagnóstico neuronal, y relevo del narrador
   // en plena partida automática (port de voiceModal v1).
-  import { app, me, isMaster } from '../../core/sync/store.svelte';
+  import { app, me, isMaster, viewGroup } from '../../core/sync/store.svelte';
   import { guard } from '../../core/sync/guard';
   import * as A from '../../core/sync/group-actions';
   import { getVoiceConfig, setVoiceConfig, onVoiceConfig, CLOUD_VOICES } from '../../core/audio/voice-config';
@@ -26,7 +26,8 @@
 
   const cloud = $derived(cfg.engine !== 'device' && cloudAvailable());
   const current = $derived(cfg.voiceURI || (voices[0] && voices[0].voiceURI) || '');
-  const g = $derived(app.group);
+  // La partida en el contexto de ESTE dispositivo (la mesa admite varias).
+  const g = $derived(viewGroup());
   const inAutoGame = $derived(!!g && g.status === 'playing' && !!g.game && g.game.mode === 'auto');
   const t = $derived(app.ui.voiceTest);
 

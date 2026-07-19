@@ -7,12 +7,20 @@ import { lastUtterance, play, stopSpeech } from '../../../core/audio/player';
 import type { Utterance } from '../../../core/audio/player';
 import { ensureAmbience, stopAmbience } from '../../../core/audio/ambience';
 import { getVoiceConfig } from '../../../core/audio/voice-config';
-import { onChange, state } from '../../../core/sync/store.svelte';
+import { matchView, onChange, state } from '../../../core/sync/store.svelte';
 import * as A from '../actions';
 import { amNarrator, gameIdOf, sceneOf, type Snap } from './scenes';
 
+// El snapshot del narrador es la VISTA de la partida de Hombres Lobo que narra
+// este dispositivo (la mesa puede tener varias partidas a la vez); sin partida
+// propia que narrar, el grupo a secas (escena nula).
 function snapshot(): Snap {
-  return { group: state.group, players: state.players, session: state.session };
+  const g = state.group;
+  const pid = state.session?.pid;
+  const mine = g && pid
+    ? state.matches.find((m) => m.gameId === 'hombres_lobo' && m.masterId === pid && (m.members || []).includes(pid))
+    : null;
+  return { group: mine && g ? matchView(g, mine) : g, players: state.players, session: state.session };
 }
 
 let wakeLock: WakeLockSentinel | null = null;

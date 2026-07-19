@@ -57,7 +57,7 @@
   }
   function villagersManual() {
     // Punto de partida: los huecos que quedarían ahora mismo con el relleno auto.
-    const nJug = Math.max(1, app.players.filter((p) => p.isPlayer !== false).length);
+    const nJug = Math.max(1, app.players.filter((p) => (p.isPlayerFor?.hombres_lobo ?? p.isPlayer) !== false).length);
     const lobos = (app.group?.settings || {}).wolvesCount || wolfCountFor(nJug);
     const extras = (app.group?.extraRoles || []).length;
     guard(() => A.setSettings({ villagersCount: Math.max(0, nJug - lobos - extras) }));

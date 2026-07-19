@@ -1,7 +1,7 @@
 <script lang="ts">
   // El máster aplica el cambio del Ladrón: enseña las dos cartas del centro
   // (port de thiefSwapModal de la v1).
-  import { app } from '../../../../core/sync/store.svelte';
+  import { app, viewGroup } from '../../../../core/sync/store.svelte';
   import { guard } from '../../../../core/sync/guard';
   import * as A from '../../actions';
   import { ROLES } from '../../roles';
@@ -9,7 +9,7 @@
 
   const pid = $derived(String(app.ui.modal?.pid ?? ''));
   const p = $derived(app.players.find((x) => x.id === pid));
-  const cc = $derived(app.group?.game?.centerCards || []);
+  const cc = $derived(viewGroup()?.game?.centerCards || []);
 
   const def = (r: RoleId | null | undefined) => (r ? ROLES[r] : undefined);
 

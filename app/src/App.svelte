@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { app } from './core/sync/store.svelte';
+  import { app, ctxMatch } from './core/sync/store.svelte';
   import { GAME_DEFS } from './games/registry';
   import Landing from './shell/Landing.svelte';
   import GroupScreen from './shell/GroupScreen.svelte';
@@ -11,12 +11,12 @@
   let hash = $state(location.hash);
   window.addEventListener('hashchange', () => (hash = location.hash));
 
-  // El título sigue la URL: en la portada o la mesa, «Juegos digitales»;
-  // dentro del lobby (/g/<mesa>/<juego>) o la partida, el nombre del juego.
-  const playingName = $derived(GAME_DEFS.find((x) => x.id === app.group?.currentGame)?.name);
+  // El título sigue el contexto del dispositivo: dentro de una partida, su
+  // juego; en un lobby (/g/<mesa>/<juego>), el de la URL; si no, el genérico.
+  const matchName = $derived(GAME_DEFS.find((x) => x.id === ctxMatch()?.gameId)?.name);
   const urlName = $derived(GAME_DEFS.find((x) => x.id === app.route.game)?.name);
   const title = $derived.by(() => {
-    if (app.group?.status === 'playing' && playingName) return playingName;
+    if (app.group && matchName) return matchName;
     if (app.group && urlName) return urlName;
     return 'Juegos digitales';
   });

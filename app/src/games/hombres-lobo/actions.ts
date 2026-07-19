@@ -3,12 +3,13 @@
 // transacciones «primero gana» y mismos documentos. Las acciones de GRUPO
 // (crear/unirse/asientos/ajustes/narrador/latido…) viven en
 // core/sync/group-actions y aquí se re-exportan por compatibilidad.
-import { db, updateDoc, writeBatch } from '../../core/sync/fb';
+import { db, getDoc, updateDoc, writeBatch } from '../../core/sync/fb';
 import { state } from '../../core/sync/store.svelte';
 import {
-  sanitize, txWithRetry, gref, pref, mySlug, myPid, DEFAULT_SETTINGS, DEFAULT_EXTRA_ROLES,
+  sanitize, txWithRetry, gref, pref, mref, mySlug, myPid, DEFAULT_SETTINGS, DEFAULT_EXTRA_ROLES,
+  assertFree, ctxMatchId, newMatchId, registerMatchTools,
 } from '../../core/sync/group-actions';
-import type { GroupDoc, PlayerDoc } from '../../core/sync/schema';
+import type { GroupDoc, MatchDoc, PlayerDoc } from '../../core/sync/schema';
 import { dealRoles, ROLES, isWolfSide, isWolfTeamRole, OFFICIAL_MIN_PLAYERS, CASUAL_MIN_PLAYERS, generateKeywords } from './roles';
 import type { RoleDef, RoleId } from './roles';
 import {
@@ -55,12 +56,15 @@ export async function resetGameSettings(): Promise<void> {
 // guiado/manual el narrador humano nunca juega.
 export async function startGame(mode: 'auto' | 'manual' | 'guiado', narratorId: string | null, playerIds: string[]): Promise<void> {
   const slug = mySlug();
+  const mid = newMatchId();
   const ids = state.players.map((p) => p.id);
   await txWithRetry(async (tx) => {
     const gsnap = await tx.get(gref(slug));
     const g = gsnap.data() as GroupDoc | undefined;
-    if (!g || g.status !== 'lobby') throw new Error('Estado no válido');
+    if (!g) throw new Error('El grupo ya no existe');
     const masterId = (mode === 'auto' ? narratorId : myPid()) || myPid();
+    // Nadie puede estar en dos partidas: se revalida contra los members frescos.
+    await assertFree(tx, slug, [...new Set([...playerIds, masterId])]);
     const snaps = await Promise.all(ids.map((id) => tx.get(pref(slug, id))));
     const players = snaps.filter((s) => s.exists()).map((s) => ({ id: s.id, ...s.data() }) as PlayerDoc);
     if (!players.some((p) => p.id === masterId)) throw new Error('El narrador elegido ya no está en el grupo.');
@@ -111,10 +115,14 @@ export async function startGame(mode: 'auto' | 'manual' | 'guiado', narratorId: 
 
     for (const p of players) {
       const roleId = assignments[p.id];
-      if (!roleId) { // máster narrador en modo manual
-        tx.update(pref(slug, p.id), sanitize({
-          inGame: false, role: null, alive: null, roleSeen: true,
-        }));
+      if (!roleId) {
+        // Solo se resetean los docs de MIEMBROS sin carta (máster narrador):
+        // los demás dispositivos pueden estar en otra partida y no se tocan.
+        if (p.id === masterId) {
+          tx.update(pref(slug, p.id), sanitize({
+            inGame: false, role: null, alive: null, roleSeen: true,
+          }));
+        }
         continue;
       }
       tx.update(pref(slug, p.id), sanitize({
@@ -149,11 +157,19 @@ export async function startGame(mode: 'auto' | 'manual' | 'guiado', narratorId: 
       log.push({ kind: 'evento', txt: `ℹ️ Roles activados pero no repartidos: ${droppedTxt}.` });
     }
 
+    // La partida nace como doc propio: la mesa admite varias a la vez.
     tx.update(gref(slug), sanitize({
-      status: 'playing',
-      masterId,
       lastNarratorId: masterId, // recordado para partidas sucesivas
       seating: seatOrder, // orden de mesa normalizado (recordado)
+    }));
+    tx.set(mref(slug, mid), sanitize({
+      gameId: 'hombres_lobo',
+      createdAt: Date.now(),
+      members: [...new Set([...eligible.map((p) => p.id), masterId])],
+      masterId,
+      lastNarratorId: masterId,
+      settings: settings0, // foto de los ajustes al arrancar
+      extraRoles: g.extraRoles || [],
       game: {
         mode, startedAt: Date.now(), seed,
         night: 0, dayNum: 0,
@@ -181,18 +197,27 @@ export async function confirmRoleSeen(): Promise<void> {
   await updateDoc(pref(mySlug(), myPid()), { roleSeen: true });
 }
 
-export async function backToLobby(): Promise<void> {
+export async function backToLobby(mid?: string): Promise<void> {
   const slug = mySlug();
+  const id = mid ?? ctxMatchId('hombres_lobo');
+  if (!id) return;
+  const snap = await getDoc(mref(slug, id));
+  if (!snap.exists()) return;
+  // Se limpian SOLO los docs de los miembros de esta partida (otros
+  // dispositivos pueden estar jugando otra) y el doc de la partida se borra:
+  // sus miembros quedan libres para la siguiente.
+  const members: string[] = (snap.data() as { members?: string[] }).members || [];
   const batch = writeBatch(db);
-  for (const p of state.players) {
-    batch.update(pref(slug, p.id), sanitize({
+  for (const pid of members) {
+    if (!state.players.some((p) => p.id === pid)) continue;
+    batch.update(pref(slug, pid), sanitize({
       inGame: false, role: null, alive: null, roleSeen: false, lover: false,
       charmed: false, infected: false, transformed: false, revealedTonto: false,
       ancianoHit: false, protectedLast: null, modelId: null, wolfSide: null,
       sect: null, keyword: null, causeOfDeath: null, deathAt: null, actorPower: null, powers: null, videnteLog: null,
     }));
   }
-  batch.update(gref(slug), { status: 'lobby', game: null, masterId: null });
+  batch.delete(mref(slug, id));
   await batch.commit();
 }
 
@@ -200,13 +225,31 @@ export async function backToLobby(): Promise<void> {
 // todos y el jugador queda fuera AL INSTANTE, sin efectos de última hora (ni
 // flecha del Cazador, ni muerte de pena del enamorado, ni sucesión del
 // Alguacil). Si su marcha decide el ganador, la partida se cierra sola
-// (en manual no: allí manda el narrador).
-export async function leaveGame(): Promise<void> {
-  await gameTx((game, players) => {
-    if (game.phase === 'end') return null;
+// (en manual no: allí manda el narrador). Sirve también para SACAR a otro
+// desde la mesa (targetPid): quien sale deja de ser miembro y queda libre
+// para otra partida.
+export async function leaveGame(targetPid?: string, mid?: string): Promise<void> {
+  const outId = targetPid || myPid();
+  await gameTx((game, players, g, members) => {
+    const dropMembers = members.filter((x) => x !== outId);
     const ps = inGamePlayers(players);
-    const meP = ps.find((p) => p.id === myPid());
-    if (!meP || meP.alive === false) return null;
+    const meP = ps.find((p) => p.id === outId);
+    // Miembro sin carta viva (narrador-altavoz, muerto, o fin de partida):
+    // sale de la partida sin drama y queda libre. Si era la voz, el mando
+    // pasa a otro miembro para que la partida no se quede muda.
+    if (game.phase === 'end' || !meP || meP.alive === false) {
+      if (!members.includes(outId)) return null;
+      const res: GameTxResult = { game, members: dropMembers };
+      if (g.masterId === outId && game.phase !== 'end') {
+        res.masterPatch = dropMembers[0] || null;
+        game.log!.push({ kind: 'evento', txt: '🔊 La narración cambia de dispositivo.' });
+      }
+      return res;
+    }
+    // Un jugador vivo que abandona muere administrativamente. Si además ponía
+    // la voz, su dispositivo SIGUE siendo miembro (narrando de cuerpo
+    // presente); podrá salir del todo después, ya muerto, y traspasar la voz.
+    const keepAsVoice = g.masterId === outId;
     // El abandono respeta el ajuste de la mesa: con «revelar rol al morir» se
     // muestra la carta; con roles ocultos, se queda boca abajo como cualquier
     // otra muerte.
@@ -245,56 +288,84 @@ export async function leaveGame(): Promise<void> {
     }
     return {
       game,
+      members: keepAsVoice ? members : dropMembers,
       playerPatches: { [meP.id]: { alive: false, causeOfDeath: 'abandono', deathAt: meP.deathAt, roleSeen: true } },
     };
-  }, { allowPaused: true });
+  }, { allowPaused: true, mid });
 }
 
-export async function endGameNow(winner: WinnerId | null): Promise<void> {
+export async function endGameNow(winner: WinnerId | null, mid?: string): Promise<void> {
   await gameTx((game, players) => {
     game.winner = winner || checkWinner(players.filter((p) => p.inGame)) || 'nadie';
     game.phase = 'end';
     game.paused = null;
     game.log!.push({ kind: 'evento', txt: '🏁 La partida se da por terminada: se revelan todos los roles.' });
     return { game };
-  }, { allowPaused: true });
+  }, { allowPaused: true, mid });
 }
+
+// La mesa puede sacar a un miembro o terminar una partida desde fuera.
+registerMatchTools('hombres_lobo', {
+  leave: (mid, pid) => leaveGame(pid, mid),
+  end: async (mid) => {
+    const m = state.matches.find((x) => x.id === mid);
+    // Con la partida ya en su pantalla final, «terminar» = cerrarla del todo.
+    if (m?.game?.phase === 'end') await backToLobby(mid);
+    else await endGameNow(null, mid);
+  },
+});
 
 // ——— Utilidades de transacción ———
 
 interface GameTxResult {
   game?: GameState;
   playerPatches?: Record<string, Partial<PlayerDoc>>;
+  /** Cambia la lista de miembros de la partida (salidas administrativas). */
+  members?: string[];
+  /** Traspasa la voz/mando de la partida (null = sin narrador). */
+  masterPatch?: string | null;
 }
 
-type GameTxFn = (game: GameState, players: PlayerDoc[], g: GroupDoc) => GameTxResult | null | undefined;
+type GameTxFn = (game: GameState, players: PlayerDoc[], g: GroupDoc, members: string[]) => GameTxResult | null | undefined;
 
-// Lee grupo + todos los jugadores, ejecuta fn(gameCopy, players) => {game, playerPatches}
-// y escribe el resultado. fn puede devolver null para abortar sin cambios.
-async function gameTx(fn: GameTxFn, opts: { allowPaused?: boolean; skipPlayers?: boolean } = {}): Promise<void> {
+// Lee la PARTIDA en contexto + todos los jugadores, ejecuta fn(gameCopy, players)
+// => {game, playerPatches} y escribe el resultado en el doc de la partida.
+// fn puede devolver null para abortar sin cambios.
+async function gameTx(fn: GameTxFn, opts: { allowPaused?: boolean; skipPlayers?: boolean; mid?: string } = {}): Promise<void> {
   const slug = mySlug();
+  const mid = opts.mid ?? ctxMatchId('hombres_lobo');
+  if (!mid) return; // sin partida de este juego en contexto
   const ids = state.players.map((p) => p.id);
   await txWithRetry(async (tx) => {
-    const gsnap = await tx.get(gref(slug));
-    if (!gsnap.exists()) throw new Error('El grupo ya no existe');
-    const g = { id: gsnap.id, ...gsnap.data() } as GroupDoc;
-    if (!g.game) throw new Error('No hay partida en curso');
-    if (g.game.paused && !opts.allowPaused) return; // partida en pausa: todo congelado
-    // skipPlayers: transacciones que solo tocan el doc del grupo ahorran N lecturas
-    // (usan la caché local de jugadores solo para leer nombres/estados).
+    const msnap = await tx.get(mref(slug, mid));
+    if (!msnap.exists()) return; // la partida terminó mientras tanto
+    const m = { id: msnap.id, ...msnap.data() } as MatchDoc;
+    if (!m.game) return;
+    if (m.game.paused && !opts.allowPaused) return; // partida en pausa: todo congelado
+    // La vista con forma de grupo que las reglas del juego siempre han leído.
+    const g: GroupDoc = {
+      id: slug, name: '', createdAt: m.createdAt, status: 'playing',
+      currentGame: m.gameId, masterId: m.masterId, lastNarratorId: m.lastNarratorId,
+      settings: m.settings || {}, extraRoles: m.extraRoles || [], game: m.game,
+    };
+    // skipPlayers: transacciones que solo tocan el doc de la partida ahorran N
+    // lecturas (usan la caché local de jugadores para nombres/estados).
     const players = opts.skipPlayers
       ? state.players.map((p) => ({ ...p }))
       : (await Promise.all(ids.map((id) => tx.get(pref(slug, id)))))
         .filter((s) => s.exists()).map((s) => ({ id: s.id, ...s.data() }) as PlayerDoc);
-    const game = JSON.parse(JSON.stringify(g.game)) as GameState;
-    const res = fn(game, players, g);
+    const game = JSON.parse(JSON.stringify(m.game)) as GameState;
+    const res = fn(game, players, g, m.members || []);
     if (!res) return;
     if (res.playerPatches) {
       for (const [pid, patch] of Object.entries(res.playerPatches)) {
         if (patch && Object.keys(patch).length) tx.update(pref(slug, pid), sanitize(patch));
       }
     }
-    tx.update(gref(slug), { game: sanitize(res.game || game) });
+    const patch: Record<string, unknown> = { game: sanitize(res.game || game) };
+    if (res.members) patch.members = sanitize(res.members);
+    if (res.masterPatch !== undefined) patch.masterId = res.masterPatch;
+    tx.update(mref(slug, mid), patch);
   });
 }
 
@@ -599,9 +670,10 @@ export const actGaitero = (targets: string[]) => nightAction('gaitero', (game) =
 
 export const confirmEncantado = () => nightAction('encantados', (game, ps, myId) => {
   game.acts.encantadosSeen = { ...(game.acts.encantadosSeen || {}), [myId]: true };
-  // Sin renovación: el encantamiento es único por jugador y las llamadas falsas
-  // usan señuelos, así que la palabra de un encantado no volverá a sonar jamás.
-  return {};
+  // Los encantados se despiertan TODAS las noches que el Gaitero actúa (como
+  // en el juego de mesa): su palabra acaba de sonar y volverá a hacer falta,
+  // así que rota desde la reserva (política de palabras de un solo uso).
+  return { playerPatches: rotateKeyword(game, ps, myId) };
 });
 
 export const actGitana = (qIdx: number | null) => nightAction('gitana', (game) => {
@@ -877,8 +949,10 @@ const STEP_SKIP_DEFAULTS: Partial<Record<StepId, (g: GameState, ps: PlayerDoc[])
     g.acts.lobosSeen = Object.fromEntries(ps.filter((p) => p.alive && isWolfSide(p)).map((p) => [p.id, true]));
     g.wolvesKnown = true;
   },
-  encantados: (g) => {
-    g.acts.encantadosSeen = Object.fromEntries((g.acts.gaiteroTargets || []).map((id) => [id, true]));
+  encantados: (g, ps) => {
+    // Se despiertan todos los encantados vivos (viejos y nuevos): el salto
+    // los da a todos por confirmados.
+    g.acts.encantadosSeen = Object.fromEntries(ps.filter((p) => p.alive && p.charmed).map((p) => [p.id, true]));
   },
   actor: (g) => { g.acts.actor = { power: null as unknown as 'vidente', target: null }; g.acts.actorSeen = true; },
   defensor: (g) => { g.acts.defensorTarget = null; },

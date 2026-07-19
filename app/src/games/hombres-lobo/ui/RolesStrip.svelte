@@ -4,14 +4,14 @@
   // cartas reales y sus cantidades; con composición secreta, solo los roles
   // activados al empezar, sin desvelar cuáles juegan. Sustituye al antiguo
   // modal «Cartas» del menú ⋯.
-  import { app } from '../../../core/sync/store.svelte';
+  import { app, viewGroup } from '../../../core/sync/store.svelte';
   import { ROLES } from '../roles';
   import type { RoleDef, RoleId } from '../roles';
   import type { GameState } from '../types';
 
   const { game }: { game: GameState } = $props();
 
-  const g = $derived(app.group);
+  const g = $derived(viewGroup());
   const pub = $derived(game.compositionPublic ?? !!(g?.settings || {}).showComposition);
   const list = $derived.by((): [RoleDef, number][] => {
     if (pub && game.composition) {

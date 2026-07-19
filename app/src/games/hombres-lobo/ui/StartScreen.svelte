@@ -4,7 +4,7 @@
   // personas: los valores por defecto son sensatos (dispositivos activos,
   // orden y narrador recordados) y casi siempre basta con pulsar Empezar.
   // La lista quién-juega + orden es el SeatPicker compartido del shell.
-  import { app, me, navigate } from '../../../core/sync/store.svelte';
+  import { app, matchOf, me, navigate } from '../../../core/sync/store.svelte';
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
   import { isActiveDevice } from '../../../core/sync/presence';
@@ -43,9 +43,12 @@
   let mode = $state<'auto' | 'guiado' | 'manual'>('auto');
 
   let narrPick = $state<string | null>(null);
-  // Por defecto, el altavoz recordado SOLO si sigue activo: si su dispositivo
-  // duerme, la voz se mueve sola a este (que abre la pantalla y está activo).
-  const narrator = $derived(narrPick ?? defaultNarrator(app.players, group.lastNarratorId, meId, now0));
+  // Por defecto, el altavoz recordado SOLO si sigue activo y libre: si su
+  // dispositivo duerme (o está en otra partida), la voz se mueve sola a este.
+  const narrator = $derived.by(() => {
+    const cand = narrPick ?? defaultNarrator(app.players, group.lastNarratorId, meId, now0);
+    return cand && !matchOf(cand) ? cand : meId ?? null;
+  });
   const narratorP = $derived(app.players.find((p) => p.id === narrator));
   // Aviso cuando la voz se ha movido por inactividad del altavoz anterior.
   const displaced = $derived.by(() => {
@@ -85,7 +88,7 @@
 
 <div class="card">
   <h3>🎮 ¿Quién juega?</h3>
-  <SeatPicker {group} {meId} onState={(s) => (seat = s)} />
+  <SeatPicker {group} {meId} gameId="hombres_lobo" onState={(s) => (seat = s)} />
 </div>
 
 <div class="card">
@@ -103,7 +106,7 @@
   {#if mode === 'auto'}
     <p class="small-note" style="margin-top:10px">La voz sonará en:</p>
     <div class="btnrow" style="margin-top:6px">
-      {#each rows as p (p.id)}
+      {#each rows.filter((p) => !matchOf(p.id)) as p (p.id)}
         <button class="small {narrator === p.id ? 'primary' : 'ghost'}" data-a="pick-narrator" data-p={p.id} style="flex:0 1 auto;min-width:0" onclick={() => (narrPick = p.id)}>
           {narrator === p.id ? '🔊 ' : ''}{p.name}{p.id === meId ? ' (tú)' : ''}{!isActiveDevice(p, now) ? ' 💤' : ''}
         </button>

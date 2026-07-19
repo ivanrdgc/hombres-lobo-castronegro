@@ -1,7 +1,7 @@
 <script lang="ts">
   // Terminar la partida eligiendo el desenlace (port de endGameModal de la v1):
   // solo se ofrecen los desenlaces posibles con los roles de esta partida.
-  import { app } from '../../../../core/sync/store.svelte';
+  import { app, viewGroup } from '../../../../core/sync/store.svelte';
   import { guard } from '../../../../core/sync/guard';
   import * as A from '../../actions';
   import { WINNER_LABELS } from '../../engine';
@@ -10,7 +10,7 @@
 
   const players = $derived(app.players.filter((p) => p.inGame));
   const relevant = $derived.by((): Partial<Record<WinnerId, boolean>> => {
-    const comp = app.group?.game?.composition || {};
+    const comp = viewGroup()?.game?.composition || {};
     const hasRole = (r: RoleId) => (comp[r] || 0) > 0 || players.some((p) => p.role === r);
     return {
       pueblo: true,

@@ -87,7 +87,7 @@ try {
   // La partida es su propia página.
   await ana.waitForTimeout(600);
   const paths = ['ana', 'bea', 'carlos', 'david'].map((n) => new URL(pages[n].url()).pathname);
-  check(paths.every((p) => /\/espia\/partida$/.test(p)), 'todos en …/espia/partida');
+  check(paths.every((p) => /\/espia\/partida\/[a-z0-9]+$/.test(p)), 'todos en …/espia/partida/<id>');
   await ana.waitForSelector('[data-a=espia-timer]');
   ok('cronómetro visible');
 

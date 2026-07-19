@@ -3,11 +3,12 @@
   // El tipo vive en app.ui.modal.type. Los modales del SHELL (grupo, sesión,
   // voz) viven aquí; los del juego los aporta su GameDefinition y tienen
   // prioridad si comparten tipo.
-  import { app } from '../../core/sync/store.svelte';
+  import { app, ctxMatch } from '../../core/sync/store.svelte';
   import { gameDef } from '../../games/registry';
   import PlayerMenuModal from './PlayerMenuModal.svelte';
   import ConfirmLeaveModal from './ConfirmLeaveModal.svelte';
   import ConfirmDeleteModal from './ConfirmDeleteModal.svelte';
+  import ConfirmEndMatchModal from './ConfirmEndMatchModal.svelte';
   import TakeoverModal from './TakeoverModal.svelte';
   import GroupExistsModal from './GroupExistsModal.svelte';
   import VoiceModal from './VoiceModal.svelte';
@@ -16,6 +17,7 @@
     'player-menu': PlayerMenuModal,
     'confirm-leave': ConfirmLeaveModal,
     'confirm-delete': ConfirmDeleteModal,
+    'confirm-end-match': ConfirmEndMatchModal,
     takeover: TakeoverModal,
     'group-exists': GroupExistsModal,
     voice: VoiceModal,
@@ -24,7 +26,10 @@
   const Current = $derived.by(() => {
     const type = app.ui.modal?.type;
     if (!type) return undefined;
-    const game = gameDef(app.group?.currentGame).modals[type];
+    // El juego del CONTEXTO de este dispositivo: su partida, o el lobby que
+    // navega por URL (la mesa puede tener varias partidas de juegos distintos).
+    const gid = ctxMatch()?.gameId ?? app.route.game ?? app.group?.currentGame;
+    const game = gameDef(gid).modals[type];
     return (game ?? SHELL_MODALS[type]) as typeof PlayerMenuModal | undefined;
   });
 

@@ -222,10 +222,15 @@ async function nightStepScene(ctx: Ctx, stepId: StepId, stepIdx: number): Promis
   // ——— Encantados: llamada por palabras clave (real, completada o falsa) ———
   if (stepId === 'encantados') {
     const game = g(ctx);
-    const targets = (game.acts.gaiteroTargets || [])
+    // ¿El Gaitero encantó esta noche? (aunque ya hayan confirmado todos)
+    const acted = (game.acts.gaiteroTargets || []).length > 0;
+    // La llamada nombra a TODOS los que deben despertar (encantados de esta
+    // noche y de las anteriores): el juego real los reconoce a todos juntos,
+    // y por eso sus palabras rotan tras cada confirmación.
+    const targets = !acted ? [] : (stepActors('encantados', game, ps(ctx)) || [])
       .map((id) => ps(ctx).find((p) => p.id === id))
       .filter((p): p is PlayerDoc => !!p);
-    if (targets.length && actorsPending(stepId, game, ps(ctx))) {
+    if (targets.length) {
       const kws = targets.map((p) => p.keyword).filter((k): k is string => !!k);
       prewarmSynth(kwTexts(kws));
       await ctx.sayOnce(uid('call'), () => encantadosCallUtterance(g(ctx), uid('call'), kws, false));
@@ -239,18 +244,22 @@ async function nightStepScene(ctx: Ctx, stepId: StepId, stepIdx: number): Promis
         return;
       }
       await ctx.pause('outroKnown');
-    } else if (targets.length) {
+    } else if (acted) {
       await ctx.pause('outroKnown'); // todos confirmados: despedida y sigue
     } else {
       const gaiteroDealt = (game.composition?.gaitero || 0) > 0 || ps(ctx).some((p) => p.role === 'gaitero');
       const fakeNeeded = game.keywordsActive
         && ((gaiteroDealt && !game.revealDead) || (!gaiteroDealt && !!game.fakeAllSelected));
       if (fakeNeeded) {
-        // Llamada falsa con SEÑUELOS (palabras sin dueño, distintas cada noche).
+        // Llamada falsa con SEÑUELOS (palabras sin dueño, distintas cada
+        // noche). Crece como crecería la real (≈2 encantados nuevos por
+        // noche): que la duración no delate si la llamada es de verdad.
         const decoys = (game.kwDecoys || []).slice(2); // los 2 primeros son de Cupido
+        const need = Math.max(2, Math.min(2 * game.night, decoys.length,
+          Math.max(2, ps(ctx).filter((p) => p.alive).length - 1)));
         const base = ((game.night - 1) * 2) % Math.max(1, decoys.length);
         const fake = decoys.length >= 2
-          ? [decoys[base], decoys[(base + 1) % decoys.length]]
+          ? Array.from({ length: need }, (_, i) => decoys[(base + i) % decoys.length])
           : ps(ctx).filter((p) => p.alive && p.keyword).slice(0, 2).map((p) => p.keyword!);
         prewarmSynth(kwTexts(fake));
         await ctx.sayOnce(uid('fake'), () => encantadosCallUtterance(g(ctx), uid('fake'), fake, true));

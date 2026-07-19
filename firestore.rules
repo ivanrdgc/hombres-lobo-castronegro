@@ -13,6 +13,16 @@ service cloud.firestore {
       match /players/{playerId} {
         allow read, write: if true;
       }
+
+      // Partidas en curso (varias por mesa): cada una con su narrador, sus
+      // ajustes congelados y su estado de juego (mapa libre, como group.game).
+      match /matches/{matchId} {
+        allow read: if true;
+        allow create, update: if request.resource == null
+          || request.resource.data.keys().hasOnly(
+            ['gameId', 'createdAt', 'members', 'masterId', 'lastNarratorId', 'settings', 'extraRoles', 'game']);
+        allow delete: if true;
+      }
     }
   }
 }

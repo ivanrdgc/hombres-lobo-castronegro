@@ -223,10 +223,12 @@ export function stepActors(stepId: StepId | string, game: ActorsGame, players: G
       return idsOf(aliveWithRole(players, 'gaitero'));
     }
     case 'encantados': {
-      // Los recién encantados deben reconocerse y confirmarlo: el juego espera.
+      // Como en el juego de mesa, TODOS los encantados (viejos y nuevos) se
+      // despiertan cada noche que el Gaitero actúa, para reconocerse. Sus
+      // palabras clave vuelven a sonar: por eso rotan al confirmar.
       const targets = acts.gaiteroTargets || [];
       if (!targets.length) return null; // sin encantamiento (o gaitero inactivo)
-      const pend = players.filter((p) => p.alive && targets.includes(p.id) && !(acts.encantadosSeen || {})[p.id]);
+      const pend = players.filter((p) => p.alive && p.charmed && !(acts.encantadosSeen || {})[p.id]);
       return idsOf(pend);
     }
     case 'durmiendo':
@@ -363,6 +365,9 @@ export interface DawnGame extends ChainGame {
   acts?: Acts;
   caballeroRust?: CaballeroRust | null;
   wolfDeathOccurred?: boolean;
+  /** Para variar deterministamente la ambientación (broma del cuervo). */
+  seed?: number;
+  night?: number;
 }
 
 export interface DawnGameUpdates {
@@ -453,8 +458,21 @@ export function resolveDawn(game: DawnGame, playersIn: GamePlayer[]): DawnResult
   let cuervoAnnounce: string | null = null;
   const markId = acts.cuervoTarget ?? ((acts.actor && acts.actor.power === 'cuervo') ? acts.actor.target : null);
   if (markId && byId[markId]) {
-    logs.push({ kind: 'evento', txt: `🐦‍⬛ El Cuervo ha señalado a ${byId[markId].name}: carga con 2 votos extra en su contra.` });
-    cuervoAnnounce = `Sobre el tejado de ${byId[markId].name} han aparecido plumas negras: el Cuervo lo ha señalado, y hoy carga con dos votos extra en su contra.`;
+    const marked = byId[markId];
+    if (marked.alive) {
+      logs.push({ kind: 'evento', txt: `🐦‍⬛ El Cuervo ha señalado a ${marked.name}: carga con 2 votos extra en su contra.` });
+      cuervoAnnounce = `Sobre el tejado de ${marked.name} han aparecido plumas negras: el Cuervo lo ha señalado, y hoy carga con dos votos extra en su contra.`;
+    } else {
+      // El señalado no vivió para cargar con los votos: la voz lo cuenta con
+      // sorna (misma información, cero pistas: el Cuervo actuó igualmente).
+      const jokes = [
+        `Sobre el tejado de ${marked.name} amanecen plumas negras: el Cuervo lo señaló durante la noche… pero ya no queda nadie en esa casa que cargue con votos. Sus plumas fueron en vano.`,
+        `El Cuervo dejó caer sus plumas sobre el tejado de ${marked.name}… mala puntería esta vez: a esa puerta ya no llama nadie. Dos votos de más para un vecino de menos.`,
+        `Plumas negras sobre la casa de ${marked.name}. El Cuervo afinó la sospecha… pero otros llegaron antes. Nadie en casa: plumas desperdiciadas.`,
+      ];
+      cuervoAnnounce = jokes[((game.seed || 0) + (game.night || 0)) % jokes.length];
+      logs.push({ kind: 'evento', txt: `🐦‍⬛ El Cuervo señaló a ${marked.name}… que ya no está: sus plumas fueron en vano.` });
+    }
   }
   // La pregunta de la Gitana se anuncia en voz alta al amanecer y los muertos
   // la responden de viva voz, todos a una (regla oficial): sin diálogos.

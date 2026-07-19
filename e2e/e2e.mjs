@@ -208,11 +208,19 @@ try {
   await ana.waitForSelector('text=Este dispositivo narra la partida');
   ok('narrador sin rol: pantalla mínima de altavoz');
 
-  // Un nuevo visitante no puede entrar con partida en curso.
+  // La mesa siempre acoge: un visitante tardío se une aunque haya partida en
+  // curso; entra LIBRE (a la mesa), ve la partida en su tarjeta y no es
+  // arrastrado a ella. Después se va para no alterar el resto del guion.
   const tarde = await mk('tarde');
   await tarde.goto(url);
-  await tarde.waitForSelector('text=/partida en curso/i');
-  check(await tarde.isVisible('[data-a=retry]'), 'visitante tardío ve "partida en curso" + botón reintentar');
+  await tarde.fill('#inp-name', 'Tardio');
+  await tarde.click('[data-a=join]');
+  await tarde.waitForSelector('text=¿A qué jugamos?');
+  await tarde.waitForSelector('[data-match]');
+  ok('un visitante tardío se une con partida en curso y queda libre en la mesa');
+  await tarde.click('[data-a=leave]');
+  await tarde.click('button[data-a=leave-confirm]');
+  await tarde.waitForURL('**/');
   await tarde.context().close();
 
   // El narrador-altavoz no recibe rol ni carta que confirmar.
@@ -311,8 +319,8 @@ try {
   // Tras la partida, TODOS aterrizan en el lobby del juego recién jugado.
   await ana.waitForSelector('[data-a=open-start]');
   if (/\/hombres_lobo$/.test(new URL(ana.url()).pathname)) ok('al terminar se vuelve al lobby del juego (URL del juego)'); else bad('URL inesperada tras la partida: ' + ana.url());
-  const anaPref = await ana.evaluate(() => window.__hlc.players.find((p) => p.id === 'p-ana')?.isPlayer);
-  check(anaPref === false, 'la exclusión de Ana (no juega) se recuerda tras la partida');
+  const anaPref = await ana.evaluate(() => window.__hlc.players.find((p) => p.id === 'p-ana')?.isPlayerFor?.hombres_lobo);
+  check(anaPref === false, 'la exclusión de Ana (no juega) se recuerda tras la partida (por juego)');
   await pages.bruno.waitForSelector('[data-a=open-start]');
   ok('vuelta al lobby del juego para todos');
 

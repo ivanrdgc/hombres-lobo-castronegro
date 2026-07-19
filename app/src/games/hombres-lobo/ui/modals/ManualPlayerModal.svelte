@@ -1,7 +1,7 @@
 <script lang="ts">
   // Menú del máster sobre un jugador en modo manual (port de manualPlayerModal
   // de la v1): muerte/vida, rol a pantalla completa, enamorado y Ladrón.
-  import { app } from '../../../../core/sync/store.svelte';
+  import { app, viewGroup } from '../../../../core/sync/store.svelte';
   import { guard } from '../../../../core/sync/guard';
   import * as A from '../../actions';
   import { ROLES } from '../../roles';
@@ -9,7 +9,7 @@
   const pid = $derived(String(app.ui.modal?.pid ?? ''));
   const p = $derived(app.players.find((x) => x.id === pid));
   const r = $derived(p?.role ? ROLES[p.role] : undefined);
-  const game = $derived(app.group?.game);
+  const game = $derived(viewGroup()?.game);
   const hasCupido = $derived(((game?.composition || {}).cupido || 0) > 0);
   const hasCenter = $derived((game?.centerCards || []).length > 0);
 

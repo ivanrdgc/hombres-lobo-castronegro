@@ -40,10 +40,43 @@ export interface GroupDoc {
   game: GameState | null;
 }
 
+/**
+ * Doc de una PARTIDA en curso (groups/{slug}/matches/{mid}) + id inyectado.
+ * Una mesa puede tener varias partidas a la vez (grupos de gente distintos);
+ * cada una lleva su propio narrador, sus ajustes (foto al arrancar) y su
+ * estado de juego. Sus claves están fijadas por firestore.rules (hasOnly).
+ */
+export interface MatchDoc {
+  id: string;
+  /** Juego de la partida (GameDefinition.id). */
+  gameId: string;
+  createdAt: number;
+  /** Dispositivos ocupados por esta partida: jugadores + narrador/altavoz. */
+  members: string[];
+  masterId: string | null;
+  lastNarratorId: string | null;
+  /** Foto de los ajustes de la mesa al arrancar (los cambios posteriores en la mesa no la tocan). */
+  settings: TableSettings;
+  extraRoles: RoleId[];
+  game: GameState | null;
+}
+
+/**
+ * Vista de partida: el grupo con una partida superpuesta (misma forma que
+ * GroupDoc, para que las pantallas y acciones de los juegos no distingan
+ * entre «la partida del grupo» de antes y una de las partidas de ahora).
+ */
+export interface GroupView extends GroupDoc {
+  matchId?: string;
+}
+
 /** Doc de jugador (groups/{slug}/players/{pid}) + id. */
 export interface PlayerDoc extends GamePlayer {
   deviceToken?: string;
   isPlayer?: boolean;
+  /** Recuerdo POR JUEGO de «este dispositivo (no) juega»: así deseleccionar a
+   *  alguien para una partida de lobos no lo borra del Empezar de El Espía. */
+  isPlayerFor?: Record<string, boolean>;
   /** v2: latido de presencia del dispositivo (Date.now()); lo escriben todos. */
   heartbeatAt?: number;
 }

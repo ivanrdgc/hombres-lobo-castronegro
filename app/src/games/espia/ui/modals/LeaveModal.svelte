@@ -1,11 +1,11 @@
 <script lang="ts">
   // Confirmación de «dejar la ronda» (salida administrativa).
-  import { app } from '../../../../core/sync/store.svelte';
+  import { app, viewGroup } from '../../../../core/sync/store.svelte';
   import { guard } from '../../../../core/sync/guard';
   import * as A from '../../actions';
   import { espiaGame } from '../../actions';
 
-  const game = $derived(espiaGame(app.group));
+  const game = $derived(espiaGame(viewGroup()));
   const soyEspia = $derived(!!game && app.session?.pid === game.spyId && game.phase !== 'reveal');
 </script>
 

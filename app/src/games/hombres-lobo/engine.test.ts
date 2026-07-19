@@ -227,19 +227,28 @@ test('lobos_reconocen: solo en primera noche sin sangre; con caza van directos a
   assert.ok(!s2.includes('lobos_reconocen'));
 });
 
-test('encantados: los recién encantados deben confirmar y el juego espera', () => {
-  const players = mkPlayers(['hombre_lobo', 'gaitero', 'aldeano', 'aldeano']);
-  const game = mkGame({ composition: { hombre_lobo: 1, gaitero: 1, aldeano: 2 } });
+test('encantados: TODOS los encantados (viejos y nuevos) despiertan y confirman', () => {
+  const players = mkPlayers(['hombre_lobo', 'gaitero', 'aldeano', 'aldeano', 'aldeano']);
+  const game = mkGame({ composition: { hombre_lobo: 1, gaitero: 1, aldeano: 3 } });
   const steps = computeNightSteps(game, players);
   assert.ok(steps.includes('encantados'));
   assert.ok(steps.indexOf('gaitero') < steps.indexOf('encantados'));
   assert.equal(stepActors('encantados', game, players), null, 'sin objetivos aún');
+  // p4 quedó encantado una noche anterior; esta noche caen p2 y p3.
+  players.find((p) => p.id === 'p4')!.charmed = true;
   game.acts.gaiteroTargets = ['p2', 'p3'];
-  assert.deepEqual(stepActors('encantados', game, players)!.sort(), ['p2', 'p3'], 'esperan confirmación');
-  game.acts.encantadosSeen = { p2: true };
+  players.find((p) => p.id === 'p2')!.charmed = true;
+  players.find((p) => p.id === 'p3')!.charmed = true;
+  assert.deepEqual(stepActors('encantados', game, players)!.sort(), ['p2', 'p3', 'p4'],
+    'todos los encantados se reconocen, como en el juego de mesa');
+  game.acts.encantadosSeen = { p2: true, p4: true };
   assert.deepEqual(stepActors('encantados', game, players), ['p3']);
-  game.acts.encantadosSeen = { p2: true, p3: true };
+  game.acts.encantadosSeen = { p2: true, p3: true, p4: true };
   assert.equal(stepActors('encantados', game, players), null, 'todos confirmados');
+  // Sin encantamiento nuevo esta noche (gaitero muerto o inactivo), nadie despierta.
+  game.acts.gaiteroTargets = [];
+  game.acts.encantadosSeen = {};
+  assert.equal(stepActors('encantados', game, players), null, 'sin música no hay despertar');
 });
 
 test('resolveDawn: la marca del cuervo se anuncia al amanecer', () => {
@@ -249,6 +258,19 @@ test('resolveDawn: la marca del cuervo se anuncia al amanecer', () => {
   assert.ok(res.cuervoAnnounce);
   assert.ok(res.cuervoAnnounce.includes('J3'));
   assert.ok(res.cuervoAnnounce.includes('dos votos'));
+});
+
+test('resolveDawn: si los lobos devoran al señalado por el cuervo, la voz bromea (plumas en vano)', () => {
+  const players = mkPlayers(['hombre_lobo', 'cuervo', 'aldeano', 'aldeano']);
+  // Los lobos devoran justo a quien el cuervo señaló.
+  const game = mkGame({ night: 2, seed: 5, acts: { cuervoTarget: 'p3', wolfVictim: 'p3' } });
+  const res = resolveDawn(game, players);
+  assert.ok(res.deaths.some((d) => d.pid === 'p3'), 'el señalado ha muerto');
+  assert.ok(res.cuervoAnnounce);
+  assert.ok(res.cuervoAnnounce.includes('J3'));
+  assert.ok(!res.cuervoAnnounce.includes('dos votos extra en su contra'), 'sin votos contra un muerto');
+  assert.ok(/en vano|puntería|desperdiciadas/.test(res.cuervoAnnounce), 'tono de broma');
+  assert.ok(res.logs.some((l) => l.txt.includes('en vano')), 'la crónica también lo recoge');
 });
 
 test('turno fantasma: disimula roles muertos (ocultos) y roles vivos sin poder', () => {

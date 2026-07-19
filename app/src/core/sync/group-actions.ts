@@ -7,10 +7,10 @@ import {
   db, doc, getDoc, updateDoc, deleteDoc, runTransaction, writeBatch, getDocs, collection,
 } from './fb';
 import type { Transaction } from 'firebase/firestore';
-import { state, saveSession, clearSession, navigate } from './store.svelte';
+import { state, saveSession, clearSession, navigate, ctxMatch, matchOf } from './store.svelte';
 import { CodedError } from './guard';
 import { slugify, randomId, playerIdFor } from '../util/ids';
-import type { TableSettings } from './schema';
+import type { MatchDoc, TableSettings } from './schema';
 import type { RoleId } from '../../games/hombres-lobo/roles';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- JSON round-trip genérico
@@ -34,8 +34,70 @@ export async function txWithRetry<T>(body: (tx: Transaction) => Promise<T>): Pro
 
 export const gref = (slug: string) => doc(db, 'groups', slug);
 export const pref = (slug: string, pid: string) => doc(db, 'groups', slug, 'players', pid);
+export const mref = (slug: string, mid: string) => doc(db, 'groups', slug, 'matches', mid);
 export const mySlug = () => state.route.slug!;
 export const myPid = () => state.session!.pid;
+
+/** Id de partida nueva: corto, único en la mesa y apto para la URL. */
+export const newMatchId = () =>
+  'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+
+/** Id de la partida en contexto SI es del juego indicado (acciones de juego). */
+export function ctxMatchId(gameId: string): string | null {
+  const m = ctxMatch();
+  return m && m.gameId === gameId ? m.id : null;
+}
+
+/**
+ * Valida dentro de una transacción que ningún candidato esté ya ocupado por
+ * OTRA partida (se relee cada partida conocida: los members frescos mandan).
+ */
+export async function assertFree(tx: Transaction, slug: string, pids: string[], exceptMid?: string): Promise<void> {
+  const others = state.matches.filter((m) => m.id !== exceptMid);
+  const snaps = await Promise.all(others.map((m) => tx.get(mref(slug, m.id))));
+  for (const snap of snaps) {
+    if (!snap.exists()) continue;
+    const members: string[] = (snap.data() as { members?: string[] }).members || [];
+    const clash = pids.find((pid) => members.includes(pid));
+    if (clash) {
+      const name = state.players.find((p) => p.id === clash)?.name || clash;
+      throw new Error(`${name} ya está en otra partida. Sácalo primero desde la mesa.`);
+    }
+  }
+}
+
+// Cada juego registra aquí cómo sacar a alguien de una de sus partidas y cómo
+// terminarla (así la mesa puede hacer ambas cosas sin que el core importe juegos).
+export interface MatchTools {
+  /** Salida administrativa de un miembro (kick desde la mesa o abandono). */
+  leave: (mid: string, pid: string) => Promise<void>;
+  /** Terminar la partida desde fuera (la mesa) o dentro. */
+  end: (mid: string) => Promise<void>;
+}
+
+const MATCH_TOOLS: Record<string, MatchTools> = {};
+
+export function registerMatchTools(gameId: string, tools: MatchTools): void {
+  MATCH_TOOLS[gameId] = tools;
+}
+
+/** Sacar a un jugador de la partida que lo ocupa (cualquiera puede, es la mesa de casa). */
+export async function removeFromMatch(pid: string): Promise<void> {
+  const m = matchOf(pid);
+  if (!m) return;
+  const tools = MATCH_TOOLS[m.gameId];
+  if (!tools) throw new Error('Juego desconocido.');
+  await tools.leave(m.id, pid);
+}
+
+/** Terminar una partida en curso desde la mesa. */
+export async function endMatch(mid: string): Promise<void> {
+  const m = state.matches.find((x) => x.id === mid);
+  if (!m) return;
+  const tools = MATCH_TOOLS[m.gameId];
+  if (!tools) throw new Error('Juego desconocido.');
+  await tools.end(mid);
+}
 
 // Semillas de una mesa recién creada. Incluyen la configuración por defecto de
 // Los Hombres Lobo (herencia del esquema v1: extraRoles y varios settings son
@@ -57,15 +119,44 @@ export async function selectGame(gameId: string | null): Promise<void> {
 }
 
 // Elegir el dispositivo que narrará las partidas automáticas (se recuerda para
-// todos los juegos). Durante una partida automática en curso, el narrador ES el
-// máster: al cambiarlo se traspasa el mando y el nuevo dispositivo toma la voz.
+// todos los juegos). Con una partida en contexto, el narrador ES su máster: al
+// cambiarlo se traspasa el mando y el nuevo dispositivo toma la voz DE ESA
+// partida (entra en sus members; el altavoz saliente que no jugaba queda libre).
 export async function setNarratorDevice(pid: string | null): Promise<void> {
-  const g = state.group;
-  const patch: Record<string, unknown> = { lastNarratorId: pid || null };
-  const auto = g?.status === 'playing' && g.game
-    && ((g.game as { mode?: string }).mode === 'auto' || (g.game as { espia?: boolean }).espia);
-  if (pid && auto) patch.masterId = pid;
-  await updateDoc(gref(mySlug()), patch);
+  const slug = mySlug();
+  const m = ctxMatch();
+  if (!m) {
+    await updateDoc(gref(slug), { lastNarratorId: pid || null });
+    return;
+  }
+  await txWithRetry(async (tx) => {
+    if (pid) await assertFree(tx, slug, [pid], m.id);
+    const snap = await tx.get(mref(slug, m.id));
+    if (!snap.exists()) return;
+    const data = snap.data() as MatchDoc;
+    const patch: Record<string, unknown> = { lastNarratorId: pid || null };
+    const auto = data.game
+      && ((data.game as { mode?: string }).mode === 'auto' || (data.game as unknown as { espia?: boolean }).espia);
+    if (pid && auto) {
+      patch.masterId = pid;
+      let members = data.members || [];
+      const old = data.masterId;
+      // El altavoz saliente solo se queda si además juega la partida.
+      if (old && old !== pid && !playsInMatch(data, old)) members = members.filter((x) => x !== old);
+      if (!members.includes(pid)) members = [...members, pid];
+      patch.members = members;
+    }
+    tx.update(mref(slug, m.id), patch);
+  });
+}
+
+/** ¿Este miembro JUEGA la partida (además de, quizá, poner la voz)? */
+function playsInMatch(m: Pick<MatchDoc, 'game'>, pid: string): boolean {
+  const game = m.game as unknown as { espia?: boolean; playerIds?: string[] } | null;
+  if (!game) return false;
+  if (game.espia) return (game.playerIds || []).includes(pid);
+  const p = state.players.find((x) => x.id === pid);
+  return !!p && !!p.inGame;
 }
 
 export async function createGroup(userName: string, groupName: string): Promise<void> {
@@ -103,7 +194,8 @@ export async function joinGroup(slug: string, userName: string): Promise<void> {
     if (!g.exists()) throw new CodedError('no-group');
     const p = await tx.get(pref(slug, pid));
     if (p.exists()) throw new CodedError('name-taken');
-    if (g.data().status === 'playing') throw new CodedError('playing');
+    // La mesa siempre acoge: las partidas en curso no bloquean la entrada
+    // (el recién llegado puede mirar o arrancar otra partida con los libres).
     tx.set(pref(slug, pid), basePlayer(userName, token));
   });
   saveSession(slug, { pid, token, name: userName.trim() });
@@ -137,7 +229,6 @@ export async function joinExistingGroup(groupName: string, userName: string, cla
       joinedName = p.data().name;
       tx.update(pref(slug, pid), { deviceToken: token, heartbeatAt: Date.now() });
     } else {
-      if (g.data().status === 'playing') throw new CodedError('playing');
       tx.set(pref(slug, pid), basePlayer(userName, token));
     }
     if (claimMaster) tx.update(gref(slug), { masterId: pid });
@@ -155,15 +246,18 @@ export function basePlayer(name: string, token: string) {
   };
 }
 
-// Activa/desactiva un dispositivo como jugador (se recuerda entre partidas).
-export async function setPlayerActive(pid: string, active: boolean): Promise<void> {
-  await updateDoc(pref(mySlug(), pid), { isPlayer: !!active });
+// Activa/desactiva un dispositivo como jugador de UN JUEGO (se recuerda para
+// la revancha de ese juego sin contaminar las pantallas de los demás).
+export async function setPlayerActive(gameId: string, pid: string, active: boolean): Promise<void> {
+  await updateDoc(pref(mySlug(), pid), { ['isPlayerFor.' + gameId]: !!active });
 }
 
 export async function leaveGroup(): Promise<void> {
   const slug = state.route.slug;
   const myId = state.session?.pid;
   if (!slug || !myId) return;
+  // Si estoy en una partida, salgo de ella primero (salida administrativa).
+  if (matchOf(myId)) await removeFromMatch(myId).catch(() => { /* mejor esfuerzo */ });
   await txWithRetry(async (tx) => {
     const g = await tx.get(gref(slug));
     if (!g.exists()) return;
@@ -183,14 +277,18 @@ export async function leaveGroup(): Promise<void> {
 }
 
 export async function kickPlayer(pid: string): Promise<void> {
+  // Expulsar del grupo también lo saca de su partida (si estaba en una).
+  if (matchOf(pid)) await removeFromMatch(pid).catch(() => { /* mejor esfuerzo */ });
   await deleteDoc(pref(mySlug(), pid));
 }
 
 export async function deleteGroup(): Promise<void> {
   const slug = mySlug();
   const ps = await getDocs(collection(db, 'groups', slug, 'players'));
+  const ms = await getDocs(collection(db, 'groups', slug, 'matches'));
   const batch = writeBatch(db);
   ps.forEach((d) => batch.delete(d.ref));
+  ms.forEach((d) => batch.delete(d.ref));
   batch.delete(gref(slug));
   await batch.commit();
   clearSession(slug);

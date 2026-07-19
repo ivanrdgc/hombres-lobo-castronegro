@@ -73,7 +73,8 @@ ok('la sincronización de pantalla llega con la partida, no antes');
 // La partida en curso es su propia página: todos quedan en …/partida.
 await ana.waitForTimeout(600);
 const inGameUrls = [ana, bruno, coco].map((p) => new URL(p.url()).pathname);
-if (inGameUrls.every((u) => /\/hombres_lobo\/partida$/.test(u))) ok('la partida tiene URL propia en todos: …/partida'); else bad('URLs inesperadas en partida: ' + inGameUrls.join(' '));
+if (inGameUrls.every((u) => /\/hombres_lobo\/partida\/[a-z0-9]+$/.test(u))) ok('la partida tiene URL propia en todos: …/partida/<id>'); else bad('URLs inesperadas en partida: ' + inGameUrls.join(' '));
+if (new Set(inGameUrls).size === 1) ok('los tres comparten la URL de SU partida'); else bad('URLs de partida divergentes: ' + inGameUrls.join(' '));
 
 await browser.close();
 console.log(fail ? `✖ navegación: ${fail} fallos` : '✔ navegación libre OK');

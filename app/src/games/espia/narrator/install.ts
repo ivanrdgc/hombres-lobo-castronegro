@@ -7,7 +7,7 @@ import { profileOf } from '../../../core/narrator/pacing';
 import { play, stopSpeech } from '../../../core/audio/player';
 import type { Utterance } from '../../../core/audio/player';
 import { prewarmSynth } from '../../../core/audio/clips';
-import { onChange, state } from '../../../core/sync/store.svelte';
+import { matchView, onChange, state } from '../../../core/sync/store.svelte';
 import type { GroupDoc, PlayerDoc, Session } from '../../../core/sync/schema';
 import { espiaGame } from '../actions';
 import * as A from '../actions';
@@ -29,8 +29,15 @@ type Ctx = SceneCtx<Snap>;
 const clip = (text: string): { kind: 'clip'; text: string } => ({ kind: 'clip', text });
 const utt = (id: string, ...texts: string[]): Utterance => ({ id, segments: texts.map(clip), display: texts.join(' ') });
 
+// La vista de la partida de El Espía cuya voz pone este dispositivo (la mesa
+// puede tener varias partidas a la vez); sin ella, el grupo a secas.
 function snapshot(): Snap {
-  return { group: state.group, players: state.players, session: state.session };
+  const g = state.group;
+  const pid = state.session?.pid;
+  const mine = g && pid
+    ? state.matches.find((m) => m.gameId === 'espia' && m.masterId === pid && (m.members || []).includes(pid))
+    : null;
+  return { group: mine && g ? matchView(g, mine) : g, players: state.players, session: state.session };
 }
 
 /** ¿Este dispositivo pone la voz de El Espía? */

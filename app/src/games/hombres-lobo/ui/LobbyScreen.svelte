@@ -2,7 +2,7 @@
   // Lobby de Los Hombres Lobo: solo la configuración específica del juego
   // (port de lobbyScreen v1). En el lobby no hay máster: cualquier dispositivo
   // configura e inicia.
-  import { app, navigate } from '../../../core/sync/store.svelte';
+  import { app, matchOf, navigate } from '../../../core/sync/store.svelte';
   import { ROLES, wolfCountFor, OFFICIAL_MIN_PLAYERS } from '../roles';
   import { EXPLANATIONS } from '../texts/explain';
   import { explainAudioState, toggleExplainAudio } from '../../../shell/explain-audio';
@@ -20,7 +20,8 @@
     const t = setInterval(() => (now = Date.now()), 10000);
     return () => clearInterval(t);
   });
-  const nJug = $derived(app.players.filter((p) => p.isPlayer !== false && isActiveDevice(p, now)).length);
+  const nJug = $derived(app.players.filter((p) =>
+    !matchOf(p.id) && (p.isPlayerFor?.hombres_lobo ?? p.isPlayer) !== false && isActiveDevice(p, now)).length);
   const wolvesFixed = $derived((group.settings || {}).wolvesCount || null);
   const lobos = $derived(Math.max(1, Math.min(Math.max(nJug - 1, 1), wolvesFixed || wolfCountFor(nJug || 1))));
   // Introducción ambientada, mostrada directamente en el lobby con lectura local.

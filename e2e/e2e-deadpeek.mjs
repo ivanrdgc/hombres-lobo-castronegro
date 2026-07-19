@@ -78,7 +78,10 @@ st = await wait(ana, (s) => s.players.find((p) => p.name === leaver.name)?.alive
 if (st.phase === 'day') ok(`${leaver.name} abandona y la partida sigue (sin efectos póstumos)`); else bad('el abandono alteró la fase: ' + st.phase);
 await wolfPage.waitForSelector('text=/abandona la partida y muestra su carta/');
 ok('el abandono se anuncia en la crónica con el rol revelado');
-if (await leaverPage.isVisible('text=/Has abandonado la partida/')) ok('quien se va ve su aviso de abandono'); else bad('falta el aviso de abandono en su pantalla');
+// Quien se va queda LIBRE (fuera de la partida): su pantalla vuelve al lobby
+// del juego y podría empezar otra partida con otros libres de la mesa.
+await leaverPage.waitForSelector('[data-a=open-start]', { timeout: 20000 });
+ok('quien se va queda libre: aterriza en el lobby del juego');
 
 // La tira de cartas marca las caídas ya reveladas (†)… y siguen siendo clicables.
 await wolfPage.waitForSelector('.rolechip:has-text("†")');

@@ -2,7 +2,7 @@
 // suscripciones a Firestore. Port de public/js/store.js — mismas claves de
 // localStorage (hlc_sessions_v1) y misma semántica de listeners.
 import { db, doc, collection, onSnapshot, query, orderBy } from './fb';
-import type { GroupDoc, PlayerDoc, Session } from './schema';
+import type { GroupDoc, GroupView, MatchDoc, PlayerDoc, Session } from './schema';
 
 const LS_KEY = 'hlc_sessions_v1';
 
@@ -11,16 +11,18 @@ export interface Route {
   slug: string | null;
   /**
    * Navegación POR URL (única y recargable):
-   *   /g/<slug>                   → la mesa (game = null)
-   *   /g/<slug>/<gameId>          → lobby de ese juego
-   *   /g/<slug>/<gameId>/empezar  → pantalla «Empezar partida»
-   *   /g/<slug>/<gameId>/partida  → la partida en curso (se recoloca sola al
-   *                                 empezar; al terminar, vuelve al lobby)
-   * Cada dispositivo navega libre (su URL es suya); la sincronización de
-   * pantalla solo llega al empezar la partida (status del grupo).
+   *   /g/<slug>                         → la mesa (game = null)
+   *   /g/<slug>/<gameId>                → lobby de ese juego
+   *   /g/<slug>/<gameId>/empezar        → pantalla «Empezar partida»
+   *   /g/<slug>/<gameId>/partida/<mid>  → una partida en curso (se recoloca
+   *                                       sola al empezar; al terminar, lobby)
+   * Cada dispositivo navega libre (su URL es suya); quien está DENTRO de una
+   * partida ve siempre la suya (la mesa admite varias partidas a la vez).
    */
   game: string | null;
   start: boolean;
+  /** Partida concreta (/partida/<mid>); null en /partida a secas (compat). */
+  matchId: string | null;
 }
 
 export interface ModalState {
@@ -56,6 +58,10 @@ export interface AppState {
   group: GroupDoc | null;
   groupMissing: boolean;
   players: PlayerDoc[];
+  /** Partidas en curso de la mesa (subcolección matches). */
+  matches: MatchDoc[];
+  /** true tras el primer snapshot de partidas (evita redirecciones en frío). */
+  matchesReady: boolean;
   session: Session | null;
   flash: string | null;
   ui: UiState;
@@ -65,10 +71,12 @@ export interface AppState {
 // un binding llamado `state` eclipsa la runa $state); en módulos .ts puede
 // usarse el alias `state` (mismo objeto).
 export const app: AppState = $state({
-  route: { view: 'landing', slug: null, game: null, start: false },
+  route: { view: 'landing', slug: null, game: null, start: false, matchId: null },
   group: null,
   groupMissing: false,
   players: [],
+  matches: [],
+  matchesReady: false,
   session: null,
   flash: null,
   ui: {},
@@ -78,6 +86,7 @@ export const state: AppState = app;
 
 let unsubGroup: (() => void) | null = null;
 let unsubPlayers: (() => void) | null = null;
+let unsubMatches: (() => void) | null = null;
 const listeners: ((s: AppState) => void)[] = [];
 
 /** Suscripción explícita (narrador/secuenciador): se llama en cada snapshot. */
@@ -121,25 +130,25 @@ export function parseRoute(): Route {
   const path = location.pathname;
   // Pantalla «Empezar partida» de un juego: /g/<slug>/<gameId>/empezar
   let m = path.match(/^\/g\/([a-z0-9-]+)\/([a-z0-9_]+)\/empezar\/?$/);
-  if (m) return { view: 'group', slug: m[1], game: m[2], start: true };
-  // Partida en curso: /g/<slug>/<gameId>/partida (la vista real la decide el
-  // status del grupo; con el grupo en lobby, esta URL cae al lobby del juego).
-  m = path.match(/^\/g\/([a-z0-9-]+)\/([a-z0-9_]+)\/partida\/?$/);
-  if (m) return { view: 'group', slug: m[1], game: m[2], start: false };
+  if (m) return { view: 'group', slug: m[1], game: m[2], start: true, matchId: null };
+  // Una partida en curso: /g/<slug>/<gameId>/partida/<mid> (sin <mid>, la URL
+  // heredada: cae a la partida propia si la hay o al lobby del juego).
+  m = path.match(/^\/g\/([a-z0-9-]+)\/([a-z0-9_]+)\/partida(?:\/([a-z0-9]+))?\/?$/);
+  if (m) return { view: 'group', slug: m[1], game: m[2], start: false, matchId: m[3] || null };
   // Lobby de un juego concreto: /g/<slug>/<gameId> (única y recargable).
   m = path.match(/^\/g\/([a-z0-9-]+)\/([a-z0-9_]+)\/?$/);
-  if (m) return { view: 'group', slug: m[1], game: m[2], start: false };
+  if (m) return { view: 'group', slug: m[1], game: m[2], start: false, matchId: null };
   // La mesa: /g/<slug> es la URL canónica del grupo.
   m = path.match(/^\/g\/([a-z0-9-]+)\/?$/);
-  if (m) return { view: 'group', slug: m[1], game: null, start: false };
+  if (m) return { view: 'group', slug: m[1], game: null, start: false, matchId: null };
   // Enlaces antiguos con prefijo de juego: redirigir en silencio.
   m = path.match(/^\/hombres_lobo\/g\/([a-z0-9-]+)\/?$/);
   if (m) {
     history.replaceState(null, '', '/g/' + m[1]);
-    return { view: 'group', slug: m[1], game: null, start: false };
+    return { view: 'group', slug: m[1], game: null, start: false, matchId: null };
   }
   if (/^\/hombres_lobo\/?$/.test(path)) history.replaceState(null, '', '/');
-  return { view: 'landing', slug: null, game: null, start: false }; // portada: crear la mesa
+  return { view: 'landing', slug: null, game: null, start: false, matchId: null }; // portada: crear la mesa
 }
 
 export function navigate(path: string): void {
@@ -163,6 +172,8 @@ export function applyRoute(): void {
   state.group = null;
   state.groupMissing = false;
   state.players = [];
+  state.matches = [];
+  state.matchesReady = false;
   state.ui = {};
   state.session = route.slug ? getSession(route.slug) : null;
   if (unsubGroup) {
@@ -172,6 +183,10 @@ export function applyRoute(): void {
   if (unsubPlayers) {
     unsubPlayers();
     unsubPlayers = null;
+  }
+  if (unsubMatches) {
+    unsubMatches();
+    unsubMatches = null;
   }
   if (route.view === 'group' && route.slug) subscribeGroup(route.slug);
   notify();
@@ -198,6 +213,12 @@ function subscribeGroup(slug: string): void {
     state.players = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as PlayerDoc);
     notify();
   }, (err) => console.error('players listener', err));
+  const mref = query(collection(db, 'groups', slug, 'matches'), orderBy('createdAt'));
+  unsubMatches = onSnapshot(mref, (snap) => {
+    state.matches = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as MatchDoc);
+    state.matchesReady = true;
+    notify();
+  }, (err) => console.error('matches listener', err));
 }
 
 // Jugador local actual (o null si la sesión no es válida).
@@ -209,9 +230,58 @@ export function me(): PlayerDoc | null {
   return p;
 }
 
+// ——— Partidas simultáneas ———
+
+/** Partida que ocupa a un dispositivo (miembro: juega, narra o pone la voz). */
+export function matchOf(pid: string | null | undefined): MatchDoc | null {
+  if (!pid) return null;
+  return state.matches.find((m) => (m.members || []).includes(pid)) || null;
+}
+
+/** MI partida (la que me ocupa), si estoy en alguna. */
+export function myMatch(): MatchDoc | null {
+  return state.session ? matchOf(state.session.pid) : null;
+}
+
+/** Partida apuntada por la URL (espectador), si sigue viva. */
+export function routeMatch(): MatchDoc | null {
+  const mid = state.route.matchId;
+  return mid ? state.matches.find((m) => m.id === mid) || null : null;
+}
+
+/** Partida en contexto: la mía manda; si no, la que miro por URL. */
+export function ctxMatch(): MatchDoc | null {
+  return myMatch() ?? routeMatch();
+}
+
+/** El grupo con una partida superpuesta: misma forma que GroupDoc. */
+export function matchView(g: GroupDoc, m: MatchDoc): GroupView {
+  return {
+    ...g, status: 'playing', currentGame: m.gameId, masterId: m.masterId,
+    lastNarratorId: m.lastNarratorId, settings: m.settings || {},
+    extraRoles: m.extraRoles || [], game: m.game, matchId: m.id,
+  };
+}
+
+/**
+ * El grupo TAL COMO LO VE este dispositivo: con su partida en contexto
+ * superpuesta si la hay. Es lo que leen las pantallas y modales de partida
+ * (antes leían app.group, cuando solo había una partida por mesa).
+ */
+export function viewGroup(): GroupView | null {
+  const g = state.group;
+  if (!g) return null;
+  const m = ctxMatch();
+  return m ? matchView(g, m) : g;
+}
+
+/** ¿Dirijo yo el contexto actual? (máster de mi partida; en la mesa, del grupo) */
 export function isMaster(): boolean {
   const m = me();
-  return !!m && !!state.group && state.group.masterId === m.id;
+  if (!m) return false;
+  const match = ctxMatch();
+  if (match) return match.masterId === m.id;
+  return !!state.group && state.group.masterId === m.id;
 }
 
 export function playersAlive(): PlayerDoc[] {

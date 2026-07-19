@@ -4,7 +4,7 @@
   // excluidos) se ve atenuado con sus insignias. Sustituye al dúo «lista de
   // selección + parrilla del pueblo debajo»: elegir cuesta UN toque y la
   // pantalla no repite a los jugadores.
-  import { app, me } from '../../../core/sync/store.svelte';
+  import { me, viewGroup } from '../../../core/sync/store.svelte';
   import { toggleSel, selIds } from '../../../shell/selection';
   import type { PlayerDoc } from '../../../core/sync/schema';
 
@@ -24,7 +24,7 @@
   } = $props();
 
   const sel = $derived(selIds(selKey));
-  const narratorId = $derived(app.group?.masterId ?? null);
+  const narratorId = $derived(viewGroup()?.masterId ?? null);
   const pickable = (p: PlayerDoc) => !!p.alive && canPick(p);
 </script>
 
