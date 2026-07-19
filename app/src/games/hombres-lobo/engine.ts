@@ -494,11 +494,19 @@ export function resolveDawn(game: DawnGame, playersIn: GamePlayer[]): DawnResult
 }
 
 // ——— Condiciones de victoria ———
-export function checkWinner(players: GamePlayer[]): WinnerId | null {
+export function checkWinner(
+  players: GamePlayer[],
+  game?: { caballeroRust?: { wolfId: string } | null },
+): WinnerId | null {
   const alive = players.filter((p) => p.alive);
   if (!alive.length) return 'nadie';
   const wolfish = alive.filter((p) => isWolfSide(p) || p.role === 'lobo_albino');
   const others = alive.filter((p) => !isWolfSide(p) && p.role !== 'lobo_albino');
+  // El lobo sentenciado por la espada oxidada del Caballero es un muerto
+  // andante: caerá al amanecer siguiente, así que no cuenta como fuerza
+  // lobuna (la partida no puede decidirse a favor de los lobos gracias a él).
+  const doomedId = game?.caballeroRust?.wolfId || null;
+  const wolfishEff = doomedId ? wolfish.filter((p) => p.id !== doomedId) : wolfish;
 
   if (alive.length === 1 && alive[0].role === 'lobo_albino') return 'lobo_albino';
   if (alive.length === 2 && alive.every((p) => p.lover)) return 'enamorados';
@@ -508,6 +516,9 @@ export function checkWinner(players: GamePlayer[]): WinnerId | null {
   if (sectario && !alive.some((p) => p.id !== sectario.id && p.sect !== sectario.sect)) return 'sectario';
   if (wolfish.length === 0) return 'pueblo';
   if (alive.every((p) => isWolfSide(p))) {
+    // Solo queda manada… pero si TODOS los que quedan están sentenciados por
+    // el óxido, nada se decide todavía: la noche siguiente lo resolverá.
+    if (alive.every((p) => p.id === doomedId)) return null;
     // Todo lo que queda es manada. Si el Albino sigue entre ellos, oficialmente
     // la caza continúa (él busca quedarse solo)… salvo que la manada lo supere
     // en el voto del día: entonces su suerte está echada y ganan los lobos.
@@ -526,7 +537,7 @@ export function checkWinner(players: GamePlayer[]): WinnerId | null {
   // El Tonto del Pueblo descubierto ya no vota: no cuenta como resistencia en la
   // paridad (no puede ayudar a linchar a un lobo en el día).
   const voters = others.filter((p) => !p.revealedTonto);
-  if (realWolves && wolfish.length >= voters.length && !resistance) return 'lobos';
+  if (realWolves && wolfishEff.length > 0 && wolfishEff.length >= voters.length && !resistance) return 'lobos';
   return null;
 }
 
@@ -618,7 +629,7 @@ export function resolveVote(game: VoteGame, playersIn: GamePlayer[], choice: str
     }
   }
 
-  if (!winner) winner = checkWinner(players);
+  if (!winner) winner = checkWinner(players, { caballeroRust: gameUpdates.caballeroRust ?? game.caballeroRust ?? null });
   return { players, logs, pendings, gameUpdates, winner };
 }
 

@@ -251,6 +251,31 @@ test('encantados: TODOS los encantados (viejos y nuevos) despiertan y confirman'
   assert.equal(stepActors('encantados', game, players), null, 'sin música no hay despertar');
 });
 
+test('caballero: el lobo sentenciado por el óxido no gana por paridad y muere la noche siguiente', () => {
+  // Partida de 4 con un solo lobo (el caso real de la mesa): lobo (p0),
+  // caballero (p1) y dos aldeanos (p2, p3).
+  const players = mkPlayers(['hombre_lobo', 'caballero', 'aldeano', 'aldeano']);
+  // Noche 1: los lobos devoran al Caballero → el lobo más cercano en sentido
+  // horario queda sentenciado por el óxido.
+  const g1 = mkGame({ night: 1, acts: { wolfVictim: 'p1' } });
+  const dawn1 = resolveDawn(g1, players);
+  assert.ok(dawn1.deaths.some((d) => d.pid === 'p1' && d.cause === 'lobos'));
+  assert.deepEqual(dawn1.gameUpdates.caballeroRust, { wolfId: 'p0' }, 'rust armado hacia el lobo');
+  assert.equal(checkWinner(dawn1.players, { caballeroRust: dawn1.gameUpdates.caballeroRust }), null);
+  // Día 1: el pueblo lincha a un aldeano. Queda 1 lobo vs 1 aldeano, pero el
+  // lobo es un muerto andante: NO hay victoria lobuna y la partida continúa.
+  const g2 = mkGame({ night: 1, dayNum: 1, votesLeft: 1, caballeroRust: dawn1.gameUpdates.caballeroRust });
+  const vote = resolveVote(g2, dawn1.players, 'p2')!;
+  assert.ok(vote.players.find((p) => p.id === 'p2')!.alive === false, 'linchado');
+  assert.equal(vote.winner, null, 'el lobo sentenciado no gana por paridad');
+  // Noche 2: al amanecer, el óxido reclama al lobo → gana el pueblo.
+  const g3 = mkGame({ night: 2, caballeroRust: dawn1.gameUpdates.caballeroRust, acts: {} });
+  const dawn2 = resolveDawn(g3, vote.players);
+  assert.ok(dawn2.deaths.some((d) => d.pid === 'p0' && d.cause === 'oxido'), 'el lobo cae por el óxido');
+  assert.equal(dawn2.gameUpdates.caballeroRust, null, 'el rust se consume');
+  assert.equal(checkWinner(dawn2.players, { caballeroRust: dawn2.gameUpdates.caballeroRust }), 'pueblo');
+});
+
 test('resolveDawn: la marca del cuervo se anuncia al amanecer', () => {
   const players = mkPlayers(['hombre_lobo', 'cuervo', 'aldeano', 'aldeano']);
   const game = mkGame({ acts: { cuervoTarget: 'p3' } });
