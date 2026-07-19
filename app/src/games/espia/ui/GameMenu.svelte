@@ -1,13 +1,16 @@
 <script lang="ts">
   // Menú ⋯ de El Espía: voz, dejar la ronda (si juegas) y terminar el juego.
   // Es del GRUPO: cualquier dispositivo puede terminar (nadie queda bloqueado).
-  import { app } from '../../../core/sync/store.svelte';
+  import { app, matchOf, navigate } from '../../../core/sync/store.svelte';
   import type { PlayerDoc } from '../../../core/sync/schema';
   import type { EspiaState } from '../types';
 
   const { game, my }: { game: EspiaState; my: PlayerDoc } = $props();
 
   const inRound = $derived(game.playerIds.includes(my.id) && game.phase !== 'end');
+  // Espectador: mira una partida ajena (no es miembro de ninguna).
+  const spectator = $derived(!matchOf(my.id));
+  const slug = $derived(app.route.slug);
 
   let open = $state(false);
   const close = () => (open = false);
@@ -32,6 +35,9 @@
     <button class="menu-scrim" aria-label="Cerrar menú" onclick={close}></button>
     <div class="menu-pop" role="menu">
       <button role="menuitem" data-a="voice-open" onclick={voiceOpen}>{app.ui.muted ? '🔇 Voz' : '🗣️ Voz'}</button>
+      {#if spectator}
+        <button role="menuitem" data-a="back-to-mesa" onclick={() => { close(); navigate(`/g/${slug}`); }}>← Volver a la mesa</button>
+      {/if}
       {#if inRound}
         <button role="menuitem" class="danger-text" data-a="espia-leave-open" onclick={leaveOpen}>🚪 Dejar la ronda</button>
       {/if}

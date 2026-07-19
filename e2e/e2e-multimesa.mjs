@@ -109,6 +109,16 @@ try {
   await pages.jon.waitForSelector(`[data-match=${midEspia}]`);
   const cards = await pages.jon.locator('[data-match]').count();
   check(cards === 2, 'la mesa lista las DOS partidas en curso');
+
+  // Mirar una partida de espectador y VOLVER a la mesa desde el menú ⋯.
+  await pages.jon.click(`[data-a=watch-match][data-p=${midLobos}]`);
+  await pages.jon.waitForSelector('[data-a=game-menu]');
+  ok('un libre entra a mirar la partida de lobos');
+  await pages.jon.click('[data-a=game-menu]');
+  await pages.jon.waitForSelector('button[data-a=back-to-mesa]');
+  await pages.jon.click('button[data-a=back-to-mesa]');
+  await pages.jon.waitForSelector('text=¿A qué jugamos?');
+  check(/\/g\/[a-z0-9-]+$/.test(new URL(pages.jon.url()).pathname), 'el menú del espectador vuelve a la mesa');
   await pages.jon.waitForSelector('[data-a=player-menu][data-p=p-iris][data-busy=espia]');
   ok('la mesa marca con 🕵️ a los ocupados por El Espía');
 

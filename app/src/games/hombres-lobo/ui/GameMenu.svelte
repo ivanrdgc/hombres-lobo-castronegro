@@ -2,7 +2,7 @@
   // Menú ⋯ de la partida: SOLO funciones de juego (pausar, voz, repetir, ver
   // roles, abandonar, terminar) según el modo y quién es este dispositivo. La
   // información de cartas vive abajo, en la tira «Cartas en juego».
-  import { app, me, isMaster } from '../../../core/sync/store.svelte';
+  import { app, me, isMaster, matchOf, navigate } from '../../../core/sync/store.svelte';
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
   import type { GroupDoc } from '../../../core/sync/schema';
@@ -13,9 +13,13 @@
   const my = $derived(me());
   const narrator = $derived(isMaster());
   const auto = $derived(game?.mode === 'auto');
+  // Espectador: mira una partida ajena (no es miembro de ninguna) y puede
+  // volver a la mesa cuando quiera.
+  const spectator = $derived(!!my && !matchOf(my.id));
   // El menú es del GRUPO: cualquier dispositivo (juegue o no) puede pausar o
-  // terminar la partida — nadie queda bloqueado porque falte otro móvil.
-  const canUse = $derived(!!game && game.phase !== 'end');
+  // terminar la partida — nadie queda bloqueado porque falte otro móvil. El
+  // espectador lo conserva incluso en el desenlace (por el «volver»).
+  const canUse = $derived(!!game && (game.phase !== 'end' || spectator));
   // Abandonar: solo quien está en juego y vivo.
   const inPlay = $derived(!!my?.inGame && my?.alive === true);
 
@@ -61,6 +65,9 @@
         {/if}
         {#if narrator && game?.mode === 'guiado'}
           <button role="menuitem" data-a="view-roles" onclick={viewRoles}>👁 Ver roles</button>
+        {/if}
+        {#if spectator}
+          <button role="menuitem" data-a="back-to-mesa" onclick={() => { close(); navigate(`/g/${group.id}`); }}>← Volver a la mesa</button>
         {/if}
         {#if inPlay}
           <button role="menuitem" class="danger-text" data-a="leave-game" onclick={leaveOpen}>🚪 Abandonar la partida</button>
