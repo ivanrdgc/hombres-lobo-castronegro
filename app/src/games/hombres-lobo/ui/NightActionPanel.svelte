@@ -141,9 +141,15 @@
     <button class="danger block" data-a="act-lobos-reconocido" onclick={() => guard(A.confirmLoboReconocido)}>🐺 Nos hemos reconocido</button>
   </div>
 {:else if stepId === 'actor'}
+  {@const actorLeft = ACTOR_POWERS.filter(([p]) => !(my.actorUsed || []).includes(p))}
   {#if game.powersLost}
     <div class="actionpanel"><h3>🎭 El Actor</h3>
       <p class="hint">{ANCIANO}</p>
+      <button class="primary block" data-a="act-actor-skip" onclick={() => guard(() => A.actActor(null, null))}>🌙 Terminar mi turno</button>
+    </div>
+  {:else if !actorLeft.length}
+    <div class="actionpanel"><h3>🎭 El Actor</h3>
+      <p class="hint">Tus tres papeles ya están interpretados: cada carta se descarta tras usarse. Que nadie lo note — repasa tus gestos, disimula… y termina tu turno.</p>
       <button class="primary block" data-a="act-actor-skip" onclick={() => guard(() => A.actActor(null, null))}>🌙 Terminar mi turno</button>
     </div>
   {:else if game.acts.actor && game.acts.actor.power === 'vidente' && game.acts.actor.target && !game.acts.actorSeen}
@@ -156,15 +162,16 @@
     </div>
   {:else if !app.ui.actorPower}
     <div class="actionpanel"><h3>🎭 El Actor</h3>
-      <p class="hint">Elige el papel que interpretarás esta noche.</p>
-      <div class="btnrow">{#each ACTOR_POWERS as [p, l] (p)}<button class="violet" data-a="act-actor-power" data-p={p} onclick={() => { app.ui.actorPower = p; app.ui.sel = null; }}>{l}</button>{/each}</div>
+      <p class="hint">Elige el papel que interpretarás esta noche. Cada carta se descarta tras usarse{(my.actorUsed || []).length ? ` (te quedan ${actorLeft.length})` : ''}.</p>
+      <div class="btnrow">{#each actorLeft as [p, l] (p)}<button class="violet" data-a="act-actor-power" data-p={p} onclick={() => { app.ui.actorPower = p; app.ui.sel = null; }}>{l}</button>{/each}</div>
       <button class="ghost block" data-a="act-actor-skip" onclick={() => guard(() => A.actActor(null, null))}>🚫 No actuar esta noche</button>
     </div>
   {:else}
     <div class="actionpanel"><h3>🎭 El Actor: {ACTOR_POWERS.find(([p]) => p === app.ui.actorPower)?.[1]}</h3>
       <p class="hint">Ahora toca a tu objetivo.</p>
-      <!-- Como los roles que imita: nada prohíbe actuar sobre uno mismo. -->
-      <ActionGrid {players} selKey={key} />
+      <!-- Como los roles que imita: nada prohíbe actuar sobre uno mismo, y
+           como defensor no puede repetir al protegido de anoche. -->
+      <ActionGrid {players} selKey={key} canPick={app.ui.actorPower === 'defensor' ? (p) => p.id !== my.protectedLast : () => true} />
       <button class="primary block" data-a="act-actor-confirm" disabled={!sel1Name} onclick={actorConfirm}>🎭 {sel1Name ? `Actuar sobre ${sel1Name}` : 'Actuar'}</button>
       <button class="ghost block" data-a="act-actor-power" data-p="" onclick={() => { app.ui.actorPower = null; app.ui.sel = null; }}>↩️ Cambiar papel</button>
     </div>

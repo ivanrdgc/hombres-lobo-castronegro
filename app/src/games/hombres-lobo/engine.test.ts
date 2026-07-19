@@ -251,6 +251,48 @@ test('encantados: TODOS los encantados (viejos y nuevos) despiertan y confirman'
   assert.equal(stepActors('encantados', game, players), null, 'sin música no hay despertar');
 });
 
+test('auditoría: el Salvador anula el ataque entero — ni muerte ni infección; también frente al Albino', () => {
+  // Infección sobre protegido: no ocurre (sin mordisco no hay contagio).
+  const ps1 = mkPlayers(['infecto', 'defensor', 'aldeano', 'aldeano']);
+  const g1 = mkGame({ acts: { wolfVictim: 'p2', infectoUsed: true, defensorTarget: 'p2' } });
+  const d1 = resolveDawn(g1, ps1);
+  const v1 = d1.players.find((p) => p.id === 'p2')!;
+  assert.equal(v1.alive, true);
+  assert.ok(!v1.infected, 'el protegido no queda infectado');
+  // Sin protección, la infección sí ocurre (y la cura de la Bruja no la impide).
+  const ps2 = mkPlayers(['infecto', 'bruja', 'aldeano', 'aldeano']);
+  const g2 = mkGame({ acts: { wolfVictim: 'p2', infectoUsed: true, brujaHeal: 'p2' } });
+  const d2 = resolveDawn(g2, ps2);
+  assert.equal(d2.players.find((p) => p.id === 'p2')!.infected, true, 'curado pero contagiado');
+  // El mordisco del Lobo Blanco también respeta al Salvador.
+  const ps3 = mkPlayers(['lobo_albino', 'hombre_lobo', 'defensor', 'aldeano']);
+  const g3 = mkGame({ night: 2, acts: { albinoVictim: 'p1', defensorTarget: 'p1' } });
+  const d3 = resolveDawn(g3, ps3);
+  assert.equal(d3.players.find((p) => p.id === 'p1')!.alive, true, 'lobo protegido del Albino');
+});
+
+test('auditoría: la paridad no cierra con el Lobo Blanco vivo (su caza puede torcer el final)', () => {
+  // 1 lobo + 1 albino + 1 aldeano: al albino le conviene linchar al lobo, así
+  // que nada está decidido: la partida sigue.
+  const ps = mkPlayers(['hombre_lobo', 'lobo_albino', 'aldeano']);
+  assert.equal(checkWinner(ps), null);
+  // Sin albino, la misma foto sí es victoria lobuna.
+  const ps2 = mkPlayers(['hombre_lobo', 'hombre_lobo', 'aldeano']);
+  assert.equal(checkWinner(ps2), 'lobos');
+});
+
+test('auditoría: enamorados del MISMO bando ganan con su bando (la etiqueta lo refleja)', () => {
+  const dosAldeanos = mkPlayers(['aldeano', 'vidente']);
+  dosAldeanos.forEach((p) => (p.lover = true));
+  assert.equal(checkWinner(dosAldeanos), 'pueblo');
+  const dosLobos = mkPlayers(['hombre_lobo', 'hombre_lobo']);
+  dosLobos.forEach((p) => (p.lover = true));
+  assert.equal(checkWinner(dosLobos), 'lobos');
+  const mixta = mkPlayers(['hombre_lobo', 'vidente']);
+  mixta.forEach((p) => (p.lover = true));
+  assert.equal(checkWinner(mixta), 'enamorados');
+});
+
 test('caballero: el lobo sentenciado por el óxido no gana por paridad y muere la noche siguiente', () => {
   // Partida de 4 con un solo lobo (el caso real de la mesa): lobo (p0),
   // caballero (p1) y dos aldeanos (p2, p3).

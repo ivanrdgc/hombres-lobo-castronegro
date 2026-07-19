@@ -1,7 +1,7 @@
 // Motor del juego (modo automático): pasos de la noche, resolución del amanecer,
 // votaciones del día y condiciones de victoria. Módulo puro (testeable en Node).
 // Port literal de public/js/engine.js (v1); solo se añaden tipos.
-import { ROLES, isWolfSide, aliveNeighbors } from './roles';
+import { ROLES, isWolfSide, effectiveTeam, aliveNeighbors } from './roles';
 import type { RoleId } from './roles';
 import type {
   Acts, CaballeroRust, Composition, DeathCause, DeathNote, DeathRecord, GamePlayer, LogEntry,
@@ -410,13 +410,16 @@ export function resolveDawn(game: DawnGame, playersIn: GamePlayer[]): DawnResult
   for (const bite of wolfBites) {
     const p = byId[bite.pid];
     if (!p || !p.alive) continue;
-    // Infección: ignora protecciones (el mordisco se produce igualmente).
+    // El Salvador anula el ataque lobuno ENTERO (también el del Lobo Blanco):
+    // sin mordisco no hay muerte… ni infección posible.
+    if (bite.pid === protectedId || bite.pid === actorProtectedId) continue; // protegido
+    // Infección: el contagio ocurre en el mordisco; la cura de la Bruja llega
+    // después y ya no lo impide (la víctima no muere, pero queda infectada).
     if (bite.main && acts.infectoUsed) {
       p.infected = true;
       infectedPid = p.id;
       continue;
     }
-    if (!bite.albino && (bite.pid === protectedId || bite.pid === actorProtectedId)) continue; // protegido
     if (bite.pid === healedId) continue; // curado por la bruja
     if (p.role === 'anciano' && !p.ancianoHit) { p.ancianoHit = true; continue; } // primera vida
     kills.push({ pid: bite.pid, cause: 'lobos' });
@@ -509,7 +512,16 @@ export function checkWinner(
   const wolfishEff = doomedId ? wolfish.filter((p) => p.id !== doomedId) : wolfish;
 
   if (alive.length === 1 && alive[0].role === 'lobo_albino') return 'lobo_albino';
-  if (alive.length === 2 && alive.every((p) => p.lover)) return 'enamorados';
+  if (alive.length === 2 && alive.every((p) => p.lover)) {
+    // Pareja de bandos distintos: gana el amor. Del mismo bando: ganan CON su
+    // bando (regla oficial), y la etiqueta del final lo refleja.
+    const ta = effectiveTeam(alive[0]);
+    const tb = effectiveTeam(alive[1]);
+    if (ta !== tb) return 'enamorados';
+    if (ta === 'lobos') return 'lobos';
+    if (ta === 'pueblo') return 'pueblo';
+    return 'enamorados'; // dos solitarios: el amor decide
+  }
   const gaitero = alive.find((p) => p.role === 'gaitero');
   if (gaitero && alive.every((p) => p.id === gaitero.id || p.charmed)) return 'gaitero';
   const sectario = alive.find((p) => p.role === 'sectario');
@@ -537,7 +549,11 @@ export function checkWinner(
   // El Tonto del Pueblo descubierto ya no vota: no cuenta como resistencia en la
   // paridad (no puede ayudar a linchar a un lobo en el día).
   const voters = others.filter((p) => !p.revealedTonto);
-  if (realWolves && wolfishEff.length > 0 && wolfishEff.length >= voters.length && !resistance) return 'lobos';
+  // Con el Lobo Blanco vivo entre aldeanos, el desenlace no está escrito: a él
+  // le conviene linchar lobos comunes para quedarse solo, así que la paridad
+  // no cierra la partida (equivale a la «resistencia» del cazador o la bruja).
+  const albinoAlive = alive.some((p) => p.role === 'lobo_albino');
+  if (realWolves && !albinoAlive && wolfishEff.length > 0 && wolfishEff.length >= voters.length && !resistance) return 'lobos';
   return null;
 }
 

@@ -130,7 +130,7 @@ export async function startGame(mode: 'auto' | 'manual' | 'guiado', narratorId: 
         lover: false, charmed: false, infected: false, transformed: false,
         revealedTonto: false, ancianoHit: false, protectedLast: null,
         modelId: null, wolfSide: null, sect: sectOf[p.id], keyword: kwOf[p.id] || null,
-        causeOfDeath: null, deathAt: null, actorPower: null, videnteLog: [],
+        causeOfDeath: null, deathAt: null, actorPower: null, actorUsed: [], videnteLog: [],
         powers: { heal: true, poison: true, infect: true, zorro: true, juez: true },
       }));
     }
@@ -214,7 +214,7 @@ export async function backToLobby(mid?: string): Promise<void> {
       inGame: false, role: null, alive: null, roleSeen: false, lover: false,
       charmed: false, infected: false, transformed: false, revealedTonto: false,
       ancianoHit: false, protectedLast: null, modelId: null, wolfSide: null,
-      sect: null, keyword: null, causeOfDeath: null, deathAt: null, actorPower: null, powers: null, videnteLog: null,
+      sect: null, keyword: null, causeOfDeath: null, deathAt: null, actorPower: null, actorUsed: null, powers: null, videnteLog: null,
     }));
   }
   batch.delete(mref(slug, id));
@@ -509,6 +509,10 @@ async function nightAction(stepId: StepId, apply: NightApply): Promise<void> {
 }
 
 export const actLadron = (roleIdx: number | null) => nightAction('ladron', (game, ps, myId) => {
+  // Regla oficial: si las dos cartas del centro son hombres lobo, DEBE cambiar.
+  const cc = game.centerCards || [];
+  const bothWolves = cc.length === 2 && cc.every((r) => r && isWolfTeamRole(r));
+  if (bothWolves && (roleIdx === null || roleIdx === undefined)) return null;
   game.acts.ladronDone = true;
   if (roleIdx === null || roleIdx === undefined) return {};
   const chosen = (game.centerCards || [])[roleIdx];
@@ -554,8 +558,19 @@ export const confirmHermano = () => nightAction('tres_hermanos', (game, ps, myId
 });
 
 export const actActor = (power: 'vidente' | 'defensor' | 'cuervo' | null, target: string | null) => nightAction('actor', (game, ps, myId) => {
+  const meP = ps.find((p) => p.id === myId)!;
+  const used = meP.actorUsed || [];
+  // Cada carta de poder se descarta tras interpretarla (regla oficial): un
+  // papel ya usado no puede repetirse.
+  if (power && used.includes(power)) return null;
   game.acts.actor = { power: (power || null) as 'vidente' | 'defensor' | 'cuervo', target: target || null };
   const patch: Partial<PlayerDoc> = { actorPower: power || null };
+  if (power) patch.actorUsed = [...used, power];
+  // Como defensor hereda su regla: no repetir protegido dos noches seguidas.
+  if (power === 'defensor') {
+    if (target && target === meP.protectedLast) return null;
+    patch.protectedLast = target || null;
+  }
   if (power === 'vidente' && target) {
     const t = ps.find((p) => p.id === target);
     const meP = ps.find((p) => p.id === myId);
@@ -570,6 +585,9 @@ export const actActor = (power: 'vidente' | 'defensor' | 'cuervo' | null, target
 });
 
 export const actDefensor = (pid: string | null) => nightAction('defensor', (game, ps, myId) => {
+  // Regla oficial reforzada en el motor: no proteger al mismo dos noches seguidas.
+  const meP = ps.find((p) => p.id === myId);
+  if (pid && meP && pid === meP.protectedLast) return null;
   game.acts.defensorTarget = pid || null;
   return { playerPatches: { [myId]: { protectedLast: pid || null } } };
 });
@@ -777,7 +795,7 @@ export async function resolveSirvienta(accept: boolean): Promise<void> {
       game.log!.push({ kind: 'dia', txt: `🧹 ¡${sirvienta.name} revela que es la Abnegada Sirvienta y asume en secreto el rol del condenado!` });
       const patches: Record<string, Partial<PlayerDoc>> = {
         [sirvienta.id]: {
-          role: stolenRole, ancianoHit: false, revealedTonto: false, actorPower: null,
+          role: stolenRole, ancianoHit: false, revealedTonto: false, actorPower: null, actorUsed: [],
           protectedLast: null, modelId: null, wolfSide: null,
           powers: { heal: true, poison: true, infect: true, zorro: true, juez: true },
         },

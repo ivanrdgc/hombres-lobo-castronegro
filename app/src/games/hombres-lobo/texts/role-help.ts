@@ -175,7 +175,7 @@ export const ROLE_HELP: Record<RoleId, RoleHelp> = {
     when: 'Al morir devorado',
     steps: [
       'No actúas: tu espada oxidada trabaja sola.',
-      'Si los lobos te devoran, el lobo más cercano a ti en la mesa queda infectado por el óxido y morirá al amanecer siguiente (la app lo resuelve y lo anuncia).',
+      'Si los lobos te devoran, el primer lobo hacia tu izquierda (siguiendo el orden de la mesa) queda infectado por el óxido y morirá al amanecer siguiente (la app lo resuelve y lo anuncia).',
     ],
   },
   juez: {

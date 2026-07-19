@@ -73,6 +73,8 @@ export interface GamePlayer {
   deathAt?: number | null;
   protectedLast?: string | null;
   actorPower?: string | null;
+  /** Papeles ya interpretados por el Actor: cada carta se gasta al usarla. */
+  actorUsed?: string[] | null;
   videnteLog?: { pid: string; role?: RoleId | null; wolf?: boolean; night: number }[];
   powers?: Powers;
 }

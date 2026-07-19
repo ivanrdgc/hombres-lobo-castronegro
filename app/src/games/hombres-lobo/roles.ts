@@ -82,7 +82,7 @@ export const ROLES = {
   },
   gitana: {
     id: 'gitana', name: 'La Gitana', emoji: '🔯', team: 'pueblo', expansion: 'luna_nueva',
-    desc: 'Cada noche invoca a los espíritus: elige una pregunta que un jugador muerto responderá al amanecer con un sí o un no.',
+    desc: 'Cada noche invoca a los espíritus: elige una pregunta que los jugadores muertos responderán al amanecer, todos a una, con un sí o un no.',
   },
   // ——— El Pueblo ———
   cuervo: {
@@ -112,7 +112,7 @@ export const ROLES = {
   },
   caballero: {
     id: 'caballero', name: 'El Caballero de la Espada Oxidada', emoji: '⚔️', team: 'pueblo', expansion: 'personajes',
-    desc: 'Si los lobos lo devoran, el lobo más cercano muere infectado por el óxido al amanecer siguiente.',
+    desc: 'Si los lobos lo devoran, el primer lobo hacia su izquierda (según el orden de la mesa) muere infectado por el óxido al amanecer siguiente.',
   },
   juez: {
     id: 'juez', name: 'El Juez Tartamudo', emoji: '⚖️', team: 'pueblo', expansion: 'personajes',
@@ -124,7 +124,7 @@ export const ROLES = {
   },
   actor: {
     id: 'actor', name: 'El Actor', emoji: '🎭', team: 'pueblo', expansion: 'personajes',
-    desc: 'Cada noche elige interpretar uno de tres poderes: ver un rol como la vidente, proteger como el defensor o señalar como el cuervo.',
+    desc: 'Cada noche elige interpretar uno de tres poderes: ver un rol como la vidente, proteger como el defensor o señalar como el cuervo. Cada papel se descarta tras usarse.',
   },
   sectario: {
     id: 'sectario', name: 'El Abominable Sectario', emoji: '🌗', team: 'solitario', expansion: 'personajes',
@@ -351,11 +351,13 @@ export function aliveNeighbors<T extends Seatish>(playersArr: T[], pid: string):
   if (idx === -1) return [];
   const n = sorted.length;
   const found: T[] = [];
-  for (let d = 1; d < n; d++) { // hacia la izquierda
+  // Con la mesa ordenada en sentido horario (mirando al centro), idx+1 es el
+  // vecino de la IZQUIERDA e idx-1 el de la derecha.
+  for (let d = 1; d < n; d++) { // hacia la derecha
     const p = sorted[(idx - d + n * 2) % n];
     if (p.alive && p.id !== pid) { found.push(p); break; }
   }
-  for (let d = 1; d < n; d++) { // hacia la derecha
+  for (let d = 1; d < n; d++) { // hacia la izquierda
     const p = sorted[(idx + d) % n];
     if (p.alive && p.id !== pid && !found.some((f) => f.id === p.id)) { found.push(p); break; }
   }
