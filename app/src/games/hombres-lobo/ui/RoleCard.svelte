@@ -2,16 +2,23 @@
   // Tarjeta del rol propio con la información privada extra (port de roleCard()
   // de la v1). El «mini» va oculto por defecto (ui.roleOpen) y se auto-oculta
   // a los 12 s: los móviles quedan boca arriba sobre la mesa.
-  import { app } from '../../../core/sync/store.svelte';
+  import { app, setFlash } from '../../../core/sync/store.svelte';
+  import { guard } from '../../../core/sync/guard';
+  import * as A from '../actions';
   import { ROLES, TEAMS, isWolfSide } from '../roles';
   import { ROLE_HELP } from '../texts/role-help';
   import type { RoleId } from '../roles';
   import type { GroupDoc, PlayerDoc } from '../../../core/sync/schema';
   import type { GameState } from '../types';
+  import Countdown from './Countdown.svelte';
 
   const { player, group, mini = false }: { player: PlayerDoc; group: GroupDoc; mini?: boolean } = $props();
 
   const game = $derived<Partial<GameState>>(group.game || {});
+  // Acciones de DÍA escondidas dentro de la carta: con los móviles
+  // desbloqueados sobre la mesa, ninguna pantalla puede delatar quién tiene
+  // poder. El dueño abre su carta con disimulo (👁) y actúa desde aquí.
+  const pendHead = $derived((game.pending || [])[0]);
   const r = $derived(player.role ? ROLES[player.role] : null);
   const help = $derived(player.role ? ROLE_HELP[player.role] : null);
   const team = $derived.by(() => {
@@ -47,6 +54,8 @@
   // La carta se oculta sola: que no se quede abierta a la vista de nadie.
   $effect(() => {
     if (!app.ui.roleOpen) return;
+    // Salvo mientras la Sirvienta decide contrarreloj: no se cierra en plena decisión.
+    if (pendHead?.type === 'sirvienta' && player.role === 'sirvienta' && player.alive && !player.lover) return;
     const t = setTimeout(() => {
       app.ui.roleOpen = false;
     }, 12000);
@@ -122,6 +131,18 @@
       {#if player.revealedTonto}<div class="rextra">🤪 Te has librado del linchamiento: ya no votas, pero sí puedes registrar la decisión del pueblo en la app.</div>{/if}
       {#if game.powersLost && r.team === 'pueblo' && !['aldeano', 'tonto'].includes(player.role)}
         <div class="rextra">⚠️ El Anciano murió a manos del pueblo: los aldeanos habéis perdido vuestros poderes.</div>
+      {/if}
+      {#if game.phase === 'day' && player.role === 'juez' && player.alive && player.powers?.juez !== false && !game.powersLost}
+        <div class="rextra">⚖️ <b>Tu poder secreto</b>: puedes exigir una segunda votación hoy (una vez por partida). Nadie sabrá que fuiste tú.
+          <button class="violet block" data-a="juez-arm" style="margin-top:6px"
+            onclick={(e) => { e.stopPropagation(); guard(async () => { await A.armJuez(); app.ui.roleOpen = false; setFlash('⚖️ Hecho: tras el juicio de hoy habrá una segunda votación.'); }); }}>⚖️ Exigir segunda votación tras el juicio</button></div>
+      {/if}
+      {#if pendHead?.type === 'sirvienta' && player.role === 'sirvienta' && player.alive && !player.lover}
+        {@const condemned = app.players.find((p) => p.id === pendHead.targetId)}
+        <div class="rextra">🧹 <b>Decide en secreto</b>: el pueblo ha condenado a <b>{condemned?.name || ''}</b>. ¿Sacrificas tu carta para asumir su rol? <Countdown deadline={pendHead.deadline ?? 0} />
+          <div class="btnrow" style="margin-top:6px">
+            <button class="violet" data-a="sirvienta-yes" onclick={(e) => { e.stopPropagation(); guard(() => A.resolveSirvienta(true)); }}>🧹 Tomar su rol</button>
+            <button class="ghost" data-a="sirvienta-no" onclick={(e) => { e.stopPropagation(); guard(() => A.resolveSirvienta(false)); }}>No intervenir</button></div></div>
       {/if}
       {#if mini}<p class="small-note" style="margin-top:8px">Se ocultará sola en unos segundos; toca la carta para ocultarla ya.</p>{/if}
     </div>

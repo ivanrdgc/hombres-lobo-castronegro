@@ -116,7 +116,7 @@ export const ROLE_HELP: Record<RoleId, RoleHelp> = {
     when: 'Cada noche, el último',
     steps: [
       'Cada noche, al final, la voz te llama: toca a dos jugadores para encantarlos con tu música (puedes encantarte a ti mismo).',
-      'Cierras los ojos y la voz llamará a los encantados por sus PALABRAS CLAVE: cada uno lo confirma en su móvil sin saber quién eres. Cada palabra pronunciada se quema y se renueva.',
+      'Cierras los ojos y la voz llamará a los encantados por sus PALABRAS CLAVE: cada uno lo confirma en su móvil sin saber quién eres. Cada palabra pronunciada se quema, y la nueva aparece en esa misma pantalla al confirmar.',
       'Ganas en solitario si todos los DEMÁS vivos acaban encantados.',
     ],
   },
@@ -182,7 +182,7 @@ export const ROLE_HELP: Record<RoleId, RoleHelp> = {
     when: 'De día (una vez)',
     steps: [
       'No te despiertas de noche.',
-      'De día, solo tú ves un botón secreto: púlsalo ANTES de que acabe el juicio para exigir una segunda votación inmediata (una vez por partida).',
+      'De día, tu botón secreto está DENTRO de tu carta: abre «👁 Mostrar mi rol» con disimulo (todas las pantallas se ven iguales) y púlsalo ANTES de que acabe el juicio para exigir una segunda votación inmediata (una vez por partida).',
       'Nadie sabrá que fuiste tú: la app lo anuncia como caído del cielo.',
     ],
   },
@@ -190,7 +190,7 @@ export const ROLE_HELP: Record<RoleId, RoleHelp> = {
     when: 'Cuando linchan a alguien',
     steps: [
       'No actúas de noche.',
-      'Cuando el pueblo condena a alguien, tu móvil te da unos segundos EN SECRETO para decidir si sacrificas tu carta y asumes su rol.',
+      'Cuando el pueblo condena a alguien, la aldea se detiene unos segundos: abre tu carta con disimulo («👁 Mostrar mi rol» — todas las pantallas se ven iguales) y decide AHÍ dentro, antes de que acabe la cuenta atrás, si sacrificas tu carta y asumes su rol.',
       'Si aceptas, se anuncia tu sacrificio (no el rol heredado) y empiezas de cero con la carta del condenado.',
     ],
   },

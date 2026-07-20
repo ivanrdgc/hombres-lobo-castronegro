@@ -15,6 +15,10 @@
   const players = $derived(app.players.filter((p) => p.inGame));
   const winnerLabel = $derived(game.winner ? WINNER_LABELS[game.winner] : undefined);
   const roleDef = (r: RoleId | null | undefined) => (r ? ROLES[r] : undefined);
+  // Al final todo es público: las marcas secretas (encantados del Gaitero,
+  // enamorados, infectados, transformados) acompañan al revelado de roles.
+  const marks = (p: PlayerDoc) =>
+    `${p.infected ? ' 🧛' : ''}${p.transformed ? ' 🐾→🐺' : ''}${p.wolfSide ? ' →🐺' : ''}${p.lover ? ' 💘' : ''}${p.charmed ? ' 🎶' : ''}`;
 </script>
 
 <div class="winbanner card">
@@ -30,7 +34,7 @@
   {#each players as p (p.id)}
     <div class="player {p.alive === false ? 'dead' : ''}">
       <span>{roleDef(p.role)?.emoji || '❔'}</span>
-      <span class="pname">{p.name}<br /><small style="color:var(--muted)">{roleDef(p.role)?.name || ''}</small></span>
+      <span class="pname">{p.name}{marks(p)}<br /><small style="color:var(--muted)">{roleDef(p.role)?.name || ''}</small></span>
       {#if p.alive === false}<span>💀</span>{:else}<span>❤️</span>{/if}
     </div>
   {/each}

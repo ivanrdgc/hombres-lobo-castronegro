@@ -37,13 +37,10 @@
   {/if}
 {:else if head.type === 'sirvienta'}
   {@const target = players.find((p) => p.id === head.targetId)}
-  {#if my.role === 'sirvienta' && my.alive && !my.lover}
-    <div class="actionpanel"><h3>🧹 La Abnegada Sirvienta</h3>
-      <p class="hint">El pueblo ha condenado a <b>{target?.name || ''}</b>. ¿Sacrificas tu carta para asumir su rol en secreto? <Countdown deadline={head.deadline ?? 0} /></p>
-      <div class="btnrow"><button class="violet" data-a="sirvienta-yes" onclick={() => guard(() => A.resolveSirvienta(true))}>🧹 Tomar su rol</button><button class="ghost" data-a="sirvienta-no" onclick={() => guard(() => A.resolveSirvienta(false))}>No intervenir</button></div></div>
-  {:else}
-    <div class="actionpanel"><h3>⏳ El juicio se resuelve…</h3><p class="hint">Un instante de silencio antes de revelar el destino de {target?.name || ''}.</p></div>
-  {/if}
+  <!-- Vista IDÉNTICA para todos, también para la Sirvienta: su decisión vive
+       dentro de su carta (👁 Mostrar mi rol), sin pantallas delatoras. -->
+  <div class="actionpanel"><h3>⏳ El juicio se resuelve…</h3>
+    <p class="hint">Un instante de silencio antes de revelar el destino de {target?.name || ''}. <Countdown deadline={head.deadline ?? 0} /></p></div>
 {:else if head.type === 'alguacil_elect'}
   {#if my.alive}
     <div class="actionpanel"><h3>⭐ Elección del Alguacil</h3>

@@ -1,7 +1,7 @@
 <script lang="ts">
   // Fase de día (port de dayPhase() + juezButton() de la v1): narración del
   // debate, pendientes, votación y cierre del día.
-  import { app, setFlash } from '../../../core/sync/store.svelte';
+  import { app } from '../../../core/sync/store.svelte';
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
   import { narr } from '../texts/corpus';
@@ -34,12 +34,10 @@
 
 <div class="narration">☀️ {narr(((game.lastDawn || {}).deaths || []).length ? 'dia_debate' : 'dia_debate_tranquilo', `${game.seed}:d${game.dayNum}:${game.votesLeft}`)}</div>
 {#if mutedTontos.length}<div class="flash">🤪 {mutedTontos.map((p) => p.name).join(' y ')} {mutedTontos.length > 1 ? 'ya no votan' : 'ya no vota'} (Tonto del Pueblo al descubierto), aunque sigue{mutedTontos.length > 1 ? 'n' : ''} deliberando con el pueblo.</div>{/if}
+<!-- Las acciones secretas de día (Juez, Sirvienta) viven DENTRO de la carta
+     (👁 Mostrar mi rol): con los móviles desbloqueados sobre la mesa, todas
+     las pantallas deben verse iguales. -->
 <RoleCard player={my} {group} mini={true} />
-{#if my.role === 'juez' && my.alive && my.powers?.juez !== false && game.phase === 'day'}
-  <div class="card"><p class="small-note">⚖️ Solo tú ves esto: puedes exigir una segunda votación hoy (una vez por partida).</p>
-    <button class="violet block" data-a="juez-arm"
-      onclick={() => guard(async () => { await A.armJuez(); setFlash('⚖️ Hecho: tras el juicio de hoy habrá una segunda votación.'); })}>⚖️ Exigir segunda votación tras el juicio</button></div>
-{/if}
 {#if head}
   <PendingPanel {head} {group} {my} {players} />
 {:else if (game.votesLeft || 0) > 0 && !game.vote}

@@ -53,6 +53,9 @@
       <span class="pname">{p.name}
         {#if canPeek && peeked[p.id]}<br /><small style="color:var(--accent)">{roleDef(p.role)?.emoji || '❔'} {roleDef(p.role)?.name || '—'}{marks(p)}</small>{/if}
       </span>
+      <!-- Los muertos ven las marcas ocultas (encantados 🎶, enamorados 💘…)
+           de un vistazo, sin tener que tocar jugador a jugador. -->
+      {#if canPeek && marks(p)}<span class="badge">{marks(p).trim()}</span>{/if}
       {#if p.id === narratorId}<span class="badge">🔊</span>{/if}
       {#if p.role === 'aldeano_aldeano'}<span class="badge" title="Sus dos caras muestran un aldeano">👥 inocente</span>{/if}
       {#if showAlguacil === p.id}<span class="badge">⭐</span>{/if}

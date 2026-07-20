@@ -25,13 +25,12 @@
   const def = $derived(NIGHT_STEPS.find((s) => s.id === stepId));
   const actors = $derived(stepId ? stepActors(stepId, game, players) : null);
   const isActor = $derived(!!(actors && actors.includes(my.id) && my.alive));
-  // En los pasos con llamada por palabra clave, al confirmar la palabra rota
-  // (rotateKeyword): quien ya confirmó ve aquí su palabra vigente en claro,
-  // para que nadie se quede con la vieja en la cabeza.
+  // En los pasos con llamada por palabra clave, quien ya confirmó CONSERVA su
+  // panel: la palabra renovada (rotateKeyword) se enseña en ESA misma pantalla.
   const kwConfirmed = $derived.by(() => {
-    if (!my.alive || !my.keyword) return false;
-    if (stepId === 'encantados') return !!(game.acts.encantadosSeen || {})[my.id];
-    if (stepId === 'enamorados') return !!(game.acts.loversSeen || {})[my.id];
+    if (!my.alive) return false;
+    if (stepId === 'encantados') return !!my.charmed && !!(game.acts.encantadosSeen || {})[my.id];
+    if (stepId === 'enamorados') return !!my.lover && !!(game.acts.loversSeen || {})[my.id];
     return false;
   });
   const narrText = $derived.by(() => {
@@ -63,24 +62,12 @@
 {:else}
   <div class="narration">🌙 {stepId === 'amanecer' ? 'Los primeros rayos de sol acarician los tejados…' : narrText}</div>
   <RoleCard player={my} {group} mini={true} />
-  {#if isActor}
+  {#if isActor || kwConfirmed}
     <!-- El actor solo ve su panel: la lista de objetivos YA es el pueblo entero
          (ActionGrid), sin parrilla duplicada debajo. -->
     <NightActionPanel stepId={stepId!} {group} {my} {players} />
   {:else}
-    {#if kwConfirmed}
-      <!-- Ya confirmó su llamada: su palabra acaba de rotar (o no, si la
-           reserva se agotó) y ESTA pantalla se lo deja claro. -->
-      <div class="actionpanel"><h3>🔑 Tu palabra clave</h3>
-        {#if my.kwRenewedNight === game.night}
-          <p class="hint">Tu palabra anterior ya sonó: queda quemada. Tu <b>NUEVA</b> palabra clave es:</p>
-          <p style="text-align:center;font-size:1.3rem;margin:8px 0"><b>«{my.keyword}»</b></p>
-          <p class="hint">Memorízala: con ella te llamaré a partir de ahora. La tienes siempre en tu carta (👁 Mostrar mi rol).</p>
-        {:else}
-          <p class="hint">Tu palabra clave no ha cambiado: sigue siendo <b>«{my.keyword}»</b>.</p>
-        {/if}
-      </div>
-    {:else if stepId === 'enamorados' || stepId === 'encantados' || stepId === 'lobos_reconocen'}
+    {#if stepId === 'enamorados' || stepId === 'encantados' || stepId === 'lobos_reconocen'}
       <!-- Pasos con palabras clave o reconocimiento físico: los que no actúan
            mantienen la vista en su pantalla con esta indicación neutral. -->
       <div class="actionpanel"><h3>👂 Atención al narrador</h3>

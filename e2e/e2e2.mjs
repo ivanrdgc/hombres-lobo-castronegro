@@ -161,7 +161,13 @@ async function drivePending(st) {
     }
     case 'sirvienta': {
       const s = st.players.find((p) => p.role === 'sirvienta' && p.alive);
-      if (s) { await pages[s.name.toLowerCase()].click('button[data-a=sirvienta-no]'); }
+      if (s) {
+        const pg = pages[s.name.toLowerCase()];
+        // La decisión vive DENTRO de la carta: la abre con disimulo y renuncia.
+        if (await pg.locator('button[data-a=toggle-rolecard]').count()) await pg.click('button[data-a=toggle-rolecard]');
+        await pg.waitForSelector('button[data-a=sirvienta-no]', { timeout: 10000 });
+        await pg.click('button[data-a=sirvienta-no]');
+      }
       return;
     }
     case 'alguacil_elect': {

@@ -112,9 +112,19 @@
   </div>
 {:else if stepId === 'enamorados'}
   {@const partner = players.find((p) => p.lover && p.id !== my.id)}
+  {@const loverConfirmed = !!(game.acts.loversSeen || {})[my.id]}
   <div class="actionpanel"><h3>💘 Estás enamorado/a</h3>
     <p class="hint">Tu media naranja es <b>{partner?.name || '…'}</b>. Si muere, tú también. Si sois de bandos distintos, vuestra meta es quedar los dos últimos.</p>
-    <button class="primary block" data-a="act-lover-ok" onclick={() => guard(A.confirmLover)}>❤️ Entendido</button>
+    {#if !loverConfirmed}
+      <button class="primary block" data-a="act-lover-ok" onclick={() => guard(A.confirmLover)}>❤️ Entendido</button>
+    {:else if my.kwRenewedNight === game.night && my.keyword}
+      <!-- La llamada quemó su palabra: la NUEVA se enseña en esta misma pantalla. -->
+      <p class="hint">✅ Confirmado. Vuestra llamada quemó tu palabra clave. La <b>NUEVA</b>:</p>
+      <p style="text-align:center;font-size:1.3rem;margin:8px 0"><b>«{my.keyword}»</b></p>
+      <p class="hint">Memorízala: con ella te llamaré a partir de ahora. La tienes siempre en tu carta (👁 Mostrar mi rol).</p>
+    {:else}
+      <p class="hint">✅ Confirmado.{#if my.keyword} Tu palabra clave no ha cambiado: sigue siendo <b>«{my.keyword}»</b>.{/if}</p>
+    {/if}
   </div>
 {:else if stepId === 'nino_salvaje'}
   <div class="actionpanel"><h3>🐾 El Niño Salvaje</h3>
@@ -321,10 +331,20 @@
   </div>
 {:else if stepId === 'encantados'}
   {@const others = players.filter((p) => p.alive && p.charmed && p.id !== my.id)}
+  {@const encConfirmed = !!(game.acts.encantadosSeen || {})[my.id]}
   <div class="actionpanel"><h3>🎶 El Gaitero te ha encantado</h3>
-    <p class="hint">{#if others.length}Abrid los ojos con disimulo y reconoceos. Encantados: <b>{others.map((p) => p.name).join(', ')}</b>. Si todo el pueblo acaba encantado, el Gaitero gana. Cuando os hayáis reconocido, confirmad.{:else}Eres el único encantado por ahora. Si todo el pueblo acaba encantado, el Gaitero gana. Confirma y la noche sigue.{/if}</p>
-    <p class="hint">🔑 Tu palabra clave acaba de sonar, así que queda <b>quemada</b>: al confirmar recibirás una <b>nueva</b> y la verás en esta pantalla.</p>
-    <button class="primary block" data-a="act-encantado-ok" onclick={() => guard(A.confirmEncantado)}>🎶 Entendido</button>
+    {#if !encConfirmed}
+      <p class="hint">{#if others.length}Abrid los ojos con disimulo y reconoceos. Encantados: <b>{others.map((p) => p.name).join(', ')}</b>. Si todo el pueblo acaba encantado, el Gaitero gana. Cuando os hayáis reconocido, confirmad.{:else}Eres el único encantado por ahora. Si todo el pueblo acaba encantado, el Gaitero gana. Confirma y la noche sigue.{/if}</p>
+      <p class="hint">🔑 Tu palabra clave acaba de sonar, así que queda <b>quemada</b>: al confirmar, tu palabra <b>NUEVA</b> aparecerá aquí mismo.</p>
+      <button class="primary block" data-a="act-encantado-ok" onclick={() => guard(A.confirmEncantado)}>🎶 Entendido</button>
+    {:else if my.kwRenewedNight === game.night && my.keyword}
+      <!-- Misma pantalla, segunda cara: la palabra renovada, en grande. -->
+      <p class="hint">✅ Confirmado. Tu palabra anterior queda quemada. La <b>NUEVA</b>:</p>
+      <p style="text-align:center;font-size:1.3rem;margin:8px 0"><b>«{my.keyword}»</b></p>
+      <p class="hint">Memorízala: con ella te llamaré a partir de ahora. La tienes siempre en tu carta (👁 Mostrar mi rol).</p>
+    {:else}
+      <p class="hint">✅ Confirmado.{#if my.keyword} Tu palabra clave no ha cambiado: sigue siendo <b>«{my.keyword}»</b>.{/if}</p>
+    {/if}
   </div>
 {:else if stepId === 'gitana'}
   {#if game.powersLost}
