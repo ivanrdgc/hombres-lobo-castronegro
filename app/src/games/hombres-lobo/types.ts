@@ -138,10 +138,6 @@ export interface DeathNote {
   hideRole: boolean;
 }
 
-export interface CaballeroRust {
-  wolfId: string;
-}
-
 export type WinnerId =
   | 'pueblo'
   | 'lobos'
@@ -178,7 +174,6 @@ export interface GameState {
   deathTick?: number;
   powersLost?: boolean;
   wolfDeathOccurred?: boolean;
-  caballeroRust?: CaballeroRust | null;
   lastLynch?: DeathNote | null;
   lastLoveDeath?: DeathNote | null;
   /** Nombre del Tonto del Pueblo revelado hoy al ser linchado (voz del ocaso). */

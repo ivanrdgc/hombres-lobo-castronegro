@@ -26,7 +26,7 @@ const mkGame = (over: Partial<GameState> = {}): GameState => ({
   night: 1, dayNum: 0, phase: 'night', stepIdx: 0, steps: [], acts: {},
   vote: null, votesLeft: 0, pending: [], winner: null, alguacilId: null,
   soloVoteId: null, juezArmed: null, powersLost: false, wolfDeathOccurred: false,
-  caballeroRust: null, gitanaQ: null, deathTick: 0, revealDead: true,
+  gitanaQ: null, deathTick: 0, revealDead: true,
   composition: {}, centerCards: [], log: [], ...over,
 });
 
@@ -324,50 +324,33 @@ test('gaitero: puede encantarse a sí mismo y su victoria solo exige a los DEMÁ
   assert.equal(checkWinner(ps2), null);
 });
 
-test('caballero: el lobo sentenciado por el óxido no gana por paridad y muere la noche siguiente', () => {
-  // Partida de 4 con un solo lobo (el caso real de la mesa): lobo (p0),
-  // caballero (p1) y dos aldeanos (p2, p3).
+test('caballero: devorado, su espada mata al lobo EN EL MISMO amanecer (la partida real de la mesa)', () => {
+  // Partida de 4 con un solo lobo, reportada tres veces: lobo (p0), caballero
+  // (p1) y dos aldeanos. Noche 1: el lobo devora al Caballero → ambos caen en
+  // el mismo amanecer y el pueblo gana en el acto. (Regla de la mesa: el juego
+  // oficial demora el tétanos una noche, pero ese retardo era invisible.)
   const players = mkPlayers(['hombre_lobo', 'caballero', 'aldeano', 'aldeano']);
-  // Noche 1: los lobos devoran al Caballero → el lobo más cercano en sentido
-  // horario queda sentenciado por el óxido.
   const g1 = mkGame({ night: 1, acts: { wolfVictim: 'p1' } });
   const dawn1 = resolveDawn(g1, players);
-  assert.ok(dawn1.deaths.some((d) => d.pid === 'p1' && d.cause === 'lobos'));
-  assert.deepEqual(dawn1.gameUpdates.caballeroRust, { wolfId: 'p0' }, 'rust armado hacia el lobo');
-  assert.equal(checkWinner(dawn1.players, { caballeroRust: dawn1.gameUpdates.caballeroRust }), null);
-  // Día 1: el pueblo lincha a un aldeano. Queda 1 lobo vs 1 aldeano, pero el
-  // lobo es un muerto andante: NO hay victoria lobuna y la partida continúa.
-  const g2 = mkGame({ night: 1, dayNum: 1, votesLeft: 1, caballeroRust: dawn1.gameUpdates.caballeroRust });
-  const vote = resolveVote(g2, dawn1.players, 'p2')!;
-  assert.ok(vote.players.find((p) => p.id === 'p2')!.alive === false, 'linchado');
-  assert.equal(vote.winner, null, 'el lobo sentenciado no gana por paridad');
-  // Noche 2: al amanecer, el óxido reclama al lobo → gana el pueblo.
-  const g3 = mkGame({ night: 2, caballeroRust: dawn1.gameUpdates.caballeroRust, acts: {} });
-  const dawn2 = resolveDawn(g3, vote.players);
-  assert.ok(dawn2.deaths.some((d) => d.pid === 'p0' && d.cause === 'oxido'), 'el lobo cae por el óxido');
-  assert.equal(dawn2.gameUpdates.caballeroRust, null, 'el rust se consume');
-  assert.equal(checkWinner(dawn2.players, { caballeroRust: dawn2.gameUpdates.caballeroRust }), 'pueblo');
+  assert.ok(dawn1.deaths.some((d) => d.pid === 'p1' && d.cause === 'lobos'), 'el caballero cae devorado');
+  assert.ok(dawn1.deaths.some((d) => d.pid === 'p0' && d.cause === 'oxido'), 'y su espada reclama al lobo ese mismo amanecer');
+  assert.equal(checkWinner(dawn1.players), 'pueblo');
 });
 
-test('caballero: el óxido cae aunque el día no linche y el lobo muerda esa noche (flujo real)', () => {
-  // La partida reportada en la mesa: 4 jugadores, 1 lobo. Noche 1: el lobo
-  // devora al Caballero. Día 1: nadie linchado. Noche 2: el lobo muerde a otro
-  // aldeano. Amanecer 2: cae la víctima Y el óxido reclama al lobo.
-  const players = mkPlayers(['hombre_lobo', 'caballero', 'aldeano', 'aldeano']);
-  const g1 = mkGame({ night: 1, acts: { wolfVictim: 'p1' } });
-  const dawn1 = resolveDawn(g1, players);
-  assert.deepEqual(dawn1.gameUpdates.caballeroRust, { wolfId: 'p0' });
-  // Persistencia como en la app real: Object.assign(game, gameUpdates).
-  const g2 = mkGame({ night: 1, dayNum: 1, votesLeft: 1, caballeroRust: dawn1.gameUpdates.caballeroRust });
-  const vote = resolveVote(g2, dawn1.players, 'nadie')!;
-  assert.equal(vote.winner, null);
-  Object.assign(g2, vote.gameUpdates);
-  assert.deepEqual(g2.caballeroRust, { wolfId: 'p0' }, 'el óxido sobrevive a un día sin linchamiento');
-  const g3 = mkGame({ night: 2, caballeroRust: g2.caballeroRust, acts: { wolfVictim: 'p2' } });
-  const dawn2 = resolveDawn(g3, vote.players);
-  assert.ok(dawn2.deaths.some((d) => d.pid === 'p2' && d.cause === 'lobos'), 'la víctima nocturna cae');
-  assert.ok(dawn2.deaths.some((d) => d.pid === 'p0' && d.cause === 'oxido'), 'y el óxido reclama al lobo ese mismo amanecer');
-  assert.equal(checkWinner(dawn2.players), 'pueblo');
+test('caballero: la mesa es un círculo — la izquierda da la vuelta del último asiento al primero', () => {
+  // Caballero en el último asiento (p3): su izquierda es p0 (wrap del círculo).
+  const ps = mkPlayers(['hombre_lobo', 'aldeano', 'aldeano', 'caballero']);
+  const d = resolveDawn(mkGame({ night: 1, acts: { wolfVictim: 'p3' } }), ps);
+  assert.ok(d.deaths.some((x) => x.pid === 'p0' && x.cause === 'oxido'), 'la búsqueda da la vuelta a la mesa');
+});
+
+test('caballero: linchado o envenenado NO desata el óxido (solo al morir devorado)', () => {
+  const ps = mkPlayers(['hombre_lobo', 'caballero', 'aldeano', 'aldeano']);
+  const vote = resolveVote(mkGame({ night: 1, dayNum: 1, votesLeft: 1 }), ps, 'p1')!;
+  assert.ok(vote.players.find((p) => p.id === 'p0')!.alive, 'linchar al caballero no oxida al lobo');
+  const ps2 = mkPlayers(['hombre_lobo', 'caballero', 'aldeano', 'aldeano']);
+  const dawn = resolveDawn(mkGame({ night: 1, acts: { brujaPoison: 'p1' } }), ps2);
+  assert.ok(dawn.players.find((p) => p.id === 'p0')!.alive, 'el veneno tampoco');
 });
 
 test('resolveDawn: la marca del cuervo se anuncia al amanecer', () => {
@@ -509,17 +492,14 @@ test('resolveDawn: cazador muerto genera pendiente de disparo', () => {
   assert.deepEqual(res.pendings, [{ type: 'cazador', pid: 'p1' }]);
 });
 
-test('resolveDawn: caballero muerto oxida al lobo más cercano', () => {
+test('resolveDawn: caballero devorado oxida al primer lobo hacia su izquierda EN ESE amanecer', () => {
   const players = mkPlayers(['hombre_lobo', 'caballero', 'aldeano', 'hombre_lobo']);
   const game = mkGame({ acts: { wolfVictim: 'p1' } });
   const res = resolveDawn(game, players);
-  // Lobo más cercano en sentido horario desde p1: p3
-  assert.equal(res.gameUpdates.caballeroRust?.wolfId, 'p3');
-  // La noche siguiente, ese lobo muere.
-  const g2 = mkGame({ night: 2, caballeroRust: res.gameUpdates.caballeroRust, acts: {} });
-  const r2 = resolveDawn(g2, res.players);
-  assert.equal(r2.players.find((p) => p.id === 'p3')!.alive, false);
-  assert.equal(r2.players.find((p) => p.id === 'p3')!.causeOfDeath, 'oxido');
+  // Primer lobo hacia la izquierda de p1 (sentido de asientos): p3, no p0.
+  assert.equal(res.players.find((p) => p.id === 'p3')!.alive, false);
+  assert.equal(res.players.find((p) => p.id === 'p3')!.causeOfDeath, 'oxido');
+  assert.ok(res.players.find((p) => p.id === 'p0')!.alive, 'el otro lobo sigue vivo');
 });
 
 test('resolveDawn: gran lobo feroz mata segunda víctima', () => {

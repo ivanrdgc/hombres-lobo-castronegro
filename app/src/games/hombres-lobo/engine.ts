@@ -4,7 +4,7 @@
 import { ROLES, isWolfSide, aliveNeighbors } from './roles';
 import type { RoleId } from './roles';
 import type {
-  Acts, CaballeroRust, Composition, DeathCause, DeathNote, DeathRecord, GamePlayer, LogEntry,
+  Acts, Composition, DeathCause, DeathNote, DeathRecord, GamePlayer, LogEntry,
   PendingEntry, StepId, WinnerId,
 } from './types';
 
@@ -282,7 +282,6 @@ export interface ChainResult {
   pendings: PendingEntry[];
   logs: LogEntry[];
   powersLost: boolean;
-  rust: CaballeroRust | null;
   wolfDeath: boolean;
 }
 
@@ -297,7 +296,6 @@ export function applyDeathsChain(
   const pendings: PendingEntry[] = [];
   const deaths: DeathRecord[] = [];
   let powersLost = game.powersLost || false;
-  let rust: CaballeroRust | null = null;
   const byId = Object.fromEntries(players.map((p) => [p.id, p]));
   const queue = initialDeaths.slice();
 
@@ -315,11 +313,13 @@ export function applyDeathsChain(
       logs.push({ kind: 'evento', txt: '💀 ¡El pueblo ha matado al Anciano! Los aldeanos pierden sus poderes como castigo.' });
     }
     if (p.role === 'caballero' && cause === 'lobos') {
+      // La espada oxidada responde EN EL ACTO: el primer lobo hacia su
+      // izquierda cae en este mismo amanecer, dentro de la propia cadena
+      // (regla de la mesa; el juego oficial lo demora una noche, pero ese
+      // retardo resultaba invisible y confuso en la app). La mesa es un
+      // círculo: la búsqueda recorre (idx+d)%n y da la vuelta si hace falta.
       const wolves = players.filter((x) => x.alive && isWolfSide(x));
-      if (wolves.length) {
-        const near = nearestClockwise(players, pid, wolves);
-        rust = { wolfId: near.id };
-      }
+      if (wolves.length) queue.push({ pid: nearestClockwise(players, pid, wolves).id, cause: 'oxido' });
     }
     if (p.lover) {
       const partner = players.find((x) => x.alive && x.lover && x.id !== pid);
@@ -346,7 +346,7 @@ export function applyDeathsChain(
     const p = byId[d.pid];
     return isWolfSide(p) || d.role === 'lobo_albino';
   });
-  return { deaths, pendings, logs, powersLost, rust, wolfDeath };
+  return { deaths, pendings, logs, powersLost, wolfDeath };
 }
 
 function nearestClockwise(players: GamePlayer[], fromId: string, candidates: GamePlayer[]): GamePlayer {
@@ -363,7 +363,6 @@ function nearestClockwise(players: GamePlayer[], fromId: string, candidates: Gam
 /** Lo que el amanecer necesita saber de la partida. */
 export interface DawnGame extends ChainGame {
   acts?: Acts;
-  caballeroRust?: CaballeroRust | null;
   wolfDeathOccurred?: boolean;
   /** Para variar deterministamente la ambientación (broma del cuervo). */
   seed?: number;
@@ -371,7 +370,6 @@ export interface DawnGame extends ChainGame {
 }
 
 export interface DawnGameUpdates {
-  caballeroRust: CaballeroRust | null;
   powersLost: boolean;
   wolfDeathOccurred: boolean;
   infectoPowerUsed?: boolean;
@@ -425,9 +423,6 @@ export function resolveDawn(game: DawnGame, playersIn: GamePlayer[]): DawnResult
     kills.push({ pid: bite.pid, cause: 'lobos' });
   }
   if (acts.brujaPoison) kills.push({ pid: acts.brujaPoison, cause: 'veneno' });
-  if (game.caballeroRust && game.caballeroRust.wolfId) {
-    kills.push({ pid: game.caballeroRust.wolfId, cause: 'oxido' });
-  }
 
   const chain = applyDeathsChain(players, kills, game);
   logs.push(...chain.logs);
@@ -441,7 +436,6 @@ export function resolveDawn(game: DawnGame, playersIn: GamePlayer[]): DawnResult
   }
 
   const gameUpdates: DawnGameUpdates = {
-    caballeroRust: chain.rust || null,
     powersLost: chain.powersLost,
     wolfDeathOccurred: game.wolfDeathOccurred || chain.wolfDeath,
   };
@@ -497,19 +491,11 @@ export function resolveDawn(game: DawnGame, playersIn: GamePlayer[]): DawnResult
 }
 
 // ——— Condiciones de victoria ———
-export function checkWinner(
-  players: GamePlayer[],
-  game?: { caballeroRust?: { wolfId: string } | null },
-): WinnerId | null {
+export function checkWinner(players: GamePlayer[]): WinnerId | null {
   const alive = players.filter((p) => p.alive);
   if (!alive.length) return 'nadie';
   const wolfish = alive.filter((p) => isWolfSide(p) || p.role === 'lobo_albino');
   const others = alive.filter((p) => !isWolfSide(p) && p.role !== 'lobo_albino');
-  // El lobo sentenciado por la espada oxidada del Caballero es un muerto
-  // andante: caerá al amanecer siguiente, así que no cuenta como fuerza
-  // lobuna (la partida no puede decidirse a favor de los lobos gracias a él).
-  const doomedId = game?.caballeroRust?.wolfId || null;
-  const wolfishEff = doomedId ? wolfish.filter((p) => p.id !== doomedId) : wolfish;
 
   if (alive.length === 1 && alive[0].role === 'lobo_albino') return 'lobo_albino';
   if (alive.length === 2 && alive.every((p) => p.lover)) {
@@ -523,9 +509,6 @@ export function checkWinner(
   if (sectario && !alive.some((p) => p.id !== sectario.id && p.sect !== sectario.sect)) return 'sectario';
   if (wolfish.length === 0) return 'pueblo';
   if (alive.every((p) => isWolfSide(p))) {
-    // Solo queda manada… pero si TODOS los que quedan están sentenciados por
-    // el óxido, nada se decide todavía: la noche siguiente lo resolverá.
-    if (alive.every((p) => p.id === doomedId)) return null;
     // Todo lo que queda es manada. Si el Albino sigue entre ellos, oficialmente
     // la caza continúa (él busca quedarse solo)… salvo que la manada lo supere
     // en el voto del día: entonces su suerte está echada y ganan los lobos.
@@ -548,7 +531,7 @@ export function checkWinner(
   // le conviene linchar lobos comunes para quedarse solo, así que la paridad
   // no cierra la partida (equivale a la «resistencia» del cazador o la bruja).
   const albinoAlive = alive.some((p) => p.role === 'lobo_albino');
-  if (realWolves && !albinoAlive && wolfishEff.length > 0 && wolfishEff.length >= voters.length && !resistance) return 'lobos';
+  if (realWolves && !albinoAlive && wolfish.length >= voters.length && !resistance) return 'lobos';
   return null;
 }
 
@@ -569,7 +552,6 @@ export interface VoteGame extends ChainGame {
   revealDead?: boolean;
   hideNightCauses?: boolean;
   wolfDeathOccurred?: boolean;
-  caballeroRust?: CaballeroRust | null;
 }
 
 export interface VoteGameUpdates {
@@ -578,7 +560,6 @@ export interface VoteGameUpdates {
   lastTontoReveal?: string | null;
   powersLost?: boolean;
   wolfDeathOccurred?: boolean;
-  caballeroRust?: CaballeroRust | null;
 }
 
 export interface VoteResult {
@@ -608,7 +589,7 @@ export function resolveVote(game: VoteGame, playersIn: GamePlayer[], choice: str
       logs.push({ kind: 'dia', txt: `🐐 La votación acabó en empate: ${cabeza.name} muere como Cabeza de Turco.` });
       logs.push(...chain.logs);
       pendings = pendings.concat(chain.pendings, [{ type: 'cabeza_pick', pid: cabeza.id }]);
-      Object.assign(gameUpdates, { powersLost: chain.powersLost, wolfDeathOccurred: game.wolfDeathOccurred || chain.wolfDeath, caballeroRust: chain.rust || game.caballeroRust });
+      Object.assign(gameUpdates, { powersLost: chain.powersLost, wolfDeathOccurred: game.wolfDeathOccurred || chain.wolfDeath });
       annotateDeaths(chain.deaths, byId, logs, game);
       const cd = chain.deaths.find((d) => d.cause === 'sacrificio');
       if (cd) gameUpdates.lastLynch = { name: byId[cd.pid].name, role: cd.role, hideRole: !!cd.hideRole };
@@ -630,7 +611,7 @@ export function resolveVote(game: VoteGame, playersIn: GamePlayer[], choice: str
       const chain = applyDeathsChain(players, [{ pid: target.id, cause: 'linchado' }], game);
       logs.push(...chain.logs);
       pendings = pendings.concat(chain.pendings);
-      Object.assign(gameUpdates, { powersLost: chain.powersLost, wolfDeathOccurred: game.wolfDeathOccurred || chain.wolfDeath, caballeroRust: chain.rust || game.caballeroRust });
+      Object.assign(gameUpdates, { powersLost: chain.powersLost, wolfDeathOccurred: game.wolfDeathOccurred || chain.wolfDeath });
       annotateDeaths(chain.deaths, byId, logs, game);
       const ld = chain.deaths.find((d) => d.cause === 'linchado');
       if (ld) gameUpdates.lastLynch = { name: byId[ld.pid].name, role: ld.role, hideRole: !!ld.hideRole };
@@ -640,7 +621,7 @@ export function resolveVote(game: VoteGame, playersIn: GamePlayer[], choice: str
     }
   }
 
-  if (!winner) winner = checkWinner(players, { caballeroRust: gameUpdates.caballeroRust ?? game.caballeroRust ?? null });
+  if (!winner) winner = checkWinner(players);
   return { players, logs, pendings, gameUpdates, winner };
 }
 

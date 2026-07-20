@@ -22,6 +22,17 @@ Estados: 🔴 abierto · 🟢 arreglado (con commit) · 🟡 re-reportado tras u
   Todo correcto en el código actual; test extra «flujo real» añadido. **La partida reportada es
   anterior al despliegue del arreglo** (e20d361 se desplegó el 19). Si vuelve a pasar en una partida
   jugada a partir del 20-07, reabrir con la crónica y el nombre de la mesa.
+- **2026-07-20 · 🟡 re-reportado (3ª vez), con crónica.** La crónica lo aclara: el amanecer 1 anuncia
+  al caballero devorado y el lobo sigue vivo — que es EXACTAMENTE la regla oficial («el lobo muere
+  la noche siguiente», anunciado al amanecer 2), pero ese retardo es invisible en la app y para la
+  mesa equivale a «no funciona». Iván descartó también la hipótesis de la mesa redonda: el recorrido
+  hacia la izquierda ya da la vuelta (`(idx+d)%n`, con test).
+- **2026-07-20 · 🟢 cerrado como REGLA DE LA MESA** (este commit): el óxido responde EN EL ACTO —
+  el primer lobo hacia la izquierda del caballero muere en el MISMO amanecer, dentro de la cadena de
+  muertes (como el disparo del cazador). Desviación deliberada del oficial, decidida tras tres
+  reportes idénticos. Se desmonta todo el mecanismo demorado (`caballeroRust`) y la excepción de
+  paridad que lo acompañaba; textos del rol actualizados; e2e nuevo `e2e-caballero.mjs` que reproduce
+  la partida de la crónica contra la app desplegada.
 
 ## B2 · Gaitero: llamaba a los mismos encantados con la misma palabra clave cada noche
 - **2026-07-19 · reporte.** Repetir la palabra delataba al encantado de noches anteriores.

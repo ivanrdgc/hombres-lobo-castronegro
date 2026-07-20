@@ -180,7 +180,7 @@ export async function startGame(mode: 'auto' | 'manual' | 'guiado', narratorId: 
         selectedRoles, fakeAllSelected, compositionPublic: !!settings0.showComposition,
         wolvesKnown: false, hermanasKnown: false, hermanosKnown: false,
         alguacilId: null, soloVoteId: null, soloVoteName: null, juezArmed: null,
-        powersLost: false, wolfDeathOccurred: false, caballeroRust: null,
+        powersLost: false, wolfDeathOccurred: false,
         gitanaQ: null, deathTick: 0, lastDawn: null,
         revealDead: !!settings.revealDead,
         noKillNight1: !!settings.primeraNocheTranquila,
@@ -279,7 +279,7 @@ export async function leaveGame(targetPid?: string, mid?: string): Promise<void>
     }
     // ¿Su marcha decide la partida? (en manual decide el narrador)
     if (game.mode !== 'manual') {
-      const w = checkWinner(ps, game);
+      const w = checkWinner(ps);
       if (w) {
         game.winner = w;
         game.phase = 'end';
@@ -296,7 +296,7 @@ export async function leaveGame(targetPid?: string, mid?: string): Promise<void>
 
 export async function endGameNow(winner: WinnerId | null, mid?: string): Promise<void> {
   await gameTx((game, players) => {
-    game.winner = winner || checkWinner(players.filter((p) => p.inGame), game) || 'nadie';
+    game.winner = winner || checkWinner(players.filter((p) => p.inGame)) || 'nadie';
     game.phase = 'end';
     game.paused = null;
     game.log!.push({ kind: 'evento', txt: '🏁 La partida se da por terminada: se revelan todos los roles.' });
@@ -433,7 +433,7 @@ export async function runDawn(): Promise<void> {
     // ¿Ganó el Ángel muriendo la primera noche?
     let winner: WinnerId | null = null;
     if (game.night === 1 && res.deaths.some((d) => d.role === 'angel')) winner = 'angel';
-    if (!winner) winner = checkWinner(res.players, game);
+    if (!winner) winner = checkWinner(res.players);
 
     game.pending = res.pendings || [];
     if ((g.settings || {}).alguacil && game.dayNum === 1) {
@@ -824,7 +824,7 @@ export async function hunterShoot(targetId: string | null): Promise<void> {
     game.pending = game.pending.slice(1);
     if (!targetId) {
       game.log!.push({ kind: 'evento', txt: `🏹 ${hunter?.name || 'El Cazador'} decide no disparar su última flecha.` });
-      const w = checkWinner(ps, game);
+      const w = checkWinner(ps);
       if (w) { game.winner = w; game.phase = 'end'; }
       return { game };
     }
@@ -841,8 +841,7 @@ export async function hunterShoot(targetId: string | null): Promise<void> {
     game.pending = (chain.pendings || []).concat(game.pending);
     game.powersLost = chain.powersLost;
     game.wolfDeathOccurred = game.wolfDeathOccurred || chain.wolfDeath;
-    if (chain.rust) game.caballeroRust = chain.rust;
-    const w = checkWinner(copy, game);
+    const w = checkWinner(copy);
     if (w) { game.winner = w; game.phase = 'end'; }
     return { game, playerPatches: diffPlayers(ps, copy) };
   });

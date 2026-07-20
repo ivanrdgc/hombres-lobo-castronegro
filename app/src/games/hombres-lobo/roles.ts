@@ -112,7 +112,7 @@ export const ROLES = {
   },
   caballero: {
     id: 'caballero', name: 'El Caballero de la Espada Oxidada', emoji: '⚔️', team: 'pueblo', expansion: 'personajes',
-    desc: 'Si los lobos lo devoran, el primer lobo hacia su izquierda (según el orden de la mesa) muere infectado por el óxido al amanecer siguiente.',
+    desc: 'Si los lobos lo devoran, el primer lobo hacia su izquierda (según el orden de la mesa) muere infectado por el óxido en ese mismo amanecer.',
   },
   juez: {
     id: 'juez', name: 'El Juez Tartamudo', emoji: '⚖️', team: 'pueblo', expansion: 'personajes',
