@@ -115,9 +115,9 @@ export const ROLE_HELP: Record<RoleId, RoleHelp> = {
   gaitero: {
     when: 'Cada noche, el último',
     steps: [
-      'Cada noche, al final, la voz te llama: toca a dos jugadores para encantarlos con tu música.',
-      'Cierras los ojos y la voz llamará a los encantados por sus PALABRAS CLAVE: cada uno lo confirma en su móvil sin saber quién eres.',
-      'Ganas en solitario si todos los vivos acaban encantados.',
+      'Cada noche, al final, la voz te llama: toca a dos jugadores para encantarlos con tu música (puedes encantarte a ti mismo).',
+      'Cierras los ojos y la voz llamará a los encantados por sus PALABRAS CLAVE: cada uno lo confirma en su móvil sin saber quién eres. Cada palabra pronunciada se quema y se renueva.',
+      'Ganas en solitario si todos los DEMÁS vivos acaban encantados.',
     ],
   },
   gitana: {

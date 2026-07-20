@@ -281,16 +281,47 @@ test('auditoría: la paridad no cierra con el Lobo Blanco vivo (su caza puede to
   assert.equal(checkWinner(ps2), 'lobos');
 });
 
-test('auditoría: enamorados del MISMO bando ganan con su bando (la etiqueta lo refleja)', () => {
+test('si solo quedan los enamorados gana el amor (y Cupido con ellos), sea cual sea el bando', () => {
   const dosAldeanos = mkPlayers(['aldeano', 'vidente']);
   dosAldeanos.forEach((p) => (p.lover = true));
-  assert.equal(checkWinner(dosAldeanos), 'pueblo');
+  assert.equal(checkWinner(dosAldeanos), 'enamorados');
   const dosLobos = mkPlayers(['hombre_lobo', 'hombre_lobo']);
   dosLobos.forEach((p) => (p.lover = true));
-  assert.equal(checkWinner(dosLobos), 'lobos');
+  assert.equal(checkWinner(dosLobos), 'enamorados');
   const mixta = mkPlayers(['hombre_lobo', 'vidente']);
   mixta.forEach((p) => (p.lover = true));
   assert.equal(checkWinner(mixta), 'enamorados');
+});
+
+test('la partida de Cupido: devorado la noche 1, lobo linchado, quedan los enamorados → enamorados', () => {
+  // El caso real de la mesa: 4 jugadores — lobo (p0), cazador (p1), bruja (p2)
+  // y Cupido (p3). Cupido enamora a cazador y bruja; los lobos lo devoran a él
+  // la noche 1 y el pueblo lincha al lobo el día 1: quedan solo los enamorados.
+  const players = mkPlayers(['hombre_lobo', 'cazador', 'bruja', 'cupido']);
+  players[1].lover = true;
+  players[2].lover = true;
+  const g1 = mkGame({ night: 1, acts: { wolfVictim: 'p3' } });
+  const dawn1 = resolveDawn(g1, players);
+  assert.ok(dawn1.deaths.some((d) => d.pid === 'p3' && d.cause === 'lobos'), 'Cupido devorado');
+  assert.equal(checkWinner(dawn1.players), null, 'con el lobo vivo la partida sigue');
+  const g2 = mkGame({ night: 1, dayNum: 1, votesLeft: 1 });
+  const vote = resolveVote(g2, dawn1.players, 'p0')!;
+  assert.equal(vote.winner, 'enamorados', 'solo quedan los enamorados: gana el amor (y Cupido)');
+});
+
+test('gaitero: puede encantarse a sí mismo y su victoria solo exige a los DEMÁS vivos', () => {
+  // Auto-encantado o no, da igual: la condición ignora su propio estado.
+  const ps = mkPlayers(['gaitero', 'aldeano', 'hombre_lobo']);
+  ps[1].charmed = true;
+  ps[2].charmed = true;
+  assert.equal(checkWinner(ps), 'gaitero');
+  ps[0].charmed = true; // gaitero auto-encantado: nada cambia
+  assert.equal(checkWinner(ps), 'gaitero');
+  // Y si aún queda alguien sin encantar, no hay victoria del gaitero.
+  const ps2 = mkPlayers(['gaitero', 'aldeano', 'hombre_lobo']);
+  ps2[0].charmed = true;
+  ps2[2].charmed = true;
+  assert.equal(checkWinner(ps2), null);
 });
 
 test('caballero: el lobo sentenciado por el óxido no gana por paridad y muere la noche siguiente', () => {
@@ -316,6 +347,27 @@ test('caballero: el lobo sentenciado por el óxido no gana por paridad y muere l
   assert.ok(dawn2.deaths.some((d) => d.pid === 'p0' && d.cause === 'oxido'), 'el lobo cae por el óxido');
   assert.equal(dawn2.gameUpdates.caballeroRust, null, 'el rust se consume');
   assert.equal(checkWinner(dawn2.players, { caballeroRust: dawn2.gameUpdates.caballeroRust }), 'pueblo');
+});
+
+test('caballero: el óxido cae aunque el día no linche y el lobo muerda esa noche (flujo real)', () => {
+  // La partida reportada en la mesa: 4 jugadores, 1 lobo. Noche 1: el lobo
+  // devora al Caballero. Día 1: nadie linchado. Noche 2: el lobo muerde a otro
+  // aldeano. Amanecer 2: cae la víctima Y el óxido reclama al lobo.
+  const players = mkPlayers(['hombre_lobo', 'caballero', 'aldeano', 'aldeano']);
+  const g1 = mkGame({ night: 1, acts: { wolfVictim: 'p1' } });
+  const dawn1 = resolveDawn(g1, players);
+  assert.deepEqual(dawn1.gameUpdates.caballeroRust, { wolfId: 'p0' });
+  // Persistencia como en la app real: Object.assign(game, gameUpdates).
+  const g2 = mkGame({ night: 1, dayNum: 1, votesLeft: 1, caballeroRust: dawn1.gameUpdates.caballeroRust });
+  const vote = resolveVote(g2, dawn1.players, 'nadie')!;
+  assert.equal(vote.winner, null);
+  Object.assign(g2, vote.gameUpdates);
+  assert.deepEqual(g2.caballeroRust, { wolfId: 'p0' }, 'el óxido sobrevive a un día sin linchamiento');
+  const g3 = mkGame({ night: 2, caballeroRust: g2.caballeroRust, acts: { wolfVictim: 'p2' } });
+  const dawn2 = resolveDawn(g3, vote.players);
+  assert.ok(dawn2.deaths.some((d) => d.pid === 'p2' && d.cause === 'lobos'), 'la víctima nocturna cae');
+  assert.ok(dawn2.deaths.some((d) => d.pid === 'p0' && d.cause === 'oxido'), 'y el óxido reclama al lobo ese mismo amanecer');
+  assert.equal(checkWinner(dawn2.players), 'pueblo');
 });
 
 test('resolveDawn: la marca del cuervo se anuncia al amanecer', () => {

@@ -20,6 +20,11 @@
 <div class="winbanner card">
   <span class="wemoji">{(winnerLabel || '🏁').slice(0, 2)}</span>
   <h2>{winnerLabel || 'Fin de la partida'}</h2>
+  {#if game.winner === 'enamorados' && players.some((p) => p.role === 'cupido')}
+    <!-- Regla oficial: si los enamorados ganan, Cupido gana con ellos (viva o
+         muerto): la pareja fue obra de sus flechas. -->
+    <p class="hint">💘 Cupido comparte la victoria: la pareja fue obra de sus flechas.</p>
+  {/if}
 </div>
 <div class="card"><h3>🎭 Los roles eran…</h3><div class="players">
   {#each players as p (p.id)}

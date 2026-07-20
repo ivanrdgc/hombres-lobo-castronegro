@@ -1,7 +1,7 @@
 // Motor del juego (modo automático): pasos de la noche, resolución del amanecer,
 // votaciones del día y condiciones de victoria. Módulo puro (testeable en Node).
 // Port literal de public/js/engine.js (v1); solo se añaden tipos.
-import { ROLES, isWolfSide, effectiveTeam, aliveNeighbors } from './roles';
+import { ROLES, isWolfSide, aliveNeighbors } from './roles';
 import type { RoleId } from './roles';
 import type {
   Acts, CaballeroRust, Composition, DeathCause, DeathNote, DeathRecord, GamePlayer, LogEntry,
@@ -513,14 +513,9 @@ export function checkWinner(
 
   if (alive.length === 1 && alive[0].role === 'lobo_albino') return 'lobo_albino';
   if (alive.length === 2 && alive.every((p) => p.lover)) {
-    // Pareja de bandos distintos: gana el amor. Del mismo bando: ganan CON su
-    // bando (regla oficial), y la etiqueta del final lo refleja.
-    const ta = effectiveTeam(alive[0]);
-    const tb = effectiveTeam(alive[1]);
-    if (ta !== tb) return 'enamorados';
-    if (ta === 'lobos') return 'lobos';
-    if (ta === 'pueblo') return 'pueblo';
-    return 'enamorados'; // dos solitarios: el amor decide
+    // Si solo quedan los enamorados, gana el amor — sea cual sea el bando de
+    // la pareja — y Cupido comparte su victoria: la historia es obra suya.
+    return 'enamorados';
   }
   const gaitero = alive.find((p) => p.role === 'gaitero');
   if (gaitero && alive.every((p) => p.id === gaitero.id || p.charmed)) return 'gaitero';

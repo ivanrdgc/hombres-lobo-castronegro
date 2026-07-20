@@ -66,7 +66,10 @@
   }
 
   function gaiteroCharm() {
-    const targets = players.filter((p) => p.alive && !p.charmed && p.id !== my.id);
+    // El Gaitero puede encantarse a sí mismo (regla de la casa: todos los roles
+    // pueden incluirse salvo prohibición oficial expresa). Su victoria no lo
+    // necesita — exige a todos los DEMÁS vivos — pero es una jugada legal.
+    const targets = players.filter((p) => p.alive && !p.charmed);
     const maxSel = Math.min(2, targets.length);
     const s = selIds(key);
     if (s.length !== maxSel) { needSel(); return; }
@@ -309,17 +312,18 @@
     </div>
   {/if}
 {:else if stepId === 'gaitero'}
-  {@const targets = players.filter((p) => p.alive && !p.charmed && p.id !== my.id)}
+  {@const targets = players.filter((p) => p.alive && !p.charmed)}
   {@const maxSel = Math.min(2, targets.length)}
   <div class="actionpanel"><h3>🎶 El Gaitero</h3>
-    <p class="hint">Encanta a {maxSel} jugador{maxSel > 1 ? 'es' : ''} con tu música.</p>
-    <ActionGrid {players} max={maxSel} selKey={key} canPick={(p) => !p.charmed && p.id !== my.id} />
+    <p class="hint">Encanta a {maxSel} jugador{maxSel > 1 ? 'es' : ''} con tu música (puedes encantarte a ti mismo).</p>
+    <ActionGrid {players} max={maxSel} selKey={key} canPick={(p) => !p.charmed} />
     <button class="violet block" data-a="act-gaitero" disabled={sel.length !== maxSel} onclick={gaiteroCharm}>🎶 {sel.length === maxSel ? `Encantar a ${selNames.join(' y ')}` : `Encantar (elige ${maxSel})`}</button>
   </div>
 {:else if stepId === 'encantados'}
   {@const others = players.filter((p) => p.alive && p.charmed && p.id !== my.id)}
   <div class="actionpanel"><h3>🎶 El Gaitero te ha encantado</h3>
     <p class="hint">{#if others.length}Abrid los ojos con disimulo y reconoceos. Encantados: <b>{others.map((p) => p.name).join(', ')}</b>. Si todo el pueblo acaba encantado, el Gaitero gana. Cuando os hayáis reconocido, confirmad.{:else}Eres el único encantado por ahora. Si todo el pueblo acaba encantado, el Gaitero gana. Confirma y la noche sigue.{/if}</p>
+    <p class="hint">🔑 Tu palabra clave acaba de sonar, así que queda <b>quemada</b>: al confirmar recibirás una <b>nueva</b> y la verás en esta pantalla.</p>
     <button class="primary block" data-a="act-encantado-ok" onclick={() => guard(A.confirmEncantado)}>🎶 Entendido</button>
   </div>
 {:else if stepId === 'gitana'}
