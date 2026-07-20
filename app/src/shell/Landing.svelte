@@ -52,4 +52,7 @@
   </div>
   <button class="primary block" data-a="create-group" onclick={crear}>🪑 Crear la mesa</button>
   <p class="small-note">Comparte luego el enlace y cada amigo entra desde su móvil. Los usuarios y el orden de asiento se configuran una vez y sirven para todos los juegos. ¿Te han invitado? Abre directamente el enlace que te hayan pasado.</p>
+  <!-- Sello del build a la vista: si un móvil enseña una fecha vieja, está
+       sirviendo caché y cualquier «bug» debe verificarse tras recargar. -->
+  <p class="small-note" style="text-align:center;opacity:.55">{__APP_VERSION__}</p>
 </div>

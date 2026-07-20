@@ -27,12 +27,18 @@ Estados: 🔴 abierto · 🟢 arreglado (con commit) · 🟡 re-reportado tras u
   la noche siguiente», anunciado al amanecer 2), pero ese retardo es invisible en la app y para la
   mesa equivale a «no funciona». Iván descartó también la hipótesis de la mesa redonda: el recorrido
   hacia la izquierda ya da la vuelta (`(idx+d)%n`, con test).
-- **2026-07-20 · 🟢 cerrado como REGLA DE LA MESA** (este commit): el óxido responde EN EL ACTO —
+- **2026-07-20 · 🟢 cerrado como REGLA DE LA MESA** (`8fee7ea`): el óxido responde EN EL ACTO —
   el primer lobo hacia la izquierda del caballero muere en el MISMO amanecer, dentro de la cadena de
   muertes (como el disparo del cazador). Desviación deliberada del oficial, decidida tras tres
   reportes idénticos. Se desmonta todo el mecanismo demorado (`caballeroRust`) y la excepción de
   paridad que lo acompañaba; textos del rol actualizados; e2e nuevo `e2e-caballero.mjs` que reproduce
   la partida de la crónica contra la app desplegada.
+- **2026-07-21 · 🟡 re-reportado (4ª vez) → era CACHÉ del móvil.** Verificado que ambas URLs servían
+  el build nuevo (grep del bundle desplegado) y el e2e en verde; Iván recargó de verdad y confirmó:
+  «era cache. Funciona!». Las cabeceras ya eran correctas (html `no-cache`, assets inmutables); el
+  culpable fue una pestaña abierta de antes del despliegue. Prevención: el sello del build (fecha y
+  hora) ahora está visible al pie de la portada y de la mesa — ante cualquier reporte, comprobar
+  primero ese sello.
 
 ## B2 · Gaitero: llamaba a los mismos encantados con la misma palabra clave cada noche
 - **2026-07-19 · reporte.** Repetir la palabra delataba al encantado de noches anteriores.
