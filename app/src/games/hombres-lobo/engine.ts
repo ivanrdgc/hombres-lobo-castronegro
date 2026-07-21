@@ -653,20 +653,28 @@ export function annotateDeaths(
 }
 
 // La palabra clave se «quema» al pronunciarse en una llamada (enamorados,
-// encantados): se renueva desde la reserva y se avisa al jugador en su panel.
-// Así, si más adelante hay que volver a identificarlo en oculto, la palabra
-// pronunciada antes no permite atar cabos. Devuelve un playerPatch (o {}).
-export function rotateKeyword(
-  game: { keywordsActive?: boolean; kwPool?: string[]; kwIdx?: number; night?: number },
-  players: { id: string; keyword?: string | null }[],
-  pid: string,
-): Record<string, { keyword: string; kwRenewedNight?: number }> {
+// encantados). En cuanto la música va a sonar se RESERVA la palabra nueva de
+// cada llamado (kwNext, desde la reserva): así su panel la enseña JUNTO al
+// botón de confirmar, mientras la llamada en voz alta sigue usando la vieja.
+// El relevo (keyword ← kwNext) se consuma al confirmar, en actions. Una
+// reserva sin consumar (paso saltado) se reutiliza la noche siguiente.
+export function reserveNextKeywords(
+  game: { keywordsActive?: boolean; kwPool?: string[]; kwIdx?: number },
+  players: { id: string; keyword?: string | null; kwNext?: string | null }[],
+  pids: string[],
+): Record<string, { kwNext: string }> {
   const pool = game.kwPool || [];
-  const idx = game.kwIdx || 0;
-  const me = players.find((p) => p.id === pid);
-  if (!game.keywordsActive || !me || !me.keyword || idx >= pool.length) return {};
-  game.kwIdx = idx + 1;
-  return { [pid]: { keyword: pool[idx], kwRenewedNight: game.night } };
+  const patches: Record<string, { kwNext: string }> = {};
+  if (!game.keywordsActive) return patches;
+  for (const pid of pids) {
+    const p = players.find((x) => x.id === pid);
+    if (!p || !p.keyword || p.kwNext) continue;
+    const idx = game.kwIdx || 0;
+    if (idx >= pool.length) continue; // reserva agotada: la palabra queda fija
+    game.kwIdx = idx + 1;
+    patches[pid] = { kwNext: pool[idx] };
+  }
+  return patches;
 }
 
 // Efecto del ángel devorado la primera noche.

@@ -68,6 +68,9 @@ export interface GamePlayer {
   modelId?: string | null;
   sect?: string;
   keyword?: string | null;
+  /** Palabra RESERVADA al sonar la música: se enseña junto al botón de
+   *  confirmar y sustituye a keyword al confirmar (kwNext → keyword). */
+  kwNext?: string | null;
   kwRenewedNight?: number;
   causeOfDeath?: DeathCause | null;
   deathAt?: number | null;

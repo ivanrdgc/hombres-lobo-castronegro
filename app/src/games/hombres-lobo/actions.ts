@@ -14,7 +14,7 @@ import { dealRoles, ROLES, isWolfSide, isWolfTeamRole, OFFICIAL_MIN_PLAYERS, CAS
 import type { RoleDef, RoleId } from './roles';
 import {
   computeNightSteps, stepActors, resolveDawn, resolveVote, applyDeathsChain,
-  checkWinner, annotateDeaths, rotateKeyword, GITANA_QUESTIONS,
+  checkWinner, annotateDeaths, reserveNextKeywords, GITANA_QUESTIONS,
 } from './engine';
 import type { GameState, StepId, WinnerId } from './types';
 
@@ -129,7 +129,7 @@ export async function startGame(mode: 'auto' | 'manual' | 'guiado', narratorId: 
         inGame: true, role: roleId, alive: true, roleSeen: false, order: p.order,
         lover: false, charmed: false, infected: false, transformed: false,
         revealedTonto: false, ancianoHit: false, protectedLast: null,
-        modelId: null, wolfSide: null, sect: sectOf[p.id], keyword: kwOf[p.id] || null,
+        modelId: null, wolfSide: null, sect: sectOf[p.id], keyword: kwOf[p.id] || null, kwNext: null,
         causeOfDeath: null, deathAt: null, actorPower: null, actorUsed: [], videnteLog: [],
         powers: { heal: true, poison: true, infect: true, zorro: true, juez: true },
       }));
@@ -214,7 +214,7 @@ export async function backToLobby(mid?: string): Promise<void> {
       inGame: false, role: null, alive: null, roleSeen: false, lover: false,
       charmed: false, infected: false, transformed: false, revealedTonto: false,
       ancianoHit: false, protectedLast: null, modelId: null, wolfSide: null,
-      sect: null, keyword: null, causeOfDeath: null, deathAt: null, actorPower: null, actorUsed: null, powers: null, videnteLog: null,
+      sect: null, keyword: null, kwNext: null, causeOfDeath: null, deathAt: null, actorPower: null, actorUsed: null, powers: null, videnteLog: null,
     }));
   }
   batch.delete(mref(slug, id));
@@ -524,19 +524,30 @@ export const actLadron = (roleIdx: number | null) => nightAction('ladron', (game
   return { playerPatches: { [myId]: { role: chosen } } };
 });
 
-export const actCupido = (a: string, b: string) => nightAction('cupido', (game) => {
+export const actCupido = (a: string, b: string) => nightAction('cupido', (game, ps) => {
   game.acts.cupidoPair = [a, b];
-  return { playerPatches: { [a]: { lover: true }, [b]: { lover: true } } };
+  const patches: Record<string, Partial<PlayerDoc>> = { [a]: { lover: true }, [b]: { lover: true } };
+  // Su llamada nocturna quemará sus palabras, que solo deben renovarse si
+  // podrán volver a sonar: es decir, si el Gaitero está REALMENTE repartido
+  // (una llamada de encantamiento podría nombrarlos más adelante). La reserva
+  // se hace YA (kwNext) para enseñar la palabra nueva en la misma pantalla de
+  // confirmación; la llamada en voz alta usa la vieja.
+  const gaiteroDealt = (game.composition || {}).gaitero! > 0 || ps.some((p) => p.role === 'gaitero');
+  if (gaiteroDealt) {
+    for (const [pid, r] of Object.entries(reserveNextKeywords(game, ps, [a, b]))) {
+      patches[pid] = { ...patches[pid], ...r };
+    }
+  }
+  return { playerPatches: patches };
 });
 
 export const confirmLover = () => nightAction('enamorados', (game, ps, myId) => {
   game.acts.loversSeen = { ...(game.acts.loversSeen || {}), [myId]: true };
-  // La palabra del enamorado solo debe renovarse si podrá volver a sonar: es
-  // decir, si el Gaitero está REALMENTE repartido (una llamada de encantamiento
-  // podría nombrarlo más adelante). Las llamadas falsas usan señuelos, y sin
-  // gaitero en juego nadie volverá a pronunciarla: se queda fija.
-  const gaiteroDealt = (game.composition || {}).gaitero! > 0 || ps.some((p) => p.role === 'gaitero');
-  return { playerPatches: gaiteroDealt ? rotateKeyword(game, ps, myId) : {} };
+  // El relevo de palabra (si Cupido reservó kwNext: gaitero en juego) se
+  // consuma al confirmar: el jugador ya la ha leído en su pantalla.
+  const me = ps.find((p) => p.id === myId);
+  if (me?.kwNext) return { playerPatches: { [myId]: { keyword: me.kwNext, kwNext: null, kwRenewedNight: game.night } } };
+  return { playerPatches: {} };
 });
 
 export const actNinoSalvaje = (pid: string | null) => nightAction('nino_salvaje', (game, ps, myId) => ({
@@ -678,20 +689,30 @@ export const actBruja = (healPid: string | null, poisonPid: string | null) => ni
   return { playerPatches: { [myId]: { powers } } };
 });
 
-export const actGaitero = (targets: string[]) => nightAction('gaitero', (game) => {
+export const actGaitero = (targets: string[]) => nightAction('gaitero', (game, ps) => {
   game.acts.gaiteroTargets = targets || [];
   // Los encantados lo son desde ya: el paso siguiente los "despierta" por sus palabras clave.
   const patches: Record<string, Partial<PlayerDoc>> = {};
   for (const pid of targets || []) patches[pid] = { charmed: true };
+  // La música va a sonar y quemará las palabras de TODOS los encantados
+  // (despiertan cada noche, como en el juego de mesa): se reserva YA la
+  // palabra nueva de cada uno (kwNext), para enseñarla en la MISMA pantalla
+  // de confirmación. La llamada en voz alta usa la palabra vieja; el relevo
+  // se consuma al confirmar.
+  const charmed = new Set([...(targets || []), ...ps.filter((p) => p.alive && p.charmed).map((p) => p.id)]);
+  for (const [pid, r] of Object.entries(reserveNextKeywords(game, ps, [...charmed]))) {
+    patches[pid] = { ...(patches[pid] || {}), ...r };
+  }
   return { playerPatches: patches };
 });
 
 export const confirmEncantado = () => nightAction('encantados', (game, ps, myId) => {
   game.acts.encantadosSeen = { ...(game.acts.encantadosSeen || {}), [myId]: true };
-  // Los encantados se despiertan TODAS las noches que el Gaitero actúa (como
-  // en el juego de mesa): su palabra acaba de sonar y volverá a hacer falta,
-  // así que rota desde la reserva (política de palabras de un solo uso).
-  return { playerPatches: rotateKeyword(game, ps, myId) };
+  // El relevo de palabra (kwNext, reservado al sonar la música) se consuma al
+  // confirmar: el jugador ya la ha leído junto al botón.
+  const me = ps.find((p) => p.id === myId);
+  if (me?.kwNext) return { playerPatches: { [myId]: { keyword: me.kwNext, kwNext: null, kwRenewedNight: game.night } } };
+  return { playerPatches: {} };
 });
 
 export const actGitana = (qIdx: number | null) => nightAction('gitana', (game) => {

@@ -10,7 +10,7 @@ import {
 import type { RoleId } from './roles';
 import {
   computeNightSteps, stepActors, resolveDawn, resolveVote, applyDeathsChain, checkWinner,
-  rotateKeyword, stepNeedsGhostAnnounce, annotateDeaths,
+  reserveNextKeywords, stepNeedsGhostAnnounce, annotateDeaths,
 } from './engine';
 import type { GamePlayer, GameState } from './types';
 import { narr, outro, loveDeathLine } from './texts/corpus';
@@ -749,26 +749,29 @@ test('applyDeathsChain: el castigo del Anciano desarma al Cazador', () => {
   assert.ok(res2.pendings.some((pd) => pd.type === 'cazador'));
 });
 
-test('rotateKeyword: solo se usa cuando la palabra puede volver a sonar (gaitero repartido)', () => {
-  // La condición vive en actions.confirmLover: con gaitero repartido rota;
-  // sin él, la palabra queda fija. Aquí se comprueba el mecanismo puro.
-  const game = { keywordsActive: true, kwPool: ['Faro de Bruma'], kwIdx: 0, night: 1 };
+test('reserveNextKeywords: reserva la palabra nueva ANTES de confirmar (misma pantalla)', () => {
+  // La reserva ocurre cuando la música va a sonar (actGaitero/actCupido): el
+  // panel enseña kwNext junto al botón y el relevo se consuma al confirmar.
+  const game = { keywordsActive: true, kwPool: ['Faro de Bruma'], kwIdx: 0 };
   const players = [{ id: 'p1', keyword: 'Luna de Plata' }];
-  assert.equal(rotateKeyword(game, players, 'p1').p1.keyword, 'Faro de Bruma');
+  assert.deepEqual(reserveNextKeywords(game, players, ['p1']), { p1: { kwNext: 'Faro de Bruma' } });
+  assert.equal(game.kwIdx, 1);
+  // Una reserva sin consumar (paso saltado) se reutiliza: no gasta otra palabra.
+  const players2 = [{ id: 'p1', keyword: 'Luna de Plata', kwNext: 'Faro de Bruma' }];
+  assert.deepEqual(reserveNextKeywords(game, players2, ['p1']), {});
+  assert.equal(game.kwIdx, 1);
 });
 
-test('rotateKeyword: renueva desde la reserva y avisa; sin reserva no rompe', () => {
-  const game = { keywordsActive: true, kwPool: ['Faro de Bruma', 'Puente de Hielo'], kwIdx: 0, night: 2 };
+test('reserveNextKeywords: varios llamados a la vez; sin reserva no rompe', () => {
+  const game = { keywordsActive: true, kwPool: ['Faro de Bruma', 'Puente de Hielo'], kwIdx: 0 };
   const players = [{ id: 'p1', keyword: 'Luna de Plata' }, { id: 'p2', keyword: 'Brasa de Otoño' }];
-  const patch1 = rotateKeyword(game, players, 'p1');
-  assert.deepEqual(patch1, { p1: { keyword: 'Faro de Bruma', kwRenewedNight: 2 } });
-  assert.equal(game.kwIdx, 1);
-  const patch2 = rotateKeyword(game, players, 'p2');
-  assert.equal(patch2.p2.keyword, 'Puente de Hielo');
+  const patches = reserveNextKeywords(game, players, ['p1', 'p2']);
+  assert.deepEqual(patches, { p1: { kwNext: 'Faro de Bruma' }, p2: { kwNext: 'Puente de Hielo' } });
+  assert.equal(game.kwIdx, 2);
   // Reserva agotada: no cambia nada (mejor palabra usada que ninguna).
-  assert.deepEqual(rotateKeyword(game, players, 'p1'), {});
+  assert.deepEqual(reserveNextKeywords(game, [{ id: 'p3', keyword: 'Roble Viejo' }], ['p3']), {});
   // Sin palabras clave activas: no-op.
-  assert.deepEqual(rotateKeyword({ keywordsActive: false, kwPool: ['X'], kwIdx: 0 }, players, 'p1'), {});
+  assert.deepEqual(reserveNextKeywords({ keywordsActive: false, kwPool: ['X'], kwIdx: 0 }, players, ['p1']), {});
 });
 
 test('resolveDawn: el oso también se anuncia por voz (osoAnnounce)', () => {

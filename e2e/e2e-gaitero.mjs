@@ -131,7 +131,12 @@ try {
         const pg = pages[p.name.toLowerCase()];
         const seen = await pg.waitForSelector('button[data-a=act-encantado-ok]', { timeout: 12000 }).then(() => true).catch(() => false);
         check(seen, `el encantado ${p.name} ve el botón de confirmar`);
-        if (seen) await pg.click('button[data-a=act-encantado-ok]');
+        if (seen) {
+          // La palabra NUEVA (kwNext) se enseña en la MISMA pantalla, junto al botón.
+          const conNueva = await pg.locator('.actionpanel:has-text("NUEVA")').count();
+          check(conNueva >= 1, `${p.name} ve su palabra nueva JUNTO al botón, antes de confirmar`);
+          await pg.click('button[data-a=act-encantado-ok]');
+        }
         await pg.waitForTimeout(150);
       }
       sawEncantados = true;
