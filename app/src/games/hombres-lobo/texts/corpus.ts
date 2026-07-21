@@ -371,6 +371,16 @@ export const COMPO: Record<string, string[][]> = {
       'Una melodía vieja como el bosque se enrosca en las chimeneas.',
     ],
   ],
+  infectado: [
+    [
+      'Algo se remueve en la sangre de Castronegro.',
+      'Un aliento gélido recorre las camas del pueblo.',
+      'Un escalofrío cruza el pueblo de puerta en puerta.',
+      'La luna se asoma entre las nubes, como si buscara a alguien.',
+      'Esta noche la oscuridad pesa un poco más de lo habitual.',
+      'Algo antiguo husmea entre los postigos cerrados.',
+    ],
+  ],
   lobo_feroz: [
     [
       'Gran Lobo Feroz, despierta otra vez.',
@@ -970,6 +980,11 @@ export const OUTROS: Record<string, string[]> = {
     'La manada cierra los ojos, con la elección hecha y el hambre en pausa.',
     'Los hombres lobo vuelven a dormir; el bosque guarda su secreto.',
   ],
+  infectado: [
+    'La noche guarda el secreto de la sangre nueva… si es que la hubo.',
+    'Castronegro sigue durmiendo, ajeno a lo que corre por sus venas.',
+    'La luna vuelve a esconderse; lo que sea que haya pasado, queda sellado.',
+  ],
   lobo_feroz: [
     'El Gran Lobo Feroz vuelve a cerrar los ojos, saciado… ¿o no?',
     'El Gran Lobo Feroz se relame y cierra los ojos: por hoy, basta.',
@@ -1181,6 +1196,8 @@ export const NAGS: Record<string, string[]> = {
     'Cuervo, tus plumas pesan… suéltalas sobre algún tejado.'],
   lobos_reconocen: ['Lobos, abrid los ojos, reconoceos… y confirmadlo en vuestro dispositivo.',
     'La manada aún no se ha reconocido del todo… lobos, miraos y confirmad.'],
+  infectado: ['La llamada de la sangre sigue esperando… si has oído tu palabra, abre los ojos con disimulo, mira tu pantalla y confirma.',
+    'Alguien no ha respondido aún a la llamada de la noche… quien haya oído su palabra, que mire su pantalla y confirme.'],
   lobos: ['Los hombres lobo se lo están pensando… la manada debe elegir a su víctima.',
     'Se oye a la manada deliberar… hombres lobo, el hambre no espera: elegid.',
     'Los lobos afilan sus garras, indecisos… ¿quién caerá esta noche?',
@@ -1217,6 +1234,12 @@ export function nagEncantadosKw(kws: string[]): string {
   return `La melodía del Gaitero sigue sonando… Repito las palabras clave: … ${kws.join('… y ')}. Quien oiga la suya, que abra los ojos con disimulo, mire su pantalla y confirme.`;
 }
 
+// Recordatorio de la llamada del Infecto: repite las DOS palabras (la real y
+// el señuelo van juntas siempre; señalar solo una delataría cuál es la real).
+export function nagInfectadoKw(kws: string[]): string {
+  return `La sangre nueva aún no ha despertado… Repito las palabras: … ${kws.join('… y ')}. Quien oiga la suya, que abra los ojos con disimulo, mire su pantalla y confirme.`;
+}
+
 // Las llamadas por palabra clave se dicen en DOS partes: una fija (que se
 // pre-genera y suena al instante) y otra con las palabras clave (dinámica).
 export const ENAMORADOS_INTRO =
@@ -1239,6 +1262,11 @@ export function enamoradosFake(kws: string[]): string {
 // exactamente las mismas piezas (en la v1 diferían: un «tell» aprendible).
 export const ENC_FRAME =
   'Todos con los ojos cerrados. Si oyes tu palabra clave, la música te ha atrapado: abre los ojos con disimulo, mira tu pantalla y confirma.';
+
+// Marco fijo de la llamada del Infecto Padre de los Lobos: suena idéntico haya
+// o no infección (con señuelos cuando no la hay). Nunca revela nada.
+export const INF_FRAME =
+  'Todos con los ojos cerrados. Si oyes tu palabra clave, la noche tiene un mensaje para ti: abre los ojos con disimulo, mira tu pantalla y confirma en silencio.';
 export const KW_LEAD = 'Escuchad las palabras:';
 export const ENAMORADOS_TAIL =
   'Enamorados, reconoced en silencio a vuestro amor y confirmad en la pantalla.';
@@ -1338,7 +1366,7 @@ export function allStaticPieces(): StaticPiece[] {
   for (const [key, list] of Object.entries(IMPROV)) for (const t of list) push('improv:' + key, t);
   for (const [key, list] of Object.entries(DRAMA)) for (const t of list) push('drama:' + key, t);
   for (const t of [
-    ENAMORADOS_INTRO, ENAMORADOS_TAIL, ENC_FRAME, ENCANTADOS_TAIL, KW_LEAD,
+    ENAMORADOS_INTRO, ENAMORADOS_TAIL, ENC_FRAME, INF_FRAME, ENCANTADOS_TAIL, KW_LEAD,
     ABRID_OJOS, REFRESH_OPEN, REFRESH_CLOSE, KW_NOTE, VOICE_TEST_LINE, UNLOCK_LINE, VOICE_ON_LINE,
   ]) push('const', t);
   return out;

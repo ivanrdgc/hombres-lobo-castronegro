@@ -11,6 +11,7 @@ export const STEP_LABELS: Record<StepId, string> = {
   zorro: 'el Zorro', cuervo: 'el Cuervo', lobos_reconocen: 'la manada (reconocimiento)',
   durmiendo: 'el pueblo (durmiéndose)',
   lobos: 'los Hombres Lobo', infecto_decision: 'el Infecto Padre',
+  infectado: 'la llamada de la sangre',
   lobo_feroz: 'el Gran Lobo Feroz', lobo_albino: 'el Lobo Albino',
   bruja: 'la Bruja', gaitero: 'el Gaitero', gitana: 'la Gitana', encantados: 'los Encantados',
   amanecer: 'el amanecer',

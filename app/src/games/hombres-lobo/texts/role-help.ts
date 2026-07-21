@@ -220,8 +220,10 @@ export const ROLE_HELP: Record<RoleId, RoleHelp> = {
     when: 'Solo la primera noche',
     steps: [
       'La primera noche la voz te llama: toca a tu modelo a seguir.',
-      'Mientras tu modelo viva, eres del pueblo. Si muere, te transformas en hombre lobo EN SECRETO: tu móvil te lo dirá y la manada te reconocerá la noche siguiente.',
+      'Mientras tu modelo viva, eres del pueblo. Si muere (de noche o linchado), te transformas en hombre lobo EN SECRETO. Nadie te avisará: solo tú sabes quién era tu modelo, así que solo tú lo sabes.',
+      'Desde la noche siguiente, cuando la voz despierte a los hombres lobo, abre los ojos con ellos: tu móvil te enseñará a tu nueva manada y os reconoceréis en silencio.',
     ],
+    tip: 'Tu carta (👁 Mostrar mi rol) te recuerda si ya estás transformado.',
   },
   lobo_albino: {
     when: 'Cada noche (traición alterna)',
@@ -249,9 +251,10 @@ export const ROLE_HELP: Record<RoleId, RoleHelp> = {
     when: 'Cada noche, tras la caza',
     steps: [
       'Cazas con la manada como un lobo más.',
-      'Elegida la víctima, la voz te pregunta a ti solo: puedes INFECTARLA en vez de devorarla (una sola vez por partida).',
-      'El infectado se convierte en hombre lobo en secreto: conserva su carta y sus poderes, pero caza y gana con vosotros.',
+      'Elegida la víctima, la app te pregunta a ti solo (sin locución): puedes INFECTARLA en vez de devorarla (una sola vez por partida).',
+      'Si infectas, esa misma noche la voz despierta al mordido por su PALABRA CLAVE y le cuenta en secreto que ahora es un hombre lobo: conserva su carta y sus poderes, pero desde la noche siguiente despierta, caza y gana con vosotros.',
     ],
+    tip: 'Las noches sin infección la voz llama palabras señuelo y espera igualmente: nadie sabrá si usaste tu poder. Ojo: si la víctima estaba protegida por el Defensor, no hay mordisco… y tu poder se pierde en vano.',
   },
 };
 

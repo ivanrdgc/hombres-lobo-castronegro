@@ -269,6 +269,8 @@
   {@const pack = players.filter((p) => p.alive && isWolfSide(p))}
   <!-- La manada puede devorar a cualquiera… incluso a uno de los suyos. -->
   <div class="actionpanel"><h3>🐺 Los Hombres Lobo</h3>
+    {#if my.infected}<p class="hint">🧛 El mordisco del Padre de los Lobos te unió a la manada: conservas tu carta, pero cazas y ganas con los lobos.</p>{/if}
+    {#if my.transformed}<p class="hint">🐾 Tu modelo murió y la bestia despertó en ti: desde ahora cazas y ganas con la manada.</p>{/if}
     <p class="hint">Manada: <b>{pack.map((p) => p.name).join(', ')}</b>. Poneos de acuerdo (en silencio, con la mirada…): el primero que elija decide por todos.</p>
     <ActionGrid {players} selKey={key} />
     <button class="danger block" data-a="act-lobos" disabled={!sel1Name} onclick={() => (sel1(key) ? guard(() => A.actLobos(sel1(key))) : needSel())}>🩸 {sel1Name ? `Devorar a ${sel1Name}` : 'Devorar'}</button>
@@ -277,8 +279,24 @@
 {:else if stepId === 'infecto_decision'}
   {@const v = players.find((p) => p.id === game.acts.wolfVictim)}
   <div class="actionpanel"><h3>🧛 El Infecto Padre de los Lobos</h3>
-    <p class="hint">La manada va a devorar a <b>{v?.name || '…'}</b>. Puedes infectarlo en su lugar (una vez por partida): se unirá a los lobos en secreto.</p>
+    <p class="hint">La manada va a devorar a <b>{v?.name || '…'}</b>. Puedes infectarlo en su lugar (una vez por partida): se unirá a los lobos en secreto. Si lo haces, esta misma noche lo despertaré por su palabra clave para contárselo; las noches sin infección llamo palabras señuelo, así nadie sabrá si usaste tu poder.</p>
     <div class="btnrow"><button class="violet" data-a="act-infecto" data-p="si" onclick={() => guard(() => A.actInfecto(true))}>🧛 Infectar</button><button class="danger" data-a="act-infecto" data-p="no" onclick={() => guard(() => A.actInfecto(false))}>🩸 Devorar sin más</button></div>
+  </div>
+{:else if stepId === 'infectado'}
+  {@const infConfirmed = !!(game.acts.infectadoSeen || {})[my.id]}
+  <div class="actionpanel"><h3>🧛 El Infecto Padre de los Lobos te ha mordido</h3>
+    {#if !infConfirmed}
+      <p class="hint">NO has muerto: su mordisco te convierte en <b>hombre lobo en secreto</b>. Conservas tu carta y tus poderes, pero desde ahora cazas y ganas con la manada. La próxima noche, cuando la voz despierte a los hombres lobo, abre los ojos con ellos: os reconoceréis en silencio.</p>
+      {#if my.kwNext}
+        <!-- La llamada quemó su palabra: la NUEVA se enseña junto al botón. -->
+        <p class="hint">🔑 Te llamé por <b>«{my.keyword}»</b>: queda quemada. Tu <b>NUEVA</b> palabra clave, desde ya:</p>
+        <p style="text-align:center;font-size:1.3rem;margin:8px 0"><b>«{my.kwNext}»</b></p>
+        <p class="hint">Memorízala antes de confirmar: con ella te llamaré la próxima vez.</p>
+      {/if}
+      <button class="violet block" data-a="act-infectado-ok" onclick={() => guard(A.confirmInfectado)}>🧛 Entendido</button>
+    {:else}
+      <p class="hint">✅ Confirmado. Desde la próxima noche despiertas y cazas con la manada.{#if my.keyword} Tu palabra clave{my.kwRenewedNight === game.night ? ' (renovada)' : ''}: <b>«{my.keyword}»</b>. La tienes siempre en tu carta (👁 Mostrar mi rol).{/if}</p>
+    {/if}
   </div>
 {:else if stepId === 'lobo_feroz'}
   <div class="actionpanel"><h3>🐺🔥 El Gran Lobo Feroz</h3>

@@ -9,16 +9,17 @@ import { prewarmSynth } from '../../../core/audio/clips';
 import type { GroupDoc, PlayerDoc, Session } from '../../../core/sync/schema';
 import * as A from '../actions';
 import { ROLES } from '../roles';
-import { computeNightSteps, resolveDawn, stepActors, stepNeedsGhostAnnounce } from '../engine';
+import { computeNightSteps, infectionTonight, resolveDawn, stepActors, stepNeedsGhostAnnounce } from '../engine';
 import type { GameState, StepId } from '../types';
 import {
-  ABRID_OJOS, ENAMORADOS_INTRO, ENAMORADOS_TAIL, ENC_FRAME, ENCANTADOS_TAIL, KW_LEAD, deathLine, kwClip, narrParts,
+  ABRID_OJOS, ENAMORADOS_INTRO, ENAMORADOS_TAIL, ENC_FRAME, ENCANTADOS_TAIL, INF_FRAME, KW_LEAD,
+  deathLine, hashStr, kwClip, narrParts,
 } from '../texts/corpus';
 import {
   bienvenidaUtterance, dawnUtterance, debateUtterance, enamoradosCallUtterance, encantadosCallUtterance,
-  fillerUtterance, finUtterance, introParts, introUtterance, listosUtterance, nagUtterance, nocheCaeUtterance,
-  ocasoUtterance, outroText, outroUtterance, pendingUtterance, refreshCloseUtterance, refreshOpenUtterance,
-  shotUtterance,
+  fillerUtterance, finUtterance, infectadoCallUtterance, introParts, introUtterance, listosUtterance, nagUtterance,
+  nocheCaeUtterance, ocasoUtterance, outroText, outroUtterance, pendingUtterance, refreshCloseUtterance,
+  refreshOpenUtterance, shotUtterance,
 } from './compose';
 
 export interface Snap {
@@ -119,6 +120,7 @@ function prewarmNightTexts(game: GameState, players: PlayerDoc[], night: number)
     texts.push(...narrParts('dia_debate_tranquilo', `${game.seed}:d${night}:1`));
     if (steps.includes('enamorados')) texts.push(ENAMORADOS_INTRO, ENAMORADOS_TAIL, KW_LEAD);
     if (steps.includes('encantados')) texts.push(ENC_FRAME, ENCANTADOS_TAIL, KW_LEAD);
+    if (steps.includes('infectado')) texts.push(INF_FRAME, ENCANTADOS_TAIL, KW_LEAD);
     prewarmSynth(texts);
   } catch {
     /* la pre-generación es opcional */
@@ -264,6 +266,77 @@ async function nightStepScene(ctx: Ctx, stepId: StepId, stepIdx: number): Promis
         prewarmSynth(kwTexts(fake));
         await ctx.sayOnce(uid('fake'), () => encantadosCallUtterance(g(ctx), uid('fake'), fake, true));
         await ctx.pause('fakeConfirmHold');
+      } else {
+        await ctx.pause('deadSkip');
+        await A.advanceGhostStep(stepIdx);
+        return;
+      }
+    }
+    const ou = outroUtterance(g(ctx), stepId, den(ctx));
+    if (ou) await ctx.sayOnce(uid('outro'), () => ou);
+    await ctx.pause('advanceGap');
+    await A.advanceGhostStep(stepIdx);
+    return;
+  }
+
+  // ——— Infectado: llamada por palabra clave al mordido (real o con señuelos) ———
+  if (stepId === 'infectado') {
+    const game = g(ctx);
+    // Señuelos deterministas y SIN repetición entre noches (una palabra real
+    // nunca suena dos veces: rota al confirmarse; los señuelos, igual). La
+    // llamada falsa de encantados avanza desde el principio del mazo; esta,
+    // desde el final: calendarios separados.
+    const decoyPair = (): string[] => {
+      const d = (game.kwDecoys || []).slice(2);
+      if (d.length < 2) return d.slice();
+      const base = ((game.night - 1) * 2) % d.length;
+      return [d[d.length - 1 - base], d[d.length - 1 - ((base + 1) % d.length)]];
+    };
+    const pid = infectionTonight(game, ps(ctx));
+    const victim = pid ? ps(ctx).find((p) => p.id === pid) : undefined;
+    if (pid && victim?.keyword && game.keywordsActive) {
+      const confirmed = !!(game.acts.infectadoSeen || {})[pid];
+      // SIEMPRE dos palabras: la del mordido + un señuelo, en orden sorteado
+      // (que la primera no sea siempre la de verdad).
+      const pair = [victim.keyword, decoyPair()[0] || victim.keyword];
+      if (hashStr(`inf|${game.seed}|n${game.night}`) % 2) pair.reverse();
+      if (!confirmed) {
+        prewarmSynth(kwTexts(pair));
+        await ctx.sayOnce(uid('call'), () => infectadoCallUtterance(g(ctx), uid('call'), pair, false));
+        const res = await ctx.waitOrNag((s) => !actorsPending(stepId, g(ctx), inGame(s.players)), {
+          nagKey: uid('nags'),
+          escalateAfter: NAG_ESCALATE_COUNT,
+          nag: (n) => nagUtterance(g(ctx), ctx.state().players, ['infectado', ...pair].join('|'), n),
+        });
+        if (res === 'escalate') {
+          await A.startRoleRefresh();
+          return;
+        }
+      }
+      await ctx.pause('outroKnown');
+    } else if (pid) {
+      // Partida antigua sin palabras clave: no hay llamada posible. El mordido
+      // se enterará por su carta al amanecer, como hasta ahora.
+      await ctx.pause('deadSkip');
+      await A.advanceGhostStep(stepIdx);
+      return;
+    } else {
+      // Sin infección esta noche (el Infecto se la guardó, ya la gastó, o ni
+      // siquiera está): mientras la mesa no pueda descartarlo, suena una
+      // llamada FALSA con dos señuelos y una espera humana.
+      const infDealt = (game.composition?.infecto || 0) > 0 || ps(ctx).some((p) => p.role === 'infecto');
+      const infAlive = ps(ctx).some((p) => p.alive && p.role === 'infecto');
+      const fakeNeeded = game.keywordsActive
+        && (infAlive || (infDealt && !game.revealDead) || (!infDealt && !!game.fakeAllSelected));
+      if (fakeNeeded) {
+        const fake = decoyPair();
+        if (fake.length >= 2) {
+          prewarmSynth(kwTexts(fake));
+          await ctx.sayOnce(uid('fake'), () => infectadoCallUtterance(g(ctx), uid('fake'), fake, true));
+          await ctx.pause('fakeConfirmHold');
+        } else {
+          await ctx.pause('outroKnown');
+        }
       } else {
         await ctx.pause('deadSkip');
         await A.advanceGhostStep(stepIdx);

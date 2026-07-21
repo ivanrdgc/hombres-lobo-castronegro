@@ -14,7 +14,7 @@ import { dealRoles, ROLES, isWolfSide, isWolfTeamRole, OFFICIAL_MIN_PLAYERS, CAS
 import type { RoleDef, RoleId } from './roles';
 import {
   computeNightSteps, stepActors, resolveDawn, resolveVote, applyDeathsChain,
-  checkWinner, annotateDeaths, reserveNextKeywords, GITANA_QUESTIONS,
+  checkWinner, annotateDeaths, reserveNextKeywords, infectionTonight, GITANA_QUESTIONS,
 } from './engine';
 import type { GameState, StepId, WinnerId } from './types';
 
@@ -91,17 +91,21 @@ export async function startGame(mode: 'auto' | 'manual' | 'guiado', narratorId: 
       settings0.villagersCount ?? null); // 0 aldeanos es un valor válido
 
     // Palabras clave: solo hacen falta si hay roles que designan jugadores en
-    // secreto durante la noche (enamorados de Cupido, encantados del Gaitero).
-    // Con composición secreta también se fingen los roles activados que no se
-    // repartieron; para poder fingir a Cupido/Gaitero hacen falta palabras clave.
+    // secreto durante la noche (enamorados de Cupido, encantados del Gaitero,
+    // mordido del Infecto). Con composición secreta también se fingen los roles
+    // activados que no se repartieron; para fingirlos hacen falta palabras clave.
+    const KW_ROLES: RoleId[] = ['cupido', 'gaitero', 'infecto'];
     const selectedRoles = (g.extraRoles || []).filter((r) => ROLES[r]);
     const fakeAllSelected = mode === 'auto' && !settings0.showComposition;
-    const keywordsActive = mode === 'auto' && !!(composition.cupido || composition.gaitero
-      || (fakeAllSelected && selectedRoles.some((r) => r === 'cupido' || r === 'gaitero')));
+    const keywordsActive = mode === 'auto' && !!(KW_ROLES.some((r) => composition[r])
+      || (fakeAllSelected && selectedRoles.some((r) => KW_ROLES.includes(r))));
     // Se generan de sobra: una reserva para renovar las pronunciadas y un juego
     // de SEÑUELOS que jamás se asignan a nadie (para las llamadas falsas: así
-    // no se quema la palabra de ningún jugador real).
-    const kws = keywordsActive ? generateKeywords(eligible.length + 32, seed + 7) : [];
+    // no se quema la palabra de ningún jugador real). Los señuelos tampoco se
+    // repiten entre noches (una palabra real nunca suena dos veces: rota), así
+    // que se reservan de sobra: encantados avanza desde el principio del mazo
+    // y la llamada del Infecto desde el final.
+    const kws = keywordsActive ? generateKeywords(eligible.length + 44, seed + 7) : [];
     const kwOf: Record<string, string | null> = {};
     eligible.forEach((p, i) => { kwOf[p.id] = kws[i] || null; });
     const kwPool = keywordsActive ? kws.slice(eligible.length, eligible.length + 20) : [];
@@ -665,9 +669,30 @@ export const actInfecto = (use: boolean) => nightAction('infecto_decision', (gam
   if (use) {
     game.acts.infectoUsed = true;
     const p = ps.find((x) => x.id === myId)!;
-    return { playerPatches: { [myId]: { powers: { ...(p.powers || {}), infect: false } } } };
+    const patches: Record<string, Partial<PlayerDoc>> = {
+      [myId]: { powers: { ...(p.powers || {}), infect: false } },
+    };
+    // Si el contagio prospera (la víctima no estaba protegida), la llamada del
+    // paso siguiente quemará su palabra: se reserva YA la nueva (kwNext) para
+    // enseñarla en la misma pantalla de confirmación, como con el Gaitero.
+    const pid = infectionTonight(game, ps);
+    if (pid) {
+      for (const [id, r] of Object.entries(reserveNextKeywords(game, ps, [pid]))) {
+        patches[id] = { ...(patches[id] || {}), ...r };
+      }
+    }
+    return { playerPatches: patches };
   }
   return {};
+});
+
+export const confirmInfectado = () => nightAction('infectado', (game, ps, myId) => {
+  game.acts.infectadoSeen = { ...(game.acts.infectadoSeen || {}), [myId]: true };
+  // El relevo de palabra (kwNext, reservado al decidirse la infección) se
+  // consuma al confirmar: el jugador ya la ha leído junto al botón.
+  const me = ps.find((p) => p.id === myId);
+  if (me?.kwNext) return { playerPatches: { [myId]: { keyword: me.kwNext, kwNext: null, kwRenewedNight: game.night } } };
+  return { playerPatches: {} };
 });
 
 export const actFeroz = (pid: string | null) => nightAction('lobo_feroz', (game) => {
@@ -999,6 +1024,10 @@ const STEP_SKIP_DEFAULTS: Partial<Record<StepId, (g: GameState, ps: PlayerDoc[])
   cuervo: (g) => { g.acts.cuervoTarget = null; },
   lobos: (g) => { g.acts.wolfVictim = null; },
   infecto_decision: (g) => { g.acts.infectoDecided = true; },
+  infectado: (g, ps) => {
+    // El máster salta la llamada: el mordido queda por avisado (verá su carta).
+    g.acts.infectadoSeen = Object.fromEntries(ps.map((p) => [p.id, true]));
+  },
   lobo_feroz: (g) => { g.acts.ferozVictim = null; },
   lobo_albino: (g) => { g.acts.albinoVictim = null; },
   bruja: (g) => { g.acts.brujaDone = true; },

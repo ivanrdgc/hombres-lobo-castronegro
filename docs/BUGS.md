@@ -73,3 +73,20 @@ Estados: 🔴 abierto · 🟢 arreglado (con commit) · 🟡 re-reportado tras u
 - **2026-07-19 · reporte.** Misma regla general que B5.
 - **2026-07-19 · 🟢 arreglado** en `97dd711`: vidente, zorro, cuervo, actor y feroz pueden elegirse a
   sí mismos; siguen prohibidos los casos con veto oficial (niño salvaje, albino).
+
+## B7 · Infecto: el infectado no se enteraba de su conversión (y el paso delataba al Infecto)
+- **2026-07-21 · reporte.** «Cuando infecta a alguien, se debe despertar a esa persona con palabras
+  clave e informarle. La próxima noche tendrá que formar parte de los lobos y despertar cuando lo
+  hagan los otros lobos. Para disimular, aunque se decida no infectar, se tiene que llamar a dos
+  nombres aleatorios y fingir que esperas a que despierten.»
+  Estado previo: la decisión era muda, la víctima se marcaba al amanecer y solo lo descubría si
+  abría su carta (👁) — en la práctica, nunca a tiempo; y el silencio de las noches sin infección
+  habría delatado el poder si algo hubiera sonado en las noches con ella.
+- **2026-07-21 · 🟢 arreglado** (este commit): paso nuevo `infectado` («la llamada de la sangre»)
+  justo tras la decisión del Infecto. Con infección: la voz llama SIEMPRE dos palabras (la del
+  mordido + un señuelo, en orden sorteado), el mordido ve el panel con su palabra nueva junto al
+  botón y confirma; su palabra se quema y rota (kwNext), y la noche siguiente despierta con la
+  manada. Sin infección (poder guardado, ya gastado u oculto): suenan dos señuelos con espera
+  humana muestreada — indistinguible. Los señuelos del Infecto avanzan desde el FINAL del mazo
+  (los de encantados, desde el principio): ninguna palabra suena dos veces. E2E `e2e-infecto.mjs`
+  contra la app desplegada + tests de motor y de escena (paridad temporal real/falsa).

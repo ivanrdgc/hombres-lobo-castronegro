@@ -31,6 +31,7 @@
     if (!my.alive) return false;
     if (stepId === 'encantados') return !!my.charmed && !!(game.acts.encantadosSeen || {})[my.id];
     if (stepId === 'enamorados') return !!my.lover && !!(game.acts.loversSeen || {})[my.id];
+    if (stepId === 'infectado') return !!(game.acts.infectadoSeen || {})[my.id];
     return false;
   });
   const narrText = $derived.by(() => {
@@ -67,7 +68,7 @@
          (ActionGrid), sin parrilla duplicada debajo. -->
     <NightActionPanel stepId={stepId!} {group} {my} {players} />
   {:else}
-    {#if stepId === 'enamorados' || stepId === 'encantados' || stepId === 'lobos_reconocen'}
+    {#if stepId === 'enamorados' || stepId === 'encantados' || stepId === 'infectado' || stepId === 'lobos_reconocen'}
       <!-- Pasos con palabras clave o reconocimiento físico: los que no actúan
            mantienen la vista en su pantalla con esta indicación neutral. -->
       <div class="actionpanel"><h3>👂 Atención al narrador</h3>

@@ -22,6 +22,7 @@ export type StepId =
   | 'lobos_reconocen'
   | 'lobos'
   | 'infecto_decision'
+  | 'infectado'
   | 'lobo_feroz'
   | 'lobo_albino'
   | 'bruja'
@@ -104,6 +105,8 @@ export interface Acts {
   wolfBy?: string;
   infectoDecided?: boolean;
   infectoUsed?: boolean;
+  /** El infectado confirmó su despertar (paso 'infectado' de esa noche). */
+  infectadoSeen?: Record<string, boolean>;
   ferozVictim?: string | null;
   albinoVictim?: string | null;
   brujaDone?: boolean;

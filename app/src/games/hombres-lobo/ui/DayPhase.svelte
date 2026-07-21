@@ -43,7 +43,8 @@
 {:else if (game.votesLeft || 0) > 0 && !game.vote}
   <VotePanel {group} {my} {players} />
 {:else if game.vote}
-  <div class="actionpanel"><h3>⏳ Juicio en curso…</h3><p class="hint">La Sirvienta medita su decisión.</p></div>
+  <!-- Texto neutro: mencionar a la Sirvienta delataría que está en juego. -->
+  <div class="actionpanel"><h3>⏳ Juicio en curso…</h3><p class="hint">Un instante de silencio antes de revelar el destino del condenado.</p></div>
 {:else}
   <div class="card"><h3>🌆 El día ha terminado</h3>
     <p class="small-note">Comentad la jugada con calma. Cuando estéis listos, que alguien mande al pueblo a dormir.</p>

@@ -44,6 +44,7 @@ export const NIGHT_STEPS: NightStepDef[] = [
   { id: 'lobos_reconocen', roles: [], firstNight: true },
   { id: 'lobos', roles: [] },
   { id: 'infecto_decision', roles: ['infecto'], silent: true },
+  { id: 'infectado', roles: [] },
   { id: 'lobo_feroz', roles: ['lobo_feroz'] },
   { id: 'lobo_albino', roles: ['lobo_albino'], evenNights: true },
   { id: 'bruja', roles: ['bruja'] },
@@ -88,7 +89,7 @@ export function computeNightSteps(game: StepsGame, players: GamePlayer[]): StepI
     if (s.evenNights && game.night % 2 !== 0) continue;
     // Primera noche sin sangre: los lobos se reconocen, pero nadie devora.
     if (game.noKillNight1 && game.night === 1
-      && ['lobos', 'infecto_decision', 'lobo_feroz'].includes(s.id)) continue;
+      && ['lobos', 'infecto_decision', 'infectado', 'lobo_feroz'].includes(s.id)) continue;
     if (s.id === 'lobos' || s.id === 'amanecer' || s.id === 'durmiendo') { steps.push(s.id); continue; }
     if (s.id === 'lobos_reconocen') {
       // Solo hace falta presentar a la manada cuando la primera noche es sin
@@ -102,6 +103,13 @@ export function computeNightSteps(game: StepsGame, players: GamePlayer[]): StepI
     }
     if (s.id === 'encantados') {
       if (roleDealt(game, 'gaitero') || fakeSel('gaitero')) steps.push(s.id);
+      continue;
+    }
+    if (s.id === 'infectado') {
+      // La llamada al mordido existe SIEMPRE que el Infecto esté (o pueda
+      // estar) en juego: las noches sin infección suenan señuelos, para que
+      // el paso no delate si usó su poder.
+      if (roleDealt(game, 'infecto') || fakeSel('infecto')) steps.push(s.id);
       continue;
     }
     // Se incluye si el rol se repartió o si alguien lo tiene ahora (ladrón/sirvienta pueden cambiar cartas).
@@ -205,6 +213,13 @@ export function stepActors(stepId: StepId | string, game: ActorsGame, players: G
       const inf = aliveWithRole(players, 'infecto').filter((p) => (p.powers || {}).infect !== false);
       return idsOf(inf);
     }
+    case 'infectado': {
+      // Despierta (por palabra clave) SOLO la víctima infectada esta noche,
+      // para enterarse en secreto de su nueva sangre y confirmarlo.
+      const pid = infectionTonight({ acts }, players);
+      if (!pid || (acts.infectadoSeen || {})[pid]) return null;
+      return [pid];
+    }
     case 'lobo_feroz': {
       if (acts.ferozVictim !== undefined) return null;
       if (game.wolfDeathOccurred) return null;
@@ -246,6 +261,25 @@ function idsOf(arr: GamePlayer[]): string[] | null {
   return arr.length ? arr.map((p) => p.id) : null;
 }
 
+// ¿Quién queda infectado ESTA noche? (null si no hay/no prospera). El contagio
+// va en el mordisco principal: el Defensor (o el Actor-defensor) lo anula por
+// completo; la cura de la Bruja llega después y NO lo impide. Es el mismo
+// criterio que aplica resolveDawn al amanecer: aquí se adelanta para poder
+// despertar al mordido en el paso 'infectado' de esa misma noche.
+export function infectionTonight(
+  game: { acts?: Acts },
+  players: Pick<GamePlayer, 'id' | 'alive'>[],
+): string | null {
+  const acts = game.acts || {};
+  if (!acts.infectoUsed) return null;
+  const pid = acts.wolfVictim;
+  if (!pid) return null;
+  if (pid === acts.defensorTarget) return null;
+  if (acts.actor && acts.actor.power === 'defensor' && pid === acts.actor.target) return null;
+  const p = players.find((x) => x.id === pid);
+  return p && p.alive ? pid : null;
+}
+
 /** Lo que stepNeedsGhostAnnounce necesita saber de la partida. */
 export interface GhostGame {
   composition?: Composition;
@@ -257,7 +291,7 @@ export interface GhostGame {
 export function stepNeedsGhostAnnounce(stepId: StepId | string, game: GhostGame, players: GamePlayer[]): boolean {
   const def = NIGHT_STEPS.find((s) => s.id === stepId);
   if (!def || def.silent || stepId === 'amanecer' || stepId === 'lobos' || stepId === 'durmiendo') return false;
-  if (stepId === 'enamorados' || stepId === 'encantados' || stepId === 'lobos_reconocen') return false;
+  if (stepId === 'enamorados' || stepId === 'encantados' || stepId === 'infectado' || stepId === 'lobos_reconocen') return false;
   // Rol vivo pero sin poder utilizable (bruja sin pociones, zorro sin olfato,
   // poderes perdidos por el Anciano…): disimular SIEMPRE, o se delataría.
   const anyAlive = players.some((p) => p.alive && p.role != null && def.roles.includes(p.role));

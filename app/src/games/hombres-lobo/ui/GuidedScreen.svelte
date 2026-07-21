@@ -30,7 +30,7 @@
   const players = $derived(app.players.filter((p) => p.inGame));
 
   // Pasos en los que el máster solo confirma que el grupo ya se ha reconocido.
-  const GUIDED_CONFIRM_STEPS = ['enamorados', 'dos_hermanas', 'tres_hermanos', 'lobos_reconocen', 'encantados'];
+  const GUIDED_CONFIRM_STEPS = ['enamorados', 'dos_hermanas', 'tres_hermanos', 'lobos_reconocen', 'encantados', 'infectado'];
 
   const needSel = () => setFlash('Toca primero a un jugador de la lista.');
   // Nombre del seleccionado bajo una clave (para confirmaciones con nombre).

@@ -152,7 +152,7 @@ export const ROLES = {
   },
   infecto: {
     id: 'infecto', name: 'El Infecto Padre de los Lobos', emoji: '🧛', team: 'lobos', expansion: 'personajes',
-    desc: 'Una vez por partida puede infectar a la víctima de los lobos en vez de devorarla: esta se convierte en hombre lobo en secreto.',
+    desc: 'Una vez por partida puede infectar a la víctima de los lobos en vez de devorarla: esa misma noche la voz la despierta por su palabra clave y le revela que ahora es un hombre lobo en secreto.',
   },
 } satisfies Record<string, RoleDef>;
 

@@ -10,7 +10,7 @@ import {
 import type { RoleId } from './roles';
 import {
   computeNightSteps, stepActors, resolveDawn, resolveVote, applyDeathsChain, checkWinner,
-  reserveNextKeywords, stepNeedsGhostAnnounce, annotateDeaths,
+  reserveNextKeywords, infectionTonight, stepNeedsGhostAnnounce, annotateDeaths,
 } from './engine';
 import type { GamePlayer, GameState } from './types';
 import { narr, outro, loveDeathLine } from './texts/corpus';
@@ -895,4 +895,59 @@ test('partida completa: la infección alcanza la paridad y los lobos ganan al al
   game = { ...game, phase: 'day', dayNum: 1 };
   const v1 = resolveVote(game, ps, 'p2')!;
   assert.equal(v1.winner, 'lobos');
+});
+
+// ——— La llamada del Infecto (paso 'infectado') ———
+
+test('computeNightSteps: con el Infecto en juego, la llamada de la sangre sigue a su decisión', () => {
+  const players = mkPlayers(['infecto', 'vidente', 'aldeano', 'aldeano']);
+  const steps = computeNightSteps(mkGame({ composition: { infecto: 1, vidente: 1, aldeano: 2 } }), players);
+  const iDec = steps.indexOf('infecto_decision');
+  assert.ok(iDec >= 0);
+  assert.equal(steps[iDec + 1], 'infectado');
+  // Sin Infecto (ni composición secreta), el paso no existe.
+  const sin = computeNightSteps(mkGame({ composition: { hombre_lobo: 1, vidente: 1, aldeano: 2 } }),
+    mkPlayers(['hombre_lobo', 'vidente', 'aldeano', 'aldeano']));
+  assert.ok(!sin.includes('infectado'));
+  // Composición secreta con Infecto activado pero no repartido: se finge.
+  const fake = computeNightSteps(mkGame({
+    composition: { hombre_lobo: 1, vidente: 1, aldeano: 2 },
+    fakeAllSelected: true, selectedRoles: ['infecto'],
+  }), mkPlayers(['hombre_lobo', 'vidente', 'aldeano', 'aldeano']));
+  assert.ok(fake.includes('infectado'));
+  // Primera noche tranquila: sin caza no hay mordisco que anunciar.
+  const tranquila = computeNightSteps(mkGame({
+    night: 1, composition: { infecto: 1, vidente: 1, aldeano: 2 }, noKillNight1: true,
+  }), players);
+  assert.ok(!tranquila.includes('infectado'));
+});
+
+test('infectionTonight: la infección prospera salvo protección del Defensor (la cura no la impide)', () => {
+  const ps = mkPlayers(['infecto', 'defensor', 'bruja', 'aldeano']);
+  assert.equal(infectionTonight(mkGame({ acts: { wolfVictim: 'p3', infectoUsed: true } }), ps), 'p3');
+  // Sin usar el poder no hay infectado; sin víctima tampoco.
+  assert.equal(infectionTonight(mkGame({ acts: { wolfVictim: 'p3' } }), ps), null);
+  assert.equal(infectionTonight(mkGame({ acts: { infectoUsed: true } }), ps), null);
+  // El Defensor anula el mordisco entero (también como poder del Actor).
+  assert.equal(infectionTonight(mkGame({ acts: { wolfVictim: 'p3', infectoUsed: true, defensorTarget: 'p3' } }), ps), null);
+  assert.equal(infectionTonight(mkGame({
+    acts: { wolfVictim: 'p3', infectoUsed: true, actor: { power: 'defensor', target: 'p3' } },
+  }), ps), null);
+  // La cura de la Bruja llega después: NO impide la infección.
+  assert.equal(infectionTonight(mkGame({ acts: { wolfVictim: 'p3', infectoUsed: true, brujaHeal: 'p3' } }), ps), 'p3');
+});
+
+test('stepActors(infectado): despierta solo el mordido, y deja de esperar al confirmar', () => {
+  const ps = mkPlayers(['infecto', 'vidente', 'aldeano', 'aldeano']);
+  const game = mkGame({ acts: { wolfVictim: 'p1', infectoUsed: true, infectoDecided: true } });
+  assert.deepEqual(stepActors('infectado', game, ps), ['p1']);
+  game.acts.infectadoSeen = { p1: true };
+  assert.equal(stepActors('infectado', game, ps), null);
+  // Noche sin infección: nadie actúa (la escena decide si suenan señuelos).
+  assert.equal(stepActors('infectado', mkGame({ acts: { wolfVictim: 'p1', infectoDecided: true } }), ps), null);
+});
+
+test('infectado: el paso no se anuncia como fantasma genérico (gestiona sus propios señuelos)', () => {
+  const ps = mkPlayers(['infecto', 'vidente', 'aldeano', 'aldeano']);
+  assert.equal(stepNeedsGhostAnnounce('infectado', mkGame({ composition: { infecto: 1 } }), ps), false);
 });

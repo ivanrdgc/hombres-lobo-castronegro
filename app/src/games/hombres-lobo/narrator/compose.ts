@@ -6,10 +6,10 @@
 // síntesis en vivo, pre-calentados en cuanto el dato existe.
 import type { Segment, Utterance } from '../../../core/audio/player';
 import {
-  ABRID_OJOS, ENAMORADOS_INTRO, ENAMORADOS_TAIL, ENC_FRAME, ENCANTADOS_TAIL, KW_LEAD, LISTOS,
+  ABRID_OJOS, ENAMORADOS_INTRO, ENAMORADOS_TAIL, ENC_FRAME, ENCANTADOS_TAIL, INF_FRAME, KW_LEAD, LISTOS,
   NAG_GENERIC, NAGS, REFRESH_CLOSE, REFRESH_OPEN, aaNote, deathLine, drama, hashStr, hunterKillLine, improv, kwClip,
-  loveDeathLine, lynchNote, narr, narrParts, narrPartsMin, nagEnamoradosKw, nagEncantadosKw, outro, outroParts, KW_NOTE,
-  soloVoteNote, tontoMutedNote, tontoNote,
+  loveDeathLine, lynchNote, narr, narrParts, narrPartsMin, nagEnamoradosKw, nagEncantadosKw, nagInfectadoKw, outro,
+  outroParts, KW_NOTE, soloVoteNote, tontoMutedNote, tontoNote,
 } from '../texts/corpus';
 import type { Density } from '../../../core/narrator/pacing';
 import { ROLES } from '../roles';
@@ -117,6 +117,24 @@ export function encantadosCallUtterance(game: GameState, id: string, kws: string
     id,
     segments,
     display: `${intro.join(' ')} ${ENC_FRAME} ${KW_LEAD} … ${kws.join('… y ')}.${fake ? ' ' + ENCANTADOS_TAIL : ''}`,
+  };
+}
+
+/** Llamada del Infecto (real y falsa: mismas piezas, distintas palabras).
+ *  Siempre suenan DOS palabras: la del mordido + un señuelo (o dos señuelos
+ *  si no hubo infección); ni el número ni el marco delatan nada. */
+export function infectadoCallUtterance(game: GameState, id: string, kws: string[], fake: boolean): Utterance {
+  const intro = narrParts('infectado', stepSalt(game, 'infectado'));
+  const segments: Segment[] = [...intro.map(clip), clip(INF_FRAME), gap(500), clip(KW_LEAD), gap(400)];
+  kws.forEach((kw, i) => {
+    segments.push(clip(kwClip(kw, i === 0)));
+    segments.push(gap(i === kws.length - 1 ? 300 : 500));
+  });
+  if (fake) segments.push(clip(ENCANTADOS_TAIL));
+  return {
+    id,
+    segments,
+    display: `${intro.join(' ')} ${INF_FRAME} ${KW_LEAD} … ${kws.join('… y ')}.${fake ? ' ' + ENCANTADOS_TAIL : ''}`,
   };
 }
 
@@ -249,23 +267,31 @@ export function refreshCloseUtterance(at: number): Utterance {
 /** Aviso de insistencia (port de nagText de la v1). */
 export function nagUtterance(game: GameState, players: PlayerDoc[], nagId: string, n: number): Utterance {
   let text: string | null = null;
-  if (nagId === 'enamorados') {
+  // Las palabras de la llamada del Infecto (real + señuelo) viajan en el
+  // propio nagId ('infectado|palabra|palabra'): el aviso las repite JUNTAS,
+  // sin distinguir cuál es la de verdad.
+  const [id, ...kwArgs] = nagId.split('|');
+  if (id === 'enamorados') {
     const lovers = players.filter((p) => p.inGame && p.lover && p.keyword);
     if (game.keywordsActive && lovers.length >= 2) {
       text = nagEnamoradosKw(lovers.map((p) => p.keyword!), n);
     }
   }
-  if (nagId === 'encantados') {
+  if (id === 'encantados') {
     const targets = game.acts.gaiteroTargets || [];
     const ps = players.filter((p) => targets.includes(p.id) && p.keyword);
     if (game.keywordsActive && ps.length) text = nagEncantadosKw(ps.map((p) => p.keyword!));
   }
+  if (id === 'infectado') {
+    const kws = kwArgs.filter(Boolean);
+    if (game.keywordsActive && kws.length) text = nagInfectadoKw(kws);
+  }
   if (!text) {
-    const pool = NAGS[nagId] || [];
+    const pool = NAGS[id] || [];
     if (n % 2 === 0 && pool.length) text = pool[Math.floor(n / 2) % pool.length];
     else text = NAG_GENERIC[n % NAG_GENERIC.length];
   }
-  return { id: `nag:${nagId}:${n}`, segments: [clip(text)], display: text, priority: 'low' };
+  return { id: `nag:${id}:${n}`, segments: [clip(text)], display: text, priority: 'low' };
 }
 
 export function fillerUtterance(game: GameState, stepId: string, density: Density = 'std'): Utterance | null {

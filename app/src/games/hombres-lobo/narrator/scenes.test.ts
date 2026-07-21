@@ -48,6 +48,7 @@ function mkSnap(gameOver: Partial<GameState>, players: PlayerDoc[]): Snap {
 function makeWorld(snap0: Snap) {
   let snap = snap0;
   const timeline: [string, number][] = [];
+  const displays: string[] = [];
   const deps: NarratorDeps<Snap> = {
     getSnapshot: () => snap,
     sceneOf,
@@ -58,6 +59,7 @@ function makeWorld(snap0: Snap) {
     play: (u, opts) =>
       new Promise((resolve) => {
         timeline.push(['▶' + u.id.split(':').pop(), Date.now()]);
+        displays.push(u.display);
         const t = setTimeout(() => {
           timeline.push(['■' + u.id.split(':').pop(), Date.now()]);
           resolve('completed');
@@ -76,6 +78,7 @@ function makeWorld(snap0: Snap) {
   });
   return {
     timeline,
+    displays,
     narrator,
     patch(fn: (s: Snap) => void) {
       const copy = JSON.parse(JSON.stringify(snap)) as Snap;
@@ -165,6 +168,82 @@ test('teatro de victoria: los lobos ganan al amanecer → se despierta al pueblo
   await vi.advanceTimersByTimeAsync(6000);
   const plays = world.timeline.filter(([e]) => e.startsWith('▶')).map(([e]) => e);
   expect(plays).toEqual(['▶dawn', '▶lobos']); // amanecer primero, victoria después
+});
+
+test('infectado: la noche del mordisco y una sin infección suenan IGUAL (señuelos + espera humana)', async () => {
+  const base = {
+    steps: ['durmiendo', 'lobos', 'infecto_decision', 'infectado', 'amanecer'] as GameState['steps'],
+    stepIdx: 3,
+    keywordsActive: true,
+    composition: { infecto: 1, aldeano: 2 },
+    kwDecoys: ['d1', 'd2', 'd3', 'd4', 'd5', 'd6', 'd7', 'd8', 'd9', 'd10'],
+  };
+  const players: PlayerDoc[] = [
+    { id: 'p-i', name: 'Iker', role: 'infecto', alive: true, inGame: true, order: 1, powers: {}, keyword: 'Luna de Plata' },
+    { id: 'p-a', name: 'Aldo', role: 'aldeano', alive: true, inGame: true, order: 2, powers: {}, keyword: 'Búho de Niebla' },
+    { id: 'p-b', name: 'Bea', role: 'aldeano', alive: true, inGame: true, order: 3, powers: {}, keyword: 'Zarza de Roble' },
+  ];
+
+  // — Noche CON infección: Aldo, mordido e infectado, confirma cuando el
+  //   colchón humano de la llamada falsa habría terminado (rnd 0.5 → 6500 ms).
+  const real = makeWorld(mkSnap({
+    ...base,
+    acts: { wolfVictim: 'p-a', infectoDecided: true, infectoUsed: true },
+  }, JSON.parse(JSON.stringify(players)) as PlayerDoc[]));
+  real.narrator.tick();
+  await vi.advanceTimersByTimeAsync(1000); // suena la llamada (1 s)
+  await vi.advanceTimersByTimeAsync(6500); // …y el mordido tarda lo que un señuelo
+  real.patch((s) => {
+    s.group!.game!.acts.infectadoSeen = { 'p-a': true };
+  });
+  await vi.advanceTimersByTimeAsync(20000);
+
+  // — Noche SIN infección (el Infecto se guardó el poder): señuelos.
+  vi.setSystemTime(0);
+  const fake = makeWorld(mkSnap({
+    ...base,
+    acts: { wolfVictim: 'p-a', infectoDecided: true },
+  }, JSON.parse(JSON.stringify(players)) as PlayerDoc[]));
+  fake.narrator.tick();
+  await vi.advanceTimersByTimeAsync(30000);
+
+  // Ambas noches: llamada → espera → despedida → avance, con el mismo compás
+  // (la real espera outroKnown 400 ms tras confirmar; la falsa integra ese
+  // margen en su colchón humano muestreado: aquí ambas suman 6900 ms).
+  expect(fake.timeline.map(([e]) => e)).toEqual(['▶fake', '■fake', '▶outro', '■outro', 'advance']);
+  expect(real.timeline.map(([e]) => e)).toEqual(['▶call', '■call', '▶outro', '■outro', 'advance']);
+  const gapOf = (w: { timeline: [string, number][] }) => w.timeline[2][1] - w.timeline[1][1];
+  expect(Math.abs(gapOf(real) - gapOf(fake))).toBeLessThanOrEqual(400);
+
+  // La llamada real nombra la palabra del mordido + UN señuelo; la falsa, dos
+  // señuelos. Nunca la palabra de otro jugador vivo.
+  const realCall = real.displays[0];
+  const fakeCall = fake.displays[0];
+  expect(realCall).toContain('Búho de Niebla');
+  expect(realCall).not.toContain('Luna de Plata');
+  expect(realCall).not.toContain('Zarza de Roble');
+  expect(fakeCall).not.toContain('Búho de Niebla');
+  expect(fakeCall).not.toContain('Luna de Plata');
+  expect(fakeCall).not.toContain('Zarza de Roble');
+  expect((fakeCall.match(/d\d+/g) || []).length).toBe(2);
+});
+
+test('infectado con la víctima protegida por el Defensor: suenan señuelos (no hubo mordisco)', async () => {
+  const world = makeWorld(mkSnap({
+    steps: ['durmiendo', 'lobos', 'infecto_decision', 'infectado', 'amanecer'] as GameState['steps'],
+    stepIdx: 3,
+    keywordsActive: true,
+    composition: { infecto: 1, defensor: 1, aldeano: 1 },
+    kwDecoys: ['d1', 'd2', 'd3', 'd4', 'd5', 'd6'],
+    acts: { wolfVictim: 'p-a', infectoDecided: true, infectoUsed: true, defensorTarget: 'p-a' },
+  }, [
+    { id: 'p-i', name: 'Iker', role: 'infecto', alive: true, inGame: true, order: 1, powers: {}, keyword: 'Luna de Plata' },
+    { id: 'p-a', name: 'Aldo', role: 'aldeano', alive: true, inGame: true, order: 2, powers: {}, keyword: 'Búho de Niebla' },
+  ]));
+  world.narrator.tick();
+  await vi.advanceTimersByTimeAsync(30000);
+  expect(world.timeline.map(([e]) => e)).toEqual(['▶fake', '■fake', '▶outro', '■outro', 'advance']);
+  expect(world.displays[0]).not.toContain('Búho de Niebla');
 });
 
 test('fin sin amanecer pendiente (partida forzada): solo la victoria', async () => {
