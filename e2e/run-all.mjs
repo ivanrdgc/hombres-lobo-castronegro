@@ -14,7 +14,7 @@ if (!BASE) { console.error('Define BASE=https://tu-sitio.web.app'); process.exit
 const DEFAULT_SUITES = [
   'e2e2.mjs', 'e2e-gaitero.mjs', 'e2e-caballero.mjs', 'e2e-infecto.mjs',
   'e2e-deadpeek.mjs', 'e2e-guiado.mjs', 'e2e-navegacion.mjs', 'e2e-multimesa.mjs',
-  'e2e-espia.mjs',
+  'e2e-espia.mjs', 'e2e-una-noche.mjs',
 ];
 const suites = process.argv.slice(2).length ? process.argv.slice(2) : DEFAULT_SUITES;
 const CONCURRENCY = Number(process.env.E2E_JOBS || 4);

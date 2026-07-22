@@ -11,6 +11,7 @@ import { installUiHygiene } from './shell/ui-hygiene';
 import { installVersionCheck } from './core/version-check';
 import { installNarrator } from './games/hombres-lobo/narrator/install';
 import { installEspiaNarrator } from './games/espia/narrator/install';
+import { installUnaNocheNarrator } from './games/una-noche/narrator/install';
 
 installUnlockGestures();
 loadClipManifest(); // biblioteca de clips pre-generados (F6); sin ella, síntesis en vivo
@@ -19,6 +20,7 @@ installUiHygiene();
 installVersionCheck(); // recarga a todos cuando se despliega una versión nueva
 installNarrator();
 installEspiaNarrator();
+installUnaNocheNarrator();
 installPresence();
 
 window.addEventListener('popstate', applyRoute);

@@ -152,9 +152,11 @@ export async function setNarratorDevice(pid: string | null): Promise<void> {
 
 /** ¿Este miembro JUEGA la partida (además de, quizá, poner la voz)? */
 function playsInMatch(m: Pick<MatchDoc, 'game'>, pid: string): boolean {
-  const game = m.game as unknown as { espia?: boolean; playerIds?: string[] } | null;
+  const game = m.game as unknown as { espia?: boolean; unaNoche?: boolean; playerIds?: string[] } | null;
   if (!game) return false;
-  if (game.espia) return (game.playerIds || []).includes(pid);
+  // El Espía y Una Noche guardan a sus jugadores en game.playerIds (no tocan
+  // los docs de jugador); Los Hombres Lobo, en player.inGame.
+  if (game.espia || game.unaNoche) return (game.playerIds || []).includes(pid);
   const p = state.players.find((x) => x.id === pid);
   return !!p && !!p.inGame;
 }

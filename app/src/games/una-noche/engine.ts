@@ -13,6 +13,13 @@ export interface Player {
   inGame?: boolean;
 }
 
+/** Construye la lista de jugadores (en orden de asiento) desde el estado. */
+export function playersOf(game: GameState): Player[] {
+  return (game.playerIds || []).map((id, i) => ({
+    id, name: game.names?.[id] || id, order: i, inGame: true,
+  }));
+}
+
 // ——— Pasos de la noche ———
 
 /**

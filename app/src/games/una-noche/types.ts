@@ -54,9 +54,10 @@ export interface Acts {
   dobleTarget?: string | null;
   /** La acción copiada (si copió Vidente/Ladrón/Alborotadora/Borracho) ya está hecha. */
   dobleActionDone?: boolean;
+  /** La acción copiada se ejecutó (Alborotadora/Borracho: sin resultado que leer). */
+  dobleActed?: boolean;
   dobleView?: VidenteView; // si copió Vidente
   dobleCard?: RoleId | null; // si copió Ladrón: su nueva carta
-  dobleSeen?: boolean; // confirmó lo que vio/robó
   // — Reconocimientos y acciones (por pid, para admitir un Doble duplicando el rol) —
   lobosSeen?: Record<string, boolean>;
   /** Índice de la carta del centro que un lobo solitario miró (+ su carta). */
@@ -89,10 +90,16 @@ export type Composition = Partial<Record<RoleId, number>>;
 
 /** El objeto `game` del doc de la partida (auto). */
 export interface GameState {
+  /** Discriminante: marca la partida como de Una Noche (como `espia` en El Espía). */
+  unaNoche?: true;
   mode?: 'auto';
   phase?: Phase | 'manual';
   startedAt?: number;
   seed?: number;
+  /** Jugadores en orden de asiento (índice = orden). El narrador/altavoz que no juega no está aquí. */
+  playerIds: string[];
+  /** Nombres por pid (se guardan para no leer los docs de jugador en cada transacción). */
+  names: Record<string, string>;
   steps: StepId[];
   stepIdx: number;
   acts: Acts;
@@ -104,6 +111,8 @@ export interface GameState {
   center: RoleId[];
   composition: Composition;
   selectedRoles: RoleId[];
+  /** Reparto visto por cada jugador (fase reveal). */
+  seen?: Record<string, boolean>;
   /** Voto simultáneo: pid → pid señalado. Se revela cuando han votado todos. */
   votes: Record<string, string>;
   votesRevealed?: boolean;

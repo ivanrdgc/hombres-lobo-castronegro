@@ -21,6 +21,8 @@ export interface TableSettings {
   pacing?: string;
   /** El Espía: duración de la ronda en minutos (oficial: 8). */
   espiaMin?: number;
+  /** Una Noche: mazo elegido (rol → nº de cartas). Se recuerda entre partidas. */
+  unaNoche?: Record<string, number>;
 }
 
 /** Doc del grupo (groups/{slug}) + id inyectado por el listener. */
