@@ -248,6 +248,8 @@ try {
   await pages.bruno.click('button[data-a=role-detail][data-p=hombre_lobo]');
   await pages.bruno.waitForSelector('text=Cómo se juega');
   ok('el detalle del rol explica paso a paso cómo se juega');
+  // B13: en partida, el detalle de rol NO ofrece leerlo en voz alta (sería un tell).
+  check((await pages.bruno.locator('[data-a=role-play]').count()) === 0, 'el ▶️ de lectura desaparece durante la partida (B13)');
   await pages.bruno.click('button[data-a=close-modal]');
   await pace(pages.bruno);
   const roleOf = Object.fromEntries(st.players.filter((p) => p.role).map((p) => [p.role, p.name.toLowerCase()]));

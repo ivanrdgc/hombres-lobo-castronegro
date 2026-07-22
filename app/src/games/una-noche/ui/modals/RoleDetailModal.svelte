@@ -3,7 +3,7 @@
   // paso. Mismo formato que el RoleDetailModal de Los Hombres Lobo. Se abre
   // desde las listas de roles (cómo se juega, mazo, chips). `back` devuelve al
   // modal de origen. Fuera de partida, ▶️ lo lee en voz alta en este dispositivo.
-  import { app } from '../../../../core/sync/store.svelte';
+  import { app, viewGroup } from '../../../../core/sync/store.svelte';
   import { localAudioState, toggleLocalSpeech } from '../../../../shell/explain-audio';
   import { ROLES } from '../../roles';
   import { ROLE_HELP } from '../../role-help';
@@ -21,7 +21,9 @@
   const help = $derived(roleId in ROLE_HELP ? ROLE_HELP[roleId] : null);
   const team = $derived(r ? TEAM[r.team] : null);
 
-  const canPlay = $derived(app.group?.status !== 'playing');
+  // El ▶️ solo en el LOBBY: en partida, leer un rol en alto delata (el status
+  // del doc del grupo se queda en 'lobby'; la partida vive en viewGroup()).
+  const canPlay = $derived(viewGroup()?.status !== 'playing');
   const audioKey = $derived('una-role:' + roleId);
   const audio = $derived(localAudioState(audioKey));
 

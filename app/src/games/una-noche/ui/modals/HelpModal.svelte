@@ -1,7 +1,7 @@
 <script lang="ts">
   // Cómo se juega Una Noche + lista de roles (orden de la noche), con lectura en
   // voz alta local (▶️) del cómo-se-juega y de cada rol, como en el original.
-  import { app } from '../../../../core/sync/store.svelte';
+  import { app, viewGroup } from '../../../../core/sync/store.svelte';
   import { localAudioState, toggleLocalSpeech } from '../../../../shell/explain-audio';
   import { ROLES, ACTION_ROLES } from '../../roles';
   import { HOWTO } from '../../texts';
@@ -10,7 +10,7 @@
   const NIGHT = ACTION_ROLES;
   const PASSIVE: RoleId[] = ['aldeano', 'cazador', 'tanner'];
   // Fuera de partida (el lobby): leer en voz alta no delata nada.
-  const canPlay = $derived(app.group?.status !== 'playing');
+  const canPlay = $derived(viewGroup()?.status !== 'playing');
   const howto = $derived(localAudioState('una-howto'));
 
   // Salta al detalle guardando el scroll: al volver, este modal se restaura

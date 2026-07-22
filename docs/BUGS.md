@@ -163,3 +163,19 @@ Estados: 🔴 abierto · 🟢 arreglado (con commit) · 🟡 re-reportado tras u
   scroll del modal al saltar al detalle (`backScroll`, patrón de Los HL) y el detalle lo devuelve
   al volver (`scroll`), junto con `targetN` si venía del mazo de «Empezar». E2E: reabrir con
   scroll restaurado verificado en `e2e-una-noche.mjs`.
+
+## B13 · El ▶️ del detalle de rol seguía visible durante la partida (guardia muerta)
+- **2026-07-23 · reporte.** «Una vez empezado el juego, oculta el botón de reproducir en los
+  modals de roles.» Durante la partida, abrir el detalle de un rol (desde la tira de cartas en
+  juego: DeckStrip en Una Noche, RolesStrip en Los HL) mostraba el ▶️ de lectura en voz alta —
+  que en mitad de una mesa real es un «tell» (leer un rol en alto delata / molesta).
+  Diagnóstico: los RoleDetailModal SÍ tenían la guardia `canPlay = app.group.status !== 'playing'`,
+  pero desde la refactorización multi-partida el `status` del DOC del grupo se queda en `'lobby'`
+  SIEMPRE (las partidas viven en `matches/`; quien marca `'playing'` es `matchView`/`viewGroup()`,
+  no el doc). Así que la guardia era siempre `true` → el botón nunca se ocultaba.
+- **2026-07-23 · 🟢 arreglado** (este commit): `canPlay` pasa a leer `viewGroup()?.status` (la
+  vista con la partida en contexto superpuesta), que sí vale `'playing'` cuando hay una partida
+  mía o observada por URL. Afecta a los dos RoleDetailModal (Los HL + Una Noche) y, por
+  coherencia, al `canPlay` idéntico de la ayuda de Una Noche. El ▶️ sigue en el LOBBY (leer las
+  reglas en alto antes de empezar es lo suyo). E2E: detalle in-game sin ▶️ en `e2e.mjs` (HL) y
+  `e2e-una-noche.mjs` (Una Noche); el detalle del lobby lo conserva.

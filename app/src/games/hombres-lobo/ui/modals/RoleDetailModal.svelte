@@ -4,7 +4,7 @@
   // «Cómo se juega», o los chips del lobby. `back` devuelve al modal origen
   // (restaurando su scroll). Fuera de la partida, ▶️ lo lee en voz alta en
   // este dispositivo.
-  import { app } from '../../../../core/sync/store.svelte';
+  import { app, viewGroup } from '../../../../core/sync/store.svelte';
   import { ROLES, TEAMS } from '../../roles';
   import type { RoleId } from '../../roles';
   import { ROLE_HELP, ALGUACIL_HELP } from '../../texts/role-help';
@@ -19,7 +19,10 @@
 
   // Lectura en voz alta: solo fuera de una partida en curso (dentro, la voz es
   // del narrador y un rol leído a todo volumen puede delatar cosas).
-  const canPlay = $derived(app.group?.status !== 'playing');
+  // Leer un rol en voz alta solo tiene sentido en el LOBBY: en mitad de la
+  // partida sería un «tell» (el doc del grupo se queda en 'lobby' con las
+  // partidas en matches/, así que se mira la vista con la partida en contexto).
+  const canPlay = $derived(viewGroup()?.status !== 'playing');
   const audioKey = $derived('role:' + roleId);
   const audio = $derived(localAudioState(audioKey));
 

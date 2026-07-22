@@ -171,6 +171,14 @@ try {
   // ——— Día: UNA persona registra la condena del pueblo (como Los Hombres Lobo) ———
   st = await waitState(ana, (s) => s.phase === 'day', 'amanece (día)');
   ok('amanece y empieza el día');
+  // B13: en partida, el detalle de un rol (tira «cartas en juego») NO ofrece ▶️.
+  const dp = pg(st.playerIds[0]);
+  await dp.waitForSelector('[data-a=una-ingame-role]', { timeout: 15000 });
+  await dp.locator('[data-a=una-ingame-role]').first().click();
+  await dp.waitForSelector('.modal .howlist, .modal .small-note'); // el detalle abierto
+  check((await dp.locator('[data-a=una-role-play]').count()) === 0, 'el ▶️ de lectura desaparece durante la partida (B13)');
+  await dp.click('button[data-a=close-modal]');
+  await dp.waitForTimeout(150);
   const victim = st.playerIds[1];
   const rp = pg(st.playerIds[0]); // el primer jugador registra la decisión
   await rp.waitForSelector(`.player[data-a=una-sel][data-p="${victim}"]`, { timeout: 15000 });
