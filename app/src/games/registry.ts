@@ -28,7 +28,7 @@ export interface GameDefinition {
   modals: Record<string, Component<any>>;
 }
 
-export const GAME_DEFS: GameDefinition[] = [hombresLobo, espia, unaNoche];
+export const GAME_DEFS: GameDefinition[] = [hombresLobo, unaNoche, espia];
 
 /** Definición del juego seleccionado en el grupo (por defecto, el primero). */
 export function gameDef(id: string | null | undefined): GameDefinition {

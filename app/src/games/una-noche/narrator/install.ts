@@ -16,7 +16,7 @@ import { unaNocheGame } from '../actions';
 import * as A from '../actions';
 import { playersOf, stepActors } from '../engine';
 import type { GameState, StepId } from '../types';
-import { DAWN, DEBATE, END, LISTOS, NIGHT_FALL, STEP_CALL, STEP_CLOSE, WELCOME } from '../texts';
+import { DAWN, DEBATE, END, LISTOS, NAG_FORGOT, NIGHT_FALL, STEP_CALL, STEP_CLOSE, STEP_NAG, WELCOME } from '../texts';
 
 interface Snap {
   group: GroupDoc | null;
@@ -52,6 +52,21 @@ const ps = (ctx: Ctx) => playersOf(gm(ctx));
 function actorsPending(step: StepId, game: GameState): boolean {
   const a = stepActors(step, game, playersOf(game));
   return !!a && a.length > 0;
+}
+
+// Utterance de RE-llamada nº n (0 = repetir la llamada del rol; ≥1 = recordatorio
+// genérico «alguien se ha dormido»). Idéntica exista o no el rol (anti-pistas).
+function nagUtt(step: StepId, n: number): Utterance {
+  if (n === 0 && STEP_NAG[step]) return utt('un-nag-' + step, STEP_NAG[step]!);
+  const i = (n === 0 ? 0 : n - 1) % NAG_FORGOT.length;
+  return utt('un-forgot-' + i, NAG_FORGOT[i]);
+}
+
+// Cuántas veces «se hace de rogar» un rol FANTASMA (nadie actúa): casi siempre 0
+// (actúa rápido, como la mayoría), a veces 1, rara vez 2 — imitando a una mesa
+// real. Con re-llamadas idénticas a las del caso real: el tiempo no delata nada.
+function ghostNagCount(r: number): number {
+  return r < 0.62 ? 0 : r < 0.88 ? 1 : 2;
 }
 
 // ——— Proyección: snapshot → escena ———
@@ -104,23 +119,50 @@ async function nightStepScene(ctx: Ctx, step: StepId, idx: number): Promise<void
     return;
   }
   // Paso de rol: la llamada (abrir ojos + instrucción) suena igual exista o no
-  // el rol. Si HAY actores, espera a que acaben + un colchón fijo. Si NO (el rol
-  // está en el centro: paso fantasma), una pausa humana MÁS LARGA para simular
-  // que alguien actúa (que el tiempo no delate que el rol no está en juego).
-  // Después, «cerrad los ojos» — nunca antes de que la acción termine.
+  // el rol. Luego se espera «a que actúe» y, si tarda, se RE-llama (como un
+  // narrador humano) — con la MISMA cadencia y las MISMAS frases exista el rol
+  // o no, para que el tiempo jamás delate qué hay en el centro. Solo al final,
+  // «cerrad los ojos» — nunca antes de que la acción termine.
   const call = STEP_CALL[step];
   if (call) await ctx.sayOnce(uid('call'), () => utt('un-' + step, call));
-  const hadActors = actorsPending(step, gm(ctx));
-  if (hadActors) {
-    await ctx.waitFor((s) => {
-      const game = unaNocheGame(s.group);
-      return !game || game.phase !== 'night' || game.stepIdx !== idx || !actorsPending(step, game);
-    });
-    await ctx.pause('postActionHold');
+  const done = (s: Snap): boolean => {
+    const game = unaNocheGame(s.group);
+    return !game || game.phase !== 'night' || game.stepIdx !== idx || !actorsPending(step, game);
+  };
+  const stillHere = () => gm(ctx).phase === 'night' && gm(ctx).stepIdx === idx;
+
+  if (actorsPending(step, gm(ctx))) {
+    // REAL: espera a que el actor confirme; si tarda, re-llama en bucle
+    // (escalateAfter alto → nunca fuerza el avance, solo sigue recordando).
+    if (e2eTestMode()) {
+      await ctx.waitFor(done);
+    } else {
+      while ((await ctx.waitOrNag(done, {
+        nagKey: uid('nag'),
+        nag: (n) => nagUtt(step, n),
+        escalateAfter: 999,
+      })) === 'escalate') { /* seguir recordando */ }
+    }
+  } else if (e2eTestMode()) {
+    await ctx.pause('fakeConfirmHold');
   } else {
-    await ctx.pause('fakeConfirmHold'); // disimulo: 4–9 s como si alguien actuara
+    // FANTASMA (rol en el centro): se simula a un jugador. Casi siempre actúa
+    // rápido (una sola espera); a veces se hace de rogar y se le RE-llama una o
+    // dos veces, con la misma cadencia que en el caso real → indistinguible.
+    const cycles = ghostNagCount(ctx.rnd());
+    if (cycles === 0) {
+      await ctx.pause('fakeConfirmHold');
+    } else {
+      for (let i = 0; i < cycles && stillHere(); i++) {
+        await ctx.pause('unaCallNag'); // silencio hasta el umbral de re-llamada
+        if (!stillHere()) break;
+        await ctx.play({ ...nagUtt(step, i), priority: 'low' });
+      }
+      await ctx.pause('fakeConfirmHold'); // por fin «actúa», poco después
+    }
   }
-  if (gm(ctx).phase === 'night' && gm(ctx).stepIdx === idx) {
+  await ctx.pause('postActionHold'); // cola compartida real/fantasma antes del cierre
+  if (stillHere()) {
     const close = STEP_CLOSE[step];
     if (close) await ctx.sayOnce(uid('close'), () => utt('un-close-' + step, close));
     await ctx.pause('advanceGap');
@@ -167,6 +209,9 @@ export function installUnaNocheNarrator(): void {
     profileOf: (s) => profileOf(s.group?.settings?.pacing),
     isMuted: () => !!state.ui.muted,
     pauseMsFor: (key, profile) => (e2eTestMode() ? 40 : pauseMs(key, profile)),
+    // Umbral para RE-llamar a un rol que tarda (real y fantasma). Más corto que
+    // el nag por defecto (30 s): en Una Noche las acciones son rápidas.
+    nagIntervalMs: (s) => (e2eTestMode() ? 40 : pauseMs('unaCallNag', profileOf(s.group?.settings?.pacing))),
   });
 
   let wasNarrator = false;

@@ -26,4 +26,4 @@
   <div class="actionpanel"><h3>👂 Ojos cerrados</h3>
     <p class="hint">Mantén los ojos cerrados y atiende a la voz. Cuando te llamen, actúa aquí con disimulo.</p></div>
 {/if}
-{#if inGame}<MyCard role={game.originalRole[my.id]} />{/if}
+{#if inGame}<MyCard {game} pid={my.id} />{/if}

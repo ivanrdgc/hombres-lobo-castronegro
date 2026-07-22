@@ -27,6 +27,8 @@ export interface SceneCtx<S> {
   /** Colchón de la tabla PACING (con jitter y perfil de la mesa). */
   pause(key: PacingKey): Promise<void>;
   sleep(ms: number): Promise<void>;
+  /** Aleatorio inyectado (Math.random en la app; determinista en tests). */
+  rnd(): number;
   /** Se resuelve cuando el estado cumple el predicado (por push, sin sondeo). */
   waitFor(pred: (s: S) => boolean): Promise<void>;
   /**
@@ -145,6 +147,7 @@ export function createNarrator<S>(deps: NarratorDeps<S>): Narrator {
         return abortableSleep(ms, signal);
       },
       sleep: (ms) => abortableSleep(ms, signal),
+      rnd: () => rnd(),
       waitFor,
       waitOrNag: async (pred, opts) => {
         const escalateAfter = opts.escalateAfter ?? 4;

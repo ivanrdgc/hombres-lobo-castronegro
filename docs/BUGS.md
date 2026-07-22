@@ -123,3 +123,16 @@ Estados: 🔴 abierto · 🟢 arreglado (con commit) · 🟡 re-reportado tras u
   El arreglo ya estaba desplegado en ambas URLs: e2e en verde también contra producción (los dos
   enamorados ven su palabra nueva antes de confirmar). Si se vio otra cosa, comprobar el sello del
   build al pie (pestaña antigua).
+
+## B10 · Una Noche · Modal del mazo: los botones +/− ocupaban 3/4 del ancho y tapaban la ℹ️
+- **2026-07-22 · reporte.** «El modal de elección de mazo se ve mal: los botones de selección de
+  número de cartas ocupan 3/4 partes del ancho.» + «Muestra la i de info en cada carta al crear el
+  mazo.» (Ambos son el MISMO bug de maquetación.)
+  Diagnóstico: el stepper de cada carta (ℹ️ − nº +) usaba la clase `.btnrow`, cuya regla global
+  `.btnrow button { flex:1; min-width:130px }` (pensada para botones de acción a ancho completo)
+  estiraba cada botón a 130px; con 4 botones eso desbordaba la fila en el móvil, hacía `flex-wrap`
+  y empujaba la ℹ️ a otra línea (por eso «no se veía»).
+- **2026-07-22 · 🟢 arreglado** (este commit): el stepper deja de usar `.btnrow` y usa una clase
+  propia `.stepper` (flex compacto, `flex:0 0 auto`), así sus botones ya no heredan el estirado.
+  La ℹ️ vuelve a ser visible en cada fila. De paso, Una Noche pasa al 2º puesto del catálogo
+  (SpyFall queda 3º).

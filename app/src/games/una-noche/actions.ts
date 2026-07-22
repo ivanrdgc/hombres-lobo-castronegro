@@ -333,20 +333,23 @@ export async function wakeUp(): Promise<void> {
 
 // ——— Día: una persona registra la decisión del pueblo (como Los Hombres Lobo) ———
 
-// choice: pid condenado | 'nadie'. Cualquiera en juego lo registra.
-export async function castVote(choice: string): Promise<void> {
+// choices: pids condenados. Vacío = el pueblo perdona; varios = empate (en One
+// Night mueren TODOS los empatados). Cualquiera en juego lo registra.
+export async function castVote(choices: string[]): Promise<void> {
   const me = myPid();
   await tx((game) => {
     if (game.phase !== 'day' || game.pendingHunter || game.lynched != null) return null;
     if (!game.playerIds.includes(me)) return null;
-    if (choice !== 'nadie' && !game.playerIds.includes(choice)) return null;
-    game.lynched = choice;
-    if (choice === 'nadie') {
+    const valid = [...new Set(choices)].filter((c) => game.playerIds.includes(c));
+    game.lynched = valid;
+    if (!valid.length) {
       game.log!.push({ kind: 'dia', txt: `🕊️ ${nameOf(game, me)} registra: el pueblo perdona, no se condena a nadie.` });
+    } else if (valid.length === 1) {
+      game.log!.push({ kind: 'dia', txt: `⚖️ ${nameOf(game, me)} registra la condena del pueblo: ${nameOf(game, valid[0])}.` });
     } else {
-      game.log!.push({ kind: 'dia', txt: `⚖️ ${nameOf(game, me)} registra la condena del pueblo: ${nameOf(game, choice)}.` });
+      game.log!.push({ kind: 'dia', txt: `⚖️ ${nameOf(game, me)} registra un empate: caen ${valid.map((c) => nameOf(game, c)).join(', ')}.` });
     }
-    return resolveDeaths(game, choice === 'nadie' ? [] : [choice]);
+    return resolveDeaths(game, valid);
   });
 }
 

@@ -33,6 +33,9 @@ export const PACING = {
   advanceGap: { min: 800, max: 1200, scaled: true },
   /** Confirmación FALSA de una llamada con señuelos: imita a un humano. */
   fakeConfirmHold: { min: 4000, max: 9000, scaled: false },
+  /** Una Noche: silencio tras una llamada antes de RE-llamar al rol (real y
+   *  fantasma comparten esta cadencia → el tiempo no delata si el rol existe). */
+  unaCallNag: { min: 12000, max: 17000, scaled: false },
   /** Cierre del repaso de roles. */
   refreshCloseGap: { min: 5000, max: 7000, scaled: true },
   /** Cadencia de los recordatorios. */

@@ -57,6 +57,29 @@ export const STEP_CLOSE: Partial<Record<StepId, string>> = {
   insomne: 'Insomne, cierra los ojos… y con eso, Castronegro entero duerme.',
 };
 
+// RE-llamada de un rol que tarda: se dice si tras la llamada nadie confirma en
+// unos segundos (como haría un narrador humano al ver a alguien dudar). Suena
+// IGUAL exista o no el rol (fantasma), así que nunca revela si hay alguien.
+// NO repite «abrid los ojos» (ya están abiertos): solo empuja a terminar.
+export const STEP_NAG: Partial<Record<StepId, string>> = {
+  doble: 'El Doble, cuando hayas copiado tu carta, vuelve a cerrar los ojos.',
+  lobos: 'Hombres lobo, cuando os hayáis reconocido, cerrad los ojos.',
+  esbirro: 'Esbirro, cuando tengas tu información, cierra los ojos.',
+  masones: 'Masones, cuando os hayáis reconocido, cerrad los ojos.',
+  vidente: 'Vidente, tómate tu tiempo… y cuando termines de mirar, cierra los ojos.',
+  ladron: 'Ladrón, decídete: roba una carta o no, y luego cierra los ojos.',
+  alborotadora: 'Alborotadora, haz tu intercambio —o déjalo— y cierra los ojos.',
+  borracho: 'Borracho, coge tu carta del centro y cierra los ojos.',
+  insomne: 'Insomne, echa un último vistazo a tu carta y cierra los ojos.',
+};
+
+// Recordatorio genérico si la cosa se alarga aún más: alguien pudo quedarse
+// dormido u olvidar su rol. Vale para todos y no delata nada (rota entre estas).
+export const NAG_FORGOT: string[] = [
+  '¿Alguien se ha quedado dormido? Recordad bien qué carta os tocó al empezar… y, si os toca actuar ahora, hacedlo con calma.',
+  'Sin prisa, pero sin pausa. Quien deba actuar en este turno, que lo haga y vuelva a cerrar los ojos.',
+];
+
 export const DAWN = 'Castronegro, abrid todos los ojos. Ha amanecido, y alguien entre vosotros no es quien dice ser.';
 
 export const DEBATE =
@@ -75,6 +98,8 @@ export function allUnaNocheStaticPieces(): string[] {
     WELCOME, LISTOS, NIGHT_FALL, DAWN, DEBATE,
     ...Object.values(STEP_CALL).filter((t): t is string => !!t),
     ...Object.values(STEP_CLOSE).filter((t): t is string => !!t),
+    ...Object.values(STEP_NAG).filter((t): t is string => !!t),
+    ...NAG_FORGOT,
     ...Object.values(END),
   ];
 }

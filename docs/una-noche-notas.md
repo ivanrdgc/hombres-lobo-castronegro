@@ -40,3 +40,37 @@ Notas de implementación:
   `checkWinner`/`finalRolesOf`. Estado nuevo: `lynched` (decisión) y
   `pendingHunter` (cazador que debe disparar).
 - Tras cualquier cambio de textos de voz: `npm run clips` y re-desplegar.
+
+---
+
+## Segunda tanda (22-07, tras estrenar)
+
+12. ✅ **Una Noche al 2.º puesto** del catálogo, dejando SpyFall (El Espía) 3.º
+    (`GAME_DEFS = [hombresLobo, unaNoche, espia]`).
+13. ✅ **Modal del mazo bien maquetado** (bug B10): los botones ℹ️ − nº + del
+    stepper usaban `.btnrow`, cuya regla global los estiraba a 3/4 del ancho y
+    tapaba la ℹ️. Ahora usan clase propia `.stepper` (compacta). La ℹ️ se ve en
+    cada carta al crear el mazo.
+14. ✅ **Cartas en juego durante la partida** (`DeckStrip`): tira de chips con
+    TODAS las cartas del mazo (la composición es pública en One Night), clicables
+    → modal de detalle. Visible en reveal/noche/día, como la tira de Los HL.
+15. ✅ **Disimulo del rol ausente, mejor**: la voz RE-llama a un rol que tarda,
+    una o dos veces, y si se alarga suelta un recordatorio genérico («¿alguien se
+    ha dormido? recordad vuestro rol»). Ocurre IGUAL en pasos reales (jugador
+    lento) y fantasma (rol en el centro) — misma cadencia (`unaCallNag` 12–17 s)
+    y mismas frases → el tiempo nunca delata qué hay en el centro. El nº de
+    re-llamadas fantasma es aleatorio (casi siempre 0, a veces 1-2). Textos
+    nuevos `STEP_NAG` + `NAG_FORGOT`; primitivo `waitOrNag` del secuenciador.
+16. ✅ **Historial personal en «Mi carta»**: bajo tu carta inicial, un resumen
+    privado de lo que VISTE e HICISTE esta noche (`history.ts` → `playerHistory`).
+    Se ve durante la noche (se va llenando) y el día.
+17. ✅ **Historial completo al final** (`EndPhase`): qué hizo cada jugador,
+    agrupado por jugador, con la misma redacción que el personal.
+18. ✅ **Empate en la votación** (pregunta de reglas): en One Night ORIGINAL, si
+    hay empate mueren TODOS los empatados (y si nadie saca más de un voto, no
+    muere nadie). Con el modelo registrador se reproduce dejando condenar a
+    VARIOS a la vez (empate → caen todos), a uno, o perdonar. `castVote` pasa a
+    recibir una lista; `lynched` pasa a `string[] | null`.
+
+Extra técnico: se arreglaron 5 errores de tipos preexistentes que el `vite build`
+no detecta (DayPhase/EndPhase/scenes.test) — ahora `npm run check` da 0 errores.

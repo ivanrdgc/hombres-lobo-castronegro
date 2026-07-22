@@ -11,6 +11,7 @@
   import NightPhase from './NightPhase.svelte';
   import DayPhase from './DayPhase.svelte';
   import EndPhase from './EndPhase.svelte';
+  import DeckStrip from './DeckStrip.svelte';
 
   const { group, my }: { group: GroupDoc; my: PlayerDoc } = $props();
 
@@ -62,6 +63,8 @@
 {:else if game.phase === 'end'}
   <EndPhase {game} {my} />
 {/if}
+
+{#if game.phase !== 'end'}<DeckStrip {game} />{/if}
 
 {#if game.log && game.log.length}
   <div class="card"><h3>📜 Diario</h3>

@@ -113,8 +113,10 @@ export interface GameState {
   selectedRoles: RoleId[];
   /** Reparto visto por cada jugador (fase reveal). */
   seen?: Record<string, boolean>;
-  /** Decisión registrada por el pueblo: pid condenado o 'nadie' (como en Los Hombres Lobo). */
-  lynched?: string | null;
+  /** Decisión registrada por el pueblo (una persona la anota, como en Los
+   *  Hombres Lobo): lista de condenados. En One Night un empate mata a TODOS los
+   *  empatados, por eso es una lista. `null` = aún sin decidir; `[]` = perdón. */
+  lynched?: string[] | null;
   /** Cazador (por carta FINAL) que ha muerto linchado y debe disparar su flecha. */
   pendingHunter?: string | null;
   /** Cazadores que ya dispararon (evita cadenas infinitas de flechas). */

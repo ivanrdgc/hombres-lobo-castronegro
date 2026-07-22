@@ -61,12 +61,22 @@
   <div class="settingrow" style="align-items:center">
     <div class="sinfo"><div class="sname" style="opacity:{c ? 1 : 0.55}">{ROLES[r].emoji} {ROLES[r].name}{c > 1 ? ` ×${c}` : ''}</div>
       <div class="sdesc">{ROLES[r].desc}</div></div>
-    <div class="btnrow" style="flex:0 0 auto">
+    <!-- Stepper compacto: NO usa la clase .btnrow (su regla global estira cada
+         botón a flex:1/min-width:130px y se comían 3/4 del ancho, tapando la ℹ️). -->
+    <div class="stepper">
       <button class="small ghost" data-a="una-deck-info" data-p={r} aria-label="Ver el rol en detalle" title="Ver en detalle" onclick={() => (app.ui.modal = { type: 'una-role-detail', role: r, back: 'una-deck' })}>ℹ️</button>
-      <button class="small ghost" data-a="una-deck-dec" data-p={r} disabled={c <= 0} onclick={() => bump(r, -1)}>−</button>
-      <span style="min-width:1.5em;text-align:center">{c}</span>
-      <button class="small ghost" data-a="una-deck-inc" data-p={r} disabled={c >= (MAX_OF[r] ?? 1)} onclick={() => bump(r, 1)}>+</button>
+      <button class="small ghost" data-a="una-deck-dec" data-p={r} disabled={c <= 0} aria-label="Quitar una carta" onclick={() => bump(r, -1)}>−</button>
+      <span class="cnt">{c}</span>
+      <button class="small ghost" data-a="una-deck-inc" data-p={r} disabled={c >= (MAX_OF[r] ?? 1)} aria-label="Añadir una carta" onclick={() => bump(r, 1)}>+</button>
     </div>
   </div>
 {/each}
 <button class="primary block" data-a="close-modal" onclick={() => (app.ui.modal = null)}>✔️ Listo</button>
+
+<style>
+  /* Stepper de cada carta: ℹ️ − nº + en compacto, pegados a la derecha de la
+     fila. Al no llevar la clase .btnrow, sus botones NO heredan el estirado
+     global (flex:1/min-width:130px) que los inflaba a 3/4 del ancho. */
+  .stepper { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+  .stepper .cnt { min-width: 1.6em; text-align: center; font-variant-numeric: tabular-nums; }
+</style>

@@ -6,14 +6,15 @@
   import * as A from '../actions';
   import { ROLES } from '../roles';
   import { finalRolesOf, playersOf, WIN_LABELS } from '../engine';
+  import { playerHistory } from '../history';
   import type { PlayerDoc } from '../../../core/sync/schema';
-  import type { GameState, RoleId } from '../types';
+  import type { GameState, RoleId, WinnerId } from '../types';
 
   const { game, my }: { game: GameState; my: PlayerDoc } = $props();
 
   const players = $derived(playersOf(game));
   const finals = $derived(finalRolesOf(game, players));
-  const winners = $derived(game.winners && game.winners.length ? game.winners : ['nadie']);
+  const winners = $derived<WinnerId[]>(game.winners && game.winners.length ? game.winners : ['nadie']);
   const dead = $derived(new Set(game.deaths || []));
   const rn = (r: RoleId) => `${ROLES[r].emoji} ${ROLES[r].name}`;
   const nm = (pid: string) => game.names[pid] || '¿?';
@@ -27,7 +28,7 @@
 
 <div class="card">
   <h3>⚖️ El juicio</h3>
-  <p class="small-note" style="margin-top:2px">{game.lynched == null || game.lynched === 'nadie' ? 'El pueblo perdonó: no condenó a nadie.' : `El pueblo condenó a ${nm(game.lynched)}.`}</p>
+  <p class="small-note" style="margin-top:2px">{!game.lynched || !game.lynched.length ? 'El pueblo perdonó: no condenó a nadie.' : `El pueblo condenó a ${game.lynched.map(nm).join(', ')}.`}</p>
   <p class="small-note">{(game.deaths || []).length ? `💀 Cayó: ${(game.deaths || []).map(nm).join(', ')}.` : '🕊️ No cayó nadie.'}</p>
 </div>
 
@@ -44,5 +45,25 @@
   <p class="small-note" style="margin-top:8px">🃏 Centro (al final): {game.center.map(rn).join(', ')}</p>
 </div>
 
+<div class="card">
+  <h3>📝 Qué hizo cada uno esta noche</h3>
+  {#each players as p (p.id)}
+    {@const h = playerHistory(game, p.id)}
+    <div class="histblock">
+      <div class="hname">{nm(p.id)}{p.id === my.id ? ' (tú)' : ''} · empezó como {rn(game.originalRole[p.id])}</div>
+      <ul class="histlist">{#each h as line (line)}<li>{line}</li>{/each}</ul>
+    </div>
+  {/each}
+  <p class="small-note">El orden de la noche fue el de las llamadas; aquí se agrupa por jugador.</p>
+</div>
+
 <button class="primary block" data-a="una-again" onclick={() => guard(A.playAgain)}>🔁 Otra partida (mismos jugadores)</button>
 <button class="ghost block" data-a="una-back-lobby" onclick={() => guard(() => A.endUnaNoche())}>🏁 Terminar y volver al lobby</button>
+
+<style>
+  .histblock { padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .histblock:last-of-type { border-bottom: none; }
+  .hname { font-size: 0.95rem; font-weight: 600; }
+  .histlist { margin: 4px 0 0; padding-left: 1.15rem; color: var(--muted); }
+  .histlist li { margin: 4px 0; line-height: 1.35; font-size: 0.9rem; }
+</style>

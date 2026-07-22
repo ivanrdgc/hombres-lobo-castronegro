@@ -59,7 +59,7 @@ function makeWorld(snap0: Snap) {
     play: (u, opts) =>
       new Promise((resolve) => {
         timeline.push(['▶' + u.id.split(':').pop(), Date.now()]);
-        displays.push(u.display);
+        displays.push(u.display ?? '');
         const t = setTimeout(() => {
           timeline.push(['■' + u.id.split(':').pop(), Date.now()]);
           resolve('completed');
