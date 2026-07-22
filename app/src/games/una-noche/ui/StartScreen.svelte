@@ -91,7 +91,7 @@
 <div class="card">
   <h3>🎴 El mazo</h3>
   <div class="chips" style="margin-top:2px">
-    {#each deckRoles as r (r)}<span class="chip">{ROLES[r].emoji} {ROLES[r].name}{(comp[r] || 0) > 1 ? ` ×${comp[r]}` : ''}</span>{/each}
+    {#each deckRoles as r (r)}<button class="chip rolechip" data-a="una-role" data-p={r} onclick={() => (app.ui.modal = { type: 'una-role-detail', role: r })}>{ROLES[r].emoji} {ROLES[r].name}{(comp[r] || 0) > 1 ? ` ×${comp[r]}` : ''}</button>{/each}
   </div>
   {#if !deckOk}
     <p class="small-note">⚠️ El mazo tiene <b>{total}</b> cartas, pero para <b>{n}</b> jugadores hacen falta <b>{need}</b> ({n} + {CENTER_COUNT}).</p>

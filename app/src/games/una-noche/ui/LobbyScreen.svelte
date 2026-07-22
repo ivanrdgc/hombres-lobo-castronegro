@@ -58,7 +58,7 @@
   <h3>🎴 El mazo</h3>
   <p class="small-note">Ahora mismo jugarían <b>{est}</b> (la selección definitiva se hace al empezar): el mazo debe sumar <b>{need}</b> cartas ({est} + {CENTER_COUNT} al centro). Llevas <b class:danger-text={total !== need}>{total}</b>{total === need ? ' ✅' : total < need ? ` (faltan ${need - total})` : ` (sobran ${total - need})`}.</p>
   <div class="chips" style="margin-top:6px">
-    {#each deckRoles as r (r)}<span class="chip">{ROLES[r].emoji} {ROLES[r].name}{(comp[r] || 0) > 1 ? ` ×${comp[r]}` : ''}</span>{/each}
+    {#each deckRoles as r (r)}<button class="chip rolechip" data-a="una-role" data-p={r} onclick={() => (app.ui.modal = { type: 'una-role-detail', role: r })}>{ROLES[r].emoji} {ROLES[r].name}{(comp[r] || 0) > 1 ? ` ×${comp[r]}` : ''}</button>{/each}
   </div>
   <button class="block" data-a="una-open-deck" onclick={() => (app.ui.modal = { type: 'una-deck' })}>🎴 Elegir mazo</button>
 </div>

@@ -23,7 +23,7 @@ const hlc = (page) => page.evaluate(() => {
   return !g ? null : {
     phase: g.phase, stepIdx: g.stepIdx, steps: g.steps, playerIds: g.playerIds,
     originalRole: g.originalRole, slots: g.slots, center: g.center, names: g.names,
-    seen: g.seen, votes: g.votes, votesRevealed: g.votesRevealed, deaths: g.deaths,
+    seen: g.seen, lynched: g.lynched, pendingHunter: g.pendingHunter, deaths: g.deaths,
     winners: g.winners, acts: g.acts,
   };
 });
@@ -93,7 +93,14 @@ try {
   check(await ana.locator('[data-a=una-play-intro]').count() > 0, 'la intro del lobby tiene botón de lectura (▶️)');
   await ana.click('[data-a=una-open-help]');
   await ana.waitForSelector('text=/Cómo se juega/');
-  check(await ana.locator('[data-a=una-play-role]').count() > 0, 'cada rol tiene botón de lectura en voz alta (▶️)');
+  check(await ana.locator('.modal [data-a=una-role]').count() > 0, 'los roles son clicables (chips) en «cómo se juega»');
+  // Abrir el detalle de un rol → tiene explicación completa y lectura ▶️.
+  await ana.locator('.modal [data-a=una-role]').first().click();
+  await ana.waitForSelector('[data-a=una-role-play]', { timeout: 10000 });
+  check(await ana.locator('text=/Cómo funciona/').count() > 0, 'el detalle del rol explica cómo funciona (formato Los Hombres Lobo)');
+  check(await ana.locator('[data-a=una-role-play]').count() > 0, 'el detalle del rol tiene lectura en voz alta (▶️)');
+  await ana.click('[data-a=una-role-back]');
+  await ana.waitForSelector('text=/Cómo se juega/');
   await ana.click('button[data-a=close-modal]');
 
   // Mazo configurado DESDE EL LOBBY (recomendado → cambiar cazador por El Doble).
@@ -148,24 +155,29 @@ try {
   if (dobleDealt) check(!!st.acts.dobleRole, 'El Doble (repartido a un jugador) copió un rol: ' + st.acts.dobleRole);
   else ok('El Doble cayó en el centro: paso fantasma (nadie copia), como debe ser');
 
-  // ——— Día: voto simultáneo. Concentramos los votos en un jugador para
-  // provocar una muerte real (todos a playerIds[1], salvo él, que vota a [0]). ———
+  // ——— Día: UNA persona registra la condena del pueblo (como Los Hombres Lobo) ———
   st = await waitState(ana, (s) => s.phase === 'day', 'amanece (día)');
   ok('amanece y empieza el día');
   const victim = st.playerIds[1];
-  for (const pid of st.playerIds) {
-    const target = pid === victim ? st.playerIds[0] : victim;
-    const p = pg(pid);
-    await p.waitForSelector(`.player[data-a=una-sel][data-p="${target}"]`, { timeout: 15000 });
-    await p.click(`.player[data-a=una-sel][data-p="${target}"]`);
-    await p.click('[data-a=una-vote]');
-    await p.waitForTimeout(150);
+  const rp = pg(st.playerIds[0]); // el primer jugador registra la decisión
+  await rp.waitForSelector(`.player[data-a=una-sel][data-p="${victim}"]`, { timeout: 15000 });
+  await rp.click(`.player[data-a=una-sel][data-p="${victim}"]`);
+  await rp.click('[data-a=una-vote]');
+  ok(`una persona registra la condena de ${st.names[victim]}`);
+
+  // Si el condenado resulta ser el Cazador (por carta final), dispara su flecha.
+  st = await waitState(ana, (s) => s.phase === 'end' || s.pendingHunter, 'condena resuelta');
+  if (st.pendingHunter) {
+    const hp = pg(st.pendingHunter);
+    await hp.waitForSelector('[data-a=una-hunter-skip]', { timeout: 15000 });
+    await hp.click('[data-a=una-hunter-skip]');
+    ok('el Cazador linchado decide su flecha (pendiente, como en Los Hombres Lobo)');
+    st = await waitState(ana, (s) => s.phase === 'end', 'fin tras la flecha del Cazador');
   }
 
   // ——— Final ———
-  st = await waitState(ana, (s) => s.phase === 'end', 'fin de la partida');
   check(Array.isArray(st.winners) && st.winners.length > 0, 'hay bando(s) ganador(es): ' + JSON.stringify(st.winners));
-  check((st.deaths || []).length >= 1, 'el voto concentrado provoca una muerte: ' + JSON.stringify((st.deaths || []).map((d) => st.names[d])));
+  check((st.deaths || []).includes(victim), 'el condenado cae: ' + JSON.stringify((st.deaths || []).map((d) => st.names[d])));
   check(await ana.locator('[data-a=una-again]').count() > 0, 'la pantalla final ofrece otra partida');
   check(await ana.locator('text=/Las cartas, al final/').count() > 0, 'se revelan las cartas iniciales→finales');
   ok('partida completa de Una Noche');

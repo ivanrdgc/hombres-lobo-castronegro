@@ -7,6 +7,7 @@ import StartScreen from './ui/StartScreen.svelte';
 import GameScreen from './ui/GameScreen.svelte';
 import HelpModal from './ui/modals/HelpModal.svelte';
 import DeckModal from './ui/modals/DeckModal.svelte';
+import RoleDetailModal from './ui/modals/RoleDetailModal.svelte';
 import LeaveModal from './ui/modals/LeaveModal.svelte';
 import EndConfirmModal from './ui/modals/EndConfirmModal.svelte';
 
@@ -21,6 +22,7 @@ export const unaNoche: GameDefinition = {
   modals: {
     'una-help': HelpModal,
     'una-deck': DeckModal,
+    'una-role-detail': RoleDetailModal,
     'una-leave': LeaveModal,
     'una-end': EndConfirmModal,
   },

@@ -12,9 +12,6 @@
   // Fuera de partida (el lobby): leer en voz alta no delata nada.
   const canPlay = $derived(app.group?.status !== 'playing');
   const howto = $derived(localAudioState('una-howto'));
-
-  const teamLabel = (r: RoleId) => (ROLES[r].team === 'lobos' ? 'Hombres Lobo' : ROLES[r].team === 'tanner' ? 'en solitario' : 'El Pueblo');
-  const roleSpeech = (r: RoleId) => [`${ROLES[r].name}.`, `Bando: ${teamLabel(r)}.`, ROLES[r].desc];
 </script>
 
 <div style="display:flex;align-items:center;gap:8px">
@@ -32,41 +29,18 @@
 {#each HOWTO as p, i (i)}<p class="small-note" style="margin:8px 0">{p}</p>{/each}
 
 <h3 style="margin-top:14px">🌙 Orden de la noche</h3>
-{#each NIGHT as r (r)}
-  {@const audio = localAudioState('una-role:' + r)}
-  <div class="settingrow" style="align-items:center">
-    <div class="sinfo"><div class="sname">{ROLES[r].emoji} {ROLES[r].name}</div><div class="sdesc">{ROLES[r].desc}</div></div>
-    {#if canPlay}
-      <div class="btnrow" style="flex:0 0 auto">
-        {#if audio === 'playing'}
-          <button class="small ghost" data-a="una-play-role" data-p={r} aria-label="Detener" onclick={() => toggleLocalSpeech('una-role:' + r, [])}>⏹️</button>
-        {:else if audio === 'loading'}
-          <button class="small ghost" disabled aria-label="Preparando"><span class="spinner"></span></button>
-        {:else}
-          <button class="small ghost" data-a="una-play-role" data-p={r} aria-label="Leer este rol" title="Leer en voz alta" onclick={() => toggleLocalSpeech('una-role:' + r, roleSpeech(r))}>▶️</button>
-        {/if}
-      </div>
-    {/if}
-  </div>
-{/each}
+<p class="small-note" style="margin-top:2px">Toca un rol para ver en detalle cómo funciona.</p>
+<div class="chips" style="margin-top:6px">
+  {#each NIGHT as r (r)}
+    <button class="chip rolechip" data-a="una-role" data-p={r} onclick={() => (app.ui.modal = { type: 'una-role-detail', role: r, back: 'una-help' })}>{ROLES[r].emoji} {ROLES[r].name}</button>
+  {/each}
+</div>
 
 <h3 style="margin-top:14px">🛌 Sin acción de noche</h3>
-{#each PASSIVE as r (r)}
-  {@const audio = localAudioState('una-role:' + r)}
-  <div class="settingrow" style="align-items:center">
-    <div class="sinfo"><div class="sname">{ROLES[r].emoji} {ROLES[r].name}</div><div class="sdesc">{ROLES[r].desc}</div></div>
-    {#if canPlay}
-      <div class="btnrow" style="flex:0 0 auto">
-        {#if audio === 'playing'}
-          <button class="small ghost" data-a="una-play-role" data-p={r} aria-label="Detener" onclick={() => toggleLocalSpeech('una-role:' + r, [])}>⏹️</button>
-        {:else if audio === 'loading'}
-          <button class="small ghost" disabled aria-label="Preparando"><span class="spinner"></span></button>
-        {:else}
-          <button class="small ghost" data-a="una-play-role" data-p={r} aria-label="Leer este rol" title="Leer en voz alta" onclick={() => toggleLocalSpeech('una-role:' + r, roleSpeech(r))}>▶️</button>
-        {/if}
-      </div>
-    {/if}
-  </div>
-{/each}
+<div class="chips" style="margin-top:6px">
+  {#each PASSIVE as r (r)}
+    <button class="chip rolechip" data-a="una-role" data-p={r} onclick={() => (app.ui.modal = { type: 'una-role-detail', role: r, back: 'una-help' })}>{ROLES[r].emoji} {ROLES[r].name}</button>
+  {/each}
+</div>
 
 <button class="primary block" data-a="close-modal" onclick={() => (app.ui.modal = null)}>Entendido</button>

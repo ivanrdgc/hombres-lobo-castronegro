@@ -16,7 +16,7 @@ import { unaNocheGame } from '../actions';
 import * as A from '../actions';
 import { playersOf, stepActors } from '../engine';
 import type { GameState, StepId } from '../types';
-import { DAWN, DEBATE, END, LISTOS, NIGHT_FALL, STEP_CALL, WELCOME } from '../texts';
+import { DAWN, DEBATE, END, LISTOS, NIGHT_FALL, STEP_CALL, STEP_CLOSE, WELCOME } from '../texts';
 
 interface Snap {
   group: GroupDoc | null;
@@ -103,17 +103,27 @@ async function nightStepScene(ctx: Ctx, step: StepId, idx: number): Promise<void
     await A.wakeUp();
     return;
   }
-  // Paso de rol: la llamada suena igual exista o no (fantasma si está en el
-  // centro). Espera a que los actores acaben (instantáneo si es fantasma) y un
-  // colchón fijo, para que el tiempo no delate quién actuó.
+  // Paso de rol: la llamada (abrir ojos + instrucción) suena igual exista o no
+  // el rol. Si HAY actores, espera a que acaben + un colchón fijo. Si NO (el rol
+  // está en el centro: paso fantasma), una pausa humana MÁS LARGA para simular
+  // que alguien actúa (que el tiempo no delate que el rol no está en juego).
+  // Después, «cerrad los ojos» — nunca antes de que la acción termine.
   const call = STEP_CALL[step];
   if (call) await ctx.sayOnce(uid('call'), () => utt('un-' + step, call));
-  await ctx.waitFor((s) => {
-    const game = unaNocheGame(s.group);
-    return !game || game.phase !== 'night' || game.stepIdx !== idx || !actorsPending(step, game);
-  });
-  if (gm(ctx).phase === 'night' && gm(ctx).stepIdx === idx) {
+  const hadActors = actorsPending(step, gm(ctx));
+  if (hadActors) {
+    await ctx.waitFor((s) => {
+      const game = unaNocheGame(s.group);
+      return !game || game.phase !== 'night' || game.stepIdx !== idx || !actorsPending(step, game);
+    });
     await ctx.pause('postActionHold');
+  } else {
+    await ctx.pause('fakeConfirmHold'); // disimulo: 4–9 s como si alguien actuara
+  }
+  if (gm(ctx).phase === 'night' && gm(ctx).stepIdx === idx) {
+    const close = STEP_CLOSE[step];
+    if (close) await ctx.sayOnce(uid('close'), () => utt('un-close-' + step, close));
+    await ctx.pause('advanceGap');
     await A.advanceGhostStep(idx);
   }
 }

@@ -12,7 +12,7 @@ import {
   MIN_PLAYERS, MAX_PLAYERS, CENTER_COUNT, compositionSize, dealOneNight,
 } from './roles';
 import {
-  computeNightSteps, stepActors, playersOf, allVoted, resolveDay,
+  computeNightSteps, stepActors, playersOf, finalRolesOf, checkWinner,
   robberSwap, troublemakerSwap, drunkSwap, seerViewPlayer, seerViewCenter, dobleId,
 } from './engine';
 import type { Composition, GameState, RoleId } from './types';
@@ -80,7 +80,7 @@ export async function startUnaNoche(
     playerIds, names,
     steps: [], stepIdx: 0, acts: {},
     originalRole, slots, center, composition: comp, selectedRoles,
-    seen: {}, votes: {}, votesRevealed: false, deaths: [], winner: null, winners: [],
+    seen: {}, lynched: null, pendingHunter: null, deaths: [], winner: null, winners: [],
     discussionEndsAt: null, paused: null, repeatNonce: 0,
     log: [{ kind: 'evento', txt: `🌙 Comienza Una Noche en Castronegro con ${playerIds.length} jugadores y ${CENTER_COUNT} cartas en el centro.` }],
   };
@@ -318,62 +318,78 @@ export async function advanceGhostStep(expectedIdx: number): Promise<void> {
   });
 }
 
-/** Amanece: se abren los ojos y empieza el día (voto simultáneo). */
+/** Amanece: se abren los ojos y empieza el día (debate + votación). */
 export async function wakeUp(): Promise<void> {
   await tx((game) => {
     if (game.phase !== 'night' || game.steps[game.stepIdx] !== 'amanecer') return null;
     game.phase = 'day';
-    game.votes = {};
-    game.votesRevealed = false;
-    game.log!.push({ kind: 'dia', txt: '☀️ Amanece. Debatid y, cuando estéis listos, señalad todos a la vez.' });
+    game.lynched = null;
+    game.pendingHunter = null;
+    game.deaths = [];
+    game.log!.push({ kind: 'dia', txt: '☀️ Amanece. Debatid y, cuando el pueblo decida, que alguien registre a quién condena (o si perdona).' });
     return game;
   });
 }
 
-// ——— Día: voto simultáneo ———
+// ——— Día: una persona registra la decisión del pueblo (como Los Hombres Lobo) ———
 
-export async function castVote(targetId: string): Promise<void> {
+// choice: pid condenado | 'nadie'. Cualquiera en juego lo registra.
+export async function castVote(choice: string): Promise<void> {
   const me = myPid();
   await tx((game) => {
-    if (game.phase !== 'day' || game.votesRevealed) return null;
-    if (!game.playerIds.includes(me) || !game.playerIds.includes(targetId)) return null;
-    game.votes = { ...(game.votes || {}), [me]: targetId };
-    if (allVoted(game, playersOf(game))) resolveToEnd(game);
-    return game;
+    if (game.phase !== 'day' || game.pendingHunter || game.lynched != null) return null;
+    if (!game.playerIds.includes(me)) return null;
+    if (choice !== 'nadie' && !game.playerIds.includes(choice)) return null;
+    game.lynched = choice;
+    if (choice === 'nadie') {
+      game.log!.push({ kind: 'dia', txt: `🕊️ ${nameOf(game, me)} registra: el pueblo perdona, no se condena a nadie.` });
+    } else {
+      game.log!.push({ kind: 'dia', txt: `⚖️ ${nameOf(game, me)} registra la condena del pueblo: ${nameOf(game, choice)}.` });
+    }
+    return resolveDeaths(game, choice === 'nadie' ? [] : [choice]);
   });
 }
 
-export async function retractVote(): Promise<void> {
-  const me = myPid();
-  await tx((game) => {
-    if (game.phase !== 'day' || game.votesRevealed) return null;
-    if (!game.votes[me]) return null;
-    const v = { ...game.votes };
-    delete v[me];
-    game.votes = v;
-    return game;
+// La flecha del Cazador (por carta FINAL): tras el linchamiento, dispara a
+// quien la mesa decida (lo registra el propio Cazador o el narrador).
+export async function hunterShoot(targetId: string | null): Promise<void> {
+  await tx((game, m) => {
+    if (!game.pendingHunter) return null;
+    if (myPid() !== game.pendingHunter && myPid() !== m.masterId) return null;
+    const hunter = game.pendingHunter;
+    game.pendingHunter = null;
+    const deaths = (game.deaths || []).slice();
+    if (targetId && game.playerIds.includes(targetId) && !deaths.includes(targetId)) {
+      deaths.push(targetId);
+      game.log!.push({ kind: 'dia', txt: `🏹 ${nameOf(game, hunter)}, que era el Cazador, se lleva consigo a ${nameOf(game, targetId)}.` });
+    } else {
+      game.log!.push({ kind: 'dia', txt: `🏹 ${nameOf(game, hunter)}, el Cazador, no dispara.` });
+    }
+    return resolveDeaths(game, deaths);
   });
 }
 
-function resolveToEnd(game: GameState): void {
-  const { deaths, winners } = resolveDay(game, playersOf(game));
-  game.votesRevealed = true;
+// Aplica las muertes del día. Si un Cazador (por carta FINAL) cae y aún no ha
+// disparado, abre su flecha como pendiente (como en Los Hombres Lobo); si no,
+// cierra la partida con el/los ganador(es).
+function resolveDeaths(game: GameState, deaths: string[]): GameState {
   game.deaths = deaths;
+  const players = playersOf(game);
+  const finals = finalRolesOf(game, players);
+  const shot = game.huntersShot || [];
+  const hunter = deaths.find((pid) => finals[pid] === 'cazador' && !shot.includes(pid));
+  if (hunter) {
+    game.huntersShot = [...shot, hunter];
+    game.pendingHunter = hunter;
+    return game; // sigue en 'day' hasta que dispare
+  }
+  const pids = players.map((p) => p.id);
+  const winners = checkWinner(finals, deaths, pids);
   game.winners = winners;
   game.winner = winners[0] || 'nadie';
   game.phase = 'end';
-  const deadNames = deaths.map((pid) => nameOf(game, pid)).join(', ');
-  game.log!.push({ kind: 'dia', txt: deaths.length ? `⚖️ El pueblo señala: ${deadNames}.` : '🕊️ Nadie recibió más de un voto: no muere nadie.' });
-}
-
-// El máster fuerza el desenlace del día aunque falte alguien por votar.
-export async function forceResolve(): Promise<void> {
-  await tx((game, m) => {
-    if (game.phase !== 'day' || game.votesRevealed) return null;
-    if (myPid() !== m.masterId) return null;
-    resolveToEnd(game);
-    return game;
-  });
+  game.log!.push({ kind: 'dia', txt: deaths.length ? `💀 Cae: ${deaths.map((pid) => nameOf(game, pid)).join(', ')}.` : '🕊️ No muere nadie hoy.' });
+  return game;
 }
 
 // ——— Revancha / fin ———
@@ -394,8 +410,9 @@ export async function playAgain(): Promise<void> {
     game.slots = slots;
     game.center = center;
     game.seen = {};
-    game.votes = {};
-    game.votesRevealed = false;
+    game.lynched = null;
+    game.pendingHunter = null;
+    game.huntersShot = [];
     game.deaths = [];
     game.winners = [];
     game.winner = null;

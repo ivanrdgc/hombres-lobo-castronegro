@@ -1,6 +1,7 @@
 // Tests del motor puro de «Una Noche en Castronegro». Lo crítico: el rastreo
-// de cartas por silla (intercambios), el recuento del voto simultáneo y la
-// matriz de condiciones de victoria (que en Una Noche son de las más sutiles).
+// de cartas por silla (intercambios) y la matriz de condiciones de victoria
+// (que en Una Noche son de las más sutiles). La votación (una persona registra
+// la decisión del pueblo) vive en actions.ts sobre estos mismos helpers.
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import {
@@ -8,8 +9,8 @@ import {
 } from './roles';
 import {
   computeNightSteps, stepActors, robberSwap, troublemakerSwap, drunkSwap,
-  seerViewPlayer, seerViewCenter, tallyDeaths, checkWinner, allVoted, packmates,
-  nightIs, dobleId, finalRoleOf, finalRolesOf, resolveDay,
+  seerViewPlayer, seerViewCenter, checkWinner, packmates,
+  nightIs, dobleId, finalRoleOf, finalRolesOf,
 } from './engine';
 import type { Composition, GameState, RoleId } from './types';
 
@@ -19,8 +20,9 @@ const mkPlayers = (n: number) => Array.from({ length: n }, (_, i) => ({
 
 const mkGame = (over: Partial<GameState> = {}): GameState => ({
   phase: 'night', stepIdx: 0, steps: [], acts: {},
+  playerIds: [], names: {},
   originalRole: {}, slots: {}, center: [], composition: {}, selectedRoles: [],
-  votes: {}, log: [], ...over,
+  log: [], ...over,
 });
 
 // ——— Reparto ———
@@ -136,41 +138,6 @@ test('seerView: foto de lo visto (jugador o centro)', () => {
   assert.deepEqual(seerViewCenter(game, [0, 2]), { kind: 'center', idx: [0, 2], roles: ['aldeano', 'insomne'] });
 });
 
-// ——— Voto y muertes ———
-
-test('allVoted: cierto solo cuando han votado todos los jugadores en juego', () => {
-  const players = mkPlayers(3);
-  const game = mkGame({ votes: { p0: 'p1', p1: 'p0' } });
-  assert.equal(allVoted(game, players), false);
-  game.votes.p2 = 'p0';
-  assert.equal(allVoted(game, players), true);
-});
-
-test('tallyDeaths: muere el más votado; empate mata a todos los empatados', () => {
-  const pids = ['p0', 'p1', 'p2', 'p3'];
-  const roles: Record<string, RoleId> = { p0: 'lobo', p1: 'aldeano', p2: 'aldeano', p3: 'vidente' };
-  // p0 recibe 3 votos, p1 uno.
-  assert.deepEqual(tallyDeaths({ p1: 'p0', p2: 'p0', p3: 'p0', p0: 'p1' }, roles, pids), ['p0']);
-  // Empate a 2 entre p0 y p1.
-  assert.deepEqual(
-    tallyDeaths({ p2: 'p0', p3: 'p0', p0: 'p1', p1: 'p1' }, roles, pids).sort(), ['p0', 'p1'],
-  );
-});
-
-test('tallyDeaths: si nadie recibe más de un voto, no muere nadie', () => {
-  const pids = ['p0', 'p1', 'p2'];
-  const roles: Record<string, RoleId> = { p0: 'lobo', p1: 'aldeano', p2: 'aldeano' };
-  assert.deepEqual(tallyDeaths({ p0: 'p1', p1: 'p2', p2: 'p0' }, roles, pids), []);
-});
-
-test('tallyDeaths: el Cazador (carta final) arrastra a quien votó', () => {
-  const pids = ['p0', 'p1', 'p2', 'p3'];
-  const roles: Record<string, RoleId> = { p0: 'cazador', p1: 'lobo', p2: 'aldeano', p3: 'aldeano' };
-  // p0 (Cazador) es el más votado y él votó a p1 (lobo): caen ambos.
-  const dead = tallyDeaths({ p1: 'p0', p2: 'p0', p3: 'p0', p0: 'p1' }, roles, pids).sort();
-  assert.deepEqual(dead, ['p0', 'p1']);
-});
-
 // ——— Matriz de victorias ———
 
 const pids4 = ['p0', 'p1', 'p2', 'p3'];
@@ -279,18 +246,17 @@ test('finalRoleOf: conserva la carta doble → es el rol copiado; carta real →
   assert.equal(finalRoleOf(game, players, 'p1'), 'lobo');
 });
 
-test('Doble-Curtidor: si lo matan, gana el Curtidor (por el rol copiado)', () => {
+test('Doble-Curtidor: si lo linchan, gana el Curtidor (por el rol copiado)', () => {
   const players = mkPlayers(4);
   const game = mkGame({
     originalRole: { p0: 'doble', p1: 'lobo', p2: 'aldeano', p3: 'vidente' },
     slots: { p0: 'doble', p1: 'lobo', p2: 'aldeano', p3: 'vidente' },
     acts: { dobleRole: 'tanner' },
-    votes: { p1: 'p0', p2: 'p0', p3: 'p0', p0: 'p1' },
   });
-  const { finalRoles, deaths, winners } = resolveDay(game, players);
+  const finalRoles = finalRolesOf(game, players);
   assert.equal(finalRoles.p0, 'tanner');
-  assert.deepEqual(deaths, ['p0']);
-  assert.deepEqual(winners, ['tanner']); // los lobos sobreviven pero NO ganan (murió el curtidor)
+  // El pueblo condena a p0 (el Doble-Curtidor).
+  assert.deepEqual(checkWinner(finalRoles, ['p0'], pids4), ['tanner']); // los lobos sobreviven pero NO ganan
 });
 
 test('Doble copia Ladrón, roba una carta real y ACABA siendo ese rol; la doble huérfana = aldeano', () => {
@@ -320,17 +286,15 @@ test('Doble copia Villano: su carta doble es arrastrada por la Alborotadora → 
   assert.equal(finalRoleOf(game, players, 'p1'), 'aldeano'); // recibió la doble huérfana
 });
 
-test('finalRolesOf + resolveDay: partida con Doble-Lobo cuenta como lobo en la victoria', () => {
+test('finalRolesOf: partida con Doble-Lobo cuenta como lobo en la victoria', () => {
   const players = mkPlayers(4);
   const game = mkGame({
     originalRole: { p0: 'doble', p1: 'lobo', p2: 'aldeano', p3: 'vidente' },
     slots: { p0: 'doble', p1: 'lobo', p2: 'aldeano', p3: 'vidente' },
     acts: { dobleRole: 'lobo' },
-    votes: { p0: 'p2', p1: 'p2', p2: 'p3', p3: 'p0' }, // p2 (aldeano) el más votado
   });
   const roles = finalRolesOf(game, players);
   assert.equal(roles.p0, 'lobo'); // Doble-Lobo
-  const { deaths, winners } = resolveDay(game, players);
-  assert.deepEqual(deaths, ['p2']); // muere un aldeano
-  assert.deepEqual(winners, ['lobos']); // dos lobos vivos → ganan los lobos
+  // El pueblo condena a p2 (aldeano): con dos lobos vivos, ganan los lobos.
+  assert.deepEqual(checkWinner(roles, ['p2'], pids4), ['lobos']);
 });

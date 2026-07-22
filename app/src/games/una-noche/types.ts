@@ -113,10 +113,13 @@ export interface GameState {
   selectedRoles: RoleId[];
   /** Reparto visto por cada jugador (fase reveal). */
   seen?: Record<string, boolean>;
-  /** Voto simultáneo: pid → pid señalado. Se revela cuando han votado todos. */
-  votes: Record<string, string>;
-  votesRevealed?: boolean;
-  /** Muertos de la votación (pids). */
+  /** Decisión registrada por el pueblo: pid condenado o 'nadie' (como en Los Hombres Lobo). */
+  lynched?: string | null;
+  /** Cazador (por carta FINAL) que ha muerto linchado y debe disparar su flecha. */
+  pendingHunter?: string | null;
+  /** Cazadores que ya dispararon (evita cadenas infinitas de flechas). */
+  huntersShot?: string[];
+  /** Muertos del día (pids). */
   deaths?: string[];
   winner?: WinnerId | null;
   /** Todos los bandos ganadores (Una Noche admite varios: p. ej. Curtidor + Pueblo). */

@@ -186,42 +186,7 @@ export function finalRolesOf(game: GameState, players: Player[]): Record<string,
   return out;
 }
 
-// ——— Día: voto simultáneo, muertes y victoria ———
-
-/** ¿Han votado ya todos los jugadores en juego? */
-export function allVoted(game: GameState, players: Player[]): boolean {
-  const inGame = players.filter((p) => p.inGame);
-  return inGame.length > 0 && inGame.every((p) => game.votes[p.id]);
-}
-
-/**
- * Muertes de la votación (por carta FINAL para el Cazador):
- *  - muere el más votado; empate → mueren todos los empatados;
- *  - si NADIE recibe más de un voto, no muere nadie (el pueblo no se puso de acuerdo);
- *  - si un Cazador muere, también muere aquel a quien votó.
- */
-export function tallyDeaths(
-  votes: Record<string, string>,
-  finalRoles: Record<string, RoleId>,
-  pids: string[],
-): string[] {
-  const count: Record<string, number> = {};
-  for (const voter of pids) {
-    const t = votes[voter];
-    if (t && pids.includes(t)) count[t] = (count[t] || 0) + 1;
-  }
-  const max = Math.max(0, ...Object.values(count));
-  if (max <= 1) return []; // nadie con más de un voto → nadie muere
-  const dead = new Set(pids.filter((p) => (count[p] || 0) === max));
-  // Cazador: arrastra a su objetivo (por carta final).
-  for (const pid of [...dead]) {
-    if (finalRoles[pid] === 'cazador') {
-      const t = votes[pid];
-      if (t && pids.includes(t)) dead.add(t);
-    }
-  }
-  return [...dead];
-}
+// ——— Día: muertes y victoria (una persona registra la decisión del pueblo) ———
 
 export const WIN_LABELS: Record<WinnerId, string> = {
   pueblo: '🏡 ¡Gana el Pueblo! Ha caído al menos un hombre lobo (o no había ninguno y nadie murió).',
@@ -268,22 +233,6 @@ export function checkWinner(
 /** Bando de cada carta (para pintar el final). */
 export function teamOfRole(r: RoleId): Team {
   return ROLES[r].team;
-}
-
-export interface DayResult {
-  finalRoles: Record<string, RoleId>;
-  deaths: string[];
-  winners: WinnerId[];
-}
-
-/** Resuelve el día completo desde los votos: identidad final → muertes → victoria. */
-export function resolveDay(game: GameState, players: Player[]): DayResult {
-  const inGame = players.filter((p) => p.inGame);
-  const pids = inGame.map((p) => p.id);
-  const finalRoles = finalRolesOf(game, players);
-  const deaths = tallyDeaths(game.votes || {}, finalRoles, pids);
-  const winners = checkWinner(finalRoles, deaths, pids);
-  return { finalRoles, deaths, winners };
 }
 
 /** Sanea acts a un objeto vacío al empezar una partida nueva. */

@@ -62,6 +62,7 @@
     <div class="sinfo"><div class="sname" style="opacity:{c ? 1 : 0.55}">{ROLES[r].emoji} {ROLES[r].name}{c > 1 ? ` ×${c}` : ''}</div>
       <div class="sdesc">{ROLES[r].desc}</div></div>
     <div class="btnrow" style="flex:0 0 auto">
+      <button class="small ghost" data-a="una-deck-info" data-p={r} aria-label="Ver el rol en detalle" title="Ver en detalle" onclick={() => (app.ui.modal = { type: 'una-role-detail', role: r, back: 'una-deck' })}>ℹ️</button>
       <button class="small ghost" data-a="una-deck-dec" data-p={r} disabled={c <= 0} onclick={() => bump(r, -1)}>−</button>
       <span style="min-width:1.5em;text-align:center">{c}</span>
       <button class="small ghost" data-a="una-deck-inc" data-p={r} disabled={c >= (MAX_OF[r] ?? 1)} onclick={() => bump(r, 1)}>+</button>
