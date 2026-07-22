@@ -50,6 +50,7 @@ export function installNarrator(): void {
   });
 
   let wasNarrator = false;
+  let hadGame = false;
   let repeatSeen: number | null = null;
   let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -58,6 +59,17 @@ export function installNarrator(): void {
     const g = s.group;
     const game = g?.game;
     const master = amNarrator(s);
+
+    // Al arrancar la partida, TODO dispositivo corta su lectura local en curso
+    // (explicación del lobby, detalle de un rol): si siguiera sonando, se
+    // solaparía con la primera locución del narrador (B8). Tiene que ocurrir
+    // ANTES del respawn de abajo: un stopSpeech posterior descartaría la
+    // bienvenida recién encolada.
+    if (game && !hadGame && state.ui.explainAudio) {
+      stopSpeech('hard');
+      state.ui.explainAudio = null;
+    }
+    hadGame = !!game;
 
     // Relevo de narrador en plena partida: quien toma el mando re-narra la
     // escena actual desde el principio (ledger a cero).

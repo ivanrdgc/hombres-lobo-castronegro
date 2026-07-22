@@ -1,4 +1,4 @@
-// E2E infecto: la llamada de la sangre (paso 'infectado').
+// E2E infecto: la llamada de la sangre (paso 'infectado') + convivencia con Cupido.
 //  1) Al infectar, la víctima es despertada ESA misma noche por palabra clave:
 //     ve el panel del mordisco con su palabra NUEVA junto al botón, confirma,
 //     y NO muere al amanecer. Los demás ven el panel neutral («Atención al
@@ -6,6 +6,8 @@
 //  2) La noche siguiente el infectado despierta y caza CON la manada.
 //  3) Las noches sin infección (poder ya gastado) el paso avanza solo con una
 //     llamada de señuelos: ningún jugador tiene que tocar nada.
+//  4) B9: con el Infecto en juego (reutilizador de palabras), los enamorados
+//     de Cupido ven su palabra NUEVA junto al botón ANTES de confirmar.
 import { chromium } from 'playwright';
 const BASE = process.env.BASE; if (!BASE) { console.error('Define BASE=https://tu-sitio.web.app'); process.exit(1); }
 let fail = 0;
@@ -57,21 +59,24 @@ try {
   await ana.click('.switch[data-a=toggle-setting][data-p=casual]');
   await ana.waitForSelector('.switch.on[data-a=toggle-setting][data-p=casual]');
   await ana.click('button[data-a=close-modal]');
-  // Roles: SOLO el infecto como extra → mazo de 4 = infecto + 3 aldeanos
-  // (el especial de lobo sustituye al lobo común del reparto).
+  // Roles: infecto + cupido como únicos extras → mazo de 5 = infecto (único
+  // lobo: el especial sustituye al común) + cupido + 3 aldeanos.
   await ana.click('[data-a=open-roles]');
   await ana.waitForSelector('.roletoggle');
+  const KEEP = ['infecto', 'cupido'];
   const onRoles = await ana.$$eval('.roletoggle.on', (els) => els.map((e) => e.getAttribute('data-p')));
-  for (const r of onRoles.filter((x) => x && x !== 'infecto')) {
+  for (const r of onRoles.filter((x) => x && !KEEP.includes(x))) {
     await ana.click(`.roletoggle.on[data-p=${r}]`);
     await ana.waitForSelector(`.roletoggle[data-p=${r}]:not(.on)`, { timeout: 10000 });
   }
-  if (!(await ana.locator('.roletoggle.on[data-p=infecto]').count())) {
-    await ana.click('.roletoggle[data-p=infecto]');
-    await ana.waitForSelector('.roletoggle.on[data-p=infecto]');
+  for (const r of KEEP) {
+    if (!(await ana.locator(`.roletoggle.on[data-p=${r}]`).count())) {
+      await ana.click(`.roletoggle[data-p=${r}]`);
+      await ana.waitForSelector(`.roletoggle.on[data-p=${r}]`);
+    }
   }
   await ana.click('button[data-a=close-modal]');
-  ok('composición: infecto como único rol extra');
+  ok('composición: infecto + cupido como únicos extras');
 
   // Empezar: Ana narra sin jugar (4 jugadores con carta).
   await ana.click('[data-a=open-start]');
@@ -81,8 +86,10 @@ try {
   await ana.click('[data-a=start-auto]');
   let st = await waitState(ana, (s) => s.phase === 'reveal', 'reparto');
   const infecto = st.players.find((p) => p.role === 'infecto');
-  check(!!infecto, `el Infecto está en juego (${infecto?.name})`);
+  const cupido = st.players.find((p) => p.role === 'cupido');
+  check(!!infecto && !!cupido, `Infecto (${infecto?.name}) y Cupido (${cupido?.name}) en juego`);
   const victim = st.players.find((p) => p.inGame && p.role === 'aldeano');
+  // Los otros dos aldeanos serán los enamorados de Cupido.
   const otros = st.players.filter((p) => p.inGame && p.role === 'aldeano' && p.id !== victim.id);
 
   for (const p of st.players.filter((x) => x.inGame)) {
@@ -114,6 +121,27 @@ try {
     if (stepId === 'lobos_reconocen') {
       await ip.waitForSelector('button[data-a=act-lobos-reconocido]', { timeout: 15000 });
       await ip.click('button[data-a=act-lobos-reconocido]');
+    } else if (stepId === 'cupido') {
+      const cp = pages[cupido.name.toLowerCase()];
+      await cp.waitForSelector('button[data-a=act-cupido]', { timeout: 15000 });
+      await cp.click(`.actionpanel .player.selectable[data-p=${otros[0].id}]`);
+      await cp.click(`.actionpanel .player.selectable[data-p=${otros[1].id}]`);
+      await cp.click('button[data-a=act-cupido]');
+      ok(`Cupido enamora a ${otros[0].name} y ${otros[1].name}`);
+    } else if (stepId === 'enamorados') {
+      // B9: con el Infecto en juego, sus palabras se queman y la NUEVA se
+      // enseña junto al botón ANTES de confirmar.
+      for (const lover of [otros[0], otros[1]]) {
+        const lp = pages[lover.name.toLowerCase()];
+        const seen = await lp.waitForSelector('button[data-a=act-lover-ok]', { timeout: 15000 }).then(() => true).catch(() => false);
+        check(seen, `${lover.name} ve el panel de enamorados`);
+        if (seen) {
+          const conNueva = await lp.locator('.actionpanel:has-text("NUEVA")').count();
+          check(conNueva >= 1, `${lover.name} ve su palabra nueva JUNTO al botón, antes de confirmar (B9)`);
+          await lp.click('button[data-a=act-lover-ok]');
+        }
+        await lp.waitForTimeout(150);
+      }
     } else if (stepId === 'lobos') {
       await ip.waitForSelector('button[data-a=act-lobos]', { timeout: 15000 });
       await ip.click(`.actionpanel .player.selectable[data-p=${victim.id}]`);
@@ -176,7 +204,7 @@ try {
       check(nota >= 1, 'su panel le recuerda que caza y gana con los lobos');
       await vp.click(`.actionpanel .player.selectable[data-p=${otros[0].id}]`);
       await vp.click('button[data-a=act-lobos]');
-      ok(`el infectado elige presa: ${otros[0].name}`);
+      ok(`el infectado elige presa: ${otros[0].name} (enamorado: su pareja morirá de pena)`);
     } else if (stepId === 'infectado') {
       // Poder gastado: nadie tiene nada que tocar; los señuelos suenan y el
       // paso avanza solo.
@@ -189,7 +217,8 @@ try {
     await ana.waitForTimeout(400);
   }
 
-  // Amanecer 2: cae un aldeano → 2 lobos (infecto + infectado) vs 1 → paridad.
+  // Amanecer 2: cae un enamorado y su pareja muere de pena → quedan los 2
+  // lobos (infecto + infectado) y Cupido → paridad.
   st = await waitState(ana, (s) => s.phase === 'end', 'fin de partida por paridad');
   check(st.winner === 'lobos', `ganan los lobos (winner=${st.winner})`);
   const endMarks = await pages[victim.name.toLowerCase()].locator('text=🧛').count();

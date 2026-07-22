@@ -531,13 +531,16 @@ export const actLadron = (roleIdx: number | null) => nightAction('ladron', (game
 export const actCupido = (a: string, b: string) => nightAction('cupido', (game, ps) => {
   game.acts.cupidoPair = [a, b];
   const patches: Record<string, Partial<PlayerDoc>> = { [a]: { lover: true }, [b]: { lover: true } };
-  // Su llamada nocturna quemará sus palabras, que solo deben renovarse si
-  // podrán volver a sonar: es decir, si el Gaitero está REALMENTE repartido
-  // (una llamada de encantamiento podría nombrarlos más adelante). La reserva
-  // se hace YA (kwNext) para enseñar la palabra nueva en la misma pantalla de
-  // confirmación; la llamada en voz alta usa la vieja.
-  const gaiteroDealt = (game.composition || {}).gaitero! > 0 || ps.some((p) => p.role === 'gaitero');
-  if (gaiteroDealt) {
+  // Su llamada nocturna quemará sus palabras, que deben renovarse si alguien
+  // podría volver a llamarlos por palabra clave: el Gaitero (al encantar) o el
+  // Infecto (al morder). Con composición secreta basta con que esos roles
+  // estén ACTIVADOS: renovar también entonces evita delatar que no se
+  // repartieron. La reserva se hace YA (kwNext) para enseñar la palabra nueva
+  // en la misma pantalla de confirmación; la llamada en voz alta usa la vieja.
+  const reuserDealt = (['gaitero', 'infecto'] as const).some((r) => ((game.composition || {})[r] || 0) > 0
+    || ps.some((p) => p.role === r)
+    || (!!game.fakeAllSelected && (game.selectedRoles || []).includes(r)));
+  if (reuserDealt) {
     for (const [pid, r] of Object.entries(reserveNextKeywords(game, ps, [a, b]))) {
       patches[pid] = { ...patches[pid], ...r };
     }

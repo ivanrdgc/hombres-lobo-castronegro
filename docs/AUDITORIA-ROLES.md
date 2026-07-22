@@ -44,7 +44,7 @@ propios del actor (visiones, pociones…) o deducibles solo por su dueño
 | 🔮 Vidente | Resultado solo en SU panel + historial en su carta. | ✔ |
 | 🧪 Bruja | Ve a la víctima en su paso (info propia). Veneno: muerte pública al alba. Sin pociones sigue despertando (disimulo). | ✔ |
 | 🏹 Cazador | Dispara al morir: pendiente público (ya está muerto y revelado). | ✔ |
-| 💘 Cupido | Enamorados llamados por palabra clave n1; con Gaitero en juego sus palabras se reservan y rotan. Llamada falsa si Cupido es fantasma. | ✔ |
+| 💘 Cupido | Enamorados llamados por palabra clave n1; con un REUTILIZADOR en juego (Gaitero o Infecto, o composición secreta que los active) sus palabras se reservan y rotan — la nueva a la vista ANTES de confirmar (B9). Llamada falsa si Cupido es fantasma. | ✔ |
 | 🃏 Ladrón | Cambio de carta privado; los pasos de la noche se recalculan al instante (probado con lobo/roles nocturnos). | ✔ |
 | 👧 Niña | Espía físicamente; la app ni ayuda ni delata. | ✔ |
 | 🛡️ Defensor | Protección invisible (también anula la infección: sin mordisco no hay contagio). | ✔ |
@@ -85,6 +85,9 @@ propios del actor (visiones, pociones…) o deducibles solo por su dueño
   el paso pasa de largo y el mordido se entera por su carta, como antes.
 - `keywordsActive` ahora también se enciende con el Infecto en juego (antes
   solo Cupido/Gaitero).
+- Al arrancar la partida, todo dispositivo corta su lectura local en voz alta
+  (explicación del lobby, detalle de rol): nada se solapa con la primera
+  locución del narrador (B8).
 
 ## Verificación
 

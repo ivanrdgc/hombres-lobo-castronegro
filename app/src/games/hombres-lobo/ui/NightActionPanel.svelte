@@ -121,6 +121,8 @@
         <p class="hint">🔑 Te llamé por <b>«{my.keyword}»</b>: queda quemada. Tu <b>NUEVA</b> palabra clave, desde ya:</p>
         <p style="text-align:center;font-size:1.3rem;margin:8px 0"><b>«{my.kwNext}»</b></p>
         <p class="hint">Memorízala antes de confirmar: con ella te llamaré la próxima vez.</p>
+      {:else if my.keyword}
+        <p class="hint">🔑 Tu palabra clave no cambia: sigue siendo <b>«{my.keyword}»</b>.</p>
       {/if}
       <button class="primary block" data-a="act-lover-ok" onclick={() => guard(A.confirmLover)}>❤️ Entendido</button>
     {:else}

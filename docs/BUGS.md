@@ -90,3 +90,26 @@ Estados: 🔴 abierto · 🟢 arreglado (con commit) · 🟡 re-reportado tras u
   humana muestreada — indistinguible. Los señuelos del Infecto avanzan desde el FINAL del mazo
   (los de encantados, desde el principio): ninguna palabra suena dos veces. E2E `e2e-infecto.mjs`
   contra la app desplegada + tests de motor y de escena (paridad temporal real/falsa).
+
+## B8 · Al empezar la partida suenan dos audios a la vez (solo la primera locución)
+- **2026-07-22 · reporte.** «En algunos casos, suenan dos audios a la vez justo cuando empieza el
+  juego (solo la primera locución, luego se arregla).»
+  Diagnóstico: la lectura local en voz alta (explicación del lobby o detalle de un rol) no se
+  detenía en los dispositivos NO narradores al arrancar la partida: seguía sonando por encima de
+  la bienvenida del narrador hasta terminar («luego se arregla»). En el narrador no pasaba: su
+  relevo ya corta el audio en seco.
+- **2026-07-22 · 🟢 arreglado** (este commit): en cuanto aparece tu partida, TODO dispositivo corta
+  su lectura local en curso antes de que el narrador abra la boca.
+
+## B9 · Enamorados: la palabra clave no se renovaba si no había Gaitero (con Infecto sí toca)
+- **2026-07-22 · reporte.** «La palabra clave se debe quemar si convive Cupido + un rol que pueda
+  usarlas de nuevo como el Gaitero o el Infecto. Se debe mostrar la nueva antes de confirmar, no
+  después. Y se deben renovar (ahora no se renueva — parece un bug).»
+  Diagnóstico: la reserva de palabra nueva al flechar (kwNext) solo se hacía con GAITERO repartido;
+  con Cupido + Infecto (partida del reporte) no se reservaba nada → ni palabra nueva a la vista ni
+  renovación al confirmar.
+- **2026-07-22 · 🟢 arreglado** (este commit): la reserva se hace si convive cualquier rol que
+  pueda volver a llamarlos (Gaitero o Infecto), también con composición secreta que los active
+  (para no delatar que no están). La nueva se enseña JUNTO al botón antes de confirmar, como en
+  encantados e infectado; sin ningún reutilizador posible, el panel aclara «tu palabra no cambia».
+  E2E ampliado: cupido + infecto conviviendo, con la renovación verificada antes del toque.
