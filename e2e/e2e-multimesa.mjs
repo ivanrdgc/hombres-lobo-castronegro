@@ -12,6 +12,7 @@ const browser = await chromium.launch();
 const pages = {};
 async function mk(label) {
   const ctx = await browser.newContext({ locale: 'es-ES' });
+  await ctx.addInitScript(() => { window.__hlcTest = true; }); // e2e veloz: sin audio, colchones mínimos
   const page = await ctx.newPage();
   page.on('pageerror', (e) => bad(`[${label}] ${e.message}`));
   pages[label] = page; return page;

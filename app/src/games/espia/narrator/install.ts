@@ -3,7 +3,8 @@
 // la partida en curso es El Espía; convive con el narrador de Hombres Lobo sin
 // pisarse (cada uno proyecta escena nula para el juego del otro).
 import { createNarrator, type SceneCtx, type SceneDef } from '../../../core/narrator/sequencer';
-import { profileOf } from '../../../core/narrator/pacing';
+import { pauseMs, profileOf } from '../../../core/narrator/pacing';
+import { e2eTestMode } from '../../../core/test-hooks';
 import { play, stopSpeech } from '../../../core/audio/player';
 import type { Utterance } from '../../../core/audio/player';
 import { prewarmSynth } from '../../../core/audio/clips';
@@ -164,6 +165,7 @@ export function installEspiaNarrator(): void {
     stopSpeech,
     profileOf: (s) => profileOf(s.group?.settings?.pacing),
     isMuted: () => !!state.ui.muted,
+    pauseMsFor: (key, profile) => (e2eTestMode() ? 40 : pauseMs(key, profile)), // e2e: colchones mínimos
   });
 
   let wasSpeaker = false;

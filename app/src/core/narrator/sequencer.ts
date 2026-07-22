@@ -64,6 +64,10 @@ export interface NarratorDeps<S> {
   gameIdOf(s: S): string | number | null;
   rnd?: () => number;
   nagIntervalMs?: (s: S) => number;
+  /** Duración de un colchón (ctx.pause). Sin esto, la tabla PACING estándar;
+   *  los e2e la sustituyen por colchones mínimos. NO afecta a los intervalos
+   *  de nag/filler (esos siguen su propio cómputo, sin comprimir). */
+  pauseMsFor?(key: PacingKey, profile: PacingProfile): number;
 }
 
 export interface Narrator {
@@ -135,7 +139,11 @@ export function createNarrator<S>(deps: NarratorDeps<S>): Narrator {
         // «skipped-low» no marca: el aviso podrá volver a intentarse.
         if (outcome !== 'skipped-low') ledger.mark(mkey);
       },
-      pause: (key) => abortableSleep(pauseMs(key, deps.profileOf(deps.getSnapshot()), rnd), signal),
+      pause: (key) => {
+        const profile = deps.profileOf(deps.getSnapshot());
+        const ms = deps.pauseMsFor ? deps.pauseMsFor(key, profile) : pauseMs(key, profile, rnd);
+        return abortableSleep(ms, signal);
+      },
       sleep: (ms) => abortableSleep(ms, signal),
       waitFor,
       waitOrNag: async (pred, opts) => {

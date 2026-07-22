@@ -13,6 +13,9 @@ const browser = await chromium.launch();
 const pages = {};
 async function mk(label) {
   const ctx = await browser.newContext({ locale: 'es-ES' });
+  // Semilla de test: sin audio (locuciones registradas, no reproducidas) y con
+  // colchones del narrador mínimos → e2e mucho más rápido.
+  await ctx.addInitScript(() => { window.__hlcTest = true; });
   const page = await ctx.newPage();
   page.on('pageerror', (e) => bad(`[${label}] ${e.message}`));
   pages[label] = page; return page;
@@ -51,8 +54,6 @@ try {
   await ana.click('[data-a=open-settings]');
   await ana.click('.switch[data-a=toggle-setting][data-p=casual]');
   await ana.waitForSelector('.switch.on[data-a=toggle-setting][data-p=casual]');
-  await ana.click('[data-a=set-pacing][data-p=rapido]'); // e2e veloz: pausas mínimas
-  await ana.waitForSelector('button[data-a=set-pacing][data-p=rapido].primary');
   await ana.click('button[data-a=close-modal]');
   // Roles: habilitar gaitero; quitar vidente/bruja/cupido para aislar el flujo
   // (así la noche es durmiendo → lobos_reconocen → gaitero → encantados → lobos).
@@ -72,12 +73,6 @@ try {
   await ana.waitForSelector('.player[data-a=start-player][data-p=p-ana].off');
   await ana.click('[data-a=start-auto]');
   let st = await waitState(ana, (s) => s.phase === 'reveal', 'reparto');
-  // Voz muda: misma lógica de narración sin esperar audios (~0,8 s por locución).
-  await ana.click('[data-a=game-menu]');
-  await ana.click('[data-a=voice-open]');
-  await ana.click('.switch[data-a=toggle-mute]');
-  await ana.click('button[data-a=close-modal]');
-  ok('narrador en silencio (e2e veloz)');
   check(st.players.some((p) => p.role === 'gaitero'), 'el gaitero está en juego');
 
   // Revelar todos. En el primero, reproducimos el disparador del bug de roleOpen:

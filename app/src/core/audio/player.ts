@@ -8,6 +8,7 @@ import { resolveClip } from './clips';
 import { speakDevice, stopDevice } from './device-voice';
 import { getVoiceConfig } from './voice-config';
 import { cloudAvailable } from './tts';
+import { e2eTestMode, logNarration } from '../test-hooks';
 
 export type Segment =
   | { kind: 'clip'; text: string }
@@ -127,6 +128,15 @@ export function play(u: Utterance, opts: PlayOpts = {}): Promise<PlayOutcome> {
 async function doPlay(u: Utterance, opts: PlayOpts): Promise<PlayOutcome> {
   const segments = u.segments.filter((s) => (s.kind === 'clip' ? !!s.text : s.ms > 0));
   if (!segments.length) return 'empty';
+  // e2e: ni síntesis ni espera — se registra qué habría dicho la voz y se
+  // resuelve al instante (nada de audio que ralentice el test). Va antes del
+  // colchón mudo: en test manda esto, no `muted`.
+  if (e2eTestMode()) {
+    if (u.priority === 'low' && speaking) return 'skipped-low';
+    if (opts.onSegment) opts.onSegment(0);
+    logNarration({ id: u.id, text: utteranceText(u), priority: u.priority || 'normal' });
+    return 'completed';
+  }
   if (opts.muted) {
     await sleep(800);
     return 'muted';

@@ -38,6 +38,9 @@ const app = mount(App, { target: document.getElementById('app-root')! });
   get session() { return state.session; },
   get flash() { return state.flash; },
   get ui() { return state.ui; },
+  // Transcript de la voz en los e2e (window.__hlcTest): qué habría dicho el
+  // narrador, en orden. Permite verificar el contrato pantalla=voz sin audio.
+  get narration() { return (window as unknown as { __hlcNarration?: unknown[] }).__hlcNarration || []; },
 };
 
 export default app;

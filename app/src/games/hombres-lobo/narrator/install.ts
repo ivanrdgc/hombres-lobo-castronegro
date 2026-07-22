@@ -3,7 +3,8 @@
 // el lobby, ambientación, wake lock y latido de presencia).
 import { createNarrator } from '../../../core/narrator/sequencer';
 import { narratorHook } from '../../../core/narrator/respawn-hook';
-import { profileOf } from '../../../core/narrator/pacing';
+import { pauseMs, profileOf } from '../../../core/narrator/pacing';
+import { e2eTestMode } from '../../../core/test-hooks';
 import { lastUtterance, play, stopSpeech } from '../../../core/audio/player';
 import type { Utterance } from '../../../core/audio/player';
 import { ensureAmbience, stopAmbience } from '../../../core/audio/ambience';
@@ -48,6 +49,9 @@ export function installNarrator(): void {
     stopSpeech,
     profileOf: (s) => profileOf(s.group?.settings?.pacing),
     isMuted: () => !!state.ui.muted,
+    // e2e: colchones mínimos (los intervalos de nag/filler NO pasan por aquí,
+    // así que siguen enteros y ningún aviso se dispara antes de tiempo).
+    pauseMsFor: (key, profile) => (e2eTestMode() ? 40 : pauseMs(key, profile)),
   });
 
   // El modal de voz re-arranca la escena al (de)silenciar: sin esto, cortar
@@ -106,9 +110,10 @@ export function installNarrator(): void {
     // nunca se reproduce nada en él. La lectura es siempre local, en el
     // dispositivo que la pide, desde el lobby o su modal.)
 
-    // Paisaje sonoro y pantalla encendida, solo en el dispositivo narrador.
+    // Paisaje sonoro y pantalla encendida, solo en el dispositivo narrador
+    // (en los e2e no arranca: sin audio que interfiera).
     const wantAmbience = master && !!game && getVoiceConfig().ambience && !state.ui.muted
-      && !game.paused && game.phase !== 'end';
+      && !game.paused && game.phase !== 'end' && !e2eTestMode();
     ensureAmbience(!wantAmbience ? null : game!.phase === 'day' ? 'day' : 'night');
     if (master) requestWakeLock();
 

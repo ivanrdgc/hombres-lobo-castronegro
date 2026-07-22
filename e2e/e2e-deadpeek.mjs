@@ -7,7 +7,7 @@ const ok = (m) => console.log('  ✔', m);
 const bad = (m) => { fail++; console.log('  ✖', m); };
 const browser = await chromium.launch();
 const pages = {};
-const mk = async (l) => { const c = await browser.newContext(); const p = await c.newPage(); p.on('pageerror', (e) => bad(`[${l}] ${e.message}`)); pages[l] = p; return p; };
+const mk = async (l) => { const c = await browser.newContext(); await c.addInitScript(() => { window.__hlcTest = true; }); const p = await c.newPage(); p.on('pageerror', (e) => bad(`[${l}] ${e.message}`)); pages[l] = p; return p; };
 const hlc = (p) => p.evaluate(() => { const s = window.__hlc; return { phase: s.group?.game?.phase, steps: s.group?.game?.steps, stepIdx: s.group?.game?.stepIdx, players: s.players.map((x) => ({ name: x.name, role: x.role, alive: x.alive })) }; });
 const wait = async (p, fn, what, t = 40000) => { const t0 = Date.now(); while (Date.now() - t0 < t) { const s = await hlc(p); if (fn(s)) return s; await p.waitForTimeout(300); } throw new Error('timeout ' + what); };
 

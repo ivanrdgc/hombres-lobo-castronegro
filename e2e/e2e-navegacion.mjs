@@ -8,7 +8,7 @@ let fail = 0;
 const ok = (m) => console.log('  ✔', m);
 const bad = (m) => { fail++; console.log('  ✖', m); };
 const browser = await chromium.launch();
-const mk = async (l) => { const c = await browser.newContext(); const p = await c.newPage(); p.on('pageerror', (e) => bad(`[${l}] ${e.message}`)); return p; };
+const mk = async (l) => { const c = await browser.newContext(); await c.addInitScript(() => { window.__hlcTest = true; }); const p = await c.newPage(); p.on('pageerror', (e) => bad(`[${l}] ${e.message}`)); return p; };
 const has = async (p, sel) => (await p.locator(sel).count()) > 0;
 
 const ana = await mk('ana');

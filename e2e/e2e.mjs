@@ -14,6 +14,7 @@ const pages = {};
 const pace = (p) => p.waitForTimeout(350);
 async function mk(label) {
   const ctx = await browser.newContext({ locale: 'es-ES' });
+  await ctx.addInitScript(() => { window.__hlcTest = true; }); // e2e veloz: sin audio, colchones mínimos
   const page = await ctx.newPage();
   page.on('pageerror', (e) => bad(`[${label}] pageerror: ${e.message}`));
   page.on('console', (m) => { if (m.type() === 'error') console.log(`  ⚠ [${label}] console: ${m.text().slice(0, 160)}`); });

@@ -19,6 +19,10 @@ const browser = await chromium.launch();
 const pages = {};
 async function mk(label) {
   const ctx = await browser.newContext({ locale: 'es-ES' });
+  // Semilla de test: sin audio (locuciones registradas, no reproducidas) y con
+  // colchones del narrador mínimos → e2e mucho más rápido. Debe fijarse ANTES
+  // de que cargue la app.
+  await ctx.addInitScript(() => { window.__hlcTest = true; });
   const page = await ctx.newPage();
   page.on('pageerror', (e) => bad(`[${label}] ${e.message}`));
   pages[label] = page; return page;
@@ -59,8 +63,6 @@ try {
   await ana.click('[data-a=open-settings]');
   await ana.click('.switch[data-a=toggle-setting][data-p=casual]');
   await ana.waitForSelector('.switch.on[data-a=toggle-setting][data-p=casual]');
-  await ana.click('[data-a=set-pacing][data-p=rapido]'); // e2e veloz: pausas mínimas
-  await ana.waitForSelector('button[data-a=set-pacing][data-p=rapido].primary');
   await ana.click('button[data-a=close-modal]');
   // Roles: infecto + cupido como únicos extras → mazo de 5 = infecto (único
   // lobo: el especial sustituye al común) + cupido + 3 aldeanos.
@@ -88,19 +90,18 @@ try {
   await ana.waitForSelector('.player[data-a=start-player][data-p=p-ana].off');
   await ana.click('[data-a=start-auto]');
   let st = await waitState(ana, (s) => s.phase === 'reveal', 'reparto');
-  // Voz muda: misma lógica de narración sin esperar audios (cada locución
-  // muda dura ~0,8 s). Al silenciar, el narrador re-arranca su escena.
-  await ana.click('[data-a=game-menu]');
-  await ana.click('[data-a=voice-open]');
-  await ana.click('.switch[data-a=toggle-mute]');
-  await ana.click('button[data-a=close-modal]');
-  ok('narrador en silencio (e2e veloz)');
   const infecto = st.players.find((p) => p.role === 'infecto');
   const cupido = st.players.find((p) => p.role === 'cupido');
   check(!!infecto && !!cupido, `Infecto (${infecto?.name}) y Cupido (${cupido?.name}) en juego`);
   const victim = st.players.find((p) => p.inGame && p.role === 'aldeano');
   // Los otros dos aldeanos serán los enamorados de Cupido.
   const otros = st.players.filter((p) => p.inGame && p.role === 'aldeano' && p.id !== victim.id);
+  // Palabra clave del futuro mordido (estable: sin gaitero no rota). El
+  // narrador (ana) lee todos los docs de jugador.
+  const victimKw = await ana.evaluate((id) => window.__hlc.players.find((p) => p.id === id)?.keyword, victim.id);
+  // Lee del transcript de voz (window.__hlcTest) las llamadas de un paso.
+  const narrationCalls = (page, kind) => page.evaluate((k) =>
+    (window.__hlc.narration || []).filter((n) => n.id.includes(':infectado:') && n.id.endsWith(':' + k)).map((n) => n.text), kind);
 
   for (const p of st.players.filter((x) => x.inGame)) {
     const pg = pages[p.name.toLowerCase()];
@@ -177,6 +178,10 @@ try {
         await vp.click('button[data-a=act-infectado-ok]');
         ok(`${victim.name} confirma su nueva sangre`);
       }
+      // La voz (transcript) llamó al mordido por SU palabra clave, una sola vez.
+      const calls = await narrationCalls(ana, 'call');
+      check(calls.length === 1 && calls[0].includes(victimKw),
+        `la voz llamó la palabra del mordido «${victimKw}» (transcript)`);
       sawInfectado = true;
     }
     await ana.waitForTimeout(400);
@@ -224,6 +229,10 @@ try {
       check(panel === 0, 'sin infección, ningún jugador ve el panel del mordisco');
       const avanzó = await waitState(ana, (s) => s.phase !== 'night' || s.steps[s.stepIdx] !== 'infectado', 'los señuelos suenan y el paso avanza solo', 90000).then(() => true).catch(() => false);
       check(avanzó, 'la llamada falsa avanza sola (señuelos + espera humana)');
+      // La llamada de esta noche fue SEÑUELO: no nombró la palabra del mordido.
+      const fakes = await narrationCalls(ana, 'fake');
+      check(fakes.length >= 1 && fakes.every((t) => !t.includes(victimKw)),
+        'la llamada falsa usó un señuelo, no la palabra del mordido (transcript)');
       lastKey = ''; // el paso pudo avanzar durante la espera
     }
     await ana.waitForTimeout(400);
