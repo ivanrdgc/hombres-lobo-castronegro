@@ -13,6 +13,7 @@ import { installNarrator } from './games/hombres-lobo/narrator/install';
 import { installEspiaNarrator } from './games/espia/narrator/install';
 import { installUnaNocheNarrator } from './games/una-noche/narrator/install';
 import { installAvalonNarrator } from './games/avalon/narrator/install';
+import { installSecretHitlerNarrator } from './games/secret-hitler/narrator/install';
 
 installUnlockGestures();
 loadClipManifest(); // biblioteca de clips pre-generados (F6); sin ella, síntesis en vivo
@@ -23,6 +24,7 @@ installNarrator();
 installEspiaNarrator();
 installUnaNocheNarrator();
 installAvalonNarrator();
+installSecretHitlerNarrator();
 installPresence();
 
 window.addEventListener('popstate', applyRoute);

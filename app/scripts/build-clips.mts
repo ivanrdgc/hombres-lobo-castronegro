@@ -14,6 +14,7 @@ import { allStaticPieces, corpusHash, kwClip } from '../src/games/hombres-lobo/t
 import { allEspiaStaticPieces } from '../src/games/espia/texts';
 import { allUnaNocheStaticPieces } from '../src/games/una-noche/texts';
 import { allAvalonStaticPieces } from '../src/games/avalon/texts';
+import { allSecretHitlerStaticPieces } from '../src/games/secret-hitler/texts';
 import { buildSsml, ttsCacheKey } from '../src/core/audio/tts';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -54,7 +55,7 @@ interface Manifest {
 
 async function main(): Promise<void> {
   const kwTexts = allKeywordCombos().flatMap((kw) => [kwClip(kw, true), kwClip(kw, false)]);
-  const texts = [...new Set([...allStaticPieces().map((p) => p.text), ...kwTexts, ...allEspiaStaticPieces(), ...allUnaNocheStaticPieces(), ...allAvalonStaticPieces()])];
+  const texts = [...new Set([...allStaticPieces().map((p) => p.text), ...kwTexts, ...allEspiaStaticPieces(), ...allUnaNocheStaticPieces(), ...allAvalonStaticPieces(), ...allSecretHitlerStaticPieces()])];
   const outDir = join(APP, 'public', 'clips', VOICE);
   mkdirSync(outDir, { recursive: true });
 
