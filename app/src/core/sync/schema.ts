@@ -23,6 +23,8 @@ export interface TableSettings {
   espiaMin?: number;
   /** Una Noche: mazo elegido (rol → nº de cartas). Se recuerda entre partidas. */
   unaNoche?: Record<string, number>;
+  /** Ávalon: roles opcionales activados (lista de ids). Se recuerda entre partidas. */
+  avalon?: string[];
 }
 
 /** Doc del grupo (groups/{slug}) + id inyectado por el listener. */

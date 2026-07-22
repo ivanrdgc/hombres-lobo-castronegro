@@ -12,6 +12,7 @@ import { installVersionCheck } from './core/version-check';
 import { installNarrator } from './games/hombres-lobo/narrator/install';
 import { installEspiaNarrator } from './games/espia/narrator/install';
 import { installUnaNocheNarrator } from './games/una-noche/narrator/install';
+import { installAvalonNarrator } from './games/avalon/narrator/install';
 
 installUnlockGestures();
 loadClipManifest(); // biblioteca de clips pre-generados (F6); sin ella, síntesis en vivo
@@ -21,6 +22,7 @@ installVersionCheck(); // recarga a todos cuando se despliega una versión nueva
 installNarrator();
 installEspiaNarrator();
 installUnaNocheNarrator();
+installAvalonNarrator();
 installPresence();
 
 window.addEventListener('popstate', applyRoute);
