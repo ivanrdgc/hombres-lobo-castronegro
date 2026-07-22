@@ -136,3 +136,17 @@ Estados: 🔴 abierto · 🟢 arreglado (con commit) · 🟡 re-reportado tras u
   propia `.stepper` (flex compacto, `flex:0 0 auto`), así sus botones ya no heredan el estirado.
   La ℹ️ vuelve a ser visible en cada fila. De paso, Una Noche pasa al 2º puesto del catálogo
   (SpyFall queda 3º).
+
+## B11 · iPhone sin voz: síntesis 403 al entrar por `*.firebaseapp.com`
+- **2026-07-23 · reporte.** Diagnóstico de voz en iPhone: clave presente, desbloqueo OK, pero
+  «síntesis 403 … Requests from referer https://jd-….firebaseapp.com/ are blocked
+  (API_KEY_HTTP_REFERRER_BLOCKED)».
+  Diagnóstico: cada site de Firebase Hosting responde en DOS dominios (`<site>.web.app` y
+  `<site>.firebaseapp.com`), pero la clave TTS restringe referers a `*.web.app`; quien entre por
+  la URL vieja (marcador antiguo) carga la app entera… sin voz.
+- **2026-07-23 · 🟢 arreglado** (este commit): `index.html` canonicaliza a `.web.app` ANTES de
+  cargar nada (un `location.replace` inline). Nota: el `localStorage` es por origen — la sesión
+  guardada en `firebaseapp.com` no viaja; al aterrizar en `web.app` toca reconectar una vez con
+  el mismo nombre (takeover), y ya queda la URL buena. Alternativa descartada: añadir
+  `*.firebaseapp.com` a los referers de la clave (dejaría DOS orígenes vivos con sesiones
+  distintas, el lío persistiría).

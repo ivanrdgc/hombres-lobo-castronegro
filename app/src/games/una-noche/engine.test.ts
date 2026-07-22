@@ -165,6 +165,13 @@ test('victoria: sin lobos y muere un aldeano → nadie gana (salvo Esbirro)', ()
   assert.deepEqual(checkWinner(conEsbirro, ['p0'], pids4), ['lobos']); // el Esbirro gana con su bando
 });
 
+test('victoria oficial: sin lobos, muere SOLO el Esbirro → gana el Pueblo (cazó bien)', () => {
+  const roles: Record<string, RoleId> = { p0: 'aldeano', p1: 'esbirro', p2: 'vidente', p3: 'insomne' };
+  assert.deepEqual(checkWinner(roles, ['p1'], pids4), ['pueblo']);
+  // Empate Esbirro + aldeano: cayó alguien que no era esbirro → gana el Esbirro.
+  assert.deepEqual(checkWinner(roles, ['p1', 'p0'], pids4), ['lobos']);
+});
+
 test('victoria: muere el Curtidor y ningún lobo → gana SOLO el Curtidor', () => {
   const roles: Record<string, RoleId> = { p0: 'tanner', p1: 'lobo', p2: 'aldeano', p3: 'vidente' };
   assert.deepEqual(checkWinner(roles, ['p0'], pids4), ['tanner']); // lobos NO ganan aunque sobrevivan
@@ -242,8 +249,8 @@ test('finalRoleOf: conserva la carta doble → es el rol copiado; carta real →
     acts: { dobleRole: 'tanner' },
   });
   assert.equal(dobleId(game, players), 'p0');
-  assert.equal(finalRoleOf(game, players, 'p0'), 'tanner'); // Doble-Curtidor
-  assert.equal(finalRoleOf(game, players, 'p1'), 'lobo');
+  assert.equal(finalRoleOf(game, 'p0'), 'tanner'); // Doble-Curtidor
+  assert.equal(finalRoleOf(game, 'p1'), 'lobo');
 });
 
 test('Doble-Curtidor: si lo linchan, gana el Curtidor (por el rol copiado)', () => {
@@ -259,8 +266,7 @@ test('Doble-Curtidor: si lo linchan, gana el Curtidor (por el rol copiado)', () 
   assert.deepEqual(checkWinner(finalRoles, ['p0'], pids4), ['tanner']); // los lobos sobreviven pero NO ganan
 });
 
-test('Doble copia Ladrón, roba una carta real y ACABA siendo ese rol; la doble huérfana = aldeano', () => {
-  const players = mkPlayers(3);
+test('Doble copia Ladrón, roba una carta real y ACABA siendo ese rol; la doble arrastrada VALE el rol copiado (oficial)', () => {
   const game = mkGame({
     originalRole: { p0: 'doble', p1: 'lobo', p2: 'aldeano' },
     slots: { p0: 'doble', p1: 'lobo', p2: 'aldeano' },
@@ -269,21 +275,53 @@ test('Doble copia Ladrón, roba una carta real y ACABA siendo ese rol; la doble 
   // El Doble-Ladrón roba a p1: su carta 'doble' va a p1, y él se queda 'lobo'.
   const nueva = robberSwap(game, 'p0', 'p1');
   assert.equal(nueva, 'lobo');
-  assert.equal(finalRoleOf(game, players, 'p0'), 'lobo'); // acabó siendo lobo (carta real)
-  assert.equal(finalRoleOf(game, players, 'p1'), 'aldeano'); // recibió la carta doble huérfana
+  assert.equal(finalRoleOf(game, 'p0'), 'lobo'); // acabó siendo lobo (carta real)
+  // Regla oficial de One Night: la carta doble, una vez copiada, ES el rol
+  // copiado esté en la silla que esté. p1 acaba siendo Ladrón (y no lo sabe).
+  assert.equal(finalRoleOf(game, 'p1'), 'ladron');
 });
 
 test('Doble copia Villano: su carta doble es arrastrada por la Alborotadora → es la carta nueva', () => {
   // Doble (p0) copió aldeano; la Alborotadora intercambia su carta con la de p1 (lobo).
-  const players = mkPlayers(3);
   const game = mkGame({
     originalRole: { p0: 'doble', p1: 'lobo', p2: 'alborotadora' },
     slots: { p0: 'doble', p1: 'lobo', p2: 'alborotadora' },
     acts: { dobleRole: 'aldeano' },
   });
   troublemakerSwap(game, 'p0', 'p1');
-  assert.equal(finalRoleOf(game, players, 'p0'), 'lobo'); // su carta cambió: ahora es lobo
-  assert.equal(finalRoleOf(game, players, 'p1'), 'aldeano'); // recibió la doble huérfana
+  assert.equal(finalRoleOf(game, 'p0'), 'lobo'); // su carta cambió: ahora es lobo
+  assert.equal(finalRoleOf(game, 'p1'), 'aldeano'); // la doble vale lo copiado: aldeano
+});
+
+test('La carta doble arrastrada cuenta para la VICTORIA como el rol copiado: copió Lobo → quien la tenga es lobo', () => {
+  // Doble (p0) copió LOBO; la Alborotadora manda su carta doble a p2 (aldeano).
+  const players = mkPlayers(4);
+  const game = mkGame({
+    originalRole: { p0: 'doble', p1: 'lobo', p2: 'aldeano', p3: 'alborotadora' },
+    slots: { p0: 'doble', p1: 'lobo', p2: 'aldeano', p3: 'alborotadora' },
+    acts: { dobleRole: 'lobo' },
+  });
+  troublemakerSwap(game, 'p0', 'p2');
+  const finals = finalRolesOf(game, players);
+  assert.equal(finals.p2, 'lobo'); // sostiene la doble → es lobo sin saberlo
+  assert.equal(finals.p0, 'aldeano'); // el Doble sostiene la carta de p2
+  // El pueblo lincha a p2: cayó un lobo → gana el Pueblo.
+  assert.deepEqual(checkWinner(finals, ['p2'], pids4), ['pueblo']);
+  // Sin linchar lobo alguno, con lobos en juego, ganarían los Lobos.
+  assert.deepEqual(checkWinner(finals, ['p3'], pids4), ['lobos']);
+});
+
+test('Doble que nunca copió (su carta salió del centro vía Borracho) = Aldeano', () => {
+  const players = mkPlayers(3);
+  const game = mkGame({
+    originalRole: { p0: 'borracho', p1: 'lobo', p2: 'vidente' },
+    slots: { p0: 'borracho', p1: 'lobo', p2: 'vidente' },
+    center: ['doble', 'aldeano', 'aldeano'],
+    acts: {},
+  });
+  drunkSwap(game, 'p0', 0); // el Borracho pesca la carta doble del centro
+  assert.equal(game.slots.p0, 'doble');
+  assert.equal(finalRolesOf(game, players).p0, 'aldeano'); // nunca copió nada
 });
 
 test('finalRolesOf: partida con Doble-Lobo cuenta como lobo en la victoria', () => {

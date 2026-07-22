@@ -243,6 +243,15 @@ export const seerConfirm = () => night('vidente', (game) => {
   return game;
 });
 
+// Regla oficial: la Vidente PUEDE mirar… o no mirar nada.
+export const seerSkip = () => night('vidente', (game) => {
+  if (game.acts.videnteDone) return null;
+  game.acts.videnteDone = true;
+  game.acts.videnteView = null;
+  game.acts.videnteSeen = true; // nada que leer
+  return game;
+});
+
 // ——— Ladrón ———
 
 export const robberRob = (targetId: string) => night('ladron', (game, me) => {
@@ -268,9 +277,9 @@ export const robberConfirm = () => night('ladron', (game) => {
 
 // ——— Alborotadora ———
 
-export const troublemakerSwap2 = (a: string, b: string) => night('alborotadora', (game) => {
+export const troublemakerSwap2 = (a: string, b: string) => night('alborotadora', (game, me) => {
   if (game.acts.alborotadoraDone) return null;
-  if (a === b) return null;
+  if (a === b || a === me || b === me) return null; // otros DOS: nunca ella misma
   troublemakerSwap(game, a, b);
   game.acts.alborotadoraDone = true;
   game.acts.alborotadoraPair = [a, b];

@@ -8,6 +8,16 @@
     <meta name="description" content="Juegos de mesa digitales para jugar con amigos." />
     <title>Juegos digitales</title>
     <link rel="icon" href="/favicon.svg" />
+    <script>
+      // Cada site de Hosting responde también en *.firebaseapp.com, pero la
+      // clave de la voz (TTS) solo admite referers *.web.app: quien entre por
+      // la URL antigua acabaría con síntesis 403 en el móvil. Se canonicaliza
+      // ANTES de cargar nada (misma ruta, mismo estado local: el localStorage
+      // de web.app es el que siempre usó la app).
+      if (location.hostname.endsWith('.firebaseapp.com')) {
+        location.replace(location.href.replace('.firebaseapp.com', '.web.app'));
+      }
+    </script>
   </head>
   <body>
     <div id="app-root"></div>

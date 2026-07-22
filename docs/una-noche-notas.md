@@ -74,3 +74,23 @@ Notas de implementación:
 
 Extra técnico: se arreglaron 5 errores de tipos preexistentes que el `vite build`
 no detecta (DayPhase/EndPhase/scenes.test) — ahora `npm run check` da 0 errores.
+
+---
+
+## Tercera tanda (23-07): auditoría de fidelidad al One Night original
+
+Ver `docs/AUDITORIA-ROLES.md` (tercera auditoría) para el detalle completo.
+Cambios de reglas para clavar el juego original:
+
+19. ✅ **La carta de El Doble arrastrada vale el rol copiado** (oficial; antes
+    contaba como Aldeano «huérfano»). Quien acabe con ella gana/muere como el
+    rol que El Doble copió, aunque no lo sepa.
+20. ✅ **Esbirro sin lobos**: si el ÚNICO caído es el propio Esbirro, gana el
+    Pueblo (oficial); antes se lo llevaba el bando lobo.
+21. ✅ **La Vidente puede «No mirar nada»** (el script oficial dice *may*),
+    con reflejo en su historial.
+22. ✅ **La flecha del Cazador ya no apunta a caídos** (empates) y la
+    Alborotadora no puede intercambiarse a sí misma ni por transacción.
+23. ✅ Suites e2e nuevas: `e2e-una-roles` (mazo con todos los roles de acción,
+    invariante de permutación, empate doble, ganadores contrastados con las
+    reglas oficiales) y `e2e-una-cazador` (flecha/Curtidor adaptativo).

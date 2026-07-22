@@ -15,6 +15,9 @@ const DEFAULT_SUITES = [
   'e2e2.mjs', 'e2e-gaitero.mjs', 'e2e-caballero.mjs', 'e2e-infecto.mjs',
   'e2e-deadpeek.mjs', 'e2e-guiado.mjs', 'e2e-navegacion.mjs', 'e2e-multimesa.mjs',
   'e2e-espia.mjs', 'e2e-una-noche.mjs',
+  // Auditoría de roles (23-07): combinaciones problemáticas por juego.
+  'e2e-hl-roles.mjs', 'e2e-hl-pueblo.mjs', 'e2e-sirvienta.mjs', 'e2e-ladron.mjs',
+  'e2e-una-roles.mjs', 'e2e-una-cazador.mjs', 'e2e-espia-timeup.mjs',
 ];
 const suites = process.argv.slice(2).length ? process.argv.slice(2) : DEFAULT_SUITES;
 const CONCURRENCY = Number(process.env.E2E_JOBS || 4);

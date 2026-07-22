@@ -43,7 +43,7 @@ export function playerHistory(game: GameState, pid: string): string[] {
     case 'vidente':
       if (acts.videnteView?.kind === 'player') out.push(`🔮 Miraste la carta de ${nm(acts.videnteView.pid)}: era ${rn(acts.videnteView.role)}.`);
       else if (acts.videnteView?.kind === 'center') out.push(`🔮 Miraste dos cartas del centro: ${acts.videnteView.roles.map((r) => rn(r)).join(', ')}.`);
-      else out.push('🔮 No llegaste a mirar ninguna carta.');
+      else out.push(acts.videnteDone ? '🔮 Decidiste no mirar ninguna carta.' : '🔮 No llegaste a mirar ninguna carta.');
       break;
     case 'ladron':
       if (acts.ladronTarget) out.push(`🃏 Robaste la carta de ${nm(acts.ladronTarget)}. Tu nueva carta: ${rn(acts.ladronCard)}.`);

@@ -32,7 +32,8 @@
   {#if my.id === hunter}
     <div class="actionpanel"><h3>🏹 ¡Eras el Cazador!</h3>
       <p class="hint">Te han linchado, pero tu flecha aún vuela: llévate a alguien contigo (puedes no disparar).</p>
-      <UnaGrid {players} selKey="una-hunter" exclude={[my.id]} />
+      <!-- Solo se puede disparar a quien sigue en pie: los ya caídos, fuera. -->
+      <UnaGrid {players} selKey="una-hunter" exclude={[my.id, ...(game.deaths || [])]} />
       <button class="danger block" data-a="una-hunter-shoot" disabled={!hunterSel} onclick={() => (hunterSel ? guard(() => A.hunterShoot(hunterSel)) : undefined)}>🏹 {hunterSel ? `Disparar a ${nm(hunterSel)}` : 'Disparar'}</button>
       <button class="ghost block" data-a="una-hunter-skip" onclick={() => guard(() => A.hunterShoot(null))}>No disparar</button>
     </div>

@@ -443,6 +443,14 @@ export async function runDawn(): Promise<void> {
     if ((g.settings || {}).alguacil && game.dayNum === 1) {
       game.pending.push({ type: 'alguacil_elect' });
     }
+    // El designado por el Cabeza de Turco pudo morir esta noche: si nadie lo
+    // limpia, NADIE podría registrar el voto de hoy (partida colgada). El voto
+    // vuelve al pueblo entero.
+    if (game.soloVoteId && !res.players.find((p) => p.id === game.soloVoteId)?.alive) {
+      game.log!.push({ kind: 'evento', txt: `🐐 ${game.soloVoteName || 'El designado'} debía registrar el voto de hoy, pero ha muerto: hoy registra cualquiera.` });
+      game.soloVoteId = null;
+      game.soloVoteName = null;
+    }
     game.gitanaQ = null;
     game.vote = null;
     game.votesLeft = 1;
@@ -827,7 +835,16 @@ export async function armJuez(): Promise<void> {
     if (game.powersLost) return null; // el castigo del Anciano también alcanza al Juez
     const meP = players.find((p) => p.id === myPid());
     if (!meP || !meP.alive || meP.role !== 'juez' || (meP.powers || {}).juez === false) return null;
-    game.juezArmed = meP.id;
+    if ((game.votesLeft || 0) <= 0 && !game.vote) {
+      // El juicio de hoy ya está resuelto: la segunda votación se abre AHORA
+      // (regla oficial: el Juez la exige justo tras la primera). Antes, el
+      // poder se consumía sin efecto si se pulsaba con el juicio ya cerrado.
+      game.votesLeft = 1;
+      game.juezSecondActive = true;
+      game.log!.push({ kind: 'dia', txt: '⚖️ ¡El Juez Tartamudo exige una segunda votación inmediata!' });
+    } else {
+      game.juezArmed = meP.id; // se abrirá al resolverse el juicio en curso
+    }
     return { game, playerPatches: { [meP.id]: { powers: { ...(meP.powers || {}), juez: false } } } };
   });
 }
@@ -896,6 +913,13 @@ export async function hunterShoot(targetId: string | null): Promise<void> {
     game.pending = (chain.pendings || []).concat(game.pending);
     game.powersLost = chain.powersLost;
     game.wolfDeathOccurred = game.wolfDeathOccurred || chain.wolfDeath;
+    // La flecha pudo alcanzar al designado por el Cabeza de Turco: sin esta
+    // limpieza, nadie podría registrar el voto pendiente (partida colgada).
+    if (game.soloVoteId && byId[game.soloVoteId] && !byId[game.soloVoteId].alive) {
+      game.log!.push({ kind: 'evento', txt: `🐐 ${game.soloVoteName || 'El designado'} debía registrar el voto, pero ha caído: registra cualquiera.` });
+      game.soloVoteId = null;
+      game.soloVoteName = null;
+    }
     const w = checkWinner(copy);
     if (w) { game.winner = w; game.phase = 'end'; }
     return { game, playerPatches: diffPlayers(ps, copy) };

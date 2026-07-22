@@ -169,20 +169,21 @@ export function seerViewCenter(game: GameState, idxs: number[]): VidenteView {
  * Rol FINAL de un jugador para muerte y victoria:
  *  - si su carta final es un rol normal → ese rol (cubre a El Doble que robó o
  *    bebió y acabó con una carta real, y a quien reciba una carta por swap);
- *  - si conserva la carta «doble» → el rol que copió (regla de la casa: «eres
- *    ese rol el resto de la partida»);
- *  - una carta «doble» HUÉRFANA (que le cayó a otro por un intercambio) cuenta
- *    como Aldeano (nunca copió nada).
+ *  - la carta «doble», una vez copiada, ES el rol copiado para TODO EL MUNDO
+ *    (regla oficial de One Night): si un intercambio se la lleva a otra silla,
+ *    quien acabe con ella muere y gana como ese rol, aunque no lo sepa;
+ *  - una carta «doble» que nunca copió nada (estaba en el centro y el Borracho
+ *    la pescó) cuenta como Aldeano.
  */
-export function finalRoleOf(game: GameState, players: Player[], pid: string): RoleId {
+export function finalRoleOf(game: GameState, pid: string): RoleId {
   const card = game.slots[pid];
   if (card !== 'doble') return card;
-  return pid === dobleId(game, players) ? (game.acts?.dobleRole || 'aldeano') : 'aldeano';
+  return game.acts?.dobleRole || 'aldeano';
 }
 
 export function finalRolesOf(game: GameState, players: Player[]): Record<string, RoleId> {
   const out: Record<string, RoleId> = {};
-  for (const p of players) if (p.inGame) out[p.id] = finalRoleOf(game, players, p.id);
+  for (const p of players) if (p.inGame) out[p.id] = finalRoleOf(game, p.id);
   return out;
 }
 
@@ -222,7 +223,10 @@ export function checkWinner(
     } else if (!anyoneDied) {
       winners.push('pueblo'); // sin lobos y sin muertes: el pueblo acertó
     } else if (minionInPlay) {
-      winners.push('lobos'); // sin lobos, murió un aldeano y hay Esbirro → gana el bando lobo
+      // Regla oficial del Esbirro sin lobos: gana si muere alguien QUE NO SEA
+      // esbirro; si los únicos caídos son esbirros, el pueblo cazó bien y gana.
+      const nonMinionDied = pids.some((p) => dead.has(p) && roleOf(p) !== 'esbirro');
+      winners.push(nonMinionDied ? 'lobos' : 'pueblo');
     } else {
       winners.push('nadie'); // murió un aldeano sin lobos ni esbirro: nadie gana
     }

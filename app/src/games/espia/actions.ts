@@ -3,6 +3,7 @@
 // los docs de jugador no se tocan. Las acciones de grupo están en core.
 import { deleteDoc } from '../../core/sync/fb';
 import { state } from '../../core/sync/store.svelte';
+import { e2eTestMode } from '../../core/test-hooks';
 import {
   sanitize, txWithRetry, gref, mref, mySlug, myPid, assertFree, ctxMatchId, newMatchId,
   registerMatchTools,
@@ -70,7 +71,9 @@ export async function startEspia(playerIds: string[], speakerId: string | null, 
     espia: true, phase: 'reveal', startedAt: now, round: 1,
     playerIds, names,
     dealerId: deal.dealerId, spyId: deal.spyId, locationId: deal.locationId, roles: deal.roles,
-    seen: {}, durationMs: Math.max(1, durationMin) * 60000, deadline: null,
+    // Semilla de test: cada «minuto» dura 4 s, para poder probar el flujo de
+    // tiempo agotado sin esperas reales. Jamás activa fuera de Playwright.
+    seen: {}, durationMs: Math.max(1, durationMin) * (e2eTestMode() ? 4000 : 60000), deadline: null,
     voteSeq: 0, accusedUsed: {}, vote: null, timeupTurn: null,
     usedLocations: [deal.locationId], scores: {}, history: [], outcome: null,
     log: [{ txt: `🕵️ Ronda 1: identidades repartidas (${playerIds.length} agentes… o casi).` }],

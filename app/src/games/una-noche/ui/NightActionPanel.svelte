@@ -134,6 +134,7 @@
       <p class="hint" style="margin-top:8px">…o dos cartas del centro:</p>
       <div class="btnrow">{#each CENTER as i (i)}<button class="small {centerSel('una-seer-c').includes(i) ? 'primary' : 'ghost'}" data-a="una-seer-c" data-p={String(i)} onclick={() => toggleCenter('una-seer-c', i, 2)}>Centro {i + 1}</button>{/each}</div>
       <button class="primary block" data-a="una-seer-center" disabled={centerSel('una-seer-c').length !== 2} onclick={seerCenterGo}>🔮 Ver 2 del centro</button>
+      <button class="ghost block" data-a="una-seer-skip" onclick={() => guard(A.seerSkip)}>No mirar nada</button>
     {:else}
       <p class="hint">{#if acts.videnteView?.kind === 'player'}<b>{nm(acts.videnteView.pid)}</b> es {rn(acts.videnteView.role)}.{:else if acts.videnteView?.kind === 'center'}En el centro: {acts.videnteView.roles.map(rn).join(', ')}.{/if}</p>
       {#if !acts.videnteSeen}<button class="primary block" data-a="una-seer-ok" onclick={() => guard(A.seerConfirm)}>✔️ Lo he visto</button>{/if}
