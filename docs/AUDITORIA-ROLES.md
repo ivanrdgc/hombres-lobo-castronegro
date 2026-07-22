@@ -16,11 +16,14 @@ marcados con 🛠 (arreglados en el commit de esta auditoría).
    (ven marcas 🧛🐾💘🎶 y pueden espiar roles: están fuera de la partida).
 2. **De noche, todo lo que un jugador deba saber en secreto se comunica con
    PALABRAS CLAVE**: la voz llama, solo el aludido se reconoce, mira su
-   pantalla con disimulo y confirma. Cada palabra pronunciada se **quema** y
-   rota (la nueva se enseña en la MISMA pantalla de confirmar, antes del
-   toque): quien pueda ser llamado más de una noche jamás oye la misma
-   palabra dos veces. Despiertan por NOMBRE DE ROL solo los pasos cuyo
-   protagonista ya se sabe aludido (vidente, lobos…: conoce su carta).
+   pantalla con disimulo y confirma. Cada palabra pronunciada se **quema**, y
+   se RENUEVA solo si otro rol podría volver a llamar a ese jugador (el
+   Gaitero siempre que esté en juego — re-llama a sus encantados cada noche —;
+   el Infecto solo mientras conserve su mordisco). La nueva se enseña en la
+   MISMA pantalla de confirmar, antes del toque; sin reutilizador posible, el
+   panel aclara «tu palabra no cambia». Despiertan por NOMBRE DE ROL solo los
+   pasos cuyo protagonista ya se sabe aludido (vidente, lobos…: conoce su
+   carta).
 3. **La voz disimula con SEÑUELOS**: si en algún momento de la partida una
    llamada real es posible, las noches sin llamada real suenan palabras sin
    dueño y una espera humana muestreada (4–9 s). Señuelos sin repetición
@@ -67,7 +70,7 @@ propios del actor (visiones, pociones…) o deducibles solo por su dueño
 | 🌕 Lobo Albino | Caza con la manada; traición en paso propio (noches pares); víctima pública al alba. | ✔ |
 | 🐺🔥 Lobo Feroz | Segunda víctima en paso propio; deja de despertar si cayó un lobo (público al alba). | ✔ |
 | 🐕 Perro Lobo | Elección propia n1; si elige manada, se reconoce con ella esa misma noche. | ✔ |
-| 🧛 Infecto | 🛠 **Rediseñado**: decisión muda (sin locución) + paso nuevo `infectado` — la voz llama SIEMPRE dos palabras (mordido + señuelo, orden sorteado), el mordido confirma con su palabra nueva a la vista, y la noche siguiente caza con la manada. Noches sin infección: dos señuelos y espera humana. Su poder queda invisible para la mesa (crónica y amanecer no lo mencionan). | ✔ |
+| 🧛 Infecto | 🛠 **Rediseñado**: decisión muda (sin locución) + paso nuevo `infectado` — la voz llama UNA palabra (la del mordido; un señuelo las noches sin infección, con espera humana), el mordido confirma y la noche siguiente caza con la manada. Su palabra solo rota si además juega el Gaitero (el mordisco es la última llamada posible del Infecto). Su poder queda invisible para la mesa (crónica y amanecer no lo mencionan). | ✔ |
 | ⭐ Alguacil | Cargo público; elección, voto doble y sucesión a la vista. | ✔ |
 
 ## Casos límite verificados (tests / e2e)
@@ -79,7 +82,7 @@ propios del actor (visiones, pociones…) o deducibles solo por su dueño
 - Paridad inmediata: en mesa de 4, infectar ya iguala 2-2 y cierra la partida
   al alba (motor correcto; el e2e usa 5 jugadores para ver la noche 2).
 - Palabras: la llamada real y la falsa comparten piezas, número de palabras
-  (dos) y compás (±400 ms verificado con reloj simulado); ningún señuelo
+  (una) y compás (±400 ms verificado con reloj simulado); ningún señuelo
   coincide jamás con la palabra viva de un jugador ni se repite entre noches.
 - Partidas antiguas sin palabras clave (empezadas antes de este despliegue):
   el paso pasa de largo y el mordido se entera por su carta, como antes.

@@ -676,10 +676,16 @@ export const actInfecto = (use: boolean) => nightAction('infecto_decision', (gam
       [myId]: { powers: { ...(p.powers || {}), infect: false } },
     };
     // Si el contagio prospera (la víctima no estaba protegida), la llamada del
-    // paso siguiente quemará su palabra: se reserva YA la nueva (kwNext) para
-    // enseñarla en la misma pantalla de confirmación, como con el Gaitero.
+    // paso siguiente quemará su palabra. Regla de renovación: rotar SOLO si
+    // otro rol podría volver a llamar a ese jugador. El mordisco es la última
+    // llamada posible del propio Infecto (poder único), así que la palabra
+    // solo se renueva si además juega el Gaitero (o la composición secreta lo
+    // activa: entonces se renueva igual, para no delatar que no está).
     const pid = infectionTonight(game, ps);
-    if (pid) {
+    const gaiteroCould = ((game.composition || {}).gaitero || 0) > 0
+      || ps.some((x) => x.role === 'gaitero')
+      || (!!game.fakeAllSelected && (game.selectedRoles || []).includes('gaitero'));
+    if (pid && gaiteroCould) {
       for (const [id, r] of Object.entries(reserveNextKeywords(game, ps, [pid]))) {
         patches[id] = { ...(patches[id] || {}), ...r };
       }

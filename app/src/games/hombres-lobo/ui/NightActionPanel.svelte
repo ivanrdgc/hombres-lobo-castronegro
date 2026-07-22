@@ -281,7 +281,7 @@
 {:else if stepId === 'infecto_decision'}
   {@const v = players.find((p) => p.id === game.acts.wolfVictim)}
   <div class="actionpanel"><h3>🧛 El Infecto Padre de los Lobos</h3>
-    <p class="hint">La manada va a devorar a <b>{v?.name || '…'}</b>. Puedes infectarlo en su lugar (una vez por partida): se unirá a los lobos en secreto. Si lo haces, esta misma noche lo despertaré por su palabra clave para contárselo; las noches sin infección llamo palabras señuelo, así nadie sabrá si usaste tu poder.</p>
+    <p class="hint">La manada va a devorar a <b>{v?.name || '…'}</b>. Puedes infectarlo en su lugar (una vez por partida): se unirá a los lobos en secreto. Si lo haces, esta misma noche lo despertaré por su palabra clave para contárselo; las noches sin infección llamo una palabra señuelo, así nadie sabrá si usaste tu poder.</p>
     <div class="btnrow"><button class="violet" data-a="act-infecto" data-p="si" onclick={() => guard(() => A.actInfecto(true))}>🧛 Infectar</button><button class="danger" data-a="act-infecto" data-p="no" onclick={() => guard(() => A.actInfecto(false))}>🩸 Devorar sin más</button></div>
   </div>
 {:else if stepId === 'infectado'}
@@ -290,10 +290,14 @@
     {#if !infConfirmed}
       <p class="hint">NO has muerto: su mordisco te convierte en <b>hombre lobo en secreto</b>. Conservas tu carta y tus poderes, pero desde ahora cazas y ganas con la manada. La próxima noche, cuando la voz despierte a los hombres lobo, abre los ojos con ellos: os reconoceréis en silencio.</p>
       {#if my.kwNext}
-        <!-- La llamada quemó su palabra: la NUEVA se enseña junto al botón. -->
+        <!-- Con Gaitero en juego, la llamada quemó su palabra: la NUEVA se
+             enseña junto al botón (podría volver a ser llamado al encantarlo). -->
         <p class="hint">🔑 Te llamé por <b>«{my.keyword}»</b>: queda quemada. Tu <b>NUEVA</b> palabra clave, desde ya:</p>
         <p style="text-align:center;font-size:1.3rem;margin:8px 0"><b>«{my.kwNext}»</b></p>
         <p class="hint">Memorízala antes de confirmar: con ella te llamaré la próxima vez.</p>
+      {:else if my.keyword}
+        <!-- Sin nadie que pueda volver a llamarlo, su palabra no rota. -->
+        <p class="hint">🔑 Tu palabra clave no cambia: sigue siendo <b>«{my.keyword}»</b>.</p>
       {/if}
       <button class="violet block" data-a="act-infectado-ok" onclick={() => guard(A.confirmInfectado)}>🧛 Entendido</button>
     {:else}

@@ -11,6 +11,7 @@
   import { unlockAudio, audioState } from '../../core/audio/engine';
   import { play, stopSpeech } from '../../core/audio/player';
   import { stopAmbience } from '../../core/audio/ambience';
+  import { narratorHook } from '../../core/narrator/respawn-hook';
 
   let cfg = $state(getVoiceConfig());
   $effect(() => onVoiceConfig((c) => (cfg = c)));
@@ -34,7 +35,14 @@
   function toggleMute() {
     app.ui.muted = !app.ui.muted;
     if (app.ui.muted) stopSpeech('hard');
-    else play({ id: 'unmute', segments: [{ kind: 'clip', text: 'La voz del narrador está activada.' }] }).catch(() => {});
+    // Si este dispositivo narra una partida en curso, la escena debe
+    // re-arrancar: cortar el audio en plena locución la mataba y la noche se
+    // quedaba atascada en ese paso. En silencio la escena sigue avanzando
+    // (compases mudos); al reactivar, la narración retomada hace de
+    // confirmación (sin frase enlatada por encima).
+    const narrating = inAutoGame && g?.masterId === app.session?.pid;
+    if (narrating) narratorHook.respawn();
+    else if (!app.ui.muted) play({ id: 'unmute', segments: [{ kind: 'clip', text: 'La voz del narrador está activada.' }] }).catch(() => {});
   }
 
   function toggleAmbience() {

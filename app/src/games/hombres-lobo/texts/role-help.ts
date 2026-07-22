@@ -254,7 +254,7 @@ export const ROLE_HELP: Record<RoleId, RoleHelp> = {
       'Elegida la víctima, la app te pregunta a ti solo (sin locución): puedes INFECTARLA en vez de devorarla (una sola vez por partida).',
       'Si infectas, esa misma noche la voz despierta al mordido por su PALABRA CLAVE y le cuenta en secreto que ahora es un hombre lobo: conserva su carta y sus poderes, pero desde la noche siguiente despierta, caza y gana con vosotros.',
     ],
-    tip: 'Las noches sin infección la voz llama palabras señuelo y espera igualmente: nadie sabrá si usaste tu poder. Ojo: si la víctima estaba protegida por el Defensor, no hay mordisco… y tu poder se pierde en vano.',
+    tip: 'Las noches sin infección la voz llama una palabra señuelo y espera igualmente: nadie sabrá si usaste tu poder. Ojo: si la víctima estaba protegida por el Defensor, no hay mordisco… y tu poder se pierde en vano.',
   },
 };
 

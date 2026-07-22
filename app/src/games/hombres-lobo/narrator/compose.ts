@@ -120,9 +120,9 @@ export function encantadosCallUtterance(game: GameState, id: string, kws: string
   };
 }
 
-/** Llamada del Infecto (real y falsa: mismas piezas, distintas palabras).
- *  Siempre suenan DOS palabras: la del mordido + un señuelo (o dos señuelos
- *  si no hubo infección); ni el número ni el marco delatan nada. */
+/** Llamada del Infecto (real y falsa: mismas piezas, distinta palabra).
+ *  UNA sola palabra: la del mordido (o un señuelo si no hubo infección) —
+ *  todos conocen el motivo del paso, y el marco no delata nada. */
 export function infectadoCallUtterance(game: GameState, id: string, kws: string[], fake: boolean): Utterance {
   const intro = narrParts('infectado', stepSalt(game, 'infectado'));
   const segments: Segment[] = [...intro.map(clip), clip(INF_FRAME), gap(500), clip(KW_LEAD), gap(400)];
@@ -283,8 +283,7 @@ export function nagUtterance(game: GameState, players: PlayerDoc[], nagId: strin
     if (game.keywordsActive && ps.length) text = nagEncantadosKw(ps.map((p) => p.keyword!));
   }
   if (id === 'infectado') {
-    const kws = kwArgs.filter(Boolean);
-    if (game.keywordsActive && kws.length) text = nagInfectadoKw(kws);
+    if (game.keywordsActive && kwArgs[0]) text = nagInfectadoKw(kwArgs[0]);
   }
   if (!text) {
     const pool = NAGS[id] || [];

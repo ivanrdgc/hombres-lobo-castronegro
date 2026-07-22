@@ -13,7 +13,7 @@ import { computeNightSteps, infectionTonight, resolveDawn, stepActors, stepNeeds
 import type { GameState, StepId } from '../types';
 import {
   ABRID_OJOS, ENAMORADOS_INTRO, ENAMORADOS_TAIL, ENC_FRAME, ENCANTADOS_TAIL, INF_FRAME, KW_LEAD,
-  deathLine, hashStr, kwClip, narrParts,
+  deathLine, kwClip, narrParts,
 } from '../texts/corpus';
 import {
   bienvenidaUtterance, dawnUtterance, debateUtterance, enamoradosCallUtterance, encantadosCallUtterance,
@@ -279,34 +279,30 @@ async function nightStepScene(ctx: Ctx, stepId: StepId, stepIdx: number): Promis
     return;
   }
 
-  // ——— Infectado: llamada por palabra clave al mordido (real o con señuelos) ———
+  // ——— Infectado: llamada por palabra clave al mordido (real o con señuelo) ———
   if (stepId === 'infectado') {
     const game = g(ctx);
-    // Señuelos deterministas y SIN repetición entre noches (una palabra real
-    // nunca suena dos veces: rota al confirmarse; los señuelos, igual). La
-    // llamada falsa de encantados avanza desde el principio del mazo; esta,
-    // desde el final: calendarios separados.
-    const decoyPair = (): string[] => {
+    // UNA sola palabra por llamada: todos conocen el motivo del paso, así que
+    // con una basta (real la noche del mordisco; señuelo el resto). Señuelos
+    // deterministas y SIN repetición entre noches (una palabra real nunca
+    // suena dos veces; los señuelos, igual). La llamada falsa de encantados
+    // avanza desde el principio del mazo; esta, desde el final.
+    const decoyOf = (): string | null => {
       const d = (game.kwDecoys || []).slice(2);
-      if (d.length < 2) return d.slice();
-      const base = ((game.night - 1) * 2) % d.length;
-      return [d[d.length - 1 - base], d[d.length - 1 - ((base + 1) % d.length)]];
+      if (!d.length) return null;
+      return d[d.length - 1 - ((game.night - 1) % d.length)];
     };
     const pid = infectionTonight(game, ps(ctx));
     const victim = pid ? ps(ctx).find((p) => p.id === pid) : undefined;
     if (pid && victim?.keyword && game.keywordsActive) {
       const confirmed = !!(game.acts.infectadoSeen || {})[pid];
-      // SIEMPRE dos palabras: la del mordido + un señuelo, en orden sorteado
-      // (que la primera no sea siempre la de verdad).
-      const pair = [victim.keyword, decoyPair()[0] || victim.keyword];
-      if (hashStr(`inf|${game.seed}|n${game.night}`) % 2) pair.reverse();
       if (!confirmed) {
-        prewarmSynth(kwTexts(pair));
-        await ctx.sayOnce(uid('call'), () => infectadoCallUtterance(g(ctx), uid('call'), pair, false));
+        prewarmSynth(kwTexts([victim.keyword]));
+        await ctx.sayOnce(uid('call'), () => infectadoCallUtterance(g(ctx), uid('call'), [victim.keyword!], false));
         const res = await ctx.waitOrNag((s) => !actorsPending(stepId, g(ctx), inGame(s.players)), {
           nagKey: uid('nags'),
           escalateAfter: NAG_ESCALATE_COUNT,
-          nag: (n) => nagUtterance(g(ctx), ctx.state().players, ['infectado', ...pair].join('|'), n),
+          nag: (n) => nagUtterance(g(ctx), ctx.state().players, ['infectado', victim.keyword!].join('|'), n),
         });
         if (res === 'escalate') {
           await A.startRoleRefresh();
@@ -323,16 +319,16 @@ async function nightStepScene(ctx: Ctx, stepId: StepId, stepIdx: number): Promis
     } else {
       // Sin infección esta noche (el Infecto se la guardó, ya la gastó, o ni
       // siquiera está): mientras la mesa no pueda descartarlo, suena una
-      // llamada FALSA con dos señuelos y una espera humana.
+      // llamada FALSA con un señuelo y una espera humana.
       const infDealt = (game.composition?.infecto || 0) > 0 || ps(ctx).some((p) => p.role === 'infecto');
       const infAlive = ps(ctx).some((p) => p.alive && p.role === 'infecto');
       const fakeNeeded = game.keywordsActive
         && (infAlive || (infDealt && !game.revealDead) || (!infDealt && !!game.fakeAllSelected));
       if (fakeNeeded) {
-        const fake = decoyPair();
-        if (fake.length >= 2) {
-          prewarmSynth(kwTexts(fake));
-          await ctx.sayOnce(uid('fake'), () => infectadoCallUtterance(g(ctx), uid('fake'), fake, true));
+        const fake = decoyOf();
+        if (fake) {
+          prewarmSynth(kwTexts([fake]));
+          await ctx.sayOnce(uid('fake'), () => infectadoCallUtterance(g(ctx), uid('fake'), [fake], true));
           await ctx.pause('fakeConfirmHold');
         } else {
           await ctx.pause('outroKnown');

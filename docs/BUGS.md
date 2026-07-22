@@ -90,6 +90,12 @@ Estados: 🔴 abierto · 🟢 arreglado (con commit) · 🟡 re-reportado tras u
   humana muestreada — indistinguible. Los señuelos del Infecto avanzan desde el FINAL del mazo
   (los de encantados, desde el principio): ninguna palabra suena dos veces. E2E `e2e-infecto.mjs`
   contra la app desplegada + tests de motor y de escena (paridad temporal real/falsa).
+- **2026-07-22 · afinado por Iván (2 reglas).** (1) La llamada pasa a UNA sola palabra — real o
+  señuelo — «todos saben los motivos, no hace falta llamar a 2»; el compás real/falso no cambia.
+  (2) Regla general de renovación: **rotar solo si otro rol podría volver a llamar al mismo
+  jugador**. El mordisco es la última llamada posible del propio Infecto, así que la palabra del
+  mordido solo rota si además juega el Gaitero (o la composición secreta lo activa); sin
+  reutilizador, su panel aclara «tu palabra no cambia».
 
 ## B8 · Al empezar la partida suenan dos audios a la vez (solo la primera locución)
 - **2026-07-22 · reporte.** «En algunos casos, suenan dos audios a la vez justo cuando empieza el
@@ -113,3 +119,7 @@ Estados: 🔴 abierto · 🟢 arreglado (con commit) · 🟡 re-reportado tras u
   (para no delatar que no están). La nueva se enseña JUNTO al botón antes de confirmar, como en
   encantados e infectado; sin ningún reutilizador posible, el panel aclara «tu palabra no cambia».
   E2E ampliado: cupido + infecto conviviendo, con la renovación verificada antes del toque.
+- **2026-07-22 · re-reportado («la palabra debe cambiar con cupido + infecto») → verificado.**
+  El arreglo ya estaba desplegado en ambas URLs: e2e en verde también contra producción (los dos
+  enamorados ven su palabra nueva antes de confirmar). Si se vio otra cosa, comprobar el sello del
+  build al pie (pestaña antigua).

@@ -2,6 +2,7 @@
 // gestiona los efectos laterales (relevo de narrador, repetir, explicación en
 // el lobby, ambientación, wake lock y latido de presencia).
 import { createNarrator } from '../../../core/narrator/sequencer';
+import { narratorHook } from '../../../core/narrator/respawn-hook';
 import { profileOf } from '../../../core/narrator/pacing';
 import { lastUtterance, play, stopSpeech } from '../../../core/audio/player';
 import type { Utterance } from '../../../core/audio/player';
@@ -48,6 +49,11 @@ export function installNarrator(): void {
     profileOf: (s) => profileOf(s.group?.settings?.pacing),
     isMuted: () => !!state.ui.muted,
   });
+
+  // El modal de voz re-arranca la escena al (de)silenciar: sin esto, cortar
+  // el audio en plena locución mataba la escena y la noche quedaba atascada
+  // en ese paso (la escena muerta nunca avanzaba el paso).
+  narratorHook.respawn = () => narrator.respawn();
 
   let wasNarrator = false;
   let hadGame = false;

@@ -1234,10 +1234,10 @@ export function nagEncantadosKw(kws: string[]): string {
   return `La melodía del Gaitero sigue sonando… Repito las palabras clave: … ${kws.join('… y ')}. Quien oiga la suya, que abra los ojos con disimulo, mire su pantalla y confirme.`;
 }
 
-// Recordatorio de la llamada del Infecto: repite las DOS palabras (la real y
-// el señuelo van juntas siempre; señalar solo una delataría cuál es la real).
-export function nagInfectadoKw(kws: string[]): string {
-  return `La sangre nueva aún no ha despertado… Repito las palabras: … ${kws.join('… y ')}. Quien oiga la suya, que abra los ojos con disimulo, mire su pantalla y confirme.`;
+// Recordatorio de la llamada del Infecto: repite la palabra del mordido (la
+// llamada es de UNA sola palabra: todos conocen el motivo del paso).
+export function nagInfectadoKw(kw: string): string {
+  return `La sangre nueva aún no ha despertado… Repito la palabra: … ${kw}. Quien la haya oído, que abra los ojos con disimulo, mire su pantalla y confirme.`;
 }
 
 // Las llamadas por palabra clave se dicen en DOS partes: una fija (que se

@@ -215,17 +215,18 @@ test('infectado: la noche del mordisco y una sin infección suenan IGUAL (señue
   const gapOf = (w: { timeline: [string, number][] }) => w.timeline[2][1] - w.timeline[1][1];
   expect(Math.abs(gapOf(real) - gapOf(fake))).toBeLessThanOrEqual(400);
 
-  // La llamada real nombra la palabra del mordido + UN señuelo; la falsa, dos
-  // señuelos. Nunca la palabra de otro jugador vivo.
+  // UNA sola palabra por llamada: la real nombra SOLO la del mordido; la
+  // falsa, UN señuelo. Nunca la palabra de otro jugador vivo.
   const realCall = real.displays[0];
   const fakeCall = fake.displays[0];
   expect(realCall).toContain('Búho de Niebla');
   expect(realCall).not.toContain('Luna de Plata');
   expect(realCall).not.toContain('Zarza de Roble');
+  expect((realCall.match(/d\d+/g) || []).length).toBe(0);
   expect(fakeCall).not.toContain('Búho de Niebla');
   expect(fakeCall).not.toContain('Luna de Plata');
   expect(fakeCall).not.toContain('Zarza de Roble');
-  expect((fakeCall.match(/d\d+/g) || []).length).toBe(2);
+  expect((fakeCall.match(/d\d+/g) || []).length).toBe(1);
 });
 
 test('infectado con la víctima protegida por el Defensor: suenan señuelos (no hubo mordisco)', async () => {
@@ -244,6 +245,7 @@ test('infectado con la víctima protegida por el Defensor: suenan señuelos (no 
   await vi.advanceTimersByTimeAsync(30000);
   expect(world.timeline.map(([e]) => e)).toEqual(['▶fake', '■fake', '▶outro', '■outro', 'advance']);
   expect(world.displays[0]).not.toContain('Búho de Niebla');
+  expect((world.displays[0].match(/d\d+/g) || []).length).toBe(1);
 });
 
 test('fin sin amanecer pendiente (partida forzada): solo la victoria', async () => {

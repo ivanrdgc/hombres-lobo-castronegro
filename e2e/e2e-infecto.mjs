@@ -1,8 +1,9 @@
 // E2E infecto: la llamada de la sangre (paso 'infectado') + convivencia con Cupido.
-//  1) Al infectar, la víctima es despertada ESA misma noche por palabra clave:
-//     ve el panel del mordisco con su palabra NUEVA junto al botón, confirma,
-//     y NO muere al amanecer. Los demás ven el panel neutral («Atención al
-//     narrador»): ninguna pantalla delata quién fue llamado.
+//  1) Al infectar, la víctima es despertada ESA misma noche por su palabra
+//     clave (una sola palabra), confirma y NO muere al amanecer. Sin gaitero
+//     en juego su palabra NO rota (regla: rotar solo si otro rol puede volver
+//     a llamarle) y el panel lo aclara. Los demás ven el panel neutral
+//     («Atención al narrador»): ninguna pantalla delata quién fue llamado.
 //  2) La noche siguiente el infectado despierta y caza CON la manada.
 //  3) Las noches sin infección (poder ya gastado) el paso avanza solo con una
 //     llamada de señuelos: ningún jugador tiene que tocar nada.
@@ -58,6 +59,8 @@ try {
   await ana.click('[data-a=open-settings]');
   await ana.click('.switch[data-a=toggle-setting][data-p=casual]');
   await ana.waitForSelector('.switch.on[data-a=toggle-setting][data-p=casual]');
+  await ana.click('[data-a=set-pacing][data-p=rapido]'); // e2e veloz: pausas mínimas
+  await ana.waitForSelector('button[data-a=set-pacing][data-p=rapido].primary');
   await ana.click('button[data-a=close-modal]');
   // Roles: infecto + cupido como únicos extras → mazo de 5 = infecto (único
   // lobo: el especial sustituye al común) + cupido + 3 aldeanos.
@@ -85,6 +88,13 @@ try {
   await ana.waitForSelector('.player[data-a=start-player][data-p=p-ana].off');
   await ana.click('[data-a=start-auto]');
   let st = await waitState(ana, (s) => s.phase === 'reveal', 'reparto');
+  // Voz muda: misma lógica de narración sin esperar audios (cada locución
+  // muda dura ~0,8 s). Al silenciar, el narrador re-arranca su escena.
+  await ana.click('[data-a=game-menu]');
+  await ana.click('[data-a=voice-open]');
+  await ana.click('.switch[data-a=toggle-mute]');
+  await ana.click('button[data-a=close-modal]');
+  ok('narrador en silencio (e2e veloz)');
   const infecto = st.players.find((p) => p.role === 'infecto');
   const cupido = st.players.find((p) => p.role === 'cupido');
   check(!!infecto && !!cupido, `Infecto (${infecto?.name}) y Cupido (${cupido?.name}) en juego`);
@@ -156,8 +166,10 @@ try {
       const seen = await vp.waitForSelector('button[data-a=act-infectado-ok]', { timeout: 20000 }).then(() => true).catch(() => false);
       check(seen, `${victim.name} ve el panel del mordisco (te ha mordido)`);
       if (seen) {
-        const conNueva = await vp.locator('.actionpanel:has-text("NUEVA")').count();
-        check(conNueva >= 1, `${victim.name} ve su palabra nueva JUNTO al botón, antes de confirmar`);
+        // SIN gaitero en juego nadie puede volver a llamarlo: su palabra no
+        // rota, y el panel se lo aclara (regla: rotar solo con reutilizador).
+        const sinCambio = await vp.locator('.actionpanel:has-text("no cambia")').count();
+        check(sinCambio >= 1, `${victim.name} ve que su palabra NO cambia (sin gaitero no hay reutilizador)`);
         // Los demás vivos ven el panel neutral: ninguna pantalla delata nada.
         const op = pages[otros[0].name.toLowerCase()];
         const neutral = await op.locator('.actionpanel:has-text("Atención al narrador")').count();

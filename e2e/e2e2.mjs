@@ -287,6 +287,8 @@ try {
   await ana.click('[data-a=open-settings]');
   await ana.click('.switch[data-a=toggle-setting][data-p=casual]');
   await ana.waitForSelector('.switch.on[data-a=toggle-setting][data-p=casual]');
+  await ana.click('[data-a=set-pacing][data-p=rapido]'); // e2e veloz: pausas mínimas
+  await ana.waitForSelector('button[data-a=set-pacing][data-p=rapido].primary');
   await ana.click('button[data-a=close-modal]');
 
   // Configurar roles: cupido, defensor, cuervo, tonto, cazador (y quitar vidente/bruja por defecto).
@@ -304,6 +306,12 @@ try {
   await ana.waitForSelector('.player[data-a=start-player][data-p=p-ana].off');
   await ana.click('[data-a=start-auto]');
   st = await waitState(ana, (s) => s.phase === 'reveal', 'reparto');
+  // Voz muda: misma lógica de narración sin esperar audios (~0,8 s por locución).
+  await ana.click('[data-a=game-menu]');
+  await ana.click('[data-a=voice-open]');
+  await ana.click('.switch[data-a=toggle-mute]');
+  await ana.click('button[data-a=close-modal]');
+  ok('narrador en silencio (e2e veloz)');
   const kwActive = st.players.some((p) => p.keyword);
   let kwChecked = false;
   for (const p of st.players.filter((x) => x.inGame)) {
