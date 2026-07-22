@@ -90,18 +90,25 @@ try {
   await ana.click('button[data-a=select-game][data-p=una_noche]');
   await ana.waitForSelector('[data-a=una-open-help]');
   ok('el catálogo ofrece Una Noche y su lobby carga');
+  check(await ana.locator('[data-a=una-play-intro]').count() > 0, 'la intro del lobby tiene botón de lectura (▶️)');
   await ana.click('[data-a=una-open-help]');
   await ana.waitForSelector('text=/Cómo se juega/');
+  check(await ana.locator('[data-a=una-play-role]').count() > 0, 'cada rol tiene botón de lectura en voz alta (▶️)');
   await ana.click('button[data-a=close-modal]');
 
-  // Empezar → mazo (7 cartas): recomendado y luego cambio cazador→doble.
+  // Mazo configurado DESDE EL LOBBY (recomendado → cambiar cazador por El Doble).
+  await ana.click('[data-a=una-open-deck]');
+  await ana.waitForSelector('[data-a=una-deck-fit]');
+  await ana.click('[data-a=una-deck-fit]'); await ana.waitForTimeout(250);
+  await ana.click('[data-a=una-deck-dec][data-p=cazador]'); await ana.waitForTimeout(250);
+  await ana.click('[data-a=una-deck-inc][data-p=doble]'); await ana.waitForTimeout(250);
+  await ana.click('button[data-a=close-modal]');
+  ok('mazo configurado en el lobby (7 cartas, con El Doble)');
+
+  // Empezar: solo elegir jugadores; el mazo ya viene del lobby.
   await ana.click('[data-a=open-start]');
-  await ana.waitForSelector('[data-a=una-start]');
-  await ana.click('[data-a=una-fit]');
-  await ana.click('[data-a=una-dec][data-p=cazador]');
-  await ana.click('[data-a=una-inc][data-p=doble]');
   await ana.waitForSelector('[data-a=una-start]:not([disabled])', { timeout: 15000 });
-  ok('mazo válido (7 cartas = 4 jugadores + 3 centro), con El Doble');
+  ok('«Empezar» valida el mazo del lobby (7 = 4 jugadores + 3 centro)');
   await ana.click('[data-a=una-start]');
 
   // ——— Reparto ———
@@ -123,19 +130,20 @@ try {
 
   // ——— Noche: cada dispositivo actúa en el paso en curso (idempotente) ———
   st = await waitState(ana, (s) => s.phase === 'night', 'empieza la noche');
-  const seenSteps = new Set();
+  // El paso de El Doble está en el guion (lo garantiza el mazo), sea real o
+  // fantasma. No comprobamos si el e2e lo «muestrea»: en modo test los pasos
+  // fantasma duran ~100 ms y pueden colarse entre sondeos.
+  check(st.steps.includes('doble'), 'la noche incluye el paso de El Doble en el guion');
   const t0 = Date.now();
   while (Date.now() - t0 < 120000) {
     st = await hlc(ana);
     if (!st || st.phase !== 'night') break;
     const step = st.steps[st.stepIdx];
-    seenSteps.add(step);
     if (step !== 'durmiendo' && step !== 'amanecer') {
       for (const pid of st.playerIds) await actStep(pg(pid), step);
     }
-    await ana.waitForTimeout(350);
+    await ana.waitForTimeout(300);
   }
-  check(seenSteps.has('doble'), 'la noche pasó por el paso de El Doble (real o fantasma)');
   const dobleDealt = Object.values(st.originalRole).includes('doble');
   if (dobleDealt) check(!!st.acts.dobleRole, 'El Doble (repartido a un jugador) copió un rol: ' + st.acts.dobleRole);
   else ok('El Doble cayó en el centro: paso fantasma (nadie copia), como debe ser');

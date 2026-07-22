@@ -1,7 +1,8 @@
 <script lang="ts">
-  // «Empezar partida» de Una Noche: quién juega y en qué orden (SeatPicker),
-  // qué dispositivo pone la voz, y el MAZO (qué roles entran). El mazo debe
-  // sumar exactamente jugadores + 3 cartas (las 3 sobrantes van al centro).
+  // «Empezar partida» de Una Noche: quién juega y en qué orden (SeatPicker) y
+  // qué dispositivo pone la voz. El MAZO se configura en el lobby (settings.
+  // unaNoche); aquí solo se valida que sume jugadores + 3 y, si no cuadra
+  // (cambió el nº de jugadores), se ofrece ajustarlo sin salir.
   import { app, matchOf, me, navigate } from '../../../core/sync/store.svelte';
   import { guard } from '../../../core/sync/guard';
   import { isActiveDevice } from '../../../core/sync/presence';
@@ -39,27 +40,15 @@
   });
   const narratorP = $derived(app.players.find((p) => p.id === narrator));
 
-  // ——— Mazo (roles + cantidades) ———
-  const MAX_OF: Partial<Record<RoleId, number>> = {
-    doble: 1, lobo: 3, esbirro: 1, mason: 2, vidente: 1, ladron: 1,
-    alborotadora: 1, borracho: 1, insomne: 1, aldeano: 8, cazador: 1, tanner: 1,
-  };
-  const initial = (group.settings?.unaNoche as Record<string, number> | undefined);
-  let comp = $state<Record<string, number>>(
-    initial && compositionSize(initial) > 0 ? { ...initial } : recommendedComposition(5),
-  );
+  // ——— Mazo (configurado en el lobby) ———
+  const comp = $derived.by(() => {
+    const s = group.settings?.unaNoche as Record<string, number> | undefined;
+    return s && compositionSize(s) > 0 ? s : recommendedComposition(n || 5);
+  });
   const total = $derived(compositionSize(comp));
-  const roleIds = Object.keys(ROLES) as RoleId[];
-  const countOf = (r: RoleId) => comp[r] || 0;
-  function bump(r: RoleId, d: number) {
-    const max = MAX_OF[r] ?? 1;
-    const v = Math.max(0, Math.min(max, countOf(r) + d));
-    comp = { ...comp, [r]: v };
-  }
-  function fitRecommended() { comp = recommendedComposition(n || 5); }
-
-  const okDeck = $derived(total === need && n >= MIN_PLAYERS && n <= MAX_PLAYERS);
-  const wolvesIn = $derived((comp.lobo || 0) + (comp.esbirro || 0));
+  const deckRoles = $derived((Object.keys(comp) as RoleId[]).filter((r) => (comp[r] || 0) > 0 && ROLES[r]));
+  const deckOk = $derived(total === need);
+  const okStart = $derived(deckOk && n >= MIN_PLAYERS && n <= MAX_PLAYERS);
 
   function startNow() {
     const pids = chosen.map((p) => p.id);
@@ -82,7 +71,7 @@
 <div class="card">
   <h3>🎮 ¿Quién juega?</h3>
   <SeatPicker {group} {meId} gameId="una_noche" onState={(s) => (seat = s)} />
-  <p class="small-note">El orden es el de la mesa (importa para intercambios entre vecinos que añadamos más adelante).</p>
+  <p class="small-note">El orden es el de la mesa (cuenta para intercambios entre vecinos que añadamos más adelante).</p>
 </div>
 
 <div class="card">
@@ -100,27 +89,16 @@
 </div>
 
 <div class="card">
-  <div style="display:flex;align-items:center;gap:8px">
-    <h3 style="flex:1;margin:0">🎴 El mazo</h3>
-    <button class="small ghost" data-a="una-fit" onclick={fitRecommended}>🎲 Recomendado</button>
+  <h3>🎴 El mazo</h3>
+  <div class="chips" style="margin-top:2px">
+    {#each deckRoles as r (r)}<span class="chip">{ROLES[r].emoji} {ROLES[r].name}{(comp[r] || 0) > 1 ? ` ×${comp[r]}` : ''}</span>{/each}
   </div>
-  <p class="small-note" style="margin-top:6px">
-    Debe sumar <b>{need}</b> cartas ({n} jugador{n === 1 ? '' : 'es'} + {CENTER_COUNT} al centro).
-    Llevas <b class:danger-text={total !== need}>{total}</b>.
-    {#if total < need}Faltan {need - total}.{:else if total > need}Sobran {total - need}.{:else}✅ Perfecto.{/if}
-  </p>
-  {#each roleIds as r (r)}
-    {@const c = countOf(r)}
-    <div class="settingrow" style="align-items:center">
-      <div class="sinfo"><div class="sname" style="opacity:{c ? 1 : 0.55}">{ROLES[r].emoji} {ROLES[r].name}{c > 1 ? ` ×${c}` : ''}</div></div>
-      <div class="btnrow" style="flex:0 0 auto">
-        <button class="small ghost" data-a="una-dec" data-p={r} disabled={c <= 0} onclick={() => bump(r, -1)}>−</button>
-        <span style="min-width:1.5em;text-align:center">{c}</span>
-        <button class="small ghost" data-a="una-inc" data-p={r} disabled={c >= (MAX_OF[r] ?? 1)} onclick={() => bump(r, 1)}>+</button>
-      </div>
-    </div>
-  {/each}
-  {#if wolvesIn === 0}<p class="small-note">⚠️ No hay lobos ni esbirro en el mazo: puede acabar sin bando lobo (válido, pero raro).</p>{/if}
+  {#if !deckOk}
+    <p class="small-note">⚠️ El mazo tiene <b>{total}</b> cartas, pero para <b>{n}</b> jugadores hacen falta <b>{need}</b> ({n} + {CENTER_COUNT}).</p>
+    <button class="block" data-a="una-fix-deck" onclick={() => (app.ui.modal = { type: 'una-deck', targetN: n })}>🎴 Ajustar el mazo</button>
+  {:else}
+    <p class="small-note">✅ {total} cartas para {n} jugadores + {CENTER_COUNT} al centro. <button class="small ghost" data-a="una-fix-deck" onclick={() => (app.ui.modal = { type: 'una-deck', targetN: n })}>Editar</button></p>
+  {/if}
 </div>
 
 <div class="card">
@@ -128,5 +106,5 @@
   {#if n < MIN_PLAYERS}<p class="small-note">⚠️ Una Noche necesita al menos {MIN_PLAYERS} jugadores.</p>{/if}
   {#if n > MAX_PLAYERS}<p class="small-note">⚠️ Máximo {MAX_PLAYERS} jugadores.</p>{/if}
   <div id="form-error">{#if app.ui.formError}<div class="flash error">{app.ui.formError}</div>{/if}</div>
-  <button class="primary block" disabled={!okDeck} data-a="una-start" onclick={startNow}>🌘 ¡Empezar!</button>
+  <button class="primary block" disabled={!okStart} data-a="una-start" onclick={startNow}>🌘 ¡Empezar!</button>
 </div>

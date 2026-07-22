@@ -7,6 +7,19 @@ import type { StepId, WinnerId } from './types';
 export const WELCOME =
   'Bienvenidos a Castronegro… solo por esta noche. Mirad vuestra carta en secreto, memorizadla y confirmad. Recordad: alguien podría cambiárosla mientras dormís.';
 
+// Textos de LOBBY para leer en voz alta en el propio dispositivo (▶️), como en
+// el juego original. Se sintetizan en runtime (no son clips pregenerados).
+export const INTRO_LOBBY: string[] = [
+  'Una sola noche. Los roles se despiertan por turnos y, a oscuras, miran y se roban e intercambian las cartas unos a otros: al amanecer puede que ya no seas quien empezaste… y quizá ni lo sepas.',
+  'De día se debate una sola vez y todos señalan a la vez a quien creen hombre lobo. Gana el Pueblo si cae un lobo; ganan los Lobos si ninguno cae; y el Curtidor gana si logra que lo linchen a él.',
+];
+export const HOWTO: string[] = [
+  'Se reparte una carta a cada jugador y quedan tres en el centro.',
+  'De noche, la voz llama a cada rol en su orden: miran y, algunos, roban o intercambian cartas entre los jugadores.',
+  'Al amanecer nadie ha muerto, pero puede que ya no seas quien empezaste. Se debate una vez y todos votan a la vez.',
+  'Gana el Pueblo si cae al menos un hombre lobo; ganan los Lobos si no cae ninguno; y el Curtidor gana en solitario si consigue que lo linchen.',
+];
+
 export const LISTOS =
   'Todos conocéis ya vuestra carta. Cuando el pueblo esté listo, que caiga la noche.';
 
