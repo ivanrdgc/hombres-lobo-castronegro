@@ -12,6 +12,13 @@
   // Fuera de partida (el lobby): leer en voz alta no delata nada.
   const canPlay = $derived(app.group?.status !== 'playing');
   const howto = $derived(localAudioState('una-howto'));
+
+  // Salta al detalle guardando el scroll: al volver, este modal se restaura
+  // donde estaba (B12; mismo patrón que Roles/Explicación de Los HL).
+  function openDetail(r: RoleId) {
+    const scroll = (document.querySelector('.modal') as HTMLElement | null)?.scrollTop ?? 0;
+    app.ui.modal = { type: 'una-role-detail', role: r, back: 'una-help', backScroll: scroll };
+  }
 </script>
 
 <div style="display:flex;align-items:center;gap:8px">
@@ -32,14 +39,14 @@
 <p class="small-note" style="margin-top:2px">Toca un rol para ver en detalle cómo funciona.</p>
 <div class="chips" style="margin-top:6px">
   {#each NIGHT as r (r)}
-    <button class="chip rolechip" data-a="una-role" data-p={r} onclick={() => (app.ui.modal = { type: 'una-role-detail', role: r, back: 'una-help' })}>{ROLES[r].emoji} {ROLES[r].name}</button>
+    <button class="chip rolechip" data-a="una-role" data-p={r} onclick={() => openDetail(r)}>{ROLES[r].emoji} {ROLES[r].name}</button>
   {/each}
 </div>
 
 <h3 style="margin-top:14px">🛌 Sin acción de noche</h3>
 <div class="chips" style="margin-top:6px">
   {#each PASSIVE as r (r)}
-    <button class="chip rolechip" data-a="una-role" data-p={r} onclick={() => (app.ui.modal = { type: 'una-role-detail', role: r, back: 'una-help' })}>{ROLES[r].emoji} {ROLES[r].name}</button>
+    <button class="chip rolechip" data-a="una-role" data-p={r} onclick={() => openDetail(r)}>{ROLES[r].emoji} {ROLES[r].name}</button>
   {/each}
 </div>
 

@@ -150,3 +150,16 @@ Estados: 🔴 abierto · 🟢 arreglado (con commit) · 🟡 re-reportado tras u
   el mismo nombre (takeover), y ya queda la URL buena. Alternativa descartada: añadir
   `*.firebaseapp.com` a los referers de la clave (dejaría DOS orígenes vivos con sesiones
   distintas, el lío persistiría).
+
+## B12 · Una Noche · Volver de un modal apilado devuelve el modal anterior arriba del todo
+- **2026-07-23 · reporte.** «Los modals sobre modals hacen scroll del modal anterior a arriba al
+  volver (one night).» Al abrir el detalle de un rol desde el mazo (ℹ️) o desde «Cómo se juega»
+  (chips) y pulsar «volver», el modal de origen reaparecía con el scroll perdido (arriba).
+  Diagnóstico: el mecanismo ya existía (ModalHost restaura `modal.scroll`, y Los Hombres Lobo lo
+  usa desde Roles/Explicación con `backScroll`), pero los modales de Una Noche abrían el detalle
+  sin capturar el scroll y su «volver» devolvía `{ type: back }` a secas. De paso, volver al mazo
+  desde «Empezar partida» perdía también `targetN` (el nº exacto de jugadores del objetivo).
+- **2026-07-23 · 🟢 arreglado** (este commit): DeckModal (ℹ️) y HelpModal (chips ×2) capturan el
+  scroll del modal al saltar al detalle (`backScroll`, patrón de Los HL) y el detalle lo devuelve
+  al volver (`scroll`), junto con `targetN` si venía del mazo de «Empezar». E2E: reabrir con
+  scroll restaurado verificado en `e2e-una-noche.mjs`.

@@ -40,7 +40,10 @@
   }
 
   function close() {
-    app.ui.modal = back ? { type: back } : null;
+    // Devuelve también el scroll del modal de origen (lo restaura ModalHost
+    // vía .scroll) y el targetN si veníamos del mazo de «Empezar» (B12).
+    const m = app.ui.modal;
+    app.ui.modal = back ? { type: back, scroll: m?.backScroll, targetN: m?.backTargetN } : null;
   }
 </script>
 

@@ -109,6 +109,19 @@ try {
   await ana.click('[data-a=una-deck-fit]'); await ana.waitForTimeout(250);
   await ana.click('[data-a=una-deck-dec][data-p=cazador]'); await ana.waitForTimeout(250);
   await ana.click('[data-a=una-deck-inc][data-p=doble]'); await ana.waitForTimeout(250);
+  // B12: saltar al detalle de un rol desde el mazo y VOLVER debe restaurar el
+  // scroll del modal (antes volvía arriba del todo).
+  await ana.evaluate(() => { const m = document.querySelector('.modal'); if (m) m.scrollTop = 400; });
+  await ana.waitForTimeout(150);
+  const scrollBefore = await ana.evaluate(() => document.querySelector('.modal')?.scrollTop || 0);
+  await ana.click('[data-a=una-deck-info][data-p=tanner]');
+  await ana.waitForSelector('[data-a=una-role-back]');
+  await ana.click('[data-a=una-role-back]');
+  await ana.waitForSelector('[data-a=una-deck-fit]');
+  await ana.waitForTimeout(350); // rAF de restauración del scroll
+  const scrollAfter = await ana.evaluate(() => document.querySelector('.modal')?.scrollTop || 0);
+  check(scrollBefore > 0 && Math.abs(scrollAfter - scrollBefore) < 40,
+    `volver del detalle restaura el scroll del mazo (${scrollBefore}→${scrollAfter}) (B12)`);
   await ana.click('button[data-a=close-modal]');
   ok('mazo configurado en el lobby (7 cartas, con El Doble)');
 

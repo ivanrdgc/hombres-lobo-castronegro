@@ -64,7 +64,12 @@
     <!-- Stepper compacto: NO usa la clase .btnrow (su regla global estira cada
          botón a flex:1/min-width:130px y se comían 3/4 del ancho, tapando la ℹ️). -->
     <div class="stepper">
-      <button class="small ghost" data-a="una-deck-info" data-p={r} aria-label="Ver el rol en detalle" title="Ver en detalle" onclick={() => (app.ui.modal = { type: 'una-role-detail', role: r, back: 'una-deck' })}>ℹ️</button>
+      <button class="small ghost" data-a="una-deck-info" data-p={r} aria-label="Ver el rol en detalle" title="Ver en detalle" onclick={() => {
+        // Salta al detalle guardando el scroll (y el targetN si venía de
+        // «Empezar»): al volver, este modal se restaura donde estaba (B12).
+        const scroll = (document.querySelector('.modal') as HTMLElement | null)?.scrollTop ?? 0;
+        app.ui.modal = { type: 'una-role-detail', role: r, back: 'una-deck', backScroll: scroll, backTargetN: app.ui.modal?.targetN };
+      }}>ℹ️</button>
       <button class="small ghost" data-a="una-deck-dec" data-p={r} disabled={c <= 0} aria-label="Quitar una carta" onclick={() => bump(r, -1)}>−</button>
       <span class="cnt">{c}</span>
       <button class="small ghost" data-a="una-deck-inc" data-p={r} disabled={c >= (MAX_OF[r] ?? 1)} aria-label="Añadir una carta" onclick={() => bump(r, 1)}>+</button>
