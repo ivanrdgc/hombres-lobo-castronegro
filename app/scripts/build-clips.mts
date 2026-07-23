@@ -36,7 +36,7 @@ function readEnvLocal(): Record<string, string> {
 const env = readEnvLocal();
 const KEY = process.env.VITE_TTS_KEY || env.VITE_TTS_KEY;
 const REFERER = process.env.CLIPS_REFERER || env.CLIPS_REFERER;
-const VOICE = process.env.CLIPS_VOICE || 'es-ES-Chirp3-HD-Charon';
+const VOICE = process.env.CLIPS_VOICE || 'es-ES-Studio-F';
 const RATE_PCT = Number(process.env.CLIPS_RATE || 95);
 
 if (!KEY) {
@@ -71,8 +71,12 @@ async function main(): Promise<void> {
   const clips: Manifest['clips'] = {};
   const pending: [string, string][] = [];
   for (const [id, text] of wanted) {
-    if (prevOk && prev!.clips[id] && existsSync(join(outDir, id + '.mp3'))) {
-      clips[id] = prev!.clips[id];
+    const fp = join(outDir, id + '.mp3');
+    // Reutiliza cualquier MP3 ya en disco (aunque el manifest previo no cuadre):
+    // así una regeneración cortada a medias RESUME sin re-sintetizar (ni pagar).
+    if (existsSync(fp)) {
+      const size = readFileSync(fp).length;
+      clips[id] = (prevOk && prev!.clips[id]) || { d: Math.round((size * 8) / 32000 * 100) / 100, chars: text.length };
     } else {
       pending.push([id, text]);
     }

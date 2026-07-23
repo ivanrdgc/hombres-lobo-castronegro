@@ -15,7 +15,7 @@ const LS_KEY = 'hlc_voice_v4';
 
 const DEFAULTS: VoiceConfig = {
   engine: 'cloud', // 'cloud' (neuronal, muy humana) o 'device' (la del móvil)
-  cloudVoice: 'es-ES-Chirp3-HD-Charon', // la voz que mejor ha funcionado en mesa
+  cloudVoice: 'es-ES-Studio-F', // Studio masculina (locutor): la biblioteca de clips se pregenera con ella
   voiceURI: null,
   rate: 0.95,
   pitch: 0.9,
@@ -23,12 +23,12 @@ const DEFAULTS: VoiceConfig = {
 };
 
 export const CLOUD_VOICES = [
-  { id: 'es-ES-Chirp3-HD-Charon', label: '🎬 HD · masculina grave (recomendada)' },
+  { id: 'es-ES-Studio-F', label: '🎙️ Studio · masculina, locutor (recomendada)' },
+  { id: 'es-ES-Studio-C', label: '🎙️ Studio · femenina (locutora)' },
+  { id: 'es-ES-Chirp3-HD-Charon', label: '🎬 HD · masculina grave' },
   { id: 'es-ES-Chirp3-HD-Enceladus', label: '🎬 HD · masculina serena' },
   { id: 'es-ES-Chirp3-HD-Kore', label: '🎬 HD · femenina clara' },
   { id: 'es-ES-Chirp3-HD-Sulafat', label: '🎬 HD · femenina cálida' },
-  { id: 'es-ES-Studio-F', label: '🎙️ Studio · masculina (locutor)' },
-  { id: 'es-ES-Studio-C', label: '🎙️ Studio · femenina (locutora)' },
   { id: 'es-ES-Neural2-F', label: '⚡ Ágil · masculina' },
   { id: 'es-ES-Neural2-A', label: '⚡ Ágil · femenina' },
 ] as const;

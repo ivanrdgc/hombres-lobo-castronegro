@@ -9,7 +9,7 @@ import { allEspiaStaticPieces, cleanSpeech } from './texts';
 import { ttsCacheKey } from '../../core/audio/tts';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const DEFAULT_VOICE = 'es-ES-Chirp3-HD-Charon';
+const DEFAULT_VOICE = 'es-ES-Studio-F';
 const manifestPath = join(HERE, '../../../public/clips', DEFAULT_VOICE, 'manifest.json');
 
 interface Manifest {
