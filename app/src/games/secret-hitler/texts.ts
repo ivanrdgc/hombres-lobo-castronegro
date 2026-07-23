@@ -1,9 +1,9 @@
-// Corpus de «Secret Castronegro»: lobby (▶️), ayuda y voz del narrador. Las
+// Corpus de «Secret Hitler»: lobby (▶️), ayuda y voz del narrador. Las
 // piezas sin nombres son estáticas → clips (allSecretHitlerStaticPieces).
 import type { PowerType } from './roles';
 
 export const INTRO_LOBBY: string[] = [
-  'Secret Castronegro: la República tambalea. Entre vosotros hay liberales que quieren salvarla, fascistas que quieren derribarla… y un Hitler oculto que los fascistas conocen, pero que se hace pasar por uno más.',
+  'Secret Hitler: la República tambalea. Entre vosotros hay liberales que quieren salvarla, fascistas que quieren derribarla… y un Hitler oculto que los fascistas conocen, pero que se hace pasar por uno más.',
   'Cada ronda, un Presidente y un Canciller promulgan un decreto en secreto. Los liberales ganan con cinco decretos liberales o ejecutando a Hitler; los fascistas, con seis decretos fascistas… o colando a Hitler de Canciller cuando ya mandan.',
 ];
 
@@ -67,7 +67,7 @@ export const HOW_TO: HelpSection[] = [
 // ——— Voz ———
 
 export const SH_INTRO =
-  'Bienvenidos a Secret Castronegro. He repartido los bandos en secreto: mirad vuestra carta y memorizad quién sois. Fascistas, reconoceos; liberales, desconfiad. Que empiece la República… o su caída.';
+  'Bienvenidos a Secret Hitler. He repartido los bandos en secreto: mirad vuestra carta y memorizad quién sois. Fascistas, reconoceos; liberales, desconfiad. Que empiece la República… o su caída.';
 
 export const LISTOS = 'Todos conocéis vuestro bando. Que empiece la primera legislatura.';
 

@@ -1,4 +1,4 @@
-// Estado de una partida de «Secret Castronegro». Vive ENTERO en el doc de su
+// Estado de una partida de «Secret Hitler». Vive ENTERO en el doc de su
 // partida (matches/<mid>), con `secretHitler: true` como discriminante. La app
 // custodia el mazo de decretos y las cartas que cada gobierno ve en secreto.
 import type { PolicyId, PowerType, RoleId } from './roles';

@@ -1,4 +1,4 @@
-// La voz de «Secret Castronegro»: narrador ligero sobre el secuenciador
+// La voz de «Secret Hitler»: narrador ligero sobre el secuenciador
 // genérico. Solo habla el altavoz (masterId) de su partida. La app ya lleva
 // todo el secreto en las pantallas; la voz ambienta y anuncia el estado público
 // (quién preside, la nominación, el decreto promulgado, los poderes y el final).

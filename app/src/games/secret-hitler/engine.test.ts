@@ -1,4 +1,4 @@
-// Tests del motor puro de «Secret Castronegro». Lo delicado: recuentos por
+// Tests del motor puro de «Secret Hitler». Lo delicado: recuentos por
 // número de jugadores, conocimiento nocturno (Hitler ciego con 7+), límites de
 // mandato del Canciller, tablero de poderes, rebaraja del mazo y las victorias
 // (incluida la de elegir a Hitler Canciller y la de ejecutarlo).

@@ -1,5 +1,5 @@
 <script lang="ts">
-  // «Empezar partida» de Secret Castronegro: quién juega y en qué orden
+  // «Empezar partida» de Secret Hitler: quién juega y en qué orden
   // (SeatPicker) y qué dispositivo pone la voz.
   import { app, matchOf, me, navigate } from '../../../core/sync/store.svelte';
   import { guard } from '../../../core/sync/guard';
@@ -37,7 +37,7 @@
     const pids = chosen.map((p) => p.id);
     if (narrator === meId) {
       unlockAudio();
-      play({ id: 'unlock', segments: [{ kind: 'clip', text: 'Que empiece Secret Castronegro.' }] }).catch(() => {});
+      play({ id: 'unlock', segments: [{ kind: 'clip', text: 'Que empiece Secret Hitler.' }] }).catch(() => {});
       app.ui.voiceUnlocked = true;
     }
     guard(() => A.startSecretHitler(pids, narrator));
@@ -72,7 +72,7 @@
 
 <div class="card">
   <p class="small-note" style="margin-top:0">🏛️ Jugarán <b>{n}</b>{n ? ': ' : ''}<span style="opacity:.75">{chosen.map((p) => p.name).join(', ')}</span></p>
-  {#if n < MIN_PLAYERS}<p class="small-note">⚠️ Secret Castronegro necesita al menos {MIN_PLAYERS} jugadores.</p>{/if}
+  {#if n < MIN_PLAYERS}<p class="small-note">⚠️ Secret Hitler necesita al menos {MIN_PLAYERS} jugadores.</p>{/if}
   {#if n > MAX_PLAYERS}<p class="small-note">⚠️ Máximo {MAX_PLAYERS} jugadores.</p>{/if}
   <div id="form-error">{#if app.ui.formError}<div class="flash error">{app.ui.formError}</div>{/if}</div>
   <button class="primary block" disabled={!okStart} data-a="sh-start" onclick={startNow}>🏛️ ¡Empezar!</button>

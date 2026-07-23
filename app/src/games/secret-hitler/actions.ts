@@ -1,4 +1,4 @@
-// Acciones de «Secret Castronegro» sobre Firestore. Todo el estado vive en el
+// Acciones de «Secret Hitler» sobre Firestore. Todo el estado vive en el
 // doc de su partida (matches/<mid>); los docs de jugador no se tocan. La app
 // hace de máster OCULTO: baraja y reparte el mazo de decretos, muestra a cada
 // gobierno solo lo que le toca ver, aplica los poderes presidenciales y detecta
@@ -55,8 +55,8 @@ const nameOf = (g: SHState, pid: string | null | undefined) => (pid && g.names[p
 export async function startSecretHitler(playerIds: string[], narratorId: string | null): Promise<void> {
   const slug = mySlug();
   const mid = newMatchId();
-  if (playerIds.length < MIN_PLAYERS) throw new Error(`Secret Castronegro necesita al menos ${MIN_PLAYERS} jugadores.`);
-  if (playerIds.length > MAX_PLAYERS) throw new Error(`Secret Castronegro admite ${MAX_PLAYERS} jugadores como mucho.`);
+  if (playerIds.length < MIN_PLAYERS) throw new Error(`Secret Hitler necesita al menos ${MIN_PLAYERS} jugadores.`);
+  if (playerIds.length > MAX_PLAYERS) throw new Error(`Secret Hitler admite ${MAX_PLAYERS} jugadores como mucho.`);
   const names: Record<string, string> = {};
   for (const pid of playerIds) names[pid] = state.players.find((p) => p.id === pid)?.name || pid;
   const speaker = narratorId || myPid();
@@ -74,7 +74,7 @@ export async function startSecretHitler(playerIds: string[], narratorId: string 
     vetoUnlocked: false, vetoRequested: false, lastEnacted: null, power: null,
     peek: null, investigateResult: null, investigated: [], reshuffles: 0,
     winner: null, winReason: null, paused: null, repeatNonce: 0,
-    log: [{ txt: `🏛️ Comienza Secret Castronegro con ${playerIds.length} jugadores. Liberales contra fascistas… y un Hitler oculto.` }],
+    log: [{ txt: `🏛️ Comienza Secret Hitler con ${playerIds.length} jugadores. Liberales contra fascistas… y un Hitler oculto.` }],
   };
   await txWithRetry(async (t) => {
     const snap = await t.get(gref(slug));

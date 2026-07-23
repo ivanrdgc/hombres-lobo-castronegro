@@ -1,5 +1,5 @@
 <script lang="ts">
-  // Lobby de Secret Castronegro: intro con lectura (▶️) + «cómo se juega». No
+  // Lobby de Secret Hitler: intro con lectura (▶️) + «cómo se juega». No
   // hay roles que configurar (los fija el número de jugadores). La selección de
   // quién juega se hace en «Empezar partida».
   import { app, navigate } from '../../../core/sync/store.svelte';
@@ -22,7 +22,7 @@
 
 <div class="card">
   <div style="display:flex;align-items:center;gap:8px">
-    <h3 style="flex:1;margin:0">🏛️ Secret Castronegro</h3>
+    <h3 style="flex:1;margin:0">🏛️ Secret Hitler</h3>
     {#if introAudio === 'playing'}
       <button class="small ghost" data-a="sh-play-intro" title="Detener" onclick={() => toggleLocalSpeech('sh-intro', [])}>⏹️</button>
     {:else if introAudio === 'loading'}

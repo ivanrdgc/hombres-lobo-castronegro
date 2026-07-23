@@ -1,4 +1,4 @@
-// Motor puro de «Secret Castronegro»: rotación de la presidencia, elegibilidad
+// Motor puro de «Secret Hitler»: rotación de la presidencia, elegibilidad
 // del Canciller (límites de mandato), recuento de la elección, mazo de decretos
 // (reparto y rebaraja), promulgación, poderes y condiciones de victoria.
 import {

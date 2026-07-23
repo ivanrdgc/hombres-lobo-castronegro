@@ -1,4 +1,4 @@
-// Catálogo, reparto y tablero de «Secret Castronegro» (Secret Hitler). Módulo
+// Catálogo, reparto y tablero de «Secret Hitler» (Secret Hitler). Módulo
 // puro (testeable en Node). La app hace de máster OCULTO: reparte roles, calcula
 // el conocimiento nocturno, y más adelante barajará el mazo de decretos y los
 // poderes presidenciales sin que nadie manosee cartas físicas.

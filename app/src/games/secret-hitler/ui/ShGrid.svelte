@@ -1,5 +1,5 @@
 <script lang="ts">
-  // Parrilla de selección para Secret Castronegro (una elección; excluye a
+  // Parrilla de selección para Secret Hitler (una elección; excluye a
   // muertos y a quien se indique). Marca cargos con badges.
   import { toggleSel, selIds } from '../../../shell/selection';
 

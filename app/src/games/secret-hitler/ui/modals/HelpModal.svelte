@@ -1,5 +1,5 @@
 <script lang="ts">
-  // Cómo se juega Secret Castronegro: guía paso a paso con un ▶️ de lectura en
+  // Cómo se juega Secret Hitler: guía paso a paso con un ▶️ de lectura en
   // CADA apartado (solo en el lobby), y los roles clicables → detalle.
   import { app, viewGroup } from '../../../../core/sync/store.svelte';
   import { localAudioState, toggleLocalSpeech } from '../../../../shell/explain-audio';
@@ -17,7 +17,7 @@
   }
 </script>
 
-<h3 style="margin:0 0 4px">🏛️ Cómo se juega Secret Castronegro</h3>
+<h3 style="margin:0 0 4px">🏛️ Cómo se juega Secret Hitler</h3>
 
 {#each HOW_TO as sec, i (i)}
   {@const st = localAudioState(keyOf(i))}

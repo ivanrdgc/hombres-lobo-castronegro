@@ -18,7 +18,7 @@ const DEFAULT_SUITES = [
   // Auditoría de roles (23-07): combinaciones problemáticas por juego.
   'e2e-hl-roles.mjs', 'e2e-hl-pueblo.mjs', 'e2e-sirvienta.mjs', 'e2e-ladron.mjs',
   'e2e-una-roles.mjs', 'e2e-una-cazador.mjs', 'e2e-espia-timeup.mjs',
-  // Juegos «máster oculto» (23-07): Ávalon y Secret Castronegro.
+  // Juegos «máster oculto» (23-07): Ávalon y Secret Hitler.
   'e2e-avalon.mjs', 'e2e-secret-hitler.mjs',
 ];
 const suites = process.argv.slice(2).length ? process.argv.slice(2) : DEFAULT_SUITES;

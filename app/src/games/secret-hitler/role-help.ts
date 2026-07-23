@@ -1,4 +1,4 @@
-// Ayuda estructurada de cada rol de Secret Castronegro (when + steps + tip).
+// Ayuda estructurada de cada rol de Secret Hitler (when + steps + tip).
 import type { RoleId } from './roles';
 
 export interface RoleHelp { when: string; steps: string[]; tip?: string }

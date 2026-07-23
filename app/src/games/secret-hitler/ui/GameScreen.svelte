@@ -1,5 +1,5 @@
 <script lang="ts">
-  // Pantalla de partida de Secret Castronegro: cabecera + tablero + fase actual
+  // Pantalla de partida de Secret Hitler: cabecera + tablero + fase actual
   // + crónica. Enruta por game.phase.
   import { app, isMaster } from '../../../core/sync/store.svelte';
   import { shGame } from '../actions';

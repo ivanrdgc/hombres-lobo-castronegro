@@ -1,4 +1,4 @@
-// E2E de «Secret Castronegro»: partida completa a 5 jugadores (1 fascista +
+// E2E de «Secret Hitler»: partida completa a 5 jugadores (1 fascista +
 // Hitler + 3 liberales), Ana narra Y juega. Verifica de punta a punta: catálogo
 // → reparto secreto (conocimiento en la carta) → nominación con límites de
 // mandato → voto Ja/Nein que la app destapa → sesión legislativa SECRETA
@@ -57,7 +57,7 @@ try {
 
   await ana.click('button[data-a=select-game][data-p=secret_hitler]');
   await ana.waitForSelector('[data-a=sh-open-help]');
-  ok('el catálogo ofrece Secret Castronegro y su lobby carga');
+  ok('el catálogo ofrece Secret Hitler y su lobby carga');
   await ana.click('[data-a=sh-open-help]');
   await ana.waitForSelector('text=/Cómo se juega/');
   await ana.locator('.modal [data-a=sh-role]').first().click();
@@ -101,10 +101,13 @@ try {
 
     if (st.phase === 'nominate') {
       const pres = presidentPid(st);
-      const cand = aliveOf(st).find((p) => p !== pres && p !== st.lastChancellor && p !== hitler)
-        || aliveOf(st).find((p) => p !== pres && p !== st.lastChancellor);
       const p = pg(pres);
-      await p.waitForSelector(`.player[data-a=sh-sel][data-p="${cand}"]`, { timeout: 15000 });
+      // Leemos los cancilleres que la propia pantalla ofrece como ELEGIBLES
+      // (la app ya aplica los límites de mandato) y elegimos uno que NO sea
+      // Hitler — así jamás intentamos tocar un chip que la UI no muestra.
+      await p.waitForSelector('.player[data-a=sh-sel]', { timeout: 15000 });
+      const cands = await p.$$eval('.player[data-a=sh-sel]', (els) => els.map((e) => e.getAttribute('data-p')));
+      const cand = cands.find((c) => c !== hitler) || cands[0];
       await p.click(`.player[data-a=sh-sel][data-p="${cand}"]`);
       await p.click('[data-a=sh-nominate]:not([disabled])');
       await waitState(ana, (s) => s.phase === 'election', 'abre la elección');
@@ -180,7 +183,7 @@ try {
   }
   await pg(st.playerIds[0]).waitForSelector('[data-a=sh-again]', { timeout: 15000 });
   check(await pg(st.playerIds[0]).locator('text=/Los bandos/').count() > 0, 'el final destapa todos los bandos');
-  ok('partida completa de Secret Castronegro');
+  ok('partida completa de Secret Hitler');
 
   // Revancha + limpieza.
   await pg(st.playerIds[0]).click('[data-a=sh-again]');
@@ -191,7 +194,7 @@ try {
   await ana.waitForSelector('[data-a=sh-end-confirm]');
   await ana.click('[data-a=sh-end-confirm]');
   await ana.waitForSelector('[data-a=open-start]', { timeout: 30000 });
-  ok('al terminar, la mesa vuelve al lobby de Secret Castronegro');
+  ok('al terminar, la mesa vuelve al lobby de Secret Hitler');
   await ana.click('[data-a=change-game]');
   await ana.waitForSelector('text=/Dispositivos/');
   await ana.click('[data-a=confirm-delete-group]');

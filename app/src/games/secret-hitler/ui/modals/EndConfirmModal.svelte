@@ -5,6 +5,6 @@
 </script>
 
 <h3>🏳️ ¿Terminar la partida?</h3>
-<p class="small-note">Se cierra la partida en curso: la mesa vuelve al lobby de Secret Castronegro.</p>
+<p class="small-note">Se cierra la partida en curso: la mesa vuelve al lobby de Secret Hitler.</p>
 <button class="danger block" data-a="sh-end-confirm" onclick={() => guard(async () => { await A.endSecretHitler(); app.ui.modal = null; })}>🏳️ Sí, terminar</button>
 <button class="ghost block" data-a="close-modal" onclick={() => (app.ui.modal = null)}>Cancelar</button>
