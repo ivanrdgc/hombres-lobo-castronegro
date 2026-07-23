@@ -7,7 +7,7 @@ export const WORDS: string[] = [
   'Brújula', 'Cometa', 'Ardilla', 'Trompeta', 'Momia', 'Erizo', 'Catapulta', 'Medusa',
   'Escoba', 'Vampiro', 'Acordeón', 'Camaleón', 'Ancla', 'Robot', 'Cebolla', 'Murciélago',
   'Tobogán', 'Sirena', 'Yunque', 'Colmena', 'Espantapájaros', 'Termómetro', 'Caracol', 'Cohete',
-  'Linterna', 'Mariposa', 'Gaita', 'Iceberg', 'Ballena', 'Cactus', 'Puente', 'Tambor',
+  'Linterna', 'Mariposa', 'Gaita', 'Iceberg', 'Ballena', 'Tostadora', 'Puente', 'Tambor',
 ];
 
 export function wordAt(i: number): string {

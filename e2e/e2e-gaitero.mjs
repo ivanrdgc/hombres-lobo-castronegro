@@ -157,11 +157,16 @@ try {
   await waitState(ana, (s) => s.phase !== 'night' || s.steps[s.stepIdx] !== 'encantados', 'el paso de encantados avanza tras confirmar');
   ok('el paso de encantados avanza tras las confirmaciones');
 
-  // Limpieza: terminar la partida y borrar la mesa desechable.
-  await ana.click('[data-a=game-menu]');
-  await ana.click('button[data-a=end-game]');
-  await ana.click('button[data-a=end-game-confirm][data-p=""]');
-  await ana.waitForSelector('button[data-a=back-lobby]', { timeout: 20000 });
+  // Limpieza: si la partida sigue en curso, se termina desde el menú ⋯; pero
+  // con 1 solo lobo puede acabar sola la noche 1 (si muere, gana el pueblo),
+  // y entonces la pantalla de fin ya no tiene menú, solo «Volver al lobby».
+  await ana.waitForSelector('[data-a=game-menu], button[data-a=back-lobby]', { timeout: 20000 });
+  if (!(await ana.locator('button[data-a=back-lobby]').count())) {
+    await ana.click('[data-a=game-menu]');
+    await ana.click('button[data-a=end-game]');
+    await ana.click('button[data-a=end-game-confirm][data-p=""]');
+    await ana.waitForSelector('button[data-a=back-lobby]', { timeout: 20000 });
+  }
   await ana.click('button[data-a=back-lobby]');
   await ana.waitForSelector('[data-a=change-game]', { timeout: 20000 });
   await ana.click('[data-a=change-game]');

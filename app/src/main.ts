@@ -16,6 +16,7 @@ import { installUnaNocheNarrator } from './games/una-noche/narrator/install';
 import { installAvalonNarrator } from './games/avalon/narrator/install';
 import { installSecretHitlerNarrator } from './games/secret-hitler/narrator/install';
 import { installChameleonNarrator } from './games/chameleon/narrator/install';
+import { installInsiderNarrator } from './games/insider/narrator/install';
 
 installUnlockGestures();
 // Refleja en el estado global si el audio SUENA ya (AudioContext 'running'):
@@ -36,6 +37,7 @@ installUnaNocheNarrator();
 installAvalonNarrator();
 installSecretHitlerNarrator();
 installChameleonNarrator();
+installInsiderNarrator();
 installPresence();
 
 window.addEventListener('popstate', applyRoute);

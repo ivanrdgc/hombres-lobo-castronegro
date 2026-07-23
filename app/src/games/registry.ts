@@ -10,6 +10,7 @@ import { unaNoche } from './una-noche';
 import { avalon } from './avalon';
 import { secretHitler } from './secret-hitler';
 import { chameleon } from './chameleon';
+import { insider } from './insider';
 
 /** Props que reciben las pantallas principales de un juego. */
 export type GameScreenProps = { group: GroupDoc; my: PlayerDoc };
@@ -34,7 +35,7 @@ export interface GameDefinition {
   modals: Record<string, Component<any>>;
 }
 
-export const GAME_DEFS: GameDefinition[] = [hombresLobo, unaNoche, avalon, secretHitler, chameleon, espia];
+export const GAME_DEFS: GameDefinition[] = [hombresLobo, unaNoche, avalon, secretHitler, chameleon, insider, espia];
 
 /** Definición del juego seleccionado en el grupo (por defecto, el primero). */
 export function gameDef(id: string | null | undefined): GameDefinition {

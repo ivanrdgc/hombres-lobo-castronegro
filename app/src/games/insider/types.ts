@@ -25,16 +25,20 @@ export interface InsiderState {
   masterId: string;
   insiderId: string;
   seen: Record<string, boolean>;
+  /** Quién pregunta primero (índice en playerIds). */
+  starterIdx: number;
   durationMs: number;
   /** Fin del reloj de preguntas (epoch); null salvo en 'question'. */
   deadline: number | null;
   /** Momento en que el Maestro marcó «adivinada» (para la crónica). */
   guessedAt: number | null;
-  /** Caza del Insider: votante → señalado (secreto). Vota todos menos el Maestro. */
+  /** Caza del Insider: votante → señalado (secreto). Votan TODOS (también el
+   *  Maestro); no vale señalarse a uno mismo ni al Maestro (es público). */
   votes: Record<string, string>;
   accusedId: string | null;
   /** 'group' = Insider cazado · 'insider' = escapó · 'timeout' = no adivinaron (todos pierden). */
   outcome: 'group' | 'insider' | 'timeout' | null;
+  scores: Record<string, number>;
   usedWords: string[];
   paused?: { by: string; name?: string; at: number } | null;
   repeatNonce?: number;
