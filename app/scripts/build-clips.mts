@@ -18,6 +18,7 @@ import { allSecretHitlerStaticPieces } from '../src/games/secret-hitler/texts';
 import { allChameleonStaticPieces } from '../src/games/chameleon/texts';
 import { allInsiderStaticPieces } from '../src/games/insider/texts';
 import { allCoupStaticPieces } from '../src/games/coup/texts';
+import { allTwoRoomsStaticPieces } from '../src/games/two-rooms/texts';
 import { buildSsml, ttsCacheKey } from '../src/core/audio/tts';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -58,7 +59,7 @@ interface Manifest {
 
 async function main(): Promise<void> {
   const kwTexts = allKeywordCombos().flatMap((kw) => [kwClip(kw, true), kwClip(kw, false)]);
-  const texts = [...new Set([...allStaticPieces().map((p) => p.text), ...kwTexts, ...allEspiaStaticPieces(), ...allUnaNocheStaticPieces(), ...allAvalonStaticPieces(), ...allSecretHitlerStaticPieces(), ...allChameleonStaticPieces(), ...allInsiderStaticPieces(), ...allCoupStaticPieces()])];
+  const texts = [...new Set([...allStaticPieces().map((p) => p.text), ...kwTexts, ...allEspiaStaticPieces(), ...allUnaNocheStaticPieces(), ...allAvalonStaticPieces(), ...allSecretHitlerStaticPieces(), ...allChameleonStaticPieces(), ...allInsiderStaticPieces(), ...allCoupStaticPieces(), ...allTwoRoomsStaticPieces()])];
   const outDir = join(APP, 'public', 'clips', VOICE);
   mkdirSync(outDir, { recursive: true });
 

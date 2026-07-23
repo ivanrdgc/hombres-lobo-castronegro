@@ -18,6 +18,7 @@ import { installSecretHitlerNarrator } from './games/secret-hitler/narrator/inst
 import { installChameleonNarrator } from './games/chameleon/narrator/install';
 import { installInsiderNarrator } from './games/insider/narrator/install';
 import { installCoupNarrator } from './games/coup/narrator/install';
+import { installTwoRoomsNarrator } from './games/two-rooms/narrator/install';
 
 installUnlockGestures();
 // Refleja en el estado global si el audio SUENA ya (AudioContext 'running'):
@@ -40,6 +41,7 @@ installSecretHitlerNarrator();
 installChameleonNarrator();
 installInsiderNarrator();
 installCoupNarrator();
+installTwoRoomsNarrator();
 installPresence();
 
 window.addEventListener('popstate', applyRoute);
