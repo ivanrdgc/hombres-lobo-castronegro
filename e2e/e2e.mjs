@@ -219,6 +219,8 @@ try {
   await tarde.waitForSelector('text=¿A qué jugamos?');
   await tarde.waitForSelector('[data-match]');
   ok('un visitante tardío se une con partida en curso y queda libre en la mesa');
+  // Salir = tocar tu propia ficha (badge «Tú») → «Abandonar» (ya no hay botón Salir arriba).
+  await tarde.click('.player[data-a=player-menu]:has(.badge.you)');
   await tarde.click('[data-a=leave]');
   await tarde.click('button[data-a=leave-confirm]');
   await tarde.waitForURL('**/');
@@ -340,9 +342,10 @@ try {
   await ana.waitForSelector('text=Dispositivos (4)');
   check(!(await ana.isVisible('[data-a=confirm-delete-group]')), 'ya no existe el botón de eliminar la mesa');
   for (const p of [pages.bruno, pages.carla, pages.elsa]) {
-    await p.goto(url); await p.click('[data-a=leave]'); await p.click('[data-a=leave-confirm]'); await p.waitForURL(BASE + '/');
+    await p.goto(url); await p.click('.player[data-a=player-menu]:has(.badge.you)'); await p.click('[data-a=leave]'); await p.click('[data-a=leave-confirm]'); await p.waitForURL(BASE + '/');
   }
   await waitState(ana, (s) => s.players.length === 1, 'solo queda Ana en la mesa');
+  await ana.click('.player[data-a=player-menu]:has(.badge.you)');
   await ana.click('[data-a=leave]');
   await ana.click('[data-a=leave-confirm]');
   await ana.waitForURL(BASE + '/');
@@ -367,16 +370,16 @@ try {
   await paco.waitForURL('**/g/**');
   await paco.waitForSelector('.player:has-text("Paco")');
   ok('Paco entra en el grupo existente desde la portada');
-  await paco.goto(url2); await paco.waitForSelector('button[data-a=select-game]', { timeout: 45000 });
-  await paco.click('button[data-a=select-game]');
+  await paco.goto(url2);
+  await paco.locator('button[data-a=select-game]').first().click();
   await paco.waitForSelector('[data-a=open-start]', { timeout: 45000 });
-  await ana.goto(url2); await ana.waitForSelector('button[data-a=select-game]', { timeout: 45000 });
-  await ana.click('button[data-a=select-game]'); // Ana entra al lobby cuando quiere
+  await ana.goto(url2); // Ana entra al lobby cuando quiere
+  await ana.locator('button[data-a=select-game]').first().click();
   await ana.waitForSelector('[data-a=open-start]', { timeout: 45000 });
   ok('en el lobby, cualquiera elige juego y ve «empezar» (no hay máster hasta iniciar)');
   // Limpieza: se marchan los dos → la mesa se borra sola.
   for (const p of [ana, paco]) {
-    await p.goto(url2); await p.click('[data-a=leave]'); await p.click('[data-a=leave-confirm]'); await p.waitForURL(BASE + '/');
+    await p.goto(url2); await p.click('.player[data-a=player-menu]:has(.badge.you)'); await p.click('[data-a=leave]'); await p.click('[data-a=leave-confirm]'); await p.waitForURL(BASE + '/');
   }
   await paco.context().close();
   ok('limpieza final');

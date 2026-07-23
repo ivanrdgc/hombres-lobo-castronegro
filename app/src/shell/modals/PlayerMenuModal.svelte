@@ -38,7 +38,7 @@
     <button class="violet block" data-a="kick-from-match" data-p={p.id} onclick={kickFromMatch}>⛔ Sacarlo de la partida</button>
   {/if}
   {#if self}
-    <p class="small-note">Para irte de la mesa usa «🚪 Salir», arriba.</p>
+    <button class="danger block" data-a="leave" onclick={() => (app.ui.modal = { type: 'confirm-leave' })}>🚪 Abandonar la mesa</button>
   {:else}
     <button class="danger block" data-a="kick" data-p={p.id} onclick={kick}>👢 Expulsar del grupo</button>
   {/if}

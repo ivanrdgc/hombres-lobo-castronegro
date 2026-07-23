@@ -264,7 +264,7 @@ try {
   await ana.click('[data-a=change-game]'); // a la mesa para eliminar el grupo
   await ana.waitForSelector('text=/Dispositivos/');
   for (const _p of Object.values(pages)) {
-    try { if (_p.isClosed()) continue; await _p.goto(urlM); const _l = await _p.waitForSelector('[data-a=leave]', { timeout: 9000 }).catch(() => null); if (_l) { await _p.click('[data-a=leave]'); await _p.click('[data-a=leave-confirm]'); await _p.waitForURL(BASE + '/', { timeout: 12000 }).catch(() => {}); } } catch { /* ya fuera */ }
+    try { if (_p.isClosed()) continue; await _p.goto(urlM); const _me = await _p.waitForSelector('.player[data-a=player-menu]:has(.badge.you)', { timeout: 9000 }).catch(() => null); if (_me) { await _me.click(); await _p.click('[data-a=leave]'); await _p.click('[data-a=leave-confirm]'); await _p.waitForURL(BASE + '/', { timeout: 12000 }).catch(() => {}); } } catch { /* ya fuera */ }
   }
   await ana.waitForURL(BASE + '/');
   ok('limpieza del grupo manual');
@@ -408,7 +408,7 @@ try {
   await ana.click('[data-a=change-game]'); // a la mesa para eliminar el grupo
   await ana.waitForSelector('text=/Dispositivos/');
   for (const _p of Object.values(pages)) {
-    try { if (_p.isClosed()) continue; await _p.goto(urlA); const _l = await _p.waitForSelector('[data-a=leave]', { timeout: 9000 }).catch(() => null); if (_l) { await _p.click('[data-a=leave]'); await _p.click('[data-a=leave-confirm]'); await _p.waitForURL(BASE + '/', { timeout: 12000 }).catch(() => {}); } } catch { /* ya fuera */ }
+    try { if (_p.isClosed()) continue; await _p.goto(urlA); const _me = await _p.waitForSelector('.player[data-a=player-menu]:has(.badge.you)', { timeout: 9000 }).catch(() => null); if (_me) { await _me.click(); await _p.click('[data-a=leave]'); await _p.click('[data-a=leave-confirm]'); await _p.waitForURL(BASE + '/', { timeout: 12000 }).catch(() => {}); } } catch { /* ya fuera */ }
   }
   await ana.waitForURL(BASE + '/');
   ok('limpieza final');

@@ -65,7 +65,6 @@
 
 <div class="topbar">
   <h2>🪑 {group.name}</h2>
-  <button class="small ghost" data-a="leave" onclick={() => (app.ui.modal = { type: 'confirm-leave' })}>🚪 Salir</button>
 </div>
 <div class="card">
   <h3>🔗 Invita a tu mesa</h3>
@@ -119,7 +118,7 @@
       </div>
     {/each}
   </div>
-  <p class="small-note">Quién juega, el orden de la mesa y quién narra se eligen al empezar cada partida. Toca un dispositivo para expulsarlo{app.matches.length ? ' o sacarlo de su partida' : ''}.</p>
+  <p class="small-note">Quién juega, el orden de la mesa y quién narra se eligen al empezar cada partida. Toca un dispositivo para expulsarlo{app.matches.length ? ' o sacarlo de su partida' : ''}; toca el TUYO para abandonar la mesa.</p>
 </div>
 <div class="card">
   <h3>🎮 ¿A qué jugamos?</h3>
@@ -132,7 +131,7 @@
   {/each}
   <p class="small-note">Puede haber varias partidas a la vez: cada una con su grupo de la mesa.</p>
 </div>
-<p class="small-note" style="text-align:center;opacity:.7">La mesa se borra sola cuando se marchan todos: usad «🚪 Salir» arriba para dejarla.</p>
+<p class="small-note" style="text-align:center;opacity:.7">La mesa se borra sola cuando se marchan todos: tocad vuestro nombre y «Abandonar» para dejarla.</p>
 <!-- Sello del build a la vista: si un móvil enseña una fecha vieja, está
      sirviendo caché y cualquier «bug» debe verificarse tras recargar. -->
 <p class="small-note" style="text-align:center;opacity:.55">{__APP_VERSION__}</p>
