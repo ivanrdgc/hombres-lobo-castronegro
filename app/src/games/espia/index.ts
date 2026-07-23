@@ -14,6 +14,8 @@ export const espia: GameDefinition = {
   emoji: '🕵️',
   name: 'El Espía',
   desc: 'Spyfall: todos conocéis el lugar… menos uno. Preguntas capciosas, respuestas con doble fondo y ocho minutos para desenmascarar al espía antes de que adivine dónde estáis.',
+  minPlayers: 3,
+  maxPlayers: 8,
   Lobby: LobbyScreen,
   Start: StartScreen,
   Screen: GameScreen,

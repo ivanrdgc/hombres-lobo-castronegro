@@ -15,6 +15,8 @@ export const avalon: GameDefinition = {
   emoji: '🏰',
   name: 'Ávalon',
   desc: 'The Resistance: Avalon. Leales y esbirros de Mordred se disputan cinco misiones. La app reparte lealtades y lleva las misiones en secreto: Merlín lo ve casi todo, Percival duda entre dos, y el Asesino guarda una última bala para desenmascarar a Merlín.',
+  minPlayers: 5,
+  maxPlayers: 10,
   Lobby: LobbyScreen,
   Start: StartScreen,
   Screen: GameScreen,

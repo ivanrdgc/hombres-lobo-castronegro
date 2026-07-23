@@ -16,6 +16,8 @@ export const unaNoche: GameDefinition = {
   emoji: '🌘',
   name: 'Una Noche en Castronegro',
   desc: 'One Night: una sola noche de roles que se roban y barajan cartas a oscuras, y un único juicio a plena luz. Nadie muere de noche… pero al amanecer casi nadie es quien era. Partidas de 10 minutos.',
+  minPlayers: 3,
+  maxPlayers: 10,
   Lobby: LobbyScreen,
   Start: StartScreen,
   Screen: GameScreen,

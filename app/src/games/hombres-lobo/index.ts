@@ -19,6 +19,8 @@ export const hombresLobo: GameDefinition = {
   emoji: '🐺',
   name: 'Los Hombres Lobo de Castronegro',
   desc: 'El clásico de roles ocultos: lobos contra el pueblo, con narrador automático por voz, modo guiado y todas las expansiones.',
+  minPlayers: 3,
+  maxPlayers: 18,
   Lobby: LobbyScreen,
   Start: StartScreen,
   Screen: GameScreen,

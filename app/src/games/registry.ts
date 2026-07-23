@@ -19,6 +19,9 @@ export interface GameDefinition {
   name: string;
   /** Descripción corta para el catálogo de la mesa. */
   desc: string;
+  /** Rango de jugadores admitidos (se muestra en el catálogo). */
+  minPlayers: number;
+  maxPlayers: number;
   /** Lobby de configuración del juego (explicación, roles, ajustes…). */
   Lobby: Component<GameScreenProps>;
   /** Pantalla «Empezar partida»: jugadores, orden, narrador y modo. */

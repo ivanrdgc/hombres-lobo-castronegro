@@ -15,6 +15,8 @@ export const secretHitler: GameDefinition = {
   emoji: '🏛️',
   name: 'Secret Hitler',
   desc: 'Liberales contra fascistas en una República que se hunde. La app custodia en secreto el mazo de decretos y los poderes presidenciales —investigar, elección especial, ejecutar—: promulgad decretos, desenmascarad a Hitler… o coladlo de Canciller.',
+  minPlayers: 5,
+  maxPlayers: 10,
   Lobby: LobbyScreen,
   Start: StartScreen,
   Screen: GameScreen,

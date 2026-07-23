@@ -125,12 +125,12 @@
   <h3>🎮 ¿A qué jugamos?</h3>
   {#each GAME_DEFS as j (j.id)}
     <div class="card" style="margin:10px 0 4px">
-      <h3>{j.emoji} {j.name}</h3>
+      <h3>{j.emoji} {j.name} <span class="chip" style="font-weight:400">👥 {j.minPlayers}–{j.maxPlayers}</span></h3>
       <p class="small-note">{j.desc}</p>
       <button class="primary block" data-a="select-game" data-p={j.id} onclick={() => { navigate(`/g/${group.id}/${j.id}`); guard(() => A.selectGame(j.id)); }}>{j.emoji} Jugar a esto</button>
     </div>
   {/each}
-  <p class="small-note">Más juegos, próximamente… Puede haber varias partidas a la vez: cada una con su grupo de la mesa.</p>
+  <p class="small-note">Puede haber varias partidas a la vez: cada una con su grupo de la mesa.</p>
 </div>
 <div class="card">
   <button class="danger block" data-a="confirm-delete-group" onclick={() => (app.ui.modal = { type: 'confirm-delete' })}>🗑️ Eliminar la mesa</button>
