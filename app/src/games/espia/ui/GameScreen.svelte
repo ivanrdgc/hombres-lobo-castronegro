@@ -19,7 +19,9 @@
 
   const game = $derived(espiaGame(group)!);
   const inRound = $derived(game.playerIds.includes(my.id));
-  const needsUnlock = $derived(isMaster() && !app.ui.voiceUnlocked && !app.ui.muted);
+  // Solo pedimos activar si el audio NO suena ya (estado real del AudioContext),
+  // no según una bandera: cualquier toque previo ya lo habrá reanudado.
+  const needsUnlock = $derived(isMaster() && !app.ui.audioReady && !app.ui.muted);
 
   function unlockVoice() {
     unlockAudio();

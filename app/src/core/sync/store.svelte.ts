@@ -45,6 +45,10 @@ export interface UiState {
   formError?: string | null;
   dragging?: boolean;
   voiceUnlocked?: boolean;
+  /** ¿El audio SUENA ya de verdad? (AudioContext 'running'). Lo alimenta
+   *  core/audio/engine vía onAudioState; las pantallas piden activar SOLO si es
+   *  falso, en vez de fiarse de una bandera manual. */
+  audioReady?: boolean;
   deadPeek?: Record<string, boolean>;
   suggestedGroup?: string | null;
   /** Lectura local en voz alta: qué suena ('intro', 'roles', 'role:vidente'…) y su estado. */

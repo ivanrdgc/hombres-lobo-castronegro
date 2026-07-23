@@ -56,7 +56,8 @@
     return null;
   });
 
-  const needsUnlock = $derived(!app.ui.voiceUnlocked && !app.ui.muted);
+  // Solo pedimos activar si el audio NO suena ya (estado real del AudioContext).
+  const needsUnlock = $derived(!app.ui.audioReady && !app.ui.muted);
 
   let whoTimer: ReturnType<typeof setTimeout> | undefined;
 

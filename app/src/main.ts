@@ -2,7 +2,8 @@ import './styles/base.css';
 import './styles/app.css';
 import { mount } from 'svelte';
 import App from './App.svelte';
-import { installUnlockGestures } from './core/audio/engine';
+import { installUnlockGestures, onAudioState, audioState } from './core/audio/engine';
+import { e2eTestMode } from './core/test-hooks';
 import { loadClipManifest } from './core/audio/clips';
 import { initDeviceVoice } from './core/audio/device-voice';
 import { applyRoute, state, viewGroup } from './core/sync/store.svelte';
@@ -16,6 +17,14 @@ import { installAvalonNarrator } from './games/avalon/narrator/install';
 import { installSecretHitlerNarrator } from './games/secret-hitler/narrator/install';
 
 installUnlockGestures();
+// Refleja en el estado global si el audio SUENA ya (AudioContext 'running'):
+// así las pantallas piden activar la voz SOLO cuando de verdad está en silencio,
+// no según una bandera manual. Cualquier gesto (installUnlockGestures) lo reanuda.
+// En los e2e (sin audio) se da por listo, para no alterar las pantallas.
+const testAudio = e2eTestMode();
+const syncAudioReady = (s: { state: string }) => { state.ui.audioReady = testAudio || s.state === 'running'; };
+syncAudioReady(audioState());
+onAudioState(syncAudioReady);
 loadClipManifest(); // biblioteca de clips pre-generados (F6); sin ella, síntesis en vivo
 initDeviceVoice();
 installUiHygiene();

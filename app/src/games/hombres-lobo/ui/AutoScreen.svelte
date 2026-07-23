@@ -24,7 +24,8 @@
   const { group, my }: { group: GroupDoc; my: PlayerDoc } = $props();
 
   const game = $derived(group.game!);
-  const needsUnlock = $derived(!app.ui.voiceUnlocked && !app.ui.muted);
+  // Solo pedimos activar si el audio NO suena ya (estado real del AudioContext).
+  const needsUnlock = $derived(!app.ui.audioReady && !app.ui.muted);
 
   function unlockVoice() {
     unlockAudio();
