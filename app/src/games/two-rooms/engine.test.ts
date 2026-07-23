@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   dealGame, roomMembers, allVotedInRoom, tallyRoom, decideWinner, minutesForRound,
-  presidentId, bomberId, MIN_PLAYERS, MAX_PLAYERS, TOTAL_ROUNDS,
+  presidentId, bomberId, narrates, MIN_PLAYERS, MAX_PLAYERS, TOTAL_ROUNDS,
 } from './engine';
 import type { TwoRoomsState } from './types';
 
@@ -11,6 +11,7 @@ function base(over: Partial<TwoRoomsState> = {}): TwoRoomsState {
   return {
     tworooms: true, phase: 'hostages', startedAt: 0, seed: 1, round: 1, totalRounds: 3,
     playerIds: IDS.slice(), names: Object.fromEntries(IDS.map((id) => [id, id.toUpperCase()])),
+    voiceMode: 'single', roomSpeakers: ['p-a', null],
     teams: { 'p-a': 'blue', 'p-b': 'blue', 'p-c': 'blue', 'p-d': 'red', 'p-e': 'red', 'p-f': 'red' },
     roles: { 'p-a': 'president', 'p-b': 'none', 'p-c': 'none', 'p-d': 'bomber', 'p-e': 'none', 'p-f': 'none' },
     room: { 'p-a': 0, 'p-b': 0, 'p-c': 0, 'p-d': 1, 'p-e': 1, 'p-f': 1 },
@@ -77,6 +78,25 @@ describe('decideWinner', () => {
   it('azul si el Bombardero acaba en la otra sala', () => {
     const g = base(); // presidente sala 0, bombardero sala 1
     expect(decideWinner(g)).toBe('blue');
+  });
+});
+
+describe('narrates (modos de voz)', () => {
+  const master = 'p-a';
+  it('single: solo narra el altavoz principal (masterId)', () => {
+    const g = base({ voiceMode: 'single' });
+    expect(narrates(g, 'p-a', master)).toBe(true);
+    expect(narrates(g, 'p-c', master)).toBe(false);
+  });
+  it('perRoom: narran los dos altavoces designados', () => {
+    const g = base({ voiceMode: 'perRoom', roomSpeakers: ['p-a', 'p-d'] });
+    expect(narrates(g, 'p-a', master)).toBe(true);
+    expect(narrates(g, 'p-d', master)).toBe(true);
+    expect(narrates(g, 'p-b', master)).toBe(false);
+  });
+  it('all: narran todos los jugadores', () => {
+    const g = base({ voiceMode: 'all' });
+    for (const pid of g.playerIds) expect(narrates(g, pid, master)).toBe(true);
   });
 });
 

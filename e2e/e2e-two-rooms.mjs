@@ -81,6 +81,13 @@ try {
 
   await ana.click('[data-a=open-start]');
   await ana.waitForSelector('[data-a=tr-start]:not([disabled])', { timeout: 15000 });
+  // Selector de modo de voz (novedad): un narrador / uno por sala / todos.
+  await ana.waitForSelector('[data-a=tr-voice-mode][data-p=all]', { timeout: 8000 });
+  check(await ana.locator('[data-a=tr-voice-mode]').count() === 3, 'hay tres modos de voz a elegir');
+  await ana.click('[data-a=tr-voice-mode][data-p=perRoom]');
+  await ana.waitForSelector('[data-a=tr-pick-narrator2]', { timeout: 5000 });
+  ok('«uno por sala» ofrece elegir también la voz de la Sala 2');
+  await ana.click('[data-a=tr-voice-mode][data-p=single]'); // jugamos con un narrador
   await ana.click('[data-a=tr-start]');
 
   // ——— Reparto ———

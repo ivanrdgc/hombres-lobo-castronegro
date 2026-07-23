@@ -41,14 +41,27 @@
   const tooFew = $derived(chosen.length < MIN_PLAYERS);
   const tooMany = $derived(chosen.length > MAX_PLAYERS);
 
+  // Modo de voz: un narrador (single), uno por sala (perRoom) o todos los
+  // móviles (all). El altavoz de la Sala 1 es `narrator` (el masterId).
+  let voiceMode = $state<'single' | 'perRoom' | 'all'>('single');
+  const speakerCands = $derived(rows.filter((p) => !matchOf(p.id)));
+  let spk1Pick = $state<string | null>(null);
+  const speaker1 = $derived.by(() => {
+    if (voiceMode !== 'perRoom') return null;
+    const cand = spk1Pick ?? speakerCands.find((p) => p.id !== narrator)?.id ?? null;
+    return cand && cand !== narrator && !matchOf(cand) ? cand : null;
+  });
+  const speaker1P = $derived(app.players.find((p) => p.id === speaker1));
+
   function startNow() {
     const pids = chosen.map((p) => p.id);
-    if (narrator === meId) {
+    const iNarrate = voiceMode === 'all' ? pids.includes(meId ?? '') : (meId === narrator || meId === speaker1);
+    if (iNarrate) {
       unlockAudio();
       play({ id: 'unlock', segments: [{ kind: 'clip', text: 'Que empiece la partida.' }] }).catch(() => {});
       app.ui.voiceUnlocked = true;
     }
-    guard(() => A.startTwoRooms(pids, narrator));
+    guard(() => A.startTwoRooms(pids, voiceMode, narrator, speaker1));
   }
 </script>
 
@@ -65,19 +78,51 @@
 </div>
 
 <div class="card">
-  <h3>🔊 ¿Dónde suena la voz?</h3>
-  <p class="small-note" style="margin-top:6px">La app relata las rondas, el reloj y el desenlace en voz alta. Nunca dice bandos ni roles hasta el final. Todos juegan, también quien pone la voz.</p>
+  <h3>🔊 ¿Cómo suena la voz?</h3>
+  <p class="small-note" style="margin-top:6px">Las dos salas están separadas, así que un solo altavoz solo llega a una. Elige según los dispositivos que tengáis (el temporizador siempre sale en la pantalla de cada móvil).</p>
   <div class="btnrow" style="margin-top:6px">
-    {#each rows.filter((p) => !matchOf(p.id)) as p (p.id)}
-      <button class="small {narrator === p.id ? 'primary' : 'ghost'}" data-a="pick-narrator" data-p={p.id} style="flex:0 1 auto;min-width:0" onclick={() => (narrPick = p.id)}>
-        {narrator === p.id ? '🔊 ' : ''}{p.name}{p.id === meId ? ' (tú)' : ''}{!isActiveDevice(p, now) ? ' 💤' : ''}
-      </button>
-    {/each}
+    <button class="small {voiceMode === 'single' ? 'primary' : 'ghost'}" data-a="tr-voice-mode" data-p="single" onclick={() => (voiceMode = 'single')}>🔊 Un narrador</button>
+    <button class="small {voiceMode === 'perRoom' ? 'primary' : 'ghost'}" data-a="tr-voice-mode" data-p="perRoom" onclick={() => (voiceMode = 'perRoom')}>🔊🔊 Uno por sala</button>
+    <button class="small {voiceMode === 'all' ? 'primary' : 'ghost'}" data-a="tr-voice-mode" data-p="all" onclick={() => (voiceMode = 'all')}>📣 Todos los móviles</button>
   </div>
-  {#if displaced}
+
+  {#if voiceMode === 'all'}
+    <p class="small-note">📣 Sonarán TODOS los móviles de los jugadores: cada sala se oye sola, sin dispositivos de más. Puede quedar algo «a coro».</p>
+  {:else}
+    <div style="margin-top:10px">
+      <p class="small-note" style="margin:0 0 4px"><b>🔊 {voiceMode === 'perRoom' ? 'Voz de la Sala 1' : '¿Qué dispositivo narra?'}</b></p>
+      <div class="btnrow">
+        {#each speakerCands as p (p.id)}
+          <button class="small {narrator === p.id ? 'primary' : 'ghost'}" data-a="pick-narrator" data-p={p.id} style="flex:0 1 auto;min-width:0" onclick={() => (narrPick = p.id)}>
+            {narrator === p.id ? '🔊 ' : ''}{p.name}{p.id === meId ? ' (tú)' : ''}{!isActiveDevice(p, now) ? ' 💤' : ''}
+          </button>
+        {/each}
+      </div>
+    </div>
+  {/if}
+
+  {#if voiceMode === 'perRoom'}
+    <div style="margin-top:10px">
+      <p class="small-note" style="margin:0 0 4px"><b>🔊 Voz de la Sala 2</b></p>
+      <div class="btnrow">
+        {#each speakerCands.filter((p) => p.id !== narrator) as p (p.id)}
+          <button class="small {speaker1 === p.id ? 'primary' : 'ghost'}" data-a="tr-pick-narrator2" data-p={p.id} style="flex:0 1 auto;min-width:0" onclick={() => (spk1Pick = p.id)}>
+            {speaker1 === p.id ? '🔊 ' : ''}{p.name}{p.id === meId ? ' (tú)' : ''}{!isActiveDevice(p, now) ? ' 💤' : ''}
+          </button>
+        {/each}
+      </div>
+      <p class="small-note">Poned un dispositivo en cada sala (mejor si NO juegan: un altavoz que sea jugador se llevaría la voz al cambiar de sala). Ambos narran lo mismo.</p>
+    </div>
+  {/if}
+
+  {#if displaced && voiceMode !== 'all'}
     <p class="small-note">💤 <b>{displaced.name}</b> ponía la voz la última vez, pero su dispositivo está inactivo: la voz pasa a este. Si vuelve, tócalo arriba.</p>
   {/if}
-  {#if narratorP}<p class="small-note">🔊 <b>{narratorP.name}</b> pone la voz{seat.chosen.includes(narratorP.id) ? ' y también juega' : ' (no juega: tele o altavoz)'}. Pantalla encendida y volumen alto.</p>{/if}
+  {#if voiceMode === 'perRoom'}
+    <p class="small-note">🔊 Sala 1: <b>{narratorP?.name || '¿?'}</b>{#if speaker1P} · Sala 2: <b>{speaker1P.name}</b>{:else} · <span style="opacity:.8">falta elegir la voz de la Sala 2 (si no, esa sala se queda sin audio)</span>{/if}. Pantalla encendida y volumen alto.</p>
+  {:else if voiceMode === 'single' && narratorP}
+    <p class="small-note">🔊 <b>{narratorP.name}</b> pone la voz{seat.chosen.includes(narratorP.id) ? ' y también juega' : ' (no juega: tele o altavoz)'}. Solo llegará a su sala; la otra seguirá el temporizador en pantalla.</p>
+  {/if}
   <button class="ghost block" data-a="voice-open" onclick={() => { app.ui.modal = { type: 'voice' }; app.ui.voiceTest = null; }}>🗣️ Probar o configurar la voz de este dispositivo</button>
 </div>
 

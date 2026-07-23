@@ -2,8 +2,9 @@
   // Pantalla de partida de Two Rooms: enruta por fase. Tablero de salas siempre
   // visible durante la partida. Los dispositivos fuera de la partida ven las
   // salas de espectador (sin cartas ocultas de nadie).
-  import { app, isMaster, matchOf } from '../../../core/sync/store.svelte';
+  import { app, matchOf } from '../../../core/sync/store.svelte';
   import { twoRoomsGame } from '../actions';
+  import { narrates } from '../engine';
   import { unlockAudio } from '../../../core/audio/engine';
   import { play } from '../../../core/audio/player';
   import type { GroupDoc, PlayerDoc } from '../../../core/sync/schema';
@@ -18,7 +19,8 @@
   const { group, my }: { group: GroupDoc; my: PlayerDoc } = $props();
   const game = $derived(twoRoomsGame(group)!);
   const inGame = $derived(game.playerIds.includes(my.id) && !!matchOf(my.id));
-  const needsUnlock = $derived(isMaster() && !app.ui.audioReady && !app.ui.muted);
+  const iNarrate = $derived(narrates(game, my.id, group.masterId));
+  const needsUnlock = $derived(iNarrate && !app.ui.audioReady && !app.ui.muted);
 
   function unlockVoice() {
     unlockAudio();

@@ -13,6 +13,7 @@ import { matchView, onChange, state } from '../../../core/sync/store.svelte';
 import type { GroupDoc, PlayerDoc, Session } from '../../../core/sync/schema';
 import { twoRoomsGame } from '../actions';
 import * as A from '../actions';
+import { narrates } from '../engine';
 import { TWOROOMS_INTRO } from '../texts';
 import type { TwoRoomsState } from '../types';
 
@@ -30,16 +31,19 @@ const speakable = (txt: string): string => txt.replace(/^[^\p{L}\d«"¡¿]+/u, '
 function snapshot(): Snap {
   const g = state.group;
   const pid = state.session?.pid;
+  // Este dispositivo narra la partida de Two Rooms de la que es MIEMBRO (puede
+  // ser un altavoz que no juega, en modo perRoom): no basta con ser el masterId.
   const mine = g && pid
-    ? state.matches.find((m) => m.gameId === 'two_rooms' && m.masterId === pid && (m.members || []).includes(pid))
+    ? state.matches.find((m) => m.gameId === 'two_rooms' && (m.members || []).includes(pid))
     : null;
   return { group: mine && g ? matchView(g, mine) : g, players: state.players, session: state.session };
 }
 
 function amSpeaker(s: Snap): boolean {
   const g = s.group;
-  if (!g || g.status !== 'playing' || !twoRoomsGame(g) || !s.session) return false;
-  if (g.masterId !== s.session.pid) return false;
+  const game = g && twoRoomsGame(g);
+  if (!g || g.status !== 'playing' || !game || !s.session) return false;
+  if (!narrates(game, s.session.pid, g.masterId)) return false;
   const p = s.players.find((x) => x.id === s.session!.pid);
   return !!p && p.deviceToken === s.session.token;
 }

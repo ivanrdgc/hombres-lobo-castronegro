@@ -53,20 +53,33 @@ const perMinMs = () => (e2eTestMode() ? 4000 : 60000);
 
 // ——— Inicio ———
 
-export async function startTwoRooms(playerIds: string[], narratorId: string | null): Promise<void> {
+/**
+ * @param voiceMode  single | perRoom | all (cómo suena la voz en las dos salas).
+ * @param speaker0   altavoz principal (masterId; sala 1). Por defecto, el que arranca.
+ * @param speaker1   altavoz de la sala 2 (solo modo perRoom).
+ */
+export async function startTwoRooms(
+  playerIds: string[],
+  voiceMode: TwoRoomsState['voiceMode'],
+  speaker0: string | null,
+  speaker1: string | null,
+): Promise<void> {
   const slug = mySlug();
   const mid = newMatchId();
   if (playerIds.length < MIN_PLAYERS) throw new Error(`Two Rooms necesita al menos ${MIN_PLAYERS} jugadores.`);
   if (playerIds.length > MAX_PLAYERS) throw new Error(`Two Rooms admite ${MAX_PLAYERS} jugadores como mucho.`);
   const names: Record<string, string> = {};
   for (const pid of playerIds) names[pid] = state.players.find((p) => p.id === pid)?.name || pid;
-  const speaker = narratorId || myPid();
+  const master = speaker0 || myPid();
+  const speaker1b = voiceMode === 'perRoom' ? speaker1 : null;
   const now = Date.now();
   const seed = Math.floor(now % 2147483647);
   const deal = dealGame(playerIds, seed);
+  const members = [...new Set([...playerIds, master, ...(speaker1b ? [speaker1b] : [])])];
   const game: TwoRoomsState = {
     tworooms: true, phase: 'reveal', startedAt: now, seed, round: 1, totalRounds: TOTAL_ROUNDS,
-    playerIds, names, teams: deal.teams, roles: deal.roles, room: deal.room,
+    playerIds, names, voiceMode, roomSpeakers: [master, speaker1b],
+    teams: deal.teams, roles: deal.roles, room: deal.room,
     seen: {}, durationMs: minutesForRound(1, TOTAL_ROUNDS) * perMinMs(), deadline: null,
     hVotes: {}, pick: [null, null], swaps: [],
     winner: null, scores: Object.fromEntries(playerIds.map((p) => [p, 0])),
@@ -76,12 +89,11 @@ export async function startTwoRooms(playerIds: string[], narratorId: string | nu
   await txWithRetry(async (t) => {
     const snap = await t.get(gref(slug));
     if (!snap.exists()) throw new Error('El grupo ya no existe');
-    await assertFree(t, slug, [...new Set([...playerIds, speaker])]);
-    t.update(gref(slug), { lastNarratorId: speaker });
+    await assertFree(t, slug, members);
+    t.update(gref(slug), { lastNarratorId: master });
     t.set(mref(slug, mid), sanitize({
       gameId: 'two_rooms', createdAt: now,
-      members: [...new Set([...playerIds, speaker])],
-      masterId: speaker, lastNarratorId: speaker, settings: {}, extraRoles: [], game,
+      members, masterId: master, lastNarratorId: master, settings: {}, extraRoles: [], game,
     }));
   });
 }

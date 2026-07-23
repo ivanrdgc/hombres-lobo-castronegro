@@ -25,6 +25,15 @@ export interface TwoRoomsState {
   totalRounds: number;
   playerIds: string[];
   names: Record<string, string>;
+  /**
+   * Cómo suena la voz (las dos salas están físicamente separadas):
+   * - `single`: un solo dispositivo narra (llega solo a su sala).
+   * - `perRoom`: un dispositivo por sala (roomSpeakers[0] y [1]), ambos narran.
+   * - `all`: TODOS los móviles narran (cada sala se oye sola, sin extras).
+   */
+  voiceMode: 'single' | 'perRoom' | 'all';
+  /** Dispositivo altavoz de cada sala (modo perRoom); [0] = masterId siempre. */
+  roomSpeakers: [string | null, string | null];
   /** Bando de cada jugador (SECRETO). */
   teams: Record<string, Team>;
   /** Rol especial de cada jugador (SECRETO): president | bomber | none. */
