@@ -1,6 +1,7 @@
 // E2E: orden de la mesa. Los roles de vecindad (zorro…) ya NO fuerzan una
 // pantalla de confirmación al empezar: avisan dentro del modal de roles. El
-// orden se ajusta arrastrando el asa ⠿ en la pantalla de la mesa y se recuerda.
+// orden se ajusta arrastrando el asa ⠿ en DOS sitios (la pantalla de la mesa y
+// «Empezar partida»); ambos escriben en group.seating y se recuerdan.
 import { chromium } from 'playwright';
 const BASE = process.env.BASE; if (!BASE) { console.error('Define BASE=https://tu-sitio.web.app'); process.exit(1); }
 const GROUP = 'SEAT ' + Date.now().toString(36).slice(-5);
@@ -19,8 +20,16 @@ await ana.fill('#inp-name', 'Ana'); await ana.fill('#inp-group', GROUP);
 await ana.click('[data-a=create-group]'); await ana.waitForURL('**/g/**');
 const url = ana.url();
 for (const n of ['Bea', 'Coco', 'Dani']) { const p = await mk(n.toLowerCase()); await p.goto(url); await p.fill('#inp-name', n); await p.click('[data-a=join]'); await p.waitForSelector('text=/Dispositivos/'); }
-// La mesa ya no tiene asas de arrastre: el orden se pone al empezar la partida.
-if ((await ana.locator('.draghandle').count()) === 0) ok('la mesa ya no reordena: el orden vive en «Empezar partida»'); else bad('la mesa sigue mostrando asas de arrastre');
+// La mesa TAMBIÉN reordena: arrastramos a Dani arriba del todo aquí mismo.
+await ana.waitForSelector('.players.seatable .draghandle[data-drag=p-dani]');
+await ana.locator('.players.seatable .draghandle[data-drag=p-dani]').hover();
+await ana.mouse.down();
+const mbox = await ana.locator('.players.seatable').boundingBox();
+await ana.mouse.move(mbox.x + 8, mbox.y + 6, { steps: 12 });
+await ana.mouse.up();
+await ana.waitForTimeout(1000);
+const s0 = await seating(ana);
+if (s0 && s0[0] === 'p-dani') ok('la mesa reordena y guarda desde la pantalla principal: ' + s0.join(',')); else bad('el arrastre en la mesa no colocó a Dani arriba: ' + JSON.stringify(s0));
 
 // El Zorro (rol de vecindad) avisa sobre el orden de la mesa dentro del modal de roles.
 await ana.click('button[data-a=select-game]');

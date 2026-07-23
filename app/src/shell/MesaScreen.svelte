@@ -8,6 +8,8 @@
   import * as A from '../core/sync/group-actions';
   import { isActiveDevice } from '../core/sync/presence';
   import { GAME_DEFS, gameDef } from '../games/registry';
+  import { seatingOrder } from './ui-helpers';
+  import { seatInsertIndex } from '../core/util/seat-insert';
   import type { GroupDoc, MatchDoc, PlayerDoc } from '../core/sync/schema';
   import Flash from './Flash.svelte';
 
@@ -26,6 +28,69 @@
   // ¿Qué partida ocupa a cada dispositivo? (para el icono y el menú)
   const busyOf = (pid: string): MatchDoc | undefined =>
     app.matches.find((m) => (m.members || []).includes(pid));
+
+  const meId = $derived(me()?.id);
+
+  // ——— Orden de la mesa por arrastre (mismo mecanismo que «Empezar partida»):
+  // se puede reordenar también aquí, en la pantalla principal. Persiste en
+  // group.seating (setSeating). Durante el arrastre manda un orden local. ———
+  let dragOrder = $state<string[] | null>(null);
+  const order = $derived(dragOrder ?? seatingOrder(group, app.players));
+  const rows = $derived(order.map((id) => app.players.find((p) => p.id === id)).filter((p): p is PlayerDoc => !!p));
+
+  let listEl: HTMLElement | null = $state(null);
+  let dragging = $state<string | null>(null);
+  let dragXY = $state({ x: 0, y: 0 });
+  let start = { x: 0, y: 0 };
+  let moved = false;
+  let pointerId = -1;
+
+  function onPointerDown(e: PointerEvent, pid: string) {
+    if (!(e.target as HTMLElement).closest('[data-drag]')) return;
+    e.preventDefault();
+    dragging = pid;
+    dragOrder = order.slice();
+    app.ui.dragging = true;
+    moved = false;
+    pointerId = e.pointerId;
+    start = { x: e.clientX, y: e.clientY };
+    dragXY = { x: 0, y: 0 };
+    (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+  }
+  function onPointerMove(e: PointerEvent) {
+    if (!dragging || e.pointerId !== pointerId || !listEl || !dragOrder) return;
+    e.preventDefault();
+    dragXY = { x: e.clientX - start.x, y: e.clientY - start.y };
+    const others = [...listEl.querySelectorAll<HTMLElement>('.player')].filter((r) => r.dataset.p !== dragging);
+    const rects = others.map((r) => r.getBoundingClientRect());
+    const rest = dragOrder.filter((id) => id !== dragging);
+    const idx = seatInsertIndex(rects, e.clientX, e.clientY);
+    const next = rest.slice(0, idx).concat([dragging], rest.slice(idx));
+    if (next.join('|') !== dragOrder.join('|')) {
+      const el = listEl.querySelector<HTMLElement>(`.player[data-p="${dragging}"]`);
+      const b0 = el?.getBoundingClientRect();
+      dragOrder = next;
+      moved = true;
+      requestAnimationFrame(() => {
+        const b1 = el?.getBoundingClientRect();
+        if (b0 && b1) { start.x += b1.left - b0.left; start.y += b1.top - b0.top; dragXY = { x: e.clientX - start.x, y: e.clientY - start.y }; }
+      });
+    }
+  }
+  function onPointerUp() {
+    if (!dragging) return;
+    const finalOrder = dragOrder;
+    const didMove = moved;
+    dragging = null;
+    app.ui.dragging = false;
+    if (didMove && finalOrder) guard(() => A.setSeating(finalOrder)).then(() => (dragOrder = null));
+    else dragOrder = null;
+  }
+  // Abre el menú del dispositivo (salvo que venga de un arrastre: clic fantasma).
+  function openMenu(pid: string) {
+    if (moved) { moved = false; return; }
+    app.ui.modal = { type: 'player-menu', pid };
+  }
 
   const names = (m: MatchDoc): string =>
     (m.members || []).map((pid) => app.players.find((p) => p.id === pid)?.name || '¿?').join(', ');
@@ -63,6 +128,8 @@
   }
 </script>
 
+<svelte:document onpointermove={onPointerMove} onpointerup={onPointerUp} onpointercancel={onPointerUp} />
+
 <div class="topbar">
   <h2>🪑 {group.name}</h2>
 </div>
@@ -98,27 +165,30 @@
 {/if}
 <div class="card">
   <h3>📱 Dispositivos ({app.players.length})</h3>
-  <div class="players">
-    {#each app.players as p (p.id)}
+  <div class="players seatable" bind:this={listEl}>
+    {#each rows as p (p.id)}
       {@const busy = busyOf(p.id)}
       <div
-        class="player selectable"
+        class="player selectable {dragging === p.id ? 'dragging' : ''}"
+        style={dragging === p.id ? `transform: translate(${dragXY.x}px, ${dragXY.y}px)` : ''}
         data-a="player-menu"
         data-p={p.id}
         data-busy={busy ? busy.gameId : undefined}
-        onclick={() => (app.ui.modal = { type: 'player-menu', pid: p.id })}
+        onpointerdown={(e) => onPointerDown(e, p.id)}
+        onclick={() => openMenu(p.id)}
         role="button"
         tabindex="0"
-        onkeydown={(e) => { if (e.key === 'Enter') app.ui.modal = { type: 'player-menu', pid: p.id }; }}
+        onkeydown={(e) => { if (e.key === 'Enter') openMenu(p.id); }}
       >
+        <span class="draghandle" data-a="noop" data-drag={p.id} title="Arrastra para ordenar la mesa">⠿</span>
         <span class="pname">{p.name}</span>
         {#if busy}<span class="badge" title="Jugando a {gameDef(busy.gameId).name}">{gameDef(busy.gameId).emoji}</span>{/if}
         {#if !isActiveDevice(p, now)}<span class="badge zz" title="Sin señales recientes de este dispositivo">💤</span>{/if}
-        {#if me() && p.id === me()!.id}<span class="badge you">Tú</span>{/if}
+        {#if p.id === meId}<span class="badge you">Tú</span>{/if}
       </div>
     {/each}
   </div>
-  <p class="small-note">Quién juega, el orden de la mesa y quién narra se eligen al empezar cada partida. Toca un dispositivo para expulsarlo{app.matches.length ? ' o sacarlo de su partida' : ''}; toca el TUYO para abandonar la mesa.</p>
+  <p class="small-note">Arrastra el asa ⠿ para ordenar la mesa (sentido horario, como estáis sentados); se recuerda para todas las partidas. Toca un dispositivo para expulsarlo{app.matches.length ? ' o sacarlo de su partida' : ''}; toca el TUYO para abandonar la mesa.</p>
 </div>
 <div class="card">
   <h3>🎮 ¿A qué jugamos?</h3>
