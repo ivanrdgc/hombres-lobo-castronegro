@@ -13,12 +13,50 @@ export const INTRO_LOBBY: string[] = [
   'Una sola noche. Los roles se despiertan por turnos y, a oscuras, miran y se roban e intercambian las cartas unos a otros: al amanecer puede que ya no seas quien empezaste… y quizá ni lo sepas.',
   'De día se debate una sola vez y todos señalan a la vez a quien creen hombre lobo. Gana el Pueblo si cae un lobo; ganan los Lobos si ninguno cae; y el Curtidor gana si logra que lo linchen a él.',
 ];
-export const HOWTO: string[] = [
-  'Se reparte una carta a cada jugador y quedan tres en el centro.',
-  'De noche, la voz llama a cada rol en su orden: miran y, algunos, roban o intercambian cartas entre los jugadores.',
-  'Importante: cada jugador actúa según la carta que le TOCÓ al empezar la noche, aunque luego se la roben o se la cambien. Por eso, si el Ladrón te roba tu carta, tú sigues despertando y actuando con tu rol original; y quien se queda tu carta no actúa por ti.',
-  'Al amanecer nadie ha muerto, pero puede que ya no seas quien empezaste. Se debate una vez y todos votan a la vez.',
-  'Gana el Pueblo si cae al menos un hombre lobo; ganan los Lobos si no cae ninguno; y el Curtidor gana en solitario si consigue que lo linchen.',
+export interface HelpSection { heading: string; items: string[] }
+
+export const HOW_TO: HelpSection[] = [
+  {
+    heading: '🌘 De qué va',
+    items: [
+      'Una SOLA noche y un SOLO día. De noche, los roles se despiertan por turnos y, a oscuras, miran, roban o intercambian cartas entre unos y otros. Al amanecer nadie ha muerto… pero puede que ya no seas quien empezaste, y quizá ni lo sepas.',
+      'De día se debate una vez y el pueblo condena a alguien. Gana el PUEBLO si cae al menos un hombre lobo; ganan los LOBOS si no cae ninguno; y el CURTIDOR gana en solitario si logra que lo linchen a él.',
+      'Lo que decide todo es tu carta FINAL (la que tengas al acabar la noche), no la del principio.',
+    ],
+  },
+  {
+    heading: '🎴 El reparto',
+    items: [
+      'La app reparte una carta a cada jugador y deja TRES en el centro, boca abajo. Cada uno mira la suya a solas y la confirma.',
+      'Memorízala bien: durante la noche alguien puede cambiártela sin que te enteres. Por eso solo se te muestra tu carta INICIAL, con el aviso de que pudo cambiar.',
+      'El mazo (qué roles y cuántos) se elige en el lobby y siempre suma jugadores + 3 cartas de centro.',
+    ],
+  },
+  {
+    heading: '🌙 La noche, paso a paso',
+    items: [
+      'La voz llama a cada rol EN SU ORDEN. Solo quien es llamado abre los ojos, actúa en su pantalla con disimulo y vuelve a cerrarlos.',
+      'REGLA DE ORO: actúas según la carta que te TOCÓ al empezar, aunque luego te la roben o cambien. Si el Ladrón te roba tu carta, tú sigues despertando y actuando con tu rol original; quien se queda tu carta NO actúa por ti.',
+      'Los roles que NO se repartieron (están en el centro) también se llaman: es un turno «fantasma» para que el tiempo no delate qué hay fuera. Si eres tú quien no está, no pasa nada: nadie abre los ojos.',
+      'Cada rol hace lo suyo: unos MIRAN cartas (Vidente, Insomne, el lobo solitario…), otros las INTERCAMBIAN (Ladrón, Alborotadora, Borracho) y otros solo se RECONOCEN (lobos, masones). Toca cada ficha de abajo para el detalle.',
+    ],
+  },
+  {
+    heading: '☀️ El día y la votación',
+    items: [
+      'Amanece y se abren los ojos. Se debate una vez: ¿quién esconde colmillos? Cuando el pueblo lo tenga claro, UNA persona registra la decisión en la app (como en Los Hombres Lobo), y es definitiva.',
+      'Se puede condenar a uno, PERDONAR (que no muera nadie) o, si hubo EMPATE, señalar a varios a la vez: en One Night, en un empate mueren TODOS los empatados.',
+      'Si el condenado resulta ser el Cazador (por su carta final), su flecha se lleva a alguien más antes de acabar.',
+    ],
+  },
+  {
+    heading: '🏆 Cómo se gana',
+    items: [
+      'Todo se calcula por la carta FINAL de cada uno. Gana el Pueblo si entre los condenados cae al menos un hombre lobo.',
+      'Ganan los Lobos si hay lobos en juego y ninguno cae. Si no hay lobos en la mesa (todos en el centro) y no muere nadie, también gana el Pueblo (acertó al no linchar).',
+      'El Curtidor gana SOLO si lo linchan a él. Puede haber varios ganadores a la vez (p. ej. Curtidor + Pueblo).',
+    ],
+  },
 ];
 
 export const LISTOS =

@@ -1,4 +1,6 @@
 <script lang="ts">
+  // Cómo se juega Secret Castronegro: guía paso a paso con un ▶️ de lectura en
+  // CADA apartado (solo en el lobby), y los roles clicables → detalle.
   import { app, viewGroup } from '../../../../core/sync/store.svelte';
   import { localAudioState, toggleLocalSpeech } from '../../../../shell/explain-audio';
   import { ROLE_LABEL } from '../../roles';
@@ -7,8 +9,7 @@
 
   const ROLES_LIST: RoleId[] = ['liberal', 'fascist', 'hitler'];
   const canPlay = $derived(viewGroup()?.status !== 'playing');
-  const howto = $derived(localAudioState('sh-howto'));
-  const howtoText = HOW_TO.flatMap((s) => [s.heading.replace(/^[^ ]+ /, ''), ...s.items]);
+  const keyOf = (i: number) => 'sh-howto:' + i;
 
   function openDetail(r: RoleId) {
     const scroll = (document.querySelector('.modal') as HTMLElement | null)?.scrollTop ?? 0;
@@ -16,24 +17,26 @@
   }
 </script>
 
-<div style="display:flex;align-items:center;gap:8px">
-  <h3 style="flex:1;margin:0">🏛️ Cómo se juega</h3>
-  {#if canPlay}
-    {#if howto === 'playing'}
-      <button class="small ghost" data-a="sh-play-howto" title="Detener" onclick={() => toggleLocalSpeech('sh-howto', [])}>⏹️</button>
-    {:else if howto === 'loading'}
-      <button class="small ghost" aria-label="Preparando la voz" disabled><span class="spinner"></span></button>
-    {:else}
-      <button class="small ghost" data-a="sh-play-howto" title="Escuchar" style="font-size:1.1rem;line-height:1" onclick={() => toggleLocalSpeech('sh-howto', howtoText)}>▶️</button>
+<h3 style="margin:0 0 4px">🏛️ Cómo se juega Secret Castronegro</h3>
+
+{#each HOW_TO as sec, i (i)}
+  {@const st = localAudioState(keyOf(i))}
+  <div style="display:flex;align-items:center;gap:8px;margin-top:14px">
+    <h3 style="flex:1;margin:0;font-size:1.02rem">{sec.heading}</h3>
+    {#if canPlay}
+      {#if st === 'playing'}
+        <button class="small ghost" data-a="sh-play-howto" aria-label="Detener" title="Detener" onclick={() => toggleLocalSpeech(keyOf(i), [])}>⏹️</button>
+      {:else if st === 'loading'}
+        <button class="small ghost" aria-label="Preparando la voz" disabled><span class="spinner"></span></button>
+      {:else}
+        <button class="small ghost" data-a="sh-play-howto" data-p={String(i)} aria-label="Escuchar este apartado" title="Escuchar" style="font-size:1.05rem;line-height:1" onclick={() => toggleLocalSpeech(keyOf(i), sec.items)}>▶️</button>
+      {/if}
     {/if}
-  {/if}
-</div>
-{#each HOW_TO as sec (sec.heading)}
-  <h3 style="margin-top:14px">{sec.heading}</h3>
-  {#each sec.items as it, i (i)}<p class="small-note" style="margin:7px 0">• {it}</p>{/each}
+  </div>
+  {#each sec.items as it, j (j)}<p class="small-note" style="margin:7px 0">{it}</p>{/each}
 {/each}
 
-<h3 style="margin-top:14px">🎭 Los roles</h3>
+<h3 style="margin-top:16px">🎭 Los roles</h3>
 <div class="chips" style="margin-top:6px">
   {#each ROLES_LIST as r (r)}<button class="chip rolechip" data-a="sh-role" data-p={r} onclick={() => openDetail(r)}>{r === 'hitler' ? '💀' : r === 'fascist' ? '🐷' : '🕊️'} {ROLE_LABEL[r].replace(/^[^ ]+ /, '')}</button>{/each}
 </div>

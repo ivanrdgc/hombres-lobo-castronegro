@@ -11,33 +11,55 @@ export interface HelpSection { heading: string; items: string[] }
 
 export const HOW_TO: HelpSection[] = [
   {
-    heading: '🎯 Objetivo',
+    heading: '🎯 De qué va',
     items: [
-      'LIBERALES: promulgar 5 decretos liberales, o ejecutar a Hitler.',
-      'FASCISTAS: promulgar 6 decretos fascistas, o conseguir que Hitler sea elegido Canciller cuando ya haya 3 decretos fascistas en la mesa.',
+      'La República de Castronegro se tambalea. Sois mayoría LIBERALES, pero entre vosotros hay FASCISTAS infiltrados y un HITLER oculto que finge ser uno más. Ronda a ronda se van promulgando decretos —liberales o fascistas— y cada bando empuja hacia los suyos.',
+      'Ganan los LIBERALES si se promulgan 5 decretos liberales, o si ejecutan a Hitler. Ganan los FASCISTAS si se promulgan 6 decretos fascistas, o si consiguen que Hitler salga elegido Canciller una vez que ya hay 3 decretos fascistas en la mesa.',
+      'La app es el máster secreto: custodia el mazo de decretos, baraja, reparte las cartas que cada gobierno ve en privado y aplica los poderes. Nadie manosea cartas ni lleva cuentas a mano.',
     ],
   },
   {
-    heading: '🌙 Lo que sabe cada uno',
+    heading: '🌙 El reparto: lo que sabe cada uno',
     items: [
-      'La app reparte los bandos en secreto. Los fascistas se reconocen entre sí y conocen a Hitler. Con 5-6 jugadores, Hitler también ve a su fascista; con 7 o más, Hitler NO sabe quiénes son (juega a ciegas).',
-      'Los liberales no saben nada: son mayoría, pero van a oscuras.',
+      'Al empezar, cada jugador mira su carta a solas y confirma. La app le muestra su bando y su información secreta:',
+      '🐷 Los FASCISTAS se reconocen entre sí y saben quién es Hitler: su trabajo es protegerlo y colar decretos fascistas sin cantarse.',
+      '💀 HITLER: con 5-6 jugadores conoce a su fascista de confianza; con 7 o más juega A CIEGAS, sin saber quiénes son los suyos, fingiendo ser el liberal más ejemplar.',
+      '🕊️ Los LIBERALES no saben nada de nadie: son mayoría, pero van a oscuras y solo pueden deducir por los votos y los decretos.',
     ],
   },
   {
-    heading: '🏛️ Cada ronda',
+    heading: '🏛️ Fase 1 · Gobierno: nominar y votar',
     items: [
-      'El Presidente de turno nomina un Canciller. Toda la mesa vota Ja o Nein. Si sale mayoría de Nein (o empate), el gobierno cae y la presidencia pasa al siguiente. Tres gobiernos caídos seguidos: se promulga un decreto a ciegas (caos).',
-      'Si el gobierno se aprueba, la app da 3 decretos al Presidente en secreto: descarta 1 y pasa 2 al Canciller, que descarta 1 y promulga el otro. Nadie ve las cartas descartadas: solo el decreto final.',
-      'No se puede repetir de Canciller al último Presidente ni al último Canciller electos (con 5 vivos, solo al último Canciller).',
+      'Cada ronda hay un PRESIDENTE (el cargo rota por la mesa). En su móvil nomina a un CANCILLER. La app aplica los límites de mandato: no se puede repetir de Canciller al último Presidente ni al último Canciller electos (con solo 5 vivos, únicamente al último Canciller).',
+      'TODA la mesa vota el gobierno propuesto: 👍 Ja o 👎 Nein, en secreto; la app los destapa a la vez. Si hay mayoría de Ja, ese Presidente y Canciller gobiernan; si hay empate o mayoría de Nein, el gobierno cae y la presidencia pasa al siguiente.',
+      '⚠️ Si caen TRES gobiernos seguidos, el país entra en caos: se promulga a ciegas el decreto de arriba del mazo (sin poderes) y se reinicia la cuenta. No bloqueéis sin fin.',
+      '⚠️ A partir de 3 decretos fascistas, elegir a Hitler de Canciller hace GANAR a los fascistas en el acto: no votéis gobiernos a ciegas cuando el marcador fascista aprieta.',
     ],
   },
   {
-    heading: '⚡ Poderes y final',
+    heading: '📜 Fase 2 · Legislar (en secreto)',
     items: [
-      'Algunos decretos fascistas dan al Presidente un poder: mirar los próximos decretos, investigar la lealtad de alguien, convocar una elección especial o EJECUTAR a un jugador.',
-      'Con 5 decretos fascistas se desbloquea el VETO: Presidente y Canciller pueden descartar la agenda de común acuerdo.',
-      '¡Ojo! A partir de 3 decretos fascistas, si Hitler llega a Canciller, ganan los fascistas: no elijáis a ciegas.',
+      'Con el gobierno aprobado, la app da al PRESIDENTE tres decretos que solo ve él: descarta uno y pasa los otros dos al Canciller.',
+      'El CANCILLER ve esos dos (tampoco los ve nadie más): promulga uno y descarta el otro. Solo el decreto PROMULGADO es público; los descartes quedan en secreto.',
+      'Ahí está la miga: un fascista puede jurar que «solo le llegaron decretos fascistas»… y quizá mienta. El mazo se rebaraja solo cuando se agota.',
+      'Con 5 decretos fascistas se desbloquea el VETO: el Canciller puede proponer descartar la agenda entera y, si el Presidente acepta, no se promulga nada (cuenta como gobierno caído hacia el caos).',
+    ],
+  },
+  {
+    heading: '⚡ Fase 3 · Poderes presidenciales',
+    items: [
+      'Algunos decretos FASCISTAS otorgan un poder al Presidente en cuanto se promulgan. Cuáles y cuándo depende del número de jugadores (la app lo aplica sola):',
+      '🔮 Mirar: el Presidente ve en secreto los tres próximos decretos del mazo.',
+      '🔎 Investigar: el Presidente descubre (solo para él) la afiliación de un jugador — ojo, Hitler aparece como «fascista», no como Hitler.',
+      '🗳️ Elección especial: el Presidente elige a dedo quién será el próximo Presidente (por una vez).',
+      '💀 Ejecutar: el Presidente mata a un jugador. Si resulta ser Hitler, ¡ganan los liberales al instante! El ejecutado queda fuera y ya no vota.',
+    ],
+  },
+  {
+    heading: '🎭 Los roles',
+    items: [
+      'Abajo tienes las tres cartas (Liberal, Fascista, Hitler): tócalas para ver en detalle qué sabe y qué busca cada una.',
+      'El reparto de fascistas lo fija el número de jugadores (de 5 a 10): la app pone siempre 1 Hitler y el resto de fascistas y liberales según la tabla oficial.',
     ],
   },
 ];

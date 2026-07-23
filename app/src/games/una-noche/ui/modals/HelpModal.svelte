@@ -4,14 +4,14 @@
   import { app, viewGroup } from '../../../../core/sync/store.svelte';
   import { localAudioState, toggleLocalSpeech } from '../../../../shell/explain-audio';
   import { ROLES, ACTION_ROLES } from '../../roles';
-  import { HOWTO } from '../../texts';
+  import { HOW_TO } from '../../texts';
   import type { RoleId } from '../../types';
 
   const NIGHT = ACTION_ROLES;
   const PASSIVE: RoleId[] = ['aldeano', 'cazador', 'tanner'];
   // Fuera de partida (el lobby): leer en voz alta no delata nada.
   const canPlay = $derived(viewGroup()?.status !== 'playing');
-  const howto = $derived(localAudioState('una-howto'));
+  const keyOf = (i: number) => 'una-howto:' + i;
 
   // Salta al detalle guardando el scroll: al volver, este modal se restaura
   // donde estaba (B12; mismo patrón que Roles/Explicación de Los HL).
@@ -21,21 +21,26 @@
   }
 </script>
 
-<div style="display:flex;align-items:center;gap:8px">
-  <h3 style="flex:1;margin:0">🌘 Cómo se juega</h3>
-  {#if canPlay}
-    {#if howto === 'playing'}
-      <button class="small ghost" data-a="una-play-howto" aria-label="Detener" title="Detener" onclick={() => toggleLocalSpeech('una-howto', [])}>⏹️</button>
-    {:else if howto === 'loading'}
-      <button class="small ghost" disabled aria-label="Preparando"><span class="spinner"></span></button>
-    {:else}
-      <button class="small ghost" data-a="una-play-howto" aria-label="Escuchar" title="Escuchar" style="font-size:1.1rem;line-height:1" onclick={() => toggleLocalSpeech('una-howto', HOWTO)}>▶️</button>
-    {/if}
-  {/if}
-</div>
-{#each HOWTO as p, i (i)}<p class="small-note" style="margin:8px 0">{p}</p>{/each}
+<h3 style="margin:0 0 4px">🌘 Cómo se juega Una Noche</h3>
 
-<h3 style="margin-top:14px">🌙 Orden de la noche</h3>
+{#each HOW_TO as sec, i (i)}
+  {@const st = localAudioState(keyOf(i))}
+  <div style="display:flex;align-items:center;gap:8px;margin-top:14px">
+    <h3 style="flex:1;margin:0;font-size:1.02rem">{sec.heading}</h3>
+    {#if canPlay}
+      {#if st === 'playing'}
+        <button class="small ghost" data-a="una-play-howto" aria-label="Detener" title="Detener" onclick={() => toggleLocalSpeech(keyOf(i), [])}>⏹️</button>
+      {:else if st === 'loading'}
+        <button class="small ghost" aria-label="Preparando la voz" disabled><span class="spinner"></span></button>
+      {:else}
+        <button class="small ghost" data-a="una-play-howto" data-p={String(i)} aria-label="Escuchar este apartado" title="Escuchar" style="font-size:1.05rem;line-height:1" onclick={() => toggleLocalSpeech(keyOf(i), sec.items)}>▶️</button>
+      {/if}
+    {/if}
+  </div>
+  {#each sec.items as it, j (j)}<p class="small-note" style="margin:7px 0">{it}</p>{/each}
+{/each}
+
+<h3 style="margin-top:16px">🌙 Orden de la noche</h3>
 <p class="small-note" style="margin-top:2px">Toca un rol para ver en detalle cómo funciona.</p>
 <div class="chips" style="margin-top:6px">
   {#each NIGHT as r (r)}
