@@ -17,6 +17,7 @@ import { installAvalonNarrator } from './games/avalon/narrator/install';
 import { installSecretHitlerNarrator } from './games/secret-hitler/narrator/install';
 import { installChameleonNarrator } from './games/chameleon/narrator/install';
 import { installInsiderNarrator } from './games/insider/narrator/install';
+import { installCoupNarrator } from './games/coup/narrator/install';
 
 installUnlockGestures();
 // Refleja en el estado global si el audio SUENA ya (AudioContext 'running'):
@@ -38,6 +39,7 @@ installAvalonNarrator();
 installSecretHitlerNarrator();
 installChameleonNarrator();
 installInsiderNarrator();
+installCoupNarrator();
 installPresence();
 
 window.addEventListener('popstate', applyRoute);
