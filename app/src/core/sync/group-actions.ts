@@ -265,7 +265,10 @@ export async function leaveGroup(): Promise<void> {
     if (!g.exists()) return;
     const others = state.players.filter((p) => p.id !== myId);
     if (!others.length) {
+      // Último jugador: la mesa se borra sola (con sus partidas). Sustituye al
+      // antiguo botón «Eliminar la mesa» (demasiado peligroso).
       tx.delete(pref(slug, myId));
+      for (const m of state.matches) tx.delete(mref(slug, m.id));
       tx.delete(gref(slug));
       return;
     }

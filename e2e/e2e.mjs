@@ -334,20 +334,26 @@ try {
   await waitState(ana, (s) => s.players.length === 4, 'grupo de 4');
   ok('abandonar grupo funciona');
 
-  // El máster elimina el grupo (desde la mesa).
+  // Ya no hay botón «eliminar la mesa»: la mesa se borra SOLA cuando se marchan
+  // todos. Se van los demás y, al salir el ÚLTIMO (Ana), la mesa desaparece.
   await ana.click('[data-a=change-game]');
   await ana.waitForSelector('text=Dispositivos (4)');
-  await ana.click('[data-a=confirm-delete-group]');
-  await ana.click('[data-a=delete-group-confirm]');
+  check(!(await ana.isVisible('[data-a=confirm-delete-group]')), 'ya no existe el botón de eliminar la mesa');
+  for (const p of [pages.bruno, pages.carla, pages.elsa]) {
+    await p.goto(url); await p.click('[data-a=leave]'); await p.click('[data-a=leave-confirm]'); await p.waitForURL(BASE + '/');
+  }
+  await waitState(ana, (s) => s.players.length === 1, 'solo queda Ana en la mesa');
+  await ana.click('[data-a=leave]');
+  await ana.click('[data-a=leave-confirm]');
   await ana.waitForURL(BASE + '/');
-  await pages.bruno.waitForSelector('text=/grupo ha sido eliminado|grupo no existe/i', { timeout: 45000 });
-  ok('grupo eliminado: los demás son expulsados y el nombre queda libre');
+  ok('la mesa se borra sola cuando se marcha el último jugador');
 
   // El nombre queda libre: crear de nuevo funciona.
   await ana.fill('#inp-name', 'Ana');
   await ana.fill('#inp-group', GROUP);
   await ana.click('[data-a=create-group]');
   await ana.waitForURL('**/g/**');
+  const url2 = ana.url();
   ok('el nombre del grupo se puede reutilizar');
 
   // Reclamar el rol de máster desde la portada (grupo ya existente).
@@ -361,16 +367,17 @@ try {
   await paco.waitForURL('**/g/**');
   await paco.waitForSelector('.player:has-text("Paco")');
   ok('Paco entra en el grupo existente desde la portada');
+  await paco.goto(url2); await paco.waitForSelector('button[data-a=select-game]', { timeout: 45000 });
   await paco.click('button[data-a=select-game]');
   await paco.waitForSelector('[data-a=open-start]', { timeout: 45000 });
+  await ana.goto(url2); await ana.waitForSelector('button[data-a=select-game]', { timeout: 45000 });
   await ana.click('button[data-a=select-game]'); // Ana entra al lobby cuando quiere
   await ana.waitForSelector('[data-a=open-start]', { timeout: 45000 });
   ok('en el lobby, cualquiera elige juego y ve «empezar» (no hay máster hasta iniciar)');
-  await paco.click('[data-a=change-game]'); // vuelve a la mesa: «eliminar» ya no está en el lobby
-  await paco.waitForSelector('[data-a=confirm-delete-group]');
-  await paco.click('[data-a=confirm-delete-group]');
-  await paco.click('[data-a=delete-group-confirm]');
-  await paco.waitForURL(BASE + '/');
+  // Limpieza: se marchan los dos → la mesa se borra sola.
+  for (const p of [ana, paco]) {
+    await p.goto(url2); await p.click('[data-a=leave]'); await p.click('[data-a=leave-confirm]'); await p.waitForURL(BASE + '/');
+  }
   await paco.context().close();
   ok('limpieza final');
 } catch (e) {

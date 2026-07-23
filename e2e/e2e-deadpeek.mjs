@@ -101,9 +101,9 @@ ok('un dispositivo que NO juega termina la partida desde su menú ⋯');
 await ana.click('button[data-a=back-lobby]');
 await ana.waitForSelector('[data-a=open-start]'); // tras la partida: lobby del JUEGO
 await ana.click('[data-a=change-game]'); // a la mesa para eliminar el grupo
-await ana.waitForSelector('[data-a=confirm-delete-group]');
-await ana.click('[data-a=confirm-delete-group]');
-await ana.click('[data-a=delete-group-confirm]');
+  for (const _p of Object.values(pages)) {
+    try { if (_p.isClosed()) continue; await _p.goto(url); const _l = await _p.waitForSelector('[data-a=leave]', { timeout: 9000 }).catch(() => null); if (_l) { await _p.click('[data-a=leave]'); await _p.click('[data-a=leave-confirm]'); await _p.waitForURL(BASE + '/', { timeout: 12000 }).catch(() => {}); } } catch { /* ya fuera */ }
+  }
 await ana.waitForURL(BASE + '/');
 ok('limpieza');
 await browser.close();

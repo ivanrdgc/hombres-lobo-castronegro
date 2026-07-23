@@ -132,9 +132,7 @@
   {/each}
   <p class="small-note">Puede haber varias partidas a la vez: cada una con su grupo de la mesa.</p>
 </div>
-<div class="card">
-  <button class="danger block" data-a="confirm-delete-group" onclick={() => (app.ui.modal = { type: 'confirm-delete' })}>🗑️ Eliminar la mesa</button>
-</div>
+<p class="small-note" style="text-align:center;opacity:.7">La mesa se borra sola cuando se marchan todos: usad «🚪 Salir» arriba para dejarla.</p>
 <!-- Sello del build a la vista: si un móvil enseña una fecha vieja, está
      sirviendo caché y cualquier «bug» debe verificarse tras recargar. -->
 <p class="small-note" style="text-align:center;opacity:.55">{__APP_VERSION__}</p>

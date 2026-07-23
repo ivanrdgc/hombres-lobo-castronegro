@@ -9,7 +9,7 @@ const ok = (m) => console.log('  ✔', m);
 const bad = (m) => { fail++; console.log('  ✖', m); };
 const browser = await chromium.launch();
 const pages = {};
-const mk = async (l) => { const c = await browser.newContext(); const p = await c.newPage(); p.on('pageerror', (e) => bad(`[${l}] ${e.message}`)); pages[l] = p; return p; };
+const mk = async (l) => { const c = await browser.newContext(); await c.addInitScript(() => { window.__hlcTest = true; }); const p = await c.newPage(); p.on('pageerror', (e) => bad(`[${l}] ${e.message}`)); pages[l] = p; return p; };
 const seating = (p) => p.evaluate(() => window.__hlc.group?.seating || null);
 const orders = (p) => p.evaluate(() => window.__hlc.players.map((x) => [x.name, x.order]));
 
@@ -71,8 +71,9 @@ const s2 = await seating(ana);
 if (s2 && s2[s2.length - 1] === 'p-bea') ok('el orden de mesa persiste tras la partida'); else bad('orden perdido: ' + JSON.stringify(s2));
 await ana.click('[data-a=change-game]');
 await ana.waitForSelector('text=/Dispositivos/');
-await ana.click('[data-a=confirm-delete-group]');
-await ana.click('[data-a=delete-group-confirm]');
+  for (const _p of Object.values(pages)) {
+    try { if (_p.isClosed()) continue; await _p.goto(url); const _l = await _p.waitForSelector('[data-a=leave]', { timeout: 9000 }).catch(() => null); if (_l) { await _p.click('[data-a=leave]'); await _p.click('[data-a=leave-confirm]'); await _p.waitForURL(BASE + '/', { timeout: 12000 }).catch(() => {}); } } catch { /* ya fuera */ }
+  }
 await ana.waitForURL(BASE + '/');
 await browser.close();
 console.log(fail ? `✖ ${fail} fallos` : '✔ seating OK');
