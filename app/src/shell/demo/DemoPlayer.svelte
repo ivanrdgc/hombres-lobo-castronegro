@@ -4,6 +4,7 @@
   // solo fuera de partida, como los «cómo se juega»). Navegación ‹ ›.
   import { app, viewGroup, state as sync } from '../../core/sync/store.svelte';
   import { localAudioState, toggleLocalSpeech } from '../explain-audio';
+  import { whoLine } from './types';
   import type { DemoScript } from './types';
 
   const { demo }: { demo: DemoScript } = $props();
@@ -46,10 +47,13 @@
     {:else if audio === 'loading'}
       <button class="small ghost" aria-label="Preparando la voz" disabled><span class="spinner"></span></button>
     {:else}
-      <button class="small ghost" data-a="demo-play" aria-label="Escuchar este paso" title="Escuchar" style="font-size:1.05rem;line-height:1" onclick={() => toggleLocalSpeech(audioKey, [step.title, ...step.text])}>▶️</button>
+      <button class="small ghost" data-a="demo-play" aria-label="Escuchar este paso" title="Escuchar" style="font-size:1.05rem;line-height:1" onclick={() => toggleLocalSpeech(audioKey, [step.title, ...(step.who ? [whoLine(step.who)] : []), ...step.text])}>▶️</button>
     {/if}
   {/if}
 </div>
+{#if step.who}
+  <div class="demo-who" data-a="demo-who">🎬 <b>{step.who.actor}.</b> <span class="dw-others">Mientras, {step.who.others}</span></div>
+{/if}
 {#each step.text as p, pi (pi)}<p class="small-note" style="margin:7px 0">{p}</p>{/each}
 
 {#if step.visual}
@@ -97,9 +101,23 @@
           </div>
         {/each}
       </div>
+    {:else if v.kind === 'screens'}
+      <div class="demoscreens">
+        {#each v.panes as pane, pi (pi)}
+          <div class="demoscreen">
+            <div class="ds-title">📱 {pane.title}</div>
+            {#each pane.lines as l, li (li)}<p class="small-note" style="margin:4px 0">{l}</p>{/each}
+            {#each pane.buttons || [] as b, bi (bi)}
+              <button class="{b.kind || 'primary'} block" style="margin-top:4px" tabindex="-1">{b.label}</button>
+            {/each}
+          </div>
+        {/each}
+      </div>
     {/if}
     {#if (v.kind === 'chips' || v.kind === 'buttons') && v.caption}
       <p class="small-note" style="text-align:center;margin:5px 0 0;opacity:.75">{v.caption}</p>
+    {:else if v.kind === 'screens'}
+      <p class="small-note" style="text-align:center;margin:5px 0 0;opacity:.75">— cada pantalla, tal como la ve cada uno —</p>
     {:else}
       <p class="small-note" style="text-align:center;margin:5px 0 0;opacity:.75">— así se ve en pantalla —</p>
     {/if}
@@ -127,3 +145,20 @@
     <button class="primary" data-a="demo-done" style="flex:1" onclick={close}>🎉 ¡Listo, a jugar!</button>
   {/if}
 </div>
+
+<style>
+  .demo-who {
+    margin: 8px 0 2px; padding: 7px 10px; border-radius: 10px;
+    border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+    border-left: 4px solid #c8a24a; background: color-mix(in srgb, #c8a24a 9%, transparent);
+    font-size: 0.86rem; line-height: 1.35;
+  }
+  .demo-who .dw-others { opacity: 0.8; }
+  .demoscreens { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; }
+  .demoscreen {
+    border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
+    border-radius: 14px; padding: 8px 10px 10px;
+    background: color-mix(in srgb, currentColor 5%, transparent);
+  }
+  .ds-title { font-size: 0.8rem; font-weight: 800; margin-bottom: 4px; border-bottom: 1px dashed color-mix(in srgb, currentColor 30%, transparent); padding-bottom: 4px; }
+</style>

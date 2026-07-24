@@ -1,5 +1,5 @@
-// Tutorial de Coup: el flujo real de la app paso a paso, con los botones tal
-// cual se ven. Un solo dispositivo, sin partida de verdad.
+// Tutorial de Coup: un turno de ejemplo continuo, con quién actúa en cada
+// momento y qué ve cada pantalla.
 import type { DemoScript } from '../../shell/demo/types';
 
 export const DEMO: DemoScript = {
@@ -9,107 +9,85 @@ export const DEMO: DemoScript = {
   steps: [
     {
       icon: '🎯',
-      title: 'Dos cartas y mucho morro',
+      title: 'La partida de ejemplo',
       text: [
-        'Tienes 2 influencias secretas y 2 monedas. Perder una influencia es descubrir una carta para siempre; con las dos descubiertas, estás fuera. Gana el último con influencia.',
-        'El truco del juego: para usar las mejores jugadas basta con DECIR que tienes el personaje… lo tengas o no. Los demás deciden si tragárselo o desafiarte.',
+        'Jugáis TÚ, Bea y Carlos. Cada uno esconde 2 influencias (cartas) y tiene 2 monedas. Perder una influencia es descubrir una carta para siempre; con las dos descubiertas, fuera. Gana el último en pie.',
+        'El truco: las mejores jugadas pertenecen a personajes, y basta con DECIR que tienes el personaje… lo tengas o no. Los demás deciden si tragárselo o desafiarte.',
       ],
-      visual: {
-        kind: 'chips',
-        chips: [
-          { name: 'Ana', emoji: '🂠🂠', badge: '2 monedas' },
-          { name: 'Bea', emoji: '🂠🂠', badge: '2 monedas' },
-          { name: 'Carlos', emoji: '🂠💥', badge: '5 monedas', dim: false },
-        ],
-        caption: 'El tablero: todos ven cuántas cartas te quedan, nunca cuáles.',
-      },
+      visual: { kind: 'chips', chips: [{ name: 'TÚ', emoji: '🂠🂠', badge: '2 monedas' }, { name: 'Bea', emoji: '🂠🂠', badge: '2 monedas' }, { name: 'Carlos', emoji: '🂠🂠', badge: '2 monedas' }], caption: 'El tablero: todos ven CUÁNTAS cartas te quedan, nunca cuáles.' },
     },
     {
       icon: '🎴',
-      title: 'Mira tus cartas y confirma',
+      title: 'El reparto',
+      who: { actor: 'TODOS miráis vuestras 2 cartas a la vez («👁 Ver mis influencias» → «✅ Lo tengo»)', others: 'cuando el último confirma, cualquiera pulsa «▶️ Todos listos».' },
       text: [
-        'Al empezar, toca «👁 Ver mis influencias» y míralas SIN que nadie vea tu pantalla. Después pulsa «✅ Lo tengo»; cuando todos confirman, cualquiera pulsa «▶️ Todos listos».',
+        'A ti te tocan 🎩 Duque y 🎭 Embajador. Buen combo: puedes cobrar impuestos con la verdad… y farolear el resto.',
       ],
       visual: {
-        kind: 'card',
-        emoji: '🎩🎭',
-        title: 'Tus dos influencias',
-        lines: ['🎩 Duque — cobra Impuestos (+3)', '🎭 Embajador — intercambia cartas con la corte'],
+        kind: 'screens',
+        panes: [
+          { title: 'TÚ', lines: ['🎩 Duque — Impuestos (+3)', '🎭 Embajador — intercambia con la corte'] },
+          { title: 'Bea (tú no lo ves)', lines: ['🗡️ Asesino y ⚓ Capitán', 'Ella tampoco ve las tuyas.'] },
+        ],
       },
     },
     {
       icon: '🎬',
-      title: 'Tu turno: elige jugada',
+      title: 'Turno de Bea: declara una jugada',
+      who: { actor: 'Bea (su turno) elige una jugada en su móvil y la app la anuncia a todos', others: 'tú y Carlos veréis abrirse vuestra ventana de reacción.' },
       text: [
-        'Cuando te toca, la app te ofrece SOLO lo que puedes pagar. Eliges jugada (y víctima, si la lleva) y la voz la anuncia a toda la mesa.',
-        'Con 10 monedas o más, la app solo te dejará dar un Golpe de Estado (es obligatorio).',
+        'Bea declara «Impuestos» (+3), o sea: dice ser Duque. La app solo le ofrece lo que puede pagar; con 10+ monedas, solo Golpe de Estado (obligatorio).',
+        'Salvo la Renta y el Golpe (inmediatos), la jugada queda EN EL AIRE esperando la reacción de la mesa.',
       ],
-      visual: {
-        kind: 'buttons',
-        buttons: [
-          { label: '🪙 Renta (+1)', kind: 'ghost' },
-          { label: '🤝 Ayuda exterior (+2)', kind: 'ghost' },
-          { label: '🎩 Impuestos (+3) · «soy el Duque»', kind: 'primary' },
-          { label: '⚓ Robar 2 monedas · «soy el Capitán»', kind: 'ghost' },
-        ],
-        caption: 'Renta y Golpe van directas; el resto espera la reacción de la mesa.',
-      },
-    },
-    {
-      icon: '❗',
-      title: 'La ventana de reacción',
-      text: [
-        'Declarada una jugada de personaje, a los demás les salen «❗ Desafiar» y «👍 Paso». La jugada queda en el aire hasta que todos pasan o alguien desafía.',
-        'Si el desafiado TENÍA el personaje: lo enseña, lo cambia por otro de la corte, y quien dudó pierde una influencia. Si NO lo tenía: el farol le cuesta una influencia y la jugada se cae.',
-      ],
-      visual: {
-        kind: 'log',
-        lines: [
-          '🎩 Ana declara Impuestos (dice ser Duque). ¿Alguien lo desafía?',
-          '❗ Bea desafía a Ana: «no eres Duque».',
-          '✅ Ana SÍ era Duque: lo enseña y roba otra carta.',
-          '💥 Bea descubre Capitán.',
-        ],
-      },
+      visual: { kind: 'log', lines: ['🎬 Turno de Bea.', '🎩 Bea declara Impuestos (dice ser Duque). ¿Alguien lo desafía?'] },
     },
     {
       icon: '🤔',
-      title: 'Ponte a prueba',
-      text: ['Ana declara Impuestos diciendo ser el Duque, y tú sospechas.'],
+      title: 'Tu ventana de reacción',
+      who: { actor: 'TÚ y Carlos tenéis botones «❗ Desafiar» y «👍 Paso»', others: 'Bea espera: su jugada no avanza hasta que TODOS paséis o alguien desafíe.' },
+      text: ['Sospechas del Duque de Bea (¡tú tienes uno de los tres que hay!).'],
       ask: {
         prompt: '¿Qué haces?',
         choices: [
-          { label: '❗ La desafío', good: true, reply: 'Si mentía, pierde una influencia y no cobra. Pero ojo: si SÍ era Duque, la influencia la pierdes tú. Desafía con motivos.' },
-          { label: '👍 Paso y tomo nota', good: true, reply: 'También es jugar bien: deja que gaste el farol y guárdate el dato. No hace falta desafiarlo todo.' },
-          { label: '🛡️ Bloqueo sus impuestos', reply: 'Los Impuestos no se pueden bloquear: solo la Ayuda exterior (Duque), el Robo (Capitán/Embajador) y el Asesinato (Condesa).' },
+          { label: '❗ La desafío', good: true, reply: 'Se resuelve al instante: si Bea NO era Duque, pierde una influencia y su jugada cae. Pero si SÍ lo era… la enseña, roba carta nueva y la influencia la pierdes TÚ. Desafía con motivos.' },
+          { label: '👍 Paso y tomo nota', good: true, reply: 'También es jugar bien: deja que gaste el farol y guárdate el dato. Si Carlos también pasa, Bea cobra sus +3 (fuera verdad o mentira).' },
+          { label: '🛡️ Bloqueo sus impuestos', reply: 'Los Impuestos no se pueden bloquear. Se bloquean: la Ayuda exterior (con Duque), el Robo (Capitán/Embajador) y el Asesinato (Condesa).' },
         ],
       },
     },
     {
-      icon: '🛡️',
-      title: 'Bloqueos (y sus faroles)',
+      icon: '🗡️',
+      title: 'Un asesinato y su defensa',
+      who: { actor: 'Bea (otro turno) paga 3 y declara «Asesinar» contra TI', others: 'primero todos pueden desafiar su Asesino; si nadie lo hace, TÚ decides si bloqueas.' },
       text: [
-        'Si te asesinan o te roban, te saldrá «🛡️ Bloquear» diciendo ser Condesa (asesinato) o Capitán/Embajador (robo). La Ayuda exterior la puede bloquear cualquiera con el Duque.',
-        'Bloquear es otra declaración: también se puede desafiar. Y una finura oficial: aunque pierdas un desafío contra el Asesino, CONSERVAS tu opción de bloquear con la Condesa.',
+        'En tu pantalla: «🛡️ Bloquear · digo ser Condesa» o «👍 Paso». Bloquear es OTRA declaración —puede ser farol— y cualquiera puede desafiarla a su vez.',
+        'Regla fina (oficial): aunque pierdas un desafío contra el Asesino, CONSERVAS tu opción de bloquear con la Condesa. Eso sí: farolear la Condesa y que te cacen son las dos cartas de una tacada.',
       ],
+      visual: {
+        kind: 'screens',
+        panes: [
+          { title: 'TÚ (víctima)', lines: ['«🗡️ Bea declara Asesinar contra ti.»'], buttons: [{ label: '🛡️ Bloquear · digo ser Condesa', kind: 'primary' }, { label: '👍 Paso (me lo como)', kind: 'ghost' }] },
+          { title: 'Carlos', lines: ['Ya pasó su ventana de desafío.', 'Mira el duelo con palomitas.'] },
+        ],
+      },
     },
     {
       icon: '💥',
       title: 'Perder influencias',
+      who: { actor: 'Quien deba perder influencia elige CUÁL de sus cartas descubre en su móvil', others: 'la carta descubierta queda boca arriba en el tablero, a la vista de todos.' },
       text: [
-        'Cuando te toque perder una influencia y tengas las dos, tu móvil te pedirá elegir CUÁL descubres. Con una sola, cae ella sola.',
-        'Las cartas descubiertas quedan a la vista en el tablero: apunta mentalmente qué personajes ya no pueden estar en otras manos.',
+        'Si te comes el asesinato con dos cartas, eliges cuál sacrificas; con una sola, cae ella sola. Todo lo descubierto es información pública: apunta qué personajes ya no pueden estar en otras manos.',
       ],
       visual: { kind: 'buttons', buttons: [{ label: '💥 Descubrir mi Duque', kind: 'danger' }, { label: '💥 Descubrir mi Embajador', kind: 'danger' }], caption: 'Elegir bien qué carta sacrificas es parte del farol.' },
     },
     {
       icon: '👑',
       title: 'Y a ganar',
+      who: { actor: 'El último con influencia gana; la voz va cantando cada jugada', others: 'revancha con «🔁 Otra partida»: el marcador se guarda.' },
       text: [
-        'El último jugador con influencia gana. La voz va cantando cada jugada (jamás tus cartas ocultas) y el marcador se guarda entre partidas.',
-        'Eso es todo: farolea, duda de todos y no enseñes la pantalla. 🎭',
+        'Chuleta rápida: 🪙 Renta +1 (nadie la para) · 🤝 Ayuda +2 (la bloquea cualquier «Duque») · 🎩 Impuestos +3 · ⚓ Robar 2 · 🗡️ Asesinar (3 monedas) · 🎭 Intercambiar cartas · 💥 Golpe 7 monedas (imparable).',
+        'Farolea, duda de todos y no enseñes la pantalla. 🎭',
       ],
-      visual: { kind: 'board', rows: [{ label: '👑 Ana', value: '2' }, { label: 'Bea', value: '1' }, { label: 'Carlos', value: '0' }] },
     },
   ],
 };

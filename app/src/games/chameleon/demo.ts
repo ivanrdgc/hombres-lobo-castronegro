@@ -1,4 +1,5 @@
-// Tutorial de El Camaleón: el flujo real de la app, paso a paso.
+// Tutorial de El Camaleón: una ronda de ejemplo continua, con quién actúa en
+// cada momento y qué ve cada pantalla.
 import type { DemoScript } from '../../shell/demo/types';
 
 const WORDS = [
@@ -15,62 +16,78 @@ export const DEMO: DemoScript = {
   steps: [
     {
       icon: '🎯',
-      title: 'Todos saben la palabra… menos uno',
+      title: 'La ronda de ejemplo',
       text: [
-        'La app enseña a TODOS la misma rejilla de 16 palabras sobre un tema. Todos saben cuál es la SECRETA… menos el Camaleón, que solo ve la rejilla y tiene que fingir.',
+        'Jugáis TÚ, Bea, Carlos y David. Todos veis la misma rejilla de 16 palabras del tema «El mar». Todos sabéis cuál es la SECRETA… menos uno: el CAMALEÓN, que solo ve la rejilla y tiene que fingir.',
         'El grupo gana si lo desenmascara (y él no adivina la palabra); el Camaleón gana si pasa desapercibido o si, pillado, la acierta.',
       ],
       visual: { kind: 'grid', words: WORDS, hl: 0 },
     },
     {
       icon: '🎴',
-      title: 'Tu carta privada',
+      title: 'El reparto: dos cartas muy distintas',
+      who: { actor: 'TODOS miráis vuestra carta a la vez, a solas, y confirmáis', others: 'la rejilla queda a la vista de todos, sin resaltar nada.' },
       text: [
-        'Mira tu carta a solas y confirma: o te resalta la palabra secreta (eres del grupo), o te dice que eres el CAMALEÓN y no la conoces.',
-        'La rejilla queda siempre a la vista de todos, sin resaltar nada: por eso el Camaleón puede disimular.',
+        'A ti te marca la palabra secreta: «Tiburón». A Bea (aunque nadie lo sabe) le ha tocado ser el Camaleón: su carta solo dice «disimula».',
       ],
-      visual: { kind: 'card', emoji: '🦎', title: 'Eres el CAMALEÓN', lines: ['No conoces la palabra secreta.', 'Escucha las pistas, dedúcela y da una pista que cuele.'] },
+      visual: {
+        kind: 'screens',
+        panes: [
+          { title: 'TÚ', lines: ['🔑 La palabra secreta es:', '«TIBURÓN»', 'Da una pista que demuestre que la conoces… sin regalarla.'] },
+          { title: 'Bea (tú no lo ves)', lines: ['🦎 Eres el CAMALEÓN', 'No conoce la palabra: escuchará las pistas e improvisará.'] },
+        ],
+      },
     },
     {
       icon: '🗣️',
-      title: 'Una pista por cabeza',
+      title: 'Las pistas, por turnos y en voz alta',
+      who: { actor: 'Cada uno, en su turno de mesa, dice UNA palabra en voz alta (empieza quien marque la app)', others: 'no se toca el móvil en esta fase: es todo hablado.' },
       text: [
-        'Por turnos (empieza quien indique la app), cada uno dice EN VOZ ALTA una sola palabra relacionada con la secreta.',
-        'Cuando todos han hablado, cualquiera pulsa «👉 Todos han dado su pista · a votar».',
+        'Carlos: «aleta». David: «peligro». Bea (¡el Camaleón, improvisando!): «playa». Te toca a ti…',
       ],
-    },
-    {
-      icon: '🤔',
-      title: 'Ponte a prueba',
-      text: ['La palabra secreta es «Tiburón» (tema: el mar) y te toca dar tu pista.'],
       ask: {
-        prompt: '¿Qué dices?',
+        prompt: 'La secreta es «Tiburón». ¿Qué pista das?',
         choices: [
-          { label: '«Aleta»', good: true, reply: 'Relacionada pero no evidente: los del grupo la entienden y el Camaleón sigue a ciegas. Ese es el punto dulce.' },
-          { label: '«Escualo»', reply: 'Demasiado obvia: acabas de regalarle la palabra al Camaleón. Si lo pillan, adivinará y ganará igualmente.' },
-          { label: '«Agua»', reply: 'Tan vaga que vale para media rejilla… y las pistas vagas son justo lo que hace el Camaleón: las sospechas caerán sobre ti.' },
+          { label: '«Mandíbula»', good: true, reply: 'Relacionada pero no evidente: los del grupo la entienden, y Bea sigue a ciegas. Ese es el punto dulce de El Camaleón.' },
+          { label: '«Escualo»', reply: 'Demasiado obvia: le acabas de regalar la palabra a Bea. Si la pillan, adivinará «Tiburón» y ganará igualmente.' },
+          { label: '«Agua»', reply: 'Tan vaga que vale para media rejilla… justo lo que hace un Camaleón. Las sospechas caerán sobre TI.' },
         ],
       },
     },
     {
       icon: '👉',
-      title: 'El voto (secreto)',
+      title: 'El voto, en secreto',
+      who: { actor: 'TODOS señaláis a la vez en el móvil a vuestro sospechoso (a ti mismo no)', others: 'la app espera a que vote el último y destapa el recuento de golpe.' },
       text: [
-        'Tras debatir, todos señalan a la vez en su móvil a su sospechoso (a ti mismo no). La app destapa el recuento.',
-        'Si hay un más votado claro, queda señalado. Si hay EMPATE en cabeza, la mesa no se aclara… y el Camaleón escapa.',
+        '«Playa» ha chirriado: tú, Carlos y David votáis a Bea; ella vota a David. La app anuncia: «La mesa señala a Bea».',
+        'Ojo: si hay EMPATE en cabeza, la mesa no se aclara… y el Camaleón escapa (+2).',
       ],
+      visual: {
+        kind: 'screens',
+        panes: [
+          { title: 'TÚ (votando)', lines: ['Tocas a Bea.'], buttons: [{ label: '👉 Señalar a Bea', kind: 'danger' }] },
+          { title: 'Bea (votando)', lines: ['Vota como una más para no cantarse.', 'Han votado 2/4…'] },
+        ],
+      },
     },
     {
       icon: '🎯',
       title: 'La última bala del Camaleón',
+      who: { actor: 'Bea (pillada) toca en la rejilla la palabra que cree secreta', others: 'los demás contenéis la respiración: si acierta, gana ella.' },
       text: [
-        'Si el señalado ES el Camaleón, aún puede salvarse: la app le pide señalar en la rejilla la palabra que crea secreta. Si acierta, gana él; si falla, punto para todo el grupo.',
-        'Puntos: Camaleón sin pillar +2 · pillado pero acierta +1 · pillado y falla, +1 a cada uno del grupo. Rondas rápidas: ¡encadenad varias!',
+        'La app le muestra la rejilla tocable SOLO a ella. Con las pistas «aleta», «peligro», «mandíbula»… Bea apuesta por «Tiburón». ¡Acierta! Escapa por la puerta grande (+1).',
+        'Si hubiera fallado, punto para cada uno del grupo.',
       ],
-      visual: {
-        kind: 'log',
-        lines: ['🗳️ La mesa señala a Bea.', '🦎 ¡Bea era el Camaleón! Pero aún puede escapar si adivina la palabra…', '🦎 El Camaleón apuesta por «Medusa». La palabra era «Tiburón».', '👥 El grupo gana la ronda (+1 a cada uno).'],
-      },
+      visual: { kind: 'log', lines: ['🗳️ La mesa señala a Bea.', '🦎 ¡Bea era el Camaleón! Pero aún puede escapar si adivina la palabra…', '🦎 El Camaleón apuesta por «Tiburón». La palabra era «Tiburón».', '🦎 El Camaleón gana la ronda (+1).'] },
+    },
+    {
+      icon: '🏆',
+      title: 'Rondas y puntos',
+      who: { actor: 'Cualquiera pulsa «🔁 Otra ronda»: tema nuevo y Camaleón nuevo', others: 'el marcador se acumula entre rondas.' },
+      text: [
+        'Puntos: Camaleón sin pillar +2 · pillado pero acierta +1 · pillado y falla, +1 a cada uno del grupo.',
+        'La lección de hoy: pistas ni obvias ni vagas… y cuidado con los que hablan en genérico. 🦎',
+      ],
     },
   ],
 };

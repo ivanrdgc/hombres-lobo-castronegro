@@ -1,4 +1,5 @@
-// Tutorial de Codenames: el flujo real de la app, paso a paso.
+// Tutorial de Codenames: una partida de ejemplo continua, paso a paso, con
+// quién actúa en cada momento y qué ve cada pantalla.
 import type { DemoScript } from '../../shell/demo/types';
 
 export const DEMO: DemoScript = {
@@ -8,64 +9,93 @@ export const DEMO: DemoScript = {
   steps: [
     {
       icon: '🎯',
-      title: 'Dos equipos, un tablero de palabras',
+      title: 'La partida de ejemplo',
       text: [
-        'Rojo contra azul, frente a 25 palabras. Cada equipo tiene un JEFE de espías; el resto son agentes.',
-        'Solo los Jefes ven el MAPA secreto: qué palabras son suyas, del rival, neutrales… y cuál es el ASESINO. Gana el equipo que destapa todas las suyas; quien toca al asesino, pierde en el acto.',
+        'Jugáis cuatro: TÚ y Bea en el equipo 🔴 rojo, Carlos y David en el 🔵 azul. Sobre la mesa, 25 palabras que todos veis igual.',
+        'Cada equipo tiene un JEFE de espías que ve el MAPA secreto (qué palabra es de quién y cuál esconde al 💀 asesino). Gana el equipo que destape todas sus palabras; quien toque al asesino pierde en el acto.',
       ],
       visual: {
-        kind: 'board',
-        rows: [{ label: '🔴 Rojo (empieza)', value: '9 palabras' }, { label: '🔵 Azul', value: '8 palabras' }, { label: '⬜ Transeúntes', value: '7' }, { label: '💀 Asesino', value: '1' }],
+        kind: 'chips',
+        chips: [
+          { name: 'Bea', emoji: '🔴', badge: 'Jefa', hl: true }, { name: 'TÚ', emoji: '🔴', badge: 'agente' },
+          { name: 'Carlos', emoji: '🔵', badge: 'Jefe' }, { name: 'David', emoji: '🔵', badge: 'agente' },
+        ],
+        caption: 'La app reparte equipos y jefes al azar al empezar.',
       },
     },
     {
       icon: '🗺️',
-      title: 'El mapa, solo para los Jefes',
+      title: 'El reparto: dos pantallas muy distintas',
+      who: { actor: 'Todos miráis vuestro tablero a la vez', others: 'nadie toca nada todavía: cada uno descubre solo lo que le toca ver.' },
       text: [
-        'La app reparte los equipos y designa un Jefe por bando (lo ves en tu carta). El Jefe ve el tablero coloreado en su móvil; los agentes, solo las palabras.',
-        'Colocaos de modo que nadie vea la pantalla de su Jefe.',
+        'Tu carta te dice tu papel. Y aquí está la clave del juego: Bea (Jefa) ve el tablero COLOREADO; tú lo ves en gris. Que nadie mire la pantalla de su Jefe.',
       ],
-      visual: { kind: 'card', emoji: '🕵️', title: 'Jefe de espías · 🔴 Rojo', lines: ['Ves el mapa completo.', 'Guía a tus agentes con pistas de una palabra + número, lejos del asesino.'] },
+      visual: {
+        kind: 'screens',
+        panes: [
+          { title: 'Bea (Jefa 🔴)', lines: ['Ve las 25 palabras CON su color:', '🔴 Volcán, Rayo, Faro… (9)', '🔵 Nieve, Puente… (8)', '⬜ 7 transeúntes · 💀 Serpiente'] },
+          { title: 'TÚ (agente 🔴)', lines: ['Ves las mismas 25 palabras…', '…todas grises, sin colores.', 'Tu información llegará por la pista de Bea.'] },
+        ],
+      },
     },
     {
       icon: '💬',
-      title: 'La pista del Jefe',
+      title: 'Turno rojo: la pista de la Jefa',
+      who: { actor: 'Bea (Jefa 🔴) escribe su pista en su móvil y la dice en alto', others: 'tú esperas sin tocar; el equipo azul escucha (la pista es pública).' },
       text: [
-        'En su turno, el Jefe da EN VOZ ALTA una pista de UNA palabra y un número: la palabra conecta varias casillas suyas, el número dice cuántas. Ej.: «fuego: 2».',
-        'En la app introduce la palabra y el número (1-9) y la confirma. Nada de gestos ni pistas de más.',
+        'La pista es UNA palabra + un número: cuántas casillas rojas conecta. Bea quiere unir «Volcán» y «Rayo», así que pone «fuego», elige el 2 y pulsa el botón.',
+        'Nada de gestos ni palabras extra: solo esa palabra y ese número.',
       ],
-      visual: { kind: 'buttons', buttons: [{ label: '(escribe) «fuego»', kind: 'ghost' }, { label: '1 · 2 · 3 · 4 …', kind: 'ghost' }, { label: '💬 Dar la pista «fuego» · 2', kind: 'primary' }], caption: 'Este panel solo lo ve el Jefe del equipo de turno.' },
+      visual: {
+        kind: 'screens',
+        panes: [
+          { title: 'Bea (Jefa 🔴)', lines: ['Escribe: «fuego»', 'Número: 2'], buttons: [{ label: '💬 Dar la pista «fuego» · 2', kind: 'primary' }] },
+          { title: 'TÚ (agente 🔴)', lines: ['«💬 La Jefa roja está preparando su pista…»', 'La voz cantará la pista cuando la confirme.'] },
+        ],
+      },
     },
     {
       icon: '🤔',
-      title: 'Ponte a prueba',
-      text: ['Eres agente del equipo rojo. Tu Jefe ha dicho «fuego: 2» y en el tablero ves «Volcán», «Rayo», «Nieve» y «Playa».'],
+      title: 'Turno rojo: te toca tocar',
+      who: { actor: 'TÚ (agente 🔴) tocas palabras en el tablero, de una en una', others: 'Bea ya no puede hablar; los azules miran y sufren.' },
+      text: ['La pista es «fuego: 2». En el tablero ves «Volcán», «Rayo», «Nieve» y «Playa».'],
       ask: {
         prompt: '¿Qué tocas?',
         choices: [
-          { label: '«Volcán» y luego «Rayo»', good: true, reply: 'Buena lectura: los dos encajan con «fuego». Tocáis de una en una; si aciertas una roja, sigues. Con «2» tenéis hasta 3 toques (número + 1), pero no hace falta gastarlos.' },
-          { label: '«Nieve», que también quema del frío', reply: 'Arriesgado: si es neutral pierdes el turno, y si es azul o el asesino, mucho peor. Con «fuego» ve a lo evidente.' },
-          { label: 'Toco las cuatro de golpe', reply: 'Se toca de UNA EN UNA: en cuanto sale una que no es tuya, el turno acaba. Y «fuego: 2» dice que solo dos son tuyas.' },
+          { label: '«Volcán», y si acierto, «Rayo»', good: true, reply: 'Eso es. Tocas UNA casilla, la app revela su color, y si es roja puedes seguir. Con «2» tenéis hasta 3 toques (número + 1), pero nadie os obliga a gastarlos.' },
+          { label: '«Nieve», que el fuego la derrite', reply: 'Demasiada carambola: si es transeúnte pierdes el turno, y si es azul o el 💀… Con «fuego: 2», ve a lo claro: Volcán y Rayo.' },
+          { label: 'Espero a que Bea me haga una señal', reply: 'No la habrá: la Jefa tiene PROHIBIDO añadir nada tras la pista. Decidís los agentes solos, debatiendo en voz alta.' },
         ],
       },
     },
     {
       icon: '👉',
-      title: 'Tocar y arriesgar',
+      title: 'Cada toque, una revelación',
+      who: { actor: 'TÚ sigues tocando (o pasas)', others: 'la app revela el color a TODOS con cada toque.' },
       text: [
-        'Cada palabra que tocáis revela su color: si es vuestra, seguid; si es neutral (transeúnte ⬜), fin del turno; si es del rival, se la regaláis; si es el ASESINO 💀, perdéis.',
-        'Hay que tocar al menos UNA por turno (regla oficial); después podéis pulsar «🤐 Pasar el turno» para no arriesgar más. La app lleva la cuenta de las casillas que os quedan.',
+        'Tocas «Volcán»: 🔴 ¡roja! Puedes seguir. Tocas «Rayo»: 🔴 ¡otra! Si tocas una neutral (⬜ transeúnte) o una azul, el turno pasa al rival; si tocas al 💀 asesino, habéis perdido.',
+        'Regla oficial: hay que tocar al menos UNA por turno; después se activa «🤐 Pasar el turno» para plantarse.',
       ],
-      visual: { kind: 'buttons', buttons: [{ label: '🤐 Pasar el turno', kind: 'ghost' }], caption: 'Mejor pasar a tiempo que topar con el asesino.' },
+      visual: { kind: 'log', lines: ['💬 La Jefa roja da una pista («fuego») para 2 palabras.', '👉 Tú destapas «Volcán»: 🔴 rojo.', '👉 Tú destapas «Rayo»: 🔴 rojo.', '🤐 El equipo rojo pasa.'] },
+    },
+    {
+      icon: '🔁',
+      title: 'Turno azul: mismos pasos, otro equipo',
+      who: { actor: 'Carlos (Jefe 🔵) da su pista y David toca', others: 'vosotros dos miráis: cada revelación azul también os da información.' },
+      text: [
+        'Los turnos se alternan igual: pista del Jefe → toques de sus agentes → pasar o fallar. El marcador de arriba (🔴 7 · 🔵 8) dice cuántas le quedan a cada equipo.',
+      ],
+      visual: { kind: 'board', rows: [{ label: '🔴 Rojo (por destapar)', value: '7' }, { label: '🔵 Azul (por destapar)', value: '8' }] },
     },
     {
       icon: '🏆',
-      title: 'Ganar',
+      title: 'El final',
+      who: { actor: 'Quien destapa su última palabra gana al momento', others: 'y si alguien toca al 💀, su equipo pierde ahí mismo.' },
       text: [
-        'Los turnos se alternan hasta que un equipo destapa todas sus palabras (gana) o alguien topa con el asesino (pierde su equipo). La app anuncia cada jugada en voz alta, nunca el mapa oculto.',
-        'Al final se destapa el tablero entero. Jugad las partidas que queráis: se guarda el marcador. 🕵️',
+        'Al acabar, la app enseña el mapa completo a todos y guarda el marcador. Revancha con «🔁 Otra partida» (equipos y mapa nuevos).',
+        'Resumen: Jefa piensa → pista pública → agentes tocan → pasar a tiempo. Y lejos, muy lejos, del asesino. 🕵️',
       ],
-      visual: { kind: 'log', lines: ['💬 El Jefe rojo da una pista («fuego») para 2 palabras.', '👉 Destapa «Volcán»: 🔴 rojo.', '👉 Destapa «Rayo»: 🔴 rojo.', '🏆 ¡Gana el equipo ROJO! Ha destapado todas sus casillas.'] },
+      visual: { kind: 'log', lines: ['👉 David destapa «Serpiente»: 💀 ASESINO.', '🏆 🔴 ¡Gana el equipo ROJO! El equipo azul tocó al ASESINO.'] },
     },
   ],
 };

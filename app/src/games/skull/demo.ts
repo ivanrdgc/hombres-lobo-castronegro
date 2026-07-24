@@ -1,4 +1,5 @@
-// Tutorial de Skull: el flujo real de la app, paso a paso.
+// Tutorial de Skull: una ronda de ejemplo continua, con quién actúa en cada
+// momento y qué ve cada pantalla.
 import type { DemoScript } from '../../shell/demo/types';
 
 export const DEMO: DemoScript = {
@@ -8,61 +9,77 @@ export const DEMO: DemoScript = {
   steps: [
     {
       icon: '🎯',
-      title: 'Farol con flores y calaveras',
+      title: 'La ronda de ejemplo',
       text: [
-        'Cada jugador tiene 4 discos: 3 FLORES 🌸 y 1 CALAVERA 💀. Vais poniéndolos boca abajo en vuestra pila; solo tú sabes qué has puesto.',
-        'En algún momento alguien apuesta cuántas flores es capaz de levantar seguidas sin topar una calavera. Gana quien se lleve DOS retos (o quede como último con discos).',
+        'Jugáis TÚ, Bea y Carlos. Cada uno tiene 4 discos: 3 FLORES 🌸 y 1 CALAVERA 💀, y una pila delante donde los irá poniendo BOCA ABAJO.',
+        'En algún momento alguien apostará: «levanto N flores seguidas sin toparme una calavera». Gana la partida quien logre DOS retos así (o quien quede como último con discos).',
       ],
-      visual: { kind: 'card', emoji: '💠', title: 'Tus discos', lines: ['🌸 🌸 🌸 Tres flores', '💀 Una calavera', 'Colócalos boca abajo: nadie ve cuál es cuál.'] },
+      visual: { kind: 'card', emoji: '💠', title: 'Tus discos', lines: ['🌸 🌸 🌸 💀', 'Solo tú sabes cuáles pones y en qué orden.'] },
     },
     {
       icon: '🌸',
-      title: 'Colocar discos',
+      title: 'Colocación de salida (todos a la vez)',
+      who: { actor: 'TODOS colocáis a la vez UN disco boca abajo', others: 'nadie ve lo que ponen los demás: en el tablero, las pilas ajenas salen tapadas 🎴.' },
       text: [
-        'Cada ronda empieza con todos poniendo UN disco a la vez (tu «disco de salida»). Elige flor o calavera.',
-        'Luego, por turnos, puedes poner OTRO disco encima… o abrir una apuesta. Cuantos más discos hay en la mesa, más alto se podrá apostar.',
+        'Tú pones una flor. ¿Bea? ¿Carlos? Ni idea: eso ES el juego.',
       ],
-      visual: { kind: 'buttons', buttons: [{ label: '🌸 Poner una flor', kind: 'primary' }, { label: '💀 Poner la calavera', kind: 'danger' }], caption: 'Poner la calavera pronto es una trampa… si alguien la levanta, falla.' },
+      visual: {
+        kind: 'screens',
+        panes: [
+          { title: 'TÚ', lines: ['Tu pila: 🌸 (la ves destapada)'], buttons: [{ label: '🌸 Poner una flor', kind: 'primary' }, { label: '💀 Poner la calavera', kind: 'danger' }] },
+          { title: 'Lo que ves de Bea', lines: ['Su pila: 🎴 (tapada)', 'Sus discos en mano: 💠×3'] },
+        ],
+      },
     },
     {
-      icon: '🗣️',
-      title: 'La apuesta y las pujas',
+      icon: '🎬',
+      title: 'Turnos: otro disco… o apostar',
+      who: { actor: 'Bea (su turno) elige: poner otro disco o abrir la apuesta', others: 'tú y Carlos esperáis; su fila brilla en el tablero para que se sepa a quién le toca.' },
       text: [
-        'Apostar es decir «levantaré N flores seguidas sin topar una calavera» (N no pasa del total de discos en la mesa).',
-        'Los demás, por turnos, suben la apuesta o pasan. Cuando todos menos uno pasan, ese se la juega y le toca levantar.',
+        'Bea pone un segundo disco (¿flor? ¿calavera?). Te toca a ti: tú también pones otro. Carlos, en su turno, se lanza: pulsa «🗣️ Apostar 2».',
+        'La apuesta significa: «levantaré 2 flores seguidas sin destapar ninguna calavera». Nunca puede apostarse más que discos hay en la mesa.',
       ],
-      visual: { kind: 'buttons', buttons: [{ label: '1 · 2 · 3 · 4 …', kind: 'ghost' }, { label: '🗣️ Apostar 3', kind: 'primary' }, { label: '📈 Subir · 🤐 Pasar', kind: 'ghost' }], caption: 'Subes creyendo que hay más flores… o pasas si hueles una calavera.' },
+      visual: { kind: 'log', lines: ['🎬 Turno de Bea: coloca otro disco o abre una apuesta.', '🎬 Turno tuyo…', '🗣️ Carlos apuesta que levanta 2 flores sin topar una calavera.'] },
     },
     {
-      icon: '🤔',
-      title: 'Ponte a prueba',
-      text: ['Has ganado la puja: apostaste levantar 3 flores. La regla dice por dónde empezar.'],
+      icon: '📈',
+      title: 'La puja: ¿subes o pasas?',
+      who: { actor: 'TÚ decides (es tu turno de puja): subir la apuesta o pasar', others: 'Carlos ya no puede echarse atrás; Bea esperará su turno de puja.' },
+      text: ['Carlos ha apostado 2. Hay 5 discos en la mesa y tu pila son dos flores.'],
       ask: {
-        prompt: '¿Por qué pila empiezas a levantar?',
+        prompt: '¿Qué haces?',
         choices: [
-          { label: 'Por la MÍA, obligatoriamente', good: true, reply: 'Correcto: primero levantas TODA tu propia pila (por eso conviene no haberte puesto tu calavera). Luego eliges de qué rivales seguir.' },
-          { label: 'Por la del rival más sospechoso', reply: 'Todavía no: la regla obliga a levantar primero TODOS tus discos. Solo después eliges pilas ajenas.' },
-          { label: 'Por la que tenga más discos', reply: 'No eliges libremente al principio: primero van los tuyos. Elegir rival llega después, y solo el disco de arriba de cada pila.' },
+          { label: '🤐 Paso: que se la juegue Carlos', good: true, reply: 'Muy sano: pasar es definitivo para la ronda, y quien acaba pujando más alto es quien arriesga. Si crees que hay calaveras sembradas, deja que se estrelle otro.' },
+          { label: '📈 Subo a 3: mis dos flores + una suya', good: true, reply: 'Valiente y legítimo: sabes que TUS dos primeras son flores seguras (las levantarás tú primero). La tercera ya es fe en la pila ajena… Si nadie sube más, revelarás tú.' },
+          { label: 'Subo a 6, a lo grande', reply: 'No te dejará: la apuesta no puede superar los discos que hay en la mesa (5). Y apostarlo TODO significa levantar también las calaveras que haya…' },
         ],
       },
     },
     {
       icon: '🎲',
-      title: 'El revelado',
+      title: 'El revelado: primero tu propia pila',
+      who: { actor: 'Carlos (ganó la puja con 2) levanta discos de uno en uno', others: 'los demás solo miráis: cada disco levantado se destapa para todos.' },
       text: [
-        'Levantas discos de uno en uno (en el tablero, botón «Levantar»): primero los tuyos, luego el de arriba de las pilas que elijas.',
-        'Si juntas tantas FLORES como apostaste, ganas el reto (una ⭐). Si sale una CALAVERA antes, fallas y pierdes un disco al azar: puede ser una flor… o tu calavera.',
+        'Regla de oro: quien revela debe levantar PRIMERO todos los discos de su propia pila (por eso ponerse la calavera a uno mismo es un arma de doble filo). Después elige de qué pila ajena levantar el disco de arriba.',
+        'Carlos levanta su primer disco: 🌸. Le falta una flor… y elige levantar el de arriba de TU pila.',
       ],
-      visual: { kind: 'log', lines: ['🗣️ Ana apuesta que levanta 3 flores.', '🃏 Ana levanta un disco de su propia pila: 🌸 flor.', '🃏 Ana levanta un disco de Bea: 💀 ¡CALAVERA!', '💀 Ana topa con una calavera y pierde un disco.'] },
+      visual: {
+        kind: 'screens',
+        panes: [
+          { title: 'Carlos (revela)', lines: ['Llevadas: 1/2 flores 🌸', 'Botones «Levantar» sobre cada pila permitida.'], buttons: [{ label: 'Levantar el tuyo', kind: 'danger' }] },
+          { title: 'TÚ', lines: ['«🎲 Carlos se la juega…»', 'Ves cada disco que levanta, destapado en el tablero.'] },
+        ],
+      },
     },
     {
-      icon: '🏆',
-      title: 'Ganar',
+      icon: '💥',
+      title: 'Flor… o calavera',
+      who: { actor: 'La app resuelve el reto de Carlos', others: 'y cualquiera pulsa «▶️ Siguiente ronda» para recoger las pilas y volver a empezar.' },
       text: [
-        'Quien se queda sin discos queda eliminado; si solo queda uno en pie, gana. Y el primero en ganar DOS retos se lleva la partida.',
-        'La app custodia las pilas (nadie ve las tuyas) y anuncia cada jugada en voz alta. Puro pulso y farol. 💀',
+        'Si tu disco era 🌸: Carlos completa sus 2 flores y gana el reto (⭐, y con dos ⭐ la partida). Si era 💀: falla y pierde un disco AL AZAR de los suyos — puede tocarle su calavera o una flor. Quien se queda sin discos, eliminado.',
+        'Y vuelta a colocar: cada ronda es un pulso nuevo. Farolea con la calavera, huele las ajenas… y no te pases de listo con las apuestas. 💀',
       ],
-      visual: { kind: 'board', rows: [{ label: '👑 Ana', value: '⭐⭐' }, { label: 'Bea', value: '⭐' }, { label: 'Carlos', value: '—' }] },
+      visual: { kind: 'log', lines: ['🃏 Carlos levanta un disco de tu pila: 💀 ¡CALAVERA!', '💀 Carlos topa con una calavera y pierde un disco (una flor).', '🔄 Ronda 2: cada uno coloca un disco. Empieza Carlos.'] },
     },
   ],
 };

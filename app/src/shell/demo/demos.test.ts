@@ -25,6 +25,15 @@ test('hay un tutorial por juego y sus pasos están completos', () => {
     }
     // Al menos una pregunta interactiva por tutorial.
     expect(d.steps.some((s) => s.ask), `${d.id}: sin pregunta interactiva`).toBe(true);
+    // El «quién actúa ahora» debe recorrer el tutorial: mínimo 4 pasos con banner
+    // 🎬 (actor + qué hacen los demás), que es lo que quita el «¿y yo qué hago?».
+    expect(d.steps.filter((s) => s.who).length, `${d.id}: faltan banners de turno (who)`).toBeGreaterThanOrEqual(4);
+    for (const s of d.steps) {
+      if (s.who) {
+        expect(s.who.actor.trim(), `${d.id}: who.actor vacío`).toBeTruthy();
+        expect(s.who.others.trim(), `${d.id}: who.others vacío`).toBeTruthy();
+      }
+    }
   }
 });
 

@@ -27,7 +27,16 @@ export type DemoVisual =
   /** Líneas del diario de la partida. */
   | { kind: 'log'; lines: string[] }
   /** Rejilla de palabras (El Camaleón); hl marca la secreta. */
-  | { kind: 'grid'; words: string[]; hl?: number };
+  | { kind: 'grid'; words: string[]; hl?: number }
+  /** Dos (o más) pantallas a la vez: qué ve CADA persona en ese momento. */
+  | {
+    kind: 'screens';
+    panes: {
+      title: string;
+      lines: string[];
+      buttons?: { label: string; kind?: 'primary' | 'danger' | 'ghost' }[];
+    }[];
+  };
 
 export interface DemoChoice {
   label: string;
@@ -40,6 +49,9 @@ export interface DemoChoice {
 export interface DemoStep {
   icon: string;
   title: string;
+  /** Banner «¿quién actúa ahora?»: quién hace qué, y qué hacen los demás
+   *  mientras tanto. Es lo que quita la confusión de «¿y yo qué hago?». */
+  who?: { actor: string; others: string };
   text: string[];
   visual?: DemoVisual;
   ask?: { prompt: string; choices: DemoChoice[] };
@@ -53,8 +65,15 @@ export interface DemoScript {
   steps: DemoStep[];
 }
 
-/** Título + párrafos de cada paso, limpios: las piezas que lee el ▶️ del
- *  tutorial (se pregeneran como clips). */
+/** El banner de turno como frase legible (pantalla y voz usan la misma). */
+export function whoLine(who: NonNullable<DemoStep['who']>): string {
+  return `${who.actor}. Mientras, ${who.others}`;
+}
+
+/** Título + banner de turno + párrafos de cada paso, limpios: las piezas que
+ *  lee el ▶️ del tutorial (se pregeneran como clips). */
 export function demoSpeechPieces(demo: DemoScript): string[] {
-  return demo.steps.flatMap((s) => [s.title, ...s.text]).map(cleanForSpeech).filter(Boolean);
+  return demo.steps
+    .flatMap((s) => [s.title, ...(s.who ? [whoLine(s.who)] : []), ...s.text])
+    .map(cleanForSpeech).filter(Boolean);
 }

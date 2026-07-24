@@ -1,4 +1,5 @@
-// Tutorial de Secret Hitler: el flujo real de la app, paso a paso.
+// Tutorial de Secret Hitler: una legislatura de ejemplo continua, con quién
+// actúa en cada momento y qué ve cada pantalla.
 import type { DemoScript } from '../../shell/demo/types';
 
 export const DEMO: DemoScript = {
@@ -8,67 +9,92 @@ export const DEMO: DemoScript = {
   steps: [
     {
       icon: '🎯',
-      title: 'Salvar (o hundir) la República',
+      title: 'La partida de ejemplo',
       text: [
-        'Sois mayoría LIBERALES, pero entre vosotros hay FASCISTAS que se conocen entre sí… y un HITLER oculto que finge ser uno más.',
-        'Cada gobierno promulga un decreto en secreto. Ganan los liberales con 5 decretos liberales o ejecutando a Hitler; los fascistas, con 6 fascistas o colando a Hitler de Canciller cuando ya hay 3 decretos fascistas.',
+        'Jugáis cinco: TÚ, Bea, Carlos, David y Eva. Tres sois LIBERALES; dos, FASCISTAS en secreto — y uno de esos dos es HITLER, que finge ser un liberal ejemplar.',
+        'Cada ronda, un gobierno (Presidente + Canciller) promulga un decreto en secreto. Liberales: 5 decretos liberales o ejecutar a Hitler. Fascistas: 6 fascistas… o colar a Hitler de Canciller con 3+ fascistas en la mesa.',
       ],
-      visual: { kind: 'board', rows: [{ label: '🕊️ Decretos liberales', value: '3/5' }, { label: '🐷 Decretos fascistas', value: '4/6' }, { label: '😳 Caos (gobiernos caídos)', value: '1/3' }] },
+      visual: { kind: 'board', rows: [{ label: '🕊️ Decretos liberales', value: '0/5' }, { label: '🐷 Decretos fascistas', value: '0/6' }, { label: '😳 Caos (gobiernos caídos)', value: '0/3' }] },
     },
     {
       icon: '🎴',
-      title: 'Tu carta',
+      title: 'El reparto: quién conoce a quién',
+      who: { actor: 'TODOS miráis vuestra carta a la vez y confirmáis', others: 'los fascistas se reconocen entre sí; los liberales no saben nada de nadie.' },
       text: [
-        'Mira tu carta a solas y confirma. Los fascistas ven quiénes son sus compinches y quién es Hitler. Hitler, con 7 o más jugadores, juega A CIEGAS (no sabe quiénes son los suyos). Los liberales no saben nada de nadie.',
+        'A ti te toca 🕊️ LIBERAL: vas a ciegas. Bea (fascista) sí sabe que David es Hitler. (Con 7+ jugadores, Hitler jugaría a ciegas también.)',
       ],
-      visual: { kind: 'card', emoji: '🕊️', title: 'Eres LIBERAL', lines: ['No conoces el bando de nadie.', 'Sois mayoría: deducid por los votos y los decretos.'] },
+      visual: {
+        kind: 'screens',
+        panes: [
+          { title: 'TÚ (liberal)', lines: ['🕊️ Eres LIBERAL', 'No conoces el bando de nadie.', 'Deducid por los votos y los decretos.'] },
+          { title: 'Bea (fascista, tú no lo ves)', lines: ['🐷 Fascista', 'Conoce a su compinche: 💀 David es Hitler.'] },
+        ],
+      },
     },
     {
       icon: '🤝',
-      title: 'Fase 1 · Gobierno',
+      title: 'Fase 1 · Nominar y votar',
+      who: { actor: 'Carlos (Presidente de turno) nomina Canciller en su móvil; luego TODOS votáis Ja/Nein en secreto', others: 'la app destapa los votos a la vez: son públicos y valen oro para deducir.' },
       text: [
-        'El PRESIDENTE (rota por la mesa) nomina en su móvil a un CANCILLER; la app aplica los límites de mandato (no repiten los últimos electos).',
-        'Toda la mesa vota en secreto «👍 Ja» o «👎 Nein» y la app lo destapa a la vez. Mayoría de Ja → gobiernan. Si no, la presidencia pasa… y al TERCER gobierno caído, caos: se promulga a ciegas el decreto de arriba del mazo.',
+        'La presidencia rota por la mesa. Carlos nomina a Bea (la app ya filtra a los no elegibles por límites de mandato). Todos votáis: sale 3 Ja - 2 Nein → gobiernan Carlos y Bea.',
+        '⚠️ Si caen TRES gobiernos seguidos, caos: se promulga a ciegas el decreto de arriba del mazo.',
       ],
-      visual: { kind: 'buttons', buttons: [{ label: '👍 Ja', kind: 'primary' }, { label: '👎 Nein', kind: 'danger' }], caption: 'El voto es secreto hasta que vota el último.' },
+      visual: {
+        kind: 'screens',
+        panes: [
+          { title: 'Carlos (Presidente)', lines: ['Elige Canciller entre los elegibles:'], buttons: [{ label: '🤝 Nominar a Bea', kind: 'primary' }] },
+          { title: 'TÚ (votas)', lines: ['«Carlos propone a Bea como Canciller.»'], buttons: [{ label: '👍 Ja', kind: 'primary' }, { label: '👎 Nein', kind: 'danger' }] },
+        ],
+      },
     },
     {
       icon: '📜',
       title: 'Fase 2 · Legislar en secreto',
+      who: { actor: 'Carlos (Presidente) ve 3 decretos y descarta 1; Bea (Canciller) ve los 2 restantes y promulga 1', others: 'los demás SOLO veis el decreto promulgado; los descartes son secretos para siempre.' },
       text: [
-        'La app da al Presidente TRES decretos que solo ve él: descarta uno y pasa dos al Canciller. El Canciller ve esos dos y promulga uno.',
-        'Solo el decreto promulgado es público: los descartes son secretos PARA SIEMPRE. Ahí vive la mentira: «a mí solo me llegaron fascistas»… ¿seguro?',
+        'Se promulga un decreto 🐷 fascista. ¿Le llegaron dos fascistas a Bea? ¿O descartó ella el liberal? Nadie puede demostrarlo: ahí vive la mentira.',
       ],
+      visual: {
+        kind: 'screens',
+        panes: [
+          { title: 'Carlos (Presidente)', lines: ['Ve: 🕊️ 🐷 🐷 → descarta 🕊️…', '(¿o era 🐷 🐷 🐷? Solo él lo sabe.)'] },
+          { title: 'Bea (Canciller)', lines: ['Ve: 🐷 🐷 → promulga 🐷.'] },
+          { title: 'TÚ', lines: ['«🐷 Se promulga un decreto FASCISTA (🕊️ 0 · 🐷 1).»', 'Toca deducir: ¿mazo cruel o gobierno sucio?'] },
+        ],
+      },
     },
     {
       icon: '🤔',
       title: 'Ponte a prueba',
-      text: ['Eres Canciller LIBERAL y el Presidente te pasa dos decretos… los dos fascistas.'],
+      who: { actor: 'Imagina que el Canciller eres TÚ (liberal)', others: 'el Presidente te acaba de pasar dos decretos.' },
+      text: ['Te llegan DOS decretos fascistas. No hay veto todavía (se desbloquea con 5 🐷).'],
       ask: {
         prompt: '¿Qué haces?',
         choices: [
-          { label: 'Promulgo uno y aviso a la mesa: «me llegaron dos fascistas»', good: true, reply: 'No te quedaba otra (salvo veto, que se desbloquea con 5 fascistas). Decláralo en voz alta: o el Presidente descartó el liberal… o el mazo venía cargado. Que la mesa deduzca.' },
-          { label: 'Me niego a promulgar', reply: 'No existe negarse: legislar es obligatorio. Solo con 5 decretos fascistas aparece el VETO, y aun así el Presidente debe aceptarlo (y si lo rechaza, promulgas sí o sí).' },
-          { label: 'Enseño mis dos cartas como prueba', reply: 'Prohibidísimo: los descartes y las manos son secretos. El juego vive justamente de no poder demostrar lo que te llegó.' },
+          { label: 'Promulgo uno y lo canto: «¡me llegaron dos fascistas!»', good: true, reply: 'No te quedaba otra: legislar es obligatorio. Decláralo en voz alta: o el Presidente descartó el liberal o el mazo venía cargado. Que la mesa deduzca a quién creer.' },
+          { label: 'Me niego a promulgar', reply: 'No existe negarse: la app te hará elegir uno de los dos. Solo con 5 decretos fascistas aparece el VETO (y aun así el Presidente debe aceptarlo; si lo rechaza, promulgas sí o sí).' },
+          { label: 'Enseño mi pantalla como prueba', reply: 'Prohibidísimo: manos y descartes son secretos SIEMPRE. El juego vive de que nadie pueda demostrar lo que le llegó.' },
         ],
       },
     },
     {
       icon: '⚡',
-      title: 'Poderes presidenciales',
+      title: 'Los poderes presidenciales',
+      who: { actor: 'Al promulgarse ciertos decretos 🐷, el Presidente de turno usa un poder en su móvil', others: 'todos veis QUÉ poder usa y sobre quién; el resultado de investigar solo lo ve él.' },
       text: [
-        'Algunos decretos FASCISTAS activan un poder para el Presidente (según cuántos jugadores seáis): 🔮 mirar los tres próximos decretos, 🔎 investigar la lealtad de alguien (Hitler aparece como «fascista»), 🗳️ elegir a dedo al próximo Presidente o 💀 ejecutar.',
-        'Si el ejecutado era Hitler, los liberales ganan en el acto. El ejecutado queda fuera y no vota.',
+        'Según cuántos juguéis: 🔮 mirar los 3 próximos decretos, 🔎 investigar la lealtad de alguien (Hitler sale como «fascista»), 🗳️ elegir a dedo al próximo Presidente o 💀 ejecutar.',
+        'Si el ejecutado era Hitler, los liberales ganan al instante. El ejecutado queda fuera y no vota.',
       ],
     },
     {
       icon: '💀',
       title: 'La trampa final',
+      who: { actor: 'Con 3+ decretos 🐷, elegir a Hitler de CANCILLER da la victoria fascista al momento', others: 'a partir de ahí, cada «Ja» tuyo es jugarse la República.' },
       text: [
-        'Con 3 o más decretos fascistas en la mesa, elegir a Hitler como CANCILLER da la victoria inmediata a los fascistas. A partir de ahí, cada «Ja» es jugarse la República.',
-        'Resumen liberal: gobiernos de confianza, memoria de votos y ni un Ja gratis. Resumen fascista: caos, sombra… y paciencia. 🐷',
+        'En nuestra partida, con 3 fascistas en mesa, Eva nomina Canciller a David («¡es de fiar!»)… y David era Hitler: victoria fascista instantánea.',
+        'Moraleja liberal: gobiernos de confianza, memoria de votos y ni un Ja gratis. Moraleja fascista: siembra caos y protege a tu Hitler. 🐷',
       ],
-      visual: { kind: 'log', lines: ['🗳️ Gobierno APROBADO (4 Ja, 3 Nein).', '💀 ¡Carlos era Hitler y ha sido elegido Canciller con tres decretos fascistas! Ganan los fascistas.'] },
+      visual: { kind: 'log', lines: ['🤝 Eva nomina Canciller a David. ¡A votar!', '🗳️ Gobierno APROBADO (3 Ja, 2 Nein).', '💀 ¡David era Hitler y ha sido elegido Canciller con tres decretos fascistas! Ganan los fascistas.'] },
     },
   ],
 };

@@ -1,4 +1,5 @@
-// Tutorial de Wavelength: el flujo real de la app, paso a paso.
+// Tutorial de Wavelength: una ronda de ejemplo continua, con quién actúa en
+// cada momento y qué ve cada pantalla.
 import type { DemoScript } from '../../shell/demo/types';
 
 export const DEMO: DemoScript = {
@@ -8,61 +9,75 @@ export const DEMO: DemoScript = {
   steps: [
     {
       icon: '🎯',
-      title: 'Cuestión de sintonía',
+      title: 'La ronda de ejemplo',
       text: [
-        'Es cooperativo. Cada ronda hay un espectro entre dos ideas opuestas (p. ej. «Frío ↔ Caliente») y un OBJETIVO secreto en algún punto de él.',
-        'El Psíquico de turno ve el objetivo y da una pista; el equipo coloca un marcador donde cree que apuntaba. Cuanto más cerca, más puntos. No hay respuesta correcta: gana la sintonía entre vosotros.',
+        'Jugáis TÚ, Bea y Carlos, en el mismo equipo (es cooperativo). Cada ronda hay un espectro entre dos ideas opuestas —esta vez «Frío ↔ Caliente»— y un OBJETIVO secreto en algún punto del dial.',
+        'Uno de vosotros es el PSÍQUICO de la ronda (rota cada ronda): ve dónde está el objetivo y da una pista para que los demás lo encontréis. Cuanto más cerca dejéis el marcador, más puntos.',
       ],
-      visual: { kind: 'board', rows: [{ label: '📡 Espectro', value: 'Frío ↔ Caliente' }, { label: '🎯 Objetivo (secreto)', value: 'solo lo ve el Psíquico' }, { label: '🏆 Total del equipo', value: '0' }] },
+      visual: { kind: 'board', rows: [{ label: '📡 Espectro', value: 'Frío ↔ Caliente' }, { label: '🔮 Psíquico de la ronda', value: 'Bea' }, { label: '🎯 Objetivo', value: 'secreto (solo Bea)' }] },
     },
     {
       icon: '🔮',
-      title: 'El Psíquico ve la diana',
+      title: 'Dos pantallas muy distintas',
+      who: { actor: 'Bea (Psíquica) mira su dial y piensa una idea', others: 'tú y Carlos veis el dial VACÍO y esperáis su pista, callados.' },
       text: [
-        'La app designa un Psíquico (rota cada ronda). Solo él ve en su móvil la DIANA: una franja del dial que vale 4 puntos en el centro, 3 y 2 según te alejas.',
-        'Nadie más la ve. El Psíquico piensa una idea que, para él, caiga justo ahí.',
+        'Solo Bea ve la DIANA: una franja verde del dial que vale 4 puntos en el centro, 3 y 2 según te alejas. Esta ronda cae muy hacia «Caliente».',
       ],
-      visual: { kind: 'card', emoji: '🔮', title: 'Eres el Psíquico', lines: ['Espectro: Frío ↔ Caliente', 'La diana cae bastante hacia «Caliente».', 'Piensa algo que encaje ahí… sin señalar el dial.'] },
+      visual: {
+        kind: 'screens',
+        panes: [
+          { title: 'Bea (Psíquica 🔮)', lines: ['Dial con la DIANA pintada:', 'Frío ———————▮▮🎯▮▮— Caliente', '«La diana está casi al tope del calor…»'], buttons: [{ label: '💬 Ya he dado la pista', kind: 'primary' }] },
+          { title: 'TÚ (equipo)', lines: ['Dial VACÍO, sin diana:', 'Frío ————————————— Caliente', '«🔮 Bea está pensando su pista…»'] },
+        ],
+      },
     },
     {
       icon: '💬',
-      title: 'La pista',
+      title: 'La pista, en voz alta',
+      who: { actor: 'Bea dice UNA idea en voz alta y pulsa «💬 Ya he dado la pista»', others: 'vosotros escucháis; aún no se toca el dial.' },
       text: [
-        'El Psíquico dice EN VOZ ALTA una sola idea. Si la diana está muy hacia «Caliente», podría decir «una sauna»; si estuviera en el medio, «una piscina en primavera».',
-        'Cuando la ha dicho, pulsa «💬 Ya he dado la pista». A partir de ahí, calla: no puede dar más pistas ni tocar el dial.',
+        'Bea busca algo que caiga JUSTO donde está su diana. Como está casi al tope de «Caliente», dice: «una sauna».',
+        'Desde ese momento Bea calla: ni aclaraciones, ni caras, ni señalar el dial. Su trabajo ya está hecho.',
       ],
-      visual: { kind: 'buttons', buttons: [{ label: '💬 Ya he dado la pista', kind: 'primary' }], caption: 'Este botón solo lo ve el Psíquico.' },
     },
     {
       icon: '🤔',
-      title: 'Ponte a prueba',
-      text: ['Eres del equipo. El Psíquico (con «Frío ↔ Caliente») ha dicho: «una sauna».'],
+      title: 'Te toca interpretar',
+      who: { actor: 'TÚ y Carlos debatís en voz alta dónde apuntaba', others: 'Bea escucha en silencio (y por dentro se muerde las uñas).' },
+      text: ['La pista es «una sauna», en el espectro «Frío ↔ Caliente».'],
       ask: {
-        prompt: '¿Dónde colocáis el marcador?',
+        prompt: '¿Dónde lleváis el marcador?',
         choices: [
-          { label: 'Muy hacia «Caliente», casi al extremo', good: true, reply: 'Bien leído: una sauna es de lo más caliente que hay, así que el objetivo está casi en el tope. Ajustad con el resto del equipo esos últimos grados.' },
-          { label: 'Justo en el centro', reply: 'El centro sería algo templado (una sopa tibia). «Una sauna» pide irse claramente hacia el extremo caliente.' },
-          { label: 'Hacia «Frío»', reply: 'Al revés: eso sería «un cubito de hielo». Escuchad la pista y llevad el marcador hacia el calor.' },
+          { label: 'Muy hacia «Caliente», casi al extremo', good: true, reply: 'Bien leído: una sauna es de lo más caliente que hay sin quemar. Ajustad los últimos milímetros debatiendo: ¿más que «un desierto»? ¿menos que «lava»?' },
+          { label: 'Al centro, por si acaso', reply: 'El centro sería algo templado («una piscina en primavera»). Si el equipo se raja y tira al centro «por seguridad», la sintonía se pierde: confiad en la pista.' },
+          { label: 'Le pregunto a Bea si es «muy» caliente', reply: 'No puede contestar: tras la pista, la Psíquica tiene prohibido añadir nada. Todo lo que necesitáis está en «una sauna».' },
         ],
       },
     },
     {
       icon: '🎚️',
-      title: 'La marca del equipo',
+      title: 'Fijar la marca',
+      who: { actor: 'UNO de vosotros (tú o Carlos) arrastra el marcador y pulsa «✅ Fijar la marca»', others: 'Bea no toca el dial: solo mira.' },
       text: [
-        'Debatís en voz alta e interpretáis la pista. Cuando os ponéis de acuerdo, UNA persona arrastra el marcador y pulsa «✅ Fijar la marca». El Psíquico no toca el dial.',
-        'La app revela entonces el objetivo y os da los puntos por cercanía.',
+        'Debatís, movéis el marcador con el dedo y, cuando estáis de acuerdo, uno lo fija por todo el equipo (da igual quién: la decisión es compartida).',
       ],
-      visual: { kind: 'buttons', buttons: [{ label: '🎚️ (arrastra el marcador)', kind: 'ghost' }, { label: '✅ Fijar la marca (82)', kind: 'primary' }], caption: 'Lo fija una sola persona, por consenso del equipo.' },
+      visual: {
+        kind: 'screens',
+        panes: [
+          { title: 'TÚ (equipo)', lines: ['Arrastras el marcador hasta 82.'], buttons: [{ label: '✅ Fijar la marca (82)', kind: 'primary' }] },
+          { title: 'Bea (Psíquica 🔮)', lines: ['«🎚️ Ya diste tu pista. El equipo está decidiendo…»', 'Ve su diana y espera el veredicto.'] },
+        ],
+      },
     },
     {
       icon: '🏆',
-      title: 'Puntos y siguiente ronda',
+      title: 'La revelación y los puntos',
+      who: { actor: 'La app revela el objetivo a TODOS y puntúa', others: 'cualquiera pulsa «🔁 Otra ronda» para seguir: el Psíquico rota (ahora te tocaría a ti).' },
       text: [
-        'Se puntúa por cercanía: 4 en el centro de la diana, 3 cerca, 2 rozando, 0 fuera. Los suma el Psíquico de la ronda (fue quien os sintonizó) y también el total del equipo.',
-        'Luego rota el Psíquico y cambia el espectro. A ver hasta dónde llega vuestra sintonía. 📡',
+        'El objetivo estaba en 85 y marcasteis 82: ¡centro de la diana, 4 puntos! Los suma Bea (fue quien os sintonizó) y también el total del equipo.',
+        'Puntos por cercanía: 4 el centro, 3 cerca, 2 rozando, 0 fuera. Nueva ronda: nuevo espectro, nuevo Psíquico. ¿Hasta dónde llega vuestra sintonía? 📡',
       ],
-      visual: { kind: 'log', lines: ['💬 Ya ha dado la pista. El equipo coloca el marcador.', '🎯 El objetivo estaba en 85, el equipo marcó 82. ¡En el centro! (4). Total del equipo: 4.', '📡 Ronda 2: nuevo espectro y nuevo Psíquico.'] },
+      visual: { kind: 'log', lines: ['💬 Bea ya ha dado su pista. El equipo coloca el marcador.', '🎯 El objetivo estaba en 85, el equipo marcó 82. 🎯 ¡En el centro! (4) para Bea. Total del equipo: 4.', '📡 Ronda 2: nuevo espectro y nuevo Psíquico (TÚ).'] },
     },
   ],
 };

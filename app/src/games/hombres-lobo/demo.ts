@@ -1,5 +1,5 @@
-// Tutorial de Los Hombres Lobo de Castronegro: el flujo real de la app (modo
-// automático, la voz dirige), paso a paso.
+// Tutorial de Los Hombres Lobo de Castronegro: una primera noche y un primer
+// día de ejemplo, con quién actúa en cada momento y qué ve cada pantalla.
 import type { DemoScript } from '../../shell/demo/types';
 
 export const DEMO: DemoScript = {
@@ -9,75 +9,92 @@ export const DEMO: DemoScript = {
   steps: [
     {
       icon: '🎯',
-      title: 'El pueblo contra los lobos',
+      title: 'La partida de ejemplo',
       text: [
-        'Entre los vecinos de Castronegro se esconden hombres lobo: cada noche devoran a alguien y de día fingen ser aldeanos. El pueblo gana si acaba con todos los lobos; los lobos, si igualan en número a los vivos.',
-        'La app hace de narrador: reparte los roles, dirige la noche con la voz, anuncia los amaneceres y registra el voto del día. Nadie más tiene que saberse las reglas.',
+        'Jugáis TÚ, Bea, Carlos, David, Eva y Fran. Entre vosotros se esconden hombres lobo: de noche devoran a alguien; de día fingen ser aldeanos.',
+        'La APP es el narrador: reparte los roles, dirige la noche con la voz, anuncia los amaneceres y registra el voto. El pueblo gana si caza a todos los lobos; los lobos, si igualan en número a los vivos.',
       ],
     },
     {
       icon: '🎴',
-      title: 'Tu carta secreta',
+      title: 'El reparto: cada uno a solas con su carta',
+      who: { actor: 'TODOS miráis vuestra carta a la vez, cada uno en su móvil', others: 'nadie enseña la pantalla: la carta se muestra un instante y se oculta sola.' },
       text: [
-        'Al empezar, cada uno mira su carta en su móvil, a solas: se muestra un instante y se vuelve a ocultar sola. Apréndela bien y confirma.',
-        'De noche, la voz llama a cada rol por su NOMBRE: «Vidente, abre los ojos…». Solo hay una excepción, que veremos enseguida: los vínculos secretos que nacen DURANTE la partida.',
+        'A ti te toca la 🔮 Vidente. A Bea (aunque tú no lo sabes) le ha tocado 🐺 Hombre Lobo. La voz llama a cada rol por su NOMBRE («Vidente, abre los ojos…»), con una excepción que verás en el paso 5.',
       ],
-      visual: { kind: 'card', emoji: '🔮', title: 'Eres la Vidente', lines: ['Cada noche descubres la carta secreta de un vecino.', 'La voz te llamará por tu nombre: «Vidente».'] },
+      visual: {
+        kind: 'screens',
+        panes: [
+          { title: 'TÚ', lines: ['🔮 Eres la Vidente', 'Cada noche descubres la carta secreta de un vecino.'] },
+          { title: 'Bea (tú no lo ves)', lines: ['🐺 Eres Hombre Lobo', 'Cada noche, la manada elige a quién devorar.'] },
+        ],
+      },
     },
     {
       icon: '🌙',
-      title: 'La noche: móvil boca arriba y ojos cerrados',
+      title: 'Cae la noche',
+      who: { actor: 'TODOS cerráis los ojos, móvil desbloqueado y boca arriba delante', others: 'la voz irá llamando rol a rol; solo el llamado abre los ojos.' },
       text: [
-        'De noche todos cerráis los ojos con el móvil desbloqueado delante. La voz va llamando a cada rol; SOLO quien es llamado abre los ojos, actúa tocando su pantalla y vuelve a cerrarlos.',
-        'En cuanto actúas, tu pantalla se oculta sola y todas se ven iguales. Y la voz también hace llamadas FALSAS (de roles que ni están en juego): el tiempo y el sonido no delatan a nadie.',
+        'La voz dice: «Vidente, abre los ojos…». Abres los ojos CON DISIMULO, tocas en tu pantalla a Carlos para investigarlo, lees el resultado y vuelves a cerrar. Tu pantalla se oculta sola al terminar.',
+        'La voz también hace llamadas FALSAS de roles que ni están en juego: ni el tiempo ni el sonido delatan quién actúa de verdad.',
+      ],
+      visual: {
+        kind: 'screens',
+        panes: [
+          { title: 'TÚ (te han llamado)', lines: ['Parrilla de vecinos: tocas a Carlos.', '🔮 «Carlos es… 🧑‍🌾 Aldeano.»'], buttons: [{ label: '✅ Visto (cierro los ojos)', kind: 'primary' }] },
+          { title: 'Bea (no es su turno)', lines: ['Pantalla neutra, igual que todas.', 'Ojos cerrados: ni sabe que estás mirando.'] },
+        ],
+      },
+    },
+    {
+      icon: '🐺',
+      title: 'El turno de los lobos',
+      who: { actor: 'Bea (loba) abre los ojos cuando la voz llama a los lobos y elige víctima en su pantalla', others: 'tú y el resto seguís con los ojos cerrados, sin saber quién actúa.' },
+      text: [
+        'Los lobos se reconocen entre sí en su pantalla y uno marca la presa. Después la voz los despide y sigue con el siguiente rol… o con una llamada falsa.',
       ],
     },
     {
       icon: '🤔',
-      title: 'Ponte a prueba: las palabras clave',
+      title: 'Las palabras clave (la excepción)',
+      who: { actor: 'Quien oiga SU palabra clave abre los ojos, aunque la voz no diga ningún rol', others: 'el resto ni se entera de a quién iba la llamada.' },
       text: [
-        'Algunos roles crean vínculos SECRETOS durante la partida: Cupido enamora a dos personas, el Gaitero encanta a otras… La voz no puede llamarlas por su nombre sin delatarlas, así que les reparte una PALABRA CLAVE que solo ellas ven en su pantalla.',
-        'Cupido te ha flechado: eres uno de los enamorados y tu palabra clave es «Luna de Plata». De noche, la voz dice: «Cupido ha disparado sus flechas… si oyes tu palabra clave, abre los ojos: … Luna de Plata…».',
+        'Los vínculos que NACEN en la partida (los enamorados de Cupido, los encantados del Gaitero…) no pueden llamarse por su nombre sin delatarlos. Por eso, al crearse, la app te enseña una PALABRA CLAVE junto a tu carta.',
+        'Supón que Cupido te flechó anoche y tu palabra es «Luna de Plata». La voz dice: «Cupido ha disparado sus flechas… si oyes tu palabra clave, abre los ojos: … Luna de Plata…».',
       ],
       ask: {
-        prompt: '¿Qué haces?',
+        prompt: '¿Qué haces al oír «Luna de Plata»?',
         choices: [
-          { label: 'Abro los ojos con disimulo y confirmo en mi pantalla', good: true, reply: 'Eso es: la palabra clave ES tu llamada. Reconoces a tu amor en silencio y confirmas; la voz jamás dice vuestros nombres, porque cantaría el vínculo a toda la mesa.' },
-          { label: 'Espero a que diga «enamorados» y nuestros nombres', reply: 'No lo hará nunca: nombraros en alto os delataría. Por eso Cupido reparte palabras clave — solo tú sabes que «Luna de Plata» va por ti.' },
-          { label: 'Pregunto en voz alta quién es mi pareja', reply: '¡Ni una palabra de noche! Os reconocéis con la mirada, en silencio. Y ojo: en Castronegro, si tu amor cae, tú te mueres de pena tras él.' },
+          { label: 'Abro los ojos con disimulo y confirmo en mi pantalla', good: true, reply: 'Eso es: la palabra clave ES tu llamada. Reconoces a tu amor en silencio y confirmas; la voz jamás dirá vuestros nombres.' },
+          { label: 'Espero a que diga «enamorados: tú y Bea»', reply: 'Nunca lo dirá: nombraros en alto cantaría el vínculo a toda la mesa. Solo tú sabes que «Luna de Plata» va por ti.' },
+          { label: 'Pregunto en voz alta quién es mi pareja', reply: '¡Ni una palabra de noche! Todo pasa en tu pantalla y en silencio. Y ojo: en Castronegro, si tu amor cae, mueres de pena tras él.' },
         ],
       },
     },
     {
       icon: '☀️',
       title: 'El amanecer',
+      who: { actor: 'La VOZ anuncia quién no ha sobrevivido', others: 'todos abrís los ojos; los caídos pasan a mirar en silencio (ven todas las cartas, pero ni hablan ni votan).' },
       text: [
-        'La voz anuncia quién no ha sobrevivido a la noche (y, según los ajustes de la mesa, si se revela su rol o queda oculto).',
-        'Los caídos siguen en la mesa como espectadores: pueden mirar las cartas de todos… pero ni hablan ni votan. Que nadie les tire de la lengua.',
+        '«Castronegro despierta… esta noche ha caído David.» Según los ajustes de la mesa, su rol se revela o queda boca abajo.',
       ],
     },
     {
       icon: '🗳️',
       title: 'El día: debate y hoguera',
+      who: { actor: 'TODOS los vivos debatís de viva voz y decidís a quién condenar', others: 'UNA persona cualquiera registra la decisión en la app; la primera registrada cuenta.' },
       text: [
-        'De día todo es de viva voz: se acusa, se defiende y el pueblo decide a quién condenar. Cuando esté decidido, UNA persona cualquiera lo registra en la app (tocad al condenado y confirmad; también se puede perdonar o registrar un empate).',
-        'La primera decisión registrada es la que cuenta: poneos de acuerdo ANTES de tocar.',
+        'Tú (Vidente) sueltas tu información con cuidado: «yo de Carlos me fío…». Cuando el pueblo se decide por Bea, alguien la toca en pantalla y confirma. También se puede perdonar o registrar un empate.',
+        'Al caer, algunos roles dejan un último encargo (la flecha del Cazador, la sucesión del Alguacil): la app lo pide en pantalla a quien corresponda.',
       ],
-      visual: { kind: 'buttons', buttons: [{ label: '⚖️ Condenar a Carlos', kind: 'danger' }, { label: '🕊️ El pueblo perdona', kind: 'ghost' }], caption: 'Algunos roles (Cazador, Alguacil…) dejan un último encargo al caer: la app lo pide en pantalla.' },
-    },
-    {
-      icon: '🎭',
-      title: 'Los roles especiales',
-      text: [
-        'Además de lobos y aldeanos, la mesa puede activar decenas de roles: la Vidente investiga, la Bruja tiene dos pociones, el Cazador dispara al caer, Cupido enamora… Toca cada ficha en el lobby para ver su detalle (con lectura en voz alta).',
-        'Cada rol actúa cuando la voz lo llama: no hace falta memorizar el orden, la app lo lleva.',
-      ],
+      visual: { kind: 'buttons', buttons: [{ label: '⚖️ Condenar a Bea', kind: 'danger' }, { label: '🕊️ El pueblo perdona', kind: 'ghost' }], caption: 'Debatid en voz alta y tocad al condenado; cualquiera lo registra.' },
     },
     {
       icon: '🔊',
-      title: 'La voz manda (y se controla)',
+      title: 'Y vuelta a la noche',
+      who: { actor: 'Cualquier vivo pulsa «🌙 Empezar la noche» y el ciclo se repite', others: 'la voz manda: pausa, repetir o repasar roles desde el menú ⋯ si hace falta.' },
       text: [
-        'Desde el menú ⋯ podéis PAUSAR la partida, pedir que REPITA la última locución o repasar los roles. Si el dispositivo narrador se queda tirado, a los demás les aparece un botón para tomar la narración.',
+        'Noche → amanecer → día → hoguera… hasta que un bando gana. Hay decenas de roles opcionales (Bruja, Cazador, Cupido…): toca sus fichas en el lobby para el detalle.',
         'Consejo de mesa: volumen alto, pantalla encendida y silencio ceremonial de noche. Castronegro os espera. 🌕',
       ],
     },

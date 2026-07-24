@@ -40,11 +40,14 @@ try {
     await page.waitForSelector('text=/Tutorial de/', { timeout: 8000 });
 
     // Recorre todos los pasos con «Siguiente»; en el que tenga pregunta, toca
-    // una opción y comprueba que aparece la respuesta (✅/💡).
+    // una opción y comprueba que aparece la respuesta (✅/💡). Cuenta también
+    // los banners 🎬 de «quién actúa ahora» (deben acompañar el recorrido).
     let steps = 0;
     let asked = false;
+    let whoSeen = 0;
     for (let guard = 0; guard < 30; guard++) {
       steps++;
+      if (await page.locator('[data-a=demo-who]').count()) whoSeen++;
       const choice = page.locator('[data-a=demo-choice]').first();
       if (!asked && await choice.count()) {
         await choice.click();
@@ -57,6 +60,7 @@ try {
     }
     check(steps >= 5, `recorre sus ${steps} pasos`);
     check(asked, 'la pregunta interactiva responde al tocar una opción');
+    check(whoSeen >= 4, `el «quién actúa ahora» 🎬 acompaña el tutorial (${whoSeen} pasos)`);
     check(await page.locator('[data-a=demo-play]').count() >= 1, 'el paso final tiene ▶️ de lectura');
     await page.click('[data-a=demo-done]');
     await page.waitForSelector('[data-a=open-demo]', { timeout: 8000 });

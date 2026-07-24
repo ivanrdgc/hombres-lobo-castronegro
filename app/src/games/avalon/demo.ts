@@ -1,4 +1,5 @@
-// Tutorial de Ávalon: el flujo real de la app, paso a paso.
+// Tutorial de Ávalon: una misión de ejemplo continua, con quién actúa en cada
+// momento y qué ve cada pantalla.
 import type { DemoScript } from '../../shell/demo/types';
 
 export const DEMO: DemoScript = {
@@ -8,67 +9,77 @@ export const DEMO: DemoScript = {
   steps: [
     {
       icon: '🎯',
-      title: 'Cinco misiones para el reino',
+      title: 'La partida de ejemplo',
       text: [
-        'Sois caballeros de Arturo… con esbirros de Mordred infiltrados. Se emprenden hasta CINCO misiones: el Bien gana con tres éxitos; el Mal, con tres fracasos (o si se rechazan cinco propuestas seguidas).',
-        'Nadie hace de máster: la app reparte lealtades, cuenta votos y cartas en secreto y lo destapa todo a la vez.',
+        'Jugáis cinco: TÚ, Bea, Carlos, David y Eva. Sois caballeros de Arturo… pero DOS sois en secreto esbirros de Mordred.',
+        'Se juegan hasta CINCO misiones: el Bien gana con tres éxitos; el Mal, con tres fracasos (o si se rechazan cinco propuestas seguidas). Y aunque el Bien logre sus tres… aún queda el Asesino.',
       ],
-      visual: { kind: 'board', rows: [{ label: '⚔️ Misión 1', value: '✅' }, { label: '⚔️ Misión 2', value: '💥' }, { label: '⚔️ Misión 3', value: '✅' }, { label: '⚔️ Misión 4', value: '—' }, { label: '⚔️ Misión 5', value: '—' }] },
+      visual: { kind: 'board', rows: [{ label: '⚔️ Misiones', value: 'M1 · M2 · M3 · M4 · M5' }, { label: '😇 Bien', value: '3 de 5' }, { label: '😈 Mal (oculto)', value: '2 de 5' }] },
     },
     {
       icon: '🎴',
-      title: 'Tu carta y lo que sabes',
+      title: 'El reparto: cada uno sabe algo distinto',
+      who: { actor: 'TODOS miráis vuestra carta a la vez y confirmáis', others: 'nadie enseña la pantalla: lo que sabes tú no lo sabe nadie más.' },
       text: [
-        'Mira tu carta a solas y confirma. Cada rol sabe cosas distintas: los malvados se ven entre sí (salvo Oberón); Merlín ve quiénes son los malvados (pero no ve a Mordred); Percival ve a Merlín y a Morgana sin distinguirlos; los leales no saben nada.',
+        'A ti te toca 🧙 MERLÍN: ves quiénes son los malvados (pero no cuál es cuál… y a Mordred no lo verías). Los malvados se ven entre sí; los leales no saben nada.',
       ],
-      visual: { kind: 'card', emoji: '🧙', title: 'Eres MERLÍN', lines: ['Ves a los secuaces de Mordred: Bea, Eva.', 'Guía al Bien… sin que el Asesino te descubra.'] },
+      visual: {
+        kind: 'screens',
+        panes: [
+          { title: 'TÚ (Merlín)', lines: ['🧙 Eres Merlín', 'Ves a los secuaces de Mordred: Bea y Eva.', 'Guía al Bien… sin que se note que lo sabes.'] },
+          { title: 'Carlos (leal, tú no lo ves)', lines: ['🤴 Leal Servidor de Arturo', 'No sabe nada de nadie: deduce por votos y misiones.'] },
+        ],
+      },
     },
     {
       icon: '🧭',
-      title: 'Fase 1 · El líder propone',
+      title: 'Misión 1 · El líder propone',
+      who: { actor: 'David (líder de turno) elige el equipo en su móvil', others: 'los demás veis a quién va proponiendo y os preparáis para votar.' },
       text: [
-        'El liderazgo rota en cada propuesta. El líder elige en su móvil quiénes van a la misión (la app le dice cuántos tocan) y pulsa «⚔️ Proponer». Puede incluirse a sí mismo.',
+        'El liderazgo rota en cada propuesta. La app le dice a David cuántos van (2 en la misión 1 con cinco jugadores): elige a Bea y a Eva y pulsa «⚔️ Proponer». Puede incluirse a sí mismo.',
+        'Tú (Merlín) tuerces el gesto por dentro: ¡son las dos malvadas!',
       ],
-      visual: { kind: 'chips', chips: [{ name: 'Ana', hl: true, badge: 'líder' }, { name: 'Bea', hl: true }, { name: 'Carlos' }, { name: 'David' }, { name: 'Eva' }], caption: 'Equipo propuesto: Ana y Bea. Ahora vota toda la mesa.' },
-    },
-    {
-      icon: '🗳️',
-      title: 'Fase 2 · Todos votan',
-      text: [
-        'TODA la mesa vota en secreto «👍 Aprobar» o «👎 Rechazar». La app destapa los votos A LA VEZ y son públicos: quién aprobó y quién no es oro para deducir. Después, cualquiera pulsa «▶️ Continuar».',
-        'Mayoría a favor → el equipo parte. Empate o rechazo → el liderazgo pasa al siguiente. ⚠️ Cinco rechazos seguidos en la misma misión y gana el Mal.',
-      ],
-    },
-    {
-      icon: '⚔️',
-      title: 'Fase 3 · La misión, en secreto',
-      text: [
-        'Solo el equipo aprobado actúa: cada miembro juega en secreto ÉXITO o FRACASO en su móvil. Los del Bien solo pueden jugar Éxito (la app no les deja otra); los del Mal eligen.',
-        'La app anuncia solo CUÁNTOS sabotajes hubo, jamás de quién. Un solo fracaso hunde la misión (salvo la 4.ª con 7+ jugadores, que pide dos).',
-      ],
-      visual: { kind: 'buttons', buttons: [{ label: '✅ Éxito', kind: 'primary' }, { label: '💥 Fracaso', kind: 'danger' }], caption: 'Esto solo lo ven los del equipo; el Bien no tiene el botón rojo.' },
+      visual: { kind: 'chips', chips: [{ name: 'David', badge: 'líder' }, { name: 'Bea', hl: true, badge: 'propuesta' }, { name: 'Eva', hl: true, badge: 'propuesta' }, { name: 'TÚ' }, { name: 'Carlos' }], caption: 'El equipo propuesto, a la vista de todos.' },
     },
     {
       icon: '🤔',
-      title: 'Ponte a prueba',
-      text: ['Eres MERLÍN: sabes que Bea es malvada y acaban de proponerla para la misión 3.'],
+      title: 'Misión 1 · Todos votan (tú también)',
+      who: { actor: 'TODOS votáis en secreto 👍 Aprobar o 👎 Rechazar', others: 'la app destapa los votos A LA VEZ y son públicos: se ve quién votó qué.' },
+      text: ['Eres Merlín y SABES que el equipo propuesto son las dos malvadas.'],
       ask: {
-        prompt: '¿Cómo lo juegas?',
+        prompt: '¿Cómo votas?',
         choices: [
-          { label: 'Voto en contra y siembro dudas con argumentos «normales»', good: true, reply: 'Así juega Merlín: influye sin explicar demasiado bien por qué. Si aciertas siempre a la primera, el Asesino te encontrará al final.' },
-          { label: 'Digo abiertamente «Bea es malvada, lo sé»', reply: 'Salvarás esta misión… y firmarás tu sentencia: al Asesino le basta con escuchar quién lo sabía todo. Perder por asesinato de Merlín es la derrota más tonta del Bien.' },
-          { label: 'Callo y voto que sí para no señalarme', reply: 'Tan invisible que inútil: si Merlín nunca influye, el Bien juega a ciegas y el Mal solo necesita colarse en tres misiones.' },
+          { label: '👎 Rechazo, y en el debate siembro dudas con argumentos «normales»', good: true, reply: 'Así juega Merlín: influye sin explicar demasiado bien por qué. Si aciertas SIEMPRE a la primera, el Asesino te encontrará al final.' },
+          { label: '👎 Rechazo y digo en alto «¡son las malvadas, lo sé!»', reply: 'Salvarás la misión… y firmarás tu sentencia: al Asesino le basta escuchar quién lo sabía todo. Perder por asesinato de Merlín es la derrota más tonta del Bien.' },
+          { label: '👍 Apruebo para no señalarme', reply: 'Tan invisible que inútil: dos sabotajes de una tacada. Merlín debe influir, solo que con sordina. ⚠️ Y recuerda: cinco rechazos seguidos dan la victoria al Mal.' },
+        ],
+      },
+    },
+    {
+      icon: '⚔️',
+      title: 'Misión 1 · El equipo actúa en secreto',
+      who: { actor: 'Solo Bea y Eva (equipo aprobado) eligen carta en su móvil', others: 'el resto esperáis: la app solo anunciará CUÁNTOS sabotajes hubo, nunca de quién.' },
+      text: [
+        'Supón que la propuesta salió aprobada (3 a 2). Cada miembro juega ÉXITO o FRACASO en secreto; los del Bien ni siquiera tienen el botón rojo (la app no les deja sabotear).',
+        'Resultado: «💥 Misión 1: FRACASO (1 sabotaje)». ¿Quién de las dos fue? Ese es el juego. Tras leerlo, cualquiera pulsa «▶️ Continuar».',
+      ],
+      visual: {
+        kind: 'screens',
+        panes: [
+          { title: 'Bea (en la misión)', lines: ['Elige en secreto:'], buttons: [{ label: '✅ Éxito', kind: 'primary' }, { label: '💥 Fracaso', kind: 'danger' }] },
+          { title: 'TÚ (fuera de la misión)', lines: ['«⚔️ El equipo parte a la misión 1…»', 'Esperas el resultado, sin ver nada más.'] },
         ],
       },
     },
     {
       icon: '🗡️',
-      title: 'El final y el Asesino',
+      title: 'El final: el Asesino busca a Merlín',
+      who: { actor: 'Si el Bien logra 3 éxitos, el ASESINO elige a su blanco en su móvil', others: 'todos veis a quién señala; si acierta contigo (Merlín), el Mal roba la partida.' },
       text: [
-        'Si el Bien llega a tres éxitos, no cantes victoria: el ASESINO señala a quien crea que es Merlín. Si acierta, el Mal roba la partida; si falla, gana el Bien.',
-        'Por eso Percival existe: desviar las sospechas para proteger a Merlín. En el lobby puedes activar los roles opcionales (Percival, Morgana, Mordred, Oberón).',
+        'Por eso Merlín susurra en vez de gritar, y por eso existe Percival (rol opcional): ve a Merlín y a Morgana sin distinguirlos, y su papel es desviar las sospechas.',
+        'Roles opcionales en el lobby: Percival, Morgana, Mordred y Oberón. Merlín y el Asesino siempre juegan. 🏰',
       ],
-      visual: { kind: 'log', lines: ['🗡️ El Bien ha completado tres misiones… pero el Asesino aún puede cambiarlo todo: busca a Merlín.', '🗡️ El Asesino señaló a David, que NO era Merlín: el Bien conserva la victoria.'] },
+      visual: { kind: 'log', lines: ['🗡️ El Bien ha completado tres misiones… pero el Asesino aún puede cambiarlo todo: busca a Merlín.', '🗡️ El Asesino señaló a Carlos, que NO era Merlín: el Bien conserva la victoria.'] },
     },
   ],
 };
