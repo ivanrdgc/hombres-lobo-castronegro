@@ -19,6 +19,25 @@
   const view = $derived(g && active ? matchView(g, active) : null);
   const def = $derived(gameDef(active?.gameId));
   const urlDef = $derived(app.route.game ? (GAME_DEFS.find((d) => d.id === app.route.game) ?? null) : null);
+
+  // Qué pantalla se muestra (la partida no distingue fase: no queremos resetear
+  // el scroll en cada fase, solo al entrar). Sirve para el scroll de navegación.
+  const screenKey = $derived.by(() => {
+    if (view && view.game) return 'match';
+    if (urlDef && app.route.start) return 'start:' + app.route.game;
+    if (urlDef) return 'lobby:' + app.route.game;
+    return 'mesa';
+  });
+
+  // Ir HACIA ADELANTE (a un lobby, a «empezar» o a una partida) empieza arriba;
+  // solo la mesa conserva su scroll, y lo restaura ella misma (ver MesaScreen).
+  let lastScreen = '';
+  $effect(() => {
+    const k = screenKey;
+    if (k === lastScreen) return;
+    lastScreen = k;
+    if (k !== 'mesa') window.scrollTo(0, 0);
+  });
 </script>
 
 {#if app.groupMissing}

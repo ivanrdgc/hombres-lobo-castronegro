@@ -233,3 +233,14 @@ Estados: 🔴 abierto · 🟢 arreglado (con commit) · 🟡 re-reportado tras u
   módulo (sobrevive al desmontaje) y lo restaura al remontar, reintentando unos frames porque el
   catálogo tarda en alcanzar su alto (si no, el scroll se recortaría a 0). E2E: e2e-navegacion
   comprueba que el scroll de la mesa se conserva al ir a un juego y volver (viewport de móvil).
+
+## B18 · Scroll de navegación: adelante arranca arriba; solo la mesa conserva
+- **2026-07-24 · matiz.** «Al pasar de la página principal a una página de juego o a la de empezar
+  a jugar, scrollea hacia arriba. Solo mantienes scroll cuando vas atrás.» Tras B17, la mesa
+  conservaba su scroll, pero al ir HACIA ADELANTE (mesa → lobby → empezar) las pantallas nuevas
+  heredaban el scroll del window (se notaba en «Empezar», que es larga: aparecía a media página).
+- **2026-07-24 · 🟢 arreglado** (este commit): GroupScreen lleva la cuenta de qué pantalla se
+  muestra (mesa / lobby / empezar / partida; la partida no distingue fase, para no resetear el
+  scroll en cada fase) y, al cambiar a cualquiera que NO sea la mesa, hace `scrollTo(0,0)`. La mesa
+  sigue restaurando su propio scroll (B17). E2E: e2e-navegacion comprueba que ir a «empezar»
+  arranca arriba y que volver a la mesa conserva la posición.

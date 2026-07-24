@@ -47,8 +47,8 @@ await coco.reload();
 await coco.waitForSelector('text=¿A qué jugamos?', { timeout: 30000 });
 if (!(await has(coco, '[data-a=open-roles]'))) ok('recargar en la mesa deja a Coco en la mesa'); else bad('la recarga movió a Coco de pantalla');
 
-// 2b. La mesa CONSERVA su scroll al entrar en un juego y volver (viewport de
-//     móvil para asegurar que hay contenido que desplazar).
+// 2b. Scroll de navegación: ir HACIA ADELANTE empieza arriba; volver a la mesa
+//     conserva el scroll (viewport de móvil, para tener contenido que desplazar).
 await coco.setViewportSize({ width: 390, height: 680 });
 await coco.waitForSelector('text=¿A qué jugamos?');
 await coco.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
@@ -57,12 +57,20 @@ const scrollBefore = await coco.evaluate(() => window.scrollY);
 if (scrollBefore > 50) {
   await coco.click('button[data-a=select-game]');
   await coco.waitForSelector('[data-a=open-roles]');
+  await coco.click('[data-a=open-start]'); // «empezar» es la pantalla larga
+  await coco.waitForSelector('[data-a=start-auto]');
+  await coco.waitForTimeout(150);
+  const scrollFwd = await coco.evaluate(() => window.scrollY);
+  if (scrollFwd < 40) ok(`ir hacia adelante (a «empezar») arranca arriba (scroll ${scrollFwd})`);
+  else bad(`ir hacia adelante no arrancó arriba: ${scrollFwd}`);
+  await coco.click('[data-a=back-lobby-game]');
+  await coco.waitForSelector('[data-a=open-roles]');
   await coco.click('button[data-a=change-game]');
   await coco.waitForSelector('text=¿A qué jugamos?');
   await coco.waitForTimeout(250);
-  const scrollAfter = await coco.evaluate(() => window.scrollY);
-  if (Math.abs(scrollAfter - scrollBefore) < 40) ok(`la mesa conserva el scroll al volver del juego (${scrollBefore}→${scrollAfter})`);
-  else bad(`la mesa perdió el scroll al volver: ${scrollBefore}→${scrollAfter}`);
+  const scrollBack = await coco.evaluate(() => window.scrollY);
+  if (Math.abs(scrollBack - scrollBefore) < 40) ok(`volver a la mesa conserva el scroll (${scrollBefore}→${scrollBack})`);
+  else bad(`la mesa perdió el scroll al volver: ${scrollBefore}→${scrollBack}`);
 } else {
   ok('(la mesa no tenía scroll suficiente para la prueba; omitida)');
 }
