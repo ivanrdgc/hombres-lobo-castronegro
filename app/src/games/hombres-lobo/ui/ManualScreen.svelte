@@ -26,12 +26,12 @@
 </script>
 
 {#if game.phase === 'end'}
-  <div class="topbar"><h2>{group.name}</h2><PhaseChip game={game} /></div>
+  <div class="topbar"><h2>🌕 Hombres Lobo</h2><PhaseChip game={game} /></div>
   <EndPhase group={group} my={my} />
   <LogPanel game={game} />
 {:else if !master && !my.inGame}
   <!-- Espectador: sigue la partida y puede terminarla desde el menú ⋯ si hace falta. -->
-  <div class="topbar"><h2>{group.name}</h2><PhaseChip game={game} /><GameMenu group={group} /></div>
+  <div class="topbar"><h2>🌕 Hombres Lobo</h2><PhaseChip game={game} /><GameMenu group={group} /></div>
   <Flash />
   <div class="card" style="text-align:center">
     <span class="moon">👀</span>
@@ -42,7 +42,7 @@
   <RolesStrip game={game} />
   <LogPanel game={game} />
 {:else}
-  <div class="topbar"><h2>{group.name}</h2><PhaseChip game={game} /><GameMenu group={group} /></div>
+  <div class="topbar"><h2>🌕 Hombres Lobo</h2><PhaseChip game={game} /><GameMenu group={group} /></div>
   <Flash />
   {#if master}
     <div class="card">

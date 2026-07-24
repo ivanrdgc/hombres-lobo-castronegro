@@ -33,7 +33,7 @@
 </script>
 
 <div class="topbar">
-  <h2>{group.name}</h2>
+  <h2>🌘 Una Noche</h2>
   <span class="chip">🌘 Una Noche</span>
   <GameMenu {game} {my} />
 </div>

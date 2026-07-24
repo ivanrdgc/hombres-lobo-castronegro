@@ -39,7 +39,7 @@
 </script>
 
 <div class="topbar">
-  <h2>⚓ {group.name}</h2>
+  <h2>⚓ Captain Sonar</h2>
   <GameMenu {game} {my} />
 </div>
 <Flash />

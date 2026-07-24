@@ -51,7 +51,7 @@
 </script>
 
 <div class="topbar">
-  <h2>📡 {group.name}</h2>
+  <h2>📡 Wavelength</h2>
   <span class="chip">{game.goal?.kind === 'rounds' ? `Ronda ${Math.min(game.round, game.goal.n)}/${game.goal.n}` : `Ronda ${game.round}`}</span>
   <GameMenu {game} {my} />
 </div>

@@ -38,7 +38,7 @@
 </script>
 
 <div class="topbar">
-  <h2>{group.name}</h2>
+  <h2>🕵️ El Espía</h2>
   <span class="chip">🕵️ Ronda {game.round}</span>
   <GameMenu {game} {my} />
 </div>

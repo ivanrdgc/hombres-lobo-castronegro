@@ -42,7 +42,7 @@
 </script>
 
 <div class="topbar">
-  <h2>🚔 {group.name}</h2>
+  <h2>🚔 Good Cop Bad Cop</h2>
   <GameMenu {game} {my} />
 </div>
 <Flash />

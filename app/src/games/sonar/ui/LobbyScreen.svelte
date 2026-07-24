@@ -12,7 +12,7 @@
 
 <div class="topbar">
   <button class="small ghost" data-a="change-game" aria-label="Volver a la mesa" title="Volver a la mesa" style="font-size:1.25rem;line-height:1;padding:6px 12px" onclick={() => navigate(`/g/${group.id}`)}>←</button>
-  <h2>⚓ {group.name}</h2>
+  <h2>⚓ Captain Sonar</h2>
 </div>
 <Flash />
 

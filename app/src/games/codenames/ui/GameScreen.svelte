@@ -44,7 +44,7 @@
 </script>
 
 <div class="topbar">
-  <h2>🕵️ {group.name}</h2>
+  <h2>🕵️ Codenames</h2>
   {#if game.phase !== 'end'}
     <span class="chip" data-a="cn-turn-chip">{game.turn === 'red' ? '🔴 Turno rojo' : '🔵 Turno azul'} · {game.phase === 'clue' ? 'pista' : 'toques'}</span>
     <span class="chip">🔴 {game.remaining.red} · 🔵 {game.remaining.blue}</span>

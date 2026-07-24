@@ -53,7 +53,7 @@
 </script>
 
 <div class="topbar">
-  <h2>💣 {group.name}</h2>
+  <h2>💣 Two Rooms</h2>
   {#if game.phase !== 'end' && game.phase !== 'reveal'}<span class="chip">Ronda {game.round}/{game.totalRounds}</span>{/if}
   <GameMenu {game} {my} />
 </div>

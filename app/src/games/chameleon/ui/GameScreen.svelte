@@ -40,7 +40,7 @@
 </script>
 
 <div class="topbar">
-  <h2>🦎 {group.name}</h2>
+  <h2>🦎 El Camaleón</h2>
   <span class="chip">Ronda {game.round} · {PHASES[game.phase] || ''}</span>
   <GameMenu {game} {my} />
 </div>

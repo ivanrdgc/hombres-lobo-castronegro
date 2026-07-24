@@ -37,7 +37,7 @@
 </script>
 
 <div class="topbar">
-  <h2>🏰 {group.name}</h2>
+  <h2>🏰 Ávalon</h2>
   <span class="chip">Misión {Math.min(game.quest, 5)}</span>
   <GameMenu {game} {my} />
 </div>

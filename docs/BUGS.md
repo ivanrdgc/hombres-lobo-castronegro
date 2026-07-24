@@ -404,3 +404,15 @@ Estados: 🔴 abierto · 🟢 arreglado (con commit) · 🟡 re-reportado tras u
 - **El Espía** — el espía no podía adivinar tras el tiempo pero tres textos lo prometían; «otra
   ronda» no comprobaba el mínimo; una acusación abierta no se podía retirar; la voz hablaba de un
   reloj que ya no existía.
+
+## B27 · La cabecera repetía el nombre de la mesa en vez de decir a qué juegas
+- **2026-07-24 · petición.** «En vez de mostrar el nombre del grupo de la sala arriba como header,
+  se puede hacer únicamente en la pantalla principal? En la vista de juego muestra el nombre del
+  juego.»
+- **Diagnóstico.** Las 17 pantallas de lobby y de partida ponían `<emoji> {group.name}` en la
+  `topbar`: dentro de la partida el dato ya lo sabes (estás en tu mesa) y ocupa el único sitio donde
+  cabría lo que de verdad orienta — a qué estás jugando. Con varias partidas simultáneas por mesa,
+  además, todas las cabeceras se ven iguales.
+- **2026-07-24 · 🟢 arreglado** (este commit): la mesa (`MesaScreen`), la portada y la pantalla de
+  invitación siguen luciendo el nombre del grupo; lobby, «empezar partida» y partida pasan a decir
+  el nombre del juego.

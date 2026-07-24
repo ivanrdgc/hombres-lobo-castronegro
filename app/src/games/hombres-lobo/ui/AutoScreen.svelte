@@ -38,7 +38,7 @@
   <!-- Dispositivo que no juega: narrador-altavoz o espectador. Ambos siguen la
        partida y tienen el menú ⋯ (pausar/terminar) por si quien jugaba no está. -->
   <div class="topbar">
-    <h2>{group.name}</h2>
+    <h2>🌕 Hombres Lobo</h2>
     <PhaseChip {game} />
     <GameMenu {group} />
   </div>
@@ -70,7 +70,7 @@
   <LogPanel {game} />
 {:else}
   <div class="topbar">
-    <h2>{group.name}</h2>
+    <h2>🌕 Hombres Lobo</h2>
     <PhaseChip {game} />
     <GameMenu {group} />
   </div>

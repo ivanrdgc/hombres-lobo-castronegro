@@ -43,7 +43,7 @@
 </script>
 
 <div class="topbar">
-  <h2>🤫 {group.name}</h2>
+  <h2>🤫 Insider</h2>
   <span class="chip">Ronda {game.round}</span>
   <span class="chip">{PHASE_CHIP[game.phase] || ''}</span>
   <GameMenu {game} {my} />

@@ -34,7 +34,7 @@
 </script>
 
 <div class="topbar">
-  <h2>🏛️ {group.name}</h2>
+  <h2>🏛️ Secret Hitler</h2>
   <span class="chip">🕊️{game.liberalPolicies} · 🐷{game.fascistPolicies}</span>
   <!-- El ejecutado lleva su estado siempre a la vista, en cualquier fase. -->
   {#if executed}<span class="chip" data-a="sh-dead-chip">💀 Ejecutado</span>{/if}

@@ -40,7 +40,7 @@
 </script>
 
 <div class="topbar">
-  <h2>💀 {group.name}</h2>
+  <h2>💀 Skull</h2>
   {#if game.phase !== 'end'}<span class="chip">Ronda {game.round}</span>{/if}
   {#if phaseChip}<span class="chip">{phaseChip}</span>{/if}
   <GameMenu {game} {my} />

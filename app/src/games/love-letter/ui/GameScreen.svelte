@@ -54,7 +54,7 @@
 </script>
 
 <div class="topbar">
-  <h2>💌 {group.name}</h2>
+  <h2>💌 Love Letter</h2>
   <GameMenu {game} {my} />
 </div>
 {#if game.phase !== 'end'}

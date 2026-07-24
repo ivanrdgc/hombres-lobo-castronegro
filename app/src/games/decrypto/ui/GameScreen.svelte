@@ -42,7 +42,7 @@
 </script>
 
 <div class="topbar">
-  <h2>🔐 {group.name}</h2>
+  <h2>🔐 Decrypto</h2>
   <!-- El detalle (qué es 🕵️, qué es ❌, quién va en cada equipo) está en el
        marcador de abajo: en un `title=` no se ve desde un móvil. -->
   {#if game.phase !== 'end'}<span class="chip">R{game.round}/{MAX_ROUNDS} · 🔴 🕵️{game.tokens.red.intercepts} ❌{game.tokens.red.errors} · 🔵 🕵️{game.tokens.blue.intercepts} ❌{game.tokens.blue.errors}</span>{/if}

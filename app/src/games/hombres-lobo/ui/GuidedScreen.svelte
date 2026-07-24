@@ -99,12 +99,12 @@
 {/snippet}
 
 {#if game.phase === 'end'}
-  <div class="topbar"><h2>{group.name}</h2><PhaseChip game={game} /></div>
+  <div class="topbar"><h2>🌕 Hombres Lobo</h2><PhaseChip game={game} /></div>
   <EndPhase group={group} my={my} />
   <LogPanel game={game} />
 {:else if master}
   <!-- Narrador guiado: guion en pantalla y registro de decisiones. -->
-  <div class="topbar"><h2>{group.name}</h2><PhaseChip game={game} /><GameMenu group={group} /></div>
+  <div class="topbar"><h2>🌕 Hombres Lobo</h2><PhaseChip game={game} /><GameMenu group={group} /></div>
   <Flash />
   <div class="card"><h3>📖 Narrador guiado</h3>
     <p class="small-note">La app no habla: te va marcando los pasos y tú registras las decisiones. Los jugadores solo ven su carta. Herramientas (ver roles, terminar) en el menú ⋯ de arriba; las cartas en juego, abajo.</p>
@@ -185,7 +185,7 @@
   <LogPanel game={game} />
 {:else if !my.inGame}
   <!-- Espectador: sigue la partida y puede terminarla desde el menú ⋯ si hace falta. -->
-  <div class="topbar"><h2>{group.name}</h2><PhaseChip game={game} /><GameMenu group={group} /></div>
+  <div class="topbar"><h2>🌕 Hombres Lobo</h2><PhaseChip game={game} /><GameMenu group={group} /></div>
   <Flash />
   <div class="card" style="text-align:center">
     <span class="moon">👀</span>
@@ -197,7 +197,7 @@
   <LogPanel game={game} />
 {:else}
   <!-- Jugador: solo su carta (oculta por defecto); el narrador dirige en persona. -->
-  <div class="topbar"><h2>{group.name}</h2><PhaseChip game={game} /><GameMenu group={group} /></div>
+  <div class="topbar"><h2>🌕 Hombres Lobo</h2><PhaseChip game={game} /><GameMenu group={group} /></div>
   {#if !my.alive && my.inGame && game.phase !== 'reveal'}<div class="flash">💀 Has muerto. Sigue mirando en silencio…</div>{/if}
   <Flash />
   {#if game.phase === 'reveal' && my.inGame && !my.roleSeen}

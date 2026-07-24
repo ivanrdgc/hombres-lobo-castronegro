@@ -44,7 +44,7 @@
 
 <div class="topbar">
   <button class="small ghost" data-a="back-lobby-game" aria-label="Volver" title="Volver" style="font-size:1.25rem;line-height:1;padding:6px 12px" onclick={() => navigate(`/g/${group.id}/decrypto`)}>←</button>
-  <h2>🔐 Empezar partida</h2>
+  <h2>🔐 Decrypto: empezar</h2>
 </div>
 <Flash />
 
