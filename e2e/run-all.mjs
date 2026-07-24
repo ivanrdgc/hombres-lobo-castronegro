@@ -26,6 +26,8 @@ const DEFAULT_SUITES = [
   'e2e-coup.mjs',
   // Dos salas, un Presidente y un Bombardero (24-07): Two Rooms and a Boom.
   'e2e-two-rooms.mjs',
+  'e2e-two-rooms-leave.mjs',
+  'e2e-demos.mjs',
 ];
 const suites = process.argv.slice(2).length ? process.argv.slice(2) : DEFAULT_SUITES;
 const CONCURRENCY = Number(process.env.E2E_JOBS || 4);

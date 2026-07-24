@@ -11,6 +11,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { allKeywordCombos } from '../src/games/hombres-lobo/roles';
 import { allStaticPieces, corpusHash, kwClip } from '../src/games/hombres-lobo/texts/corpus';
+import { allExplainStaticPieces } from '../src/games/hombres-lobo/texts/explain';
 import { allEspiaStaticPieces } from '../src/games/espia/texts';
 import { allUnaNocheStaticPieces } from '../src/games/una-noche/texts';
 import { allAvalonStaticPieces } from '../src/games/avalon/texts';
@@ -19,6 +20,7 @@ import { allChameleonStaticPieces } from '../src/games/chameleon/texts';
 import { allInsiderStaticPieces } from '../src/games/insider/texts';
 import { allCoupStaticPieces } from '../src/games/coup/texts';
 import { allTwoRoomsStaticPieces } from '../src/games/two-rooms/texts';
+import { allDemoStaticPieces } from '../src/shell/demo/all-demos';
 import { buildSsml, ttsCacheKey } from '../src/core/audio/tts';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -59,7 +61,7 @@ interface Manifest {
 
 async function main(): Promise<void> {
   const kwTexts = allKeywordCombos().flatMap((kw) => [kwClip(kw, true), kwClip(kw, false)]);
-  const texts = [...new Set([...allStaticPieces().map((p) => p.text), ...kwTexts, ...allEspiaStaticPieces(), ...allUnaNocheStaticPieces(), ...allAvalonStaticPieces(), ...allSecretHitlerStaticPieces(), ...allChameleonStaticPieces(), ...allInsiderStaticPieces(), ...allCoupStaticPieces(), ...allTwoRoomsStaticPieces()])];
+  const texts = [...new Set([...allStaticPieces().map((p) => p.text), ...kwTexts, ...allExplainStaticPieces(), ...allEspiaStaticPieces(), ...allUnaNocheStaticPieces(), ...allAvalonStaticPieces(), ...allSecretHitlerStaticPieces(), ...allChameleonStaticPieces(), ...allInsiderStaticPieces(), ...allCoupStaticPieces(), ...allTwoRoomsStaticPieces(), ...allDemoStaticPieces()])];
   const outDir = join(APP, 'public', 'clips', VOICE);
   mkdirSync(outDir, { recursive: true });
 

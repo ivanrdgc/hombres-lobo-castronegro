@@ -13,6 +13,7 @@ import LeaveGameModal from './ui/modals/LeaveGameModal.svelte';
 import ManualPlayerModal from './ui/modals/ManualPlayerModal.svelte';
 import ShowRoleModal from './ui/modals/ShowRoleModal.svelte';
 import ThiefSwapModal from './ui/modals/ThiefSwapModal.svelte';
+import DemoModal from './ui/modals/DemoModal.svelte';
 
 export const hombresLobo: GameDefinition = {
   id: 'hombres_lobo',
@@ -25,6 +26,7 @@ export const hombresLobo: GameDefinition = {
   Start: StartScreen,
   Screen: GameScreen,
   modals: {
+    'hl-demo': DemoModal,
     roles: RolesModal,
     settings: SettingsModal,
     explain: ExplainModal,

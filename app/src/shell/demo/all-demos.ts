@@ -1,0 +1,23 @@
+// Índice de los tutoriales de todos los juegos: lo usan la pre-generación de
+// clips (scripts/build-clips.mts) y el test de cobertura (cada pieza del
+// tutorial debe tener clip pregenerado).
+import { DEMO as hombresLobo } from '../../games/hombres-lobo/demo';
+import { DEMO as unaNoche } from '../../games/una-noche/demo';
+import { DEMO as avalon } from '../../games/avalon/demo';
+import { DEMO as secretHitler } from '../../games/secret-hitler/demo';
+import { DEMO as chameleon } from '../../games/chameleon/demo';
+import { DEMO as insider } from '../../games/insider/demo';
+import { DEMO as coup } from '../../games/coup/demo';
+import { DEMO as twoRooms } from '../../games/two-rooms/demo';
+import { DEMO as espia } from '../../games/espia/demo';
+import { demoSpeechPieces } from './types';
+import type { DemoScript } from './types';
+
+export const ALL_DEMOS: DemoScript[] = [
+  hombresLobo, unaNoche, avalon, secretHitler, chameleon, insider, coup, twoRooms, espia,
+];
+
+/** Todas las piezas de voz de todos los tutoriales (pregenerables). */
+export function allDemoStaticPieces(): string[] {
+  return [...new Set(ALL_DEMOS.flatMap((d) => demoSpeechPieces(d)))];
+}

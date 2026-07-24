@@ -31,6 +31,7 @@
   </div>
   {#each INTRO_LOBBY as p, i (i)}<p style="margin:9px 0">{p}</p>{/each}
   <button class="block" data-a="coup-open-help" onclick={() => (app.ui.modal = { type: 'coup-help' })}>🎲 Cómo se juega</button>
+  <button class="block" data-a="open-demo" onclick={() => (app.ui.modal = { type: 'coup-demo' })}>🎓 Tutorial interactivo (2 min)</button>
 </div>
 
 <div class="card">

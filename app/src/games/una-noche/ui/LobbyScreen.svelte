@@ -51,6 +51,7 @@
   </div>
   {#each INTRO_LOBBY as p, i (i)}<p style="margin:9px 0">{p}</p>{/each}
   <button class="block" data-a="una-open-help" onclick={() => (app.ui.modal = { type: 'una-help' })}>🎲 Cómo se juega y los roles</button>
+  <button class="block" data-a="open-demo" onclick={() => (app.ui.modal = { type: 'una-demo' })}>🎓 Tutorial interactivo (2 min)</button>
 </div>
 
 <div class="card">

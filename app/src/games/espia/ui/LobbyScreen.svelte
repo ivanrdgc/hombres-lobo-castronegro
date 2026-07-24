@@ -31,6 +31,7 @@
   </div>
   {#each INTRO_LOBBY as p, i (i)}<p style="margin:9px 0">{p}</p>{/each}
   <button class="block" data-a="espia-open-help" onclick={() => (app.ui.modal = { type: 'espia-help' })}>🎲 Cómo se juega</button>
+  <button class="block" data-a="open-demo" onclick={() => (app.ui.modal = { type: 'espia-demo' })}>🎓 Tutorial interactivo (2 min)</button>
 </div>
 <div class="card">
   <h3>📍 Las {LOCATIONS.length} localizaciones</h3>

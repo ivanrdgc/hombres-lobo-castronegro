@@ -9,6 +9,7 @@ import HelpModal from './ui/modals/HelpModal.svelte';
 import RoleDetailModal from './ui/modals/RoleDetailModal.svelte';
 import LeaveModal from './ui/modals/LeaveModal.svelte';
 import EndConfirmModal from './ui/modals/EndConfirmModal.svelte';
+import DemoModal from './ui/modals/DemoModal.svelte';
 
 export const avalon: GameDefinition = {
   id: 'avalon',
@@ -21,6 +22,7 @@ export const avalon: GameDefinition = {
   Start: StartScreen,
   Screen: GameScreen,
   modals: {
+    'av-demo': DemoModal,
     'av-help': HelpModal,
     'av-role-detail': RoleDetailModal,
     'av-leave': LeaveModal,

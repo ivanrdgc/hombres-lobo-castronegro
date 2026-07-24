@@ -9,6 +9,7 @@ import GameScreen from './ui/GameScreen.svelte';
 import HelpModal from './ui/modals/HelpModal.svelte';
 import LeaveModal from './ui/modals/LeaveModal.svelte';
 import EndConfirmModal from './ui/modals/EndConfirmModal.svelte';
+import DemoModal from './ui/modals/DemoModal.svelte';
 
 export const twoRooms: GameDefinition = {
   id: 'two_rooms',
@@ -21,6 +22,7 @@ export const twoRooms: GameDefinition = {
   Start: StartScreen,
   Screen: GameScreen,
   modals: {
+    'tr-demo': DemoModal,
     'tr-help': HelpModal,
     'tr-leave': LeaveModal,
     'tr-end': EndConfirmModal,

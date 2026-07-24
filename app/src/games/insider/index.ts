@@ -8,6 +8,7 @@ import GameScreen from './ui/GameScreen.svelte';
 import HelpModal from './ui/modals/HelpModal.svelte';
 import LeaveModal from './ui/modals/LeaveModal.svelte';
 import EndConfirmModal from './ui/modals/EndConfirmModal.svelte';
+import DemoModal from './ui/modals/DemoModal.svelte';
 
 export const insider: GameDefinition = {
   id: 'insider',
@@ -20,6 +21,7 @@ export const insider: GameDefinition = {
   Start: StartScreen,
   Screen: GameScreen,
   modals: {
+    'ins-demo': DemoModal,
     'ins-help': HelpModal,
     'ins-leave': LeaveModal,
     'ins-end': EndConfirmModal,

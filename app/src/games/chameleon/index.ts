@@ -7,6 +7,7 @@ import GameScreen from './ui/GameScreen.svelte';
 import HelpModal from './ui/modals/HelpModal.svelte';
 import LeaveModal from './ui/modals/LeaveModal.svelte';
 import EndConfirmModal from './ui/modals/EndConfirmModal.svelte';
+import DemoModal from './ui/modals/DemoModal.svelte';
 
 export const chameleon: GameDefinition = {
   id: 'chameleon',
@@ -19,6 +20,7 @@ export const chameleon: GameDefinition = {
   Start: StartScreen,
   Screen: GameScreen,
   modals: {
+    'ch-demo': DemoModal,
     'ch-help': HelpModal,
     'ch-leave': LeaveModal,
     'ch-end': EndConfirmModal,

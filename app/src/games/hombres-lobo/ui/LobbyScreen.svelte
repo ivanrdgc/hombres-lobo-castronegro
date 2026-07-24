@@ -47,6 +47,7 @@
   </div>
   {#each ex.intro as p, i (i)}<p style="margin:9px 0">{p}</p>{/each}
   <button class="block" data-a="open-explain" onclick={() => (app.ui.modal = { type: 'explain' })}>🎲 Cómo se juega</button>
+  <button class="block" data-a="open-demo" onclick={() => (app.ui.modal = { type: 'hl-demo' })}>🎓 Tutorial interactivo (2 min)</button>
 </div>
 <div class="card">
   <h3>🎴 Roles y configuración</h3>
