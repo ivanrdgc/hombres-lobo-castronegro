@@ -109,6 +109,21 @@ try {
   async function armAimShoot(target) {
     // El jugador de turno arma; en sus siguientes turnos apunta y dispara.
     let ss = await st();
+    // Si le toca al propio objetivo, que haga de relleno (nadie puede apuntarse
+    // a sí mismo, así que el tirador debe ser OTRO).
+    while (ss.phase === 'turn' && ss.turn === target) {
+      const t = ss.playerIds.find((p) => p !== ss.turn && ss.alive[p]);
+      await turnDo(ss, async (p) => {
+        await p.click('[data-a=gc-mode-investigate]');
+        await p.click(`[data-a=gc-inv-target][data-p="${t}"]`);
+        await pg(ss.turn).locator('[data-a=gc-inv-card]:not([disabled])').first().click();
+      });
+      await waitState(ana, (x) => x.turn !== ss.turn || x.phase === 'end', 'el objetivo cede el turno');
+      const s2 = await st();
+      if (s2.peek) await pg(s2.peek.by).click('[data-a=gc-peek-ok]').catch(() => {});
+      ss = await st();
+      if (ss.phase === 'end') return ss;
+    }
     const shooter = ss.turn;
     await turnDo(ss, async (p) => { await p.click('[data-a=gc-arm]:not([disabled])'); });
     ss = await waitState(ana, (x) => x.armed[shooter], 'armado');
