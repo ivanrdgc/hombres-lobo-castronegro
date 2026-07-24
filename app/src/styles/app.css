@@ -250,8 +250,10 @@ button.rolechip.fallen { opacity: 0.45; text-decoration: line-through; color: va
   animation: up 0.18s ease;
   overscroll-behavior: contain; /* su scroll no se encadena al fondo */
 }
-/* Con un modal abierto, la página de detrás no se desplaza. */
-body.modal-open { overflow: hidden; }
+/* Con un modal abierto, la página de detrás no se desplaza. Se FIJA el body
+   (ModalHost pone `top: -scrollY`), porque en iOS `overflow:hidden` no basta
+   para frenar el scroll táctil del documento. */
+body.modal-open { position: fixed; left: 0; right: 0; width: 100%; overflow: hidden; }
 @keyframes up { from { transform: translateY(40px); opacity: 0.5; } to { transform: none; opacity: 1; } }
 @media (min-width: 700px) {
   .overlay { align-items: center; }

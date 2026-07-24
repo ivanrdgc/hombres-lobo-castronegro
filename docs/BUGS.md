@@ -209,3 +209,27 @@ Estados: 🔴 abierto · 🟢 arreglado (con commit) · 🟡 re-reportado tras u
 - **2026-07-24 · 🟢 arreglado** (este commit): el ejemplo del tutorial pasa a los ENAMORADOS de
   Cupido (paso «las palabras clave»), con el fraseo real de la voz; la carta de ejemplo de la
   Vidente ya no lleva palabra clave y aclara que se la llama por su nombre.
+
+## B16 · El fondo hace scroll bajo un modal en móvil (iOS)
+- **2026-07-24 · reporte.** «El back hace scroll cuando se toca la pantalla de tutorial. Se puede
+  bloquear el scroll del back igual que hacen otros modals?» Con el tutorial abierto (un modal
+  largo, llena la pantalla), arrastrar sobre él desplazaba la página de detrás.
+- **Diagnóstico.** El bloqueo era `body.modal-open { overflow: hidden }`, que en iOS Safari NO
+  frena el scroll táctil del documento (bug clásico de WebKit). No se notaba en los modales cortos
+  (no invitan a arrastrar); el tutorial, a pantalla completa y con scroll interno, sí lo destapaba.
+  «Los otros modales» en realidad tenían la misma fuga sutil.
+- **2026-07-24 · 🟢 arreglado** (este commit): ModalHost FIJA el body mientras hay cualquier modal
+  abierto (`position:fixed` + `top:-scrollY`, guardando y restaurando la posición al cerrar); el
+  effect depende solo de «¿hay modal?» para no saltar al cambiar de un modal a otro. Afecta a TODOS
+  los modales. E2E: e2e-demos comprueba body fijo al abrir y restaurado al cerrar.
+
+## B17 · La mesa perdía el scroll al volver de un juego
+- **2026-07-24 · petición.** «Al volver de la pantalla de juego al menú principal, se puede
+  conservar la posición del scroll que había en la pantalla principal?» Al entrar en el lobby de un
+  juego y volver a la mesa con ←, el catálogo aparecía arriba del todo.
+- **Diagnóstico.** MesaScreen se DESMONTA al navegar al lobby (GroupScreen renderiza otro
+  componente) y se remonta al volver, así que el scroll del documento se pierde.
+- **2026-07-24 · 🟢 arreglado** (este commit): MesaScreen recuerda su scroll en una variable de
+  módulo (sobrevive al desmontaje) y lo restaura al remontar, reintentando unos frames porque el
+  catálogo tarda en alcanzar su alto (si no, el scroll se recortaría a 0). E2E: e2e-navegacion
+  comprueba que el scroll de la mesa se conserva al ir a un juego y volver (viewport de móvil).

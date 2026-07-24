@@ -63,13 +63,18 @@ try {
     ok('«¡Listo, a jugar!» devuelve al lobby');
   }
 
-  // El botón «‹ Anterior» también funciona (muestra: un juego cualquiera).
+  // El botón «‹ Anterior» y el bloqueo de scroll del fondo (muestra: un juego).
   await page.click('[data-a=open-demo]');
   await page.waitForSelector('[data-a=demo-next]');
+  const locked = await page.evaluate(() => getComputedStyle(document.body).position === 'fixed' && document.body.classList.contains('modal-open'));
+  check(locked, 'con el tutorial abierto, el fondo queda fijo (no hace scroll)');
   await page.click('[data-a=demo-next]');
   await page.click('[data-a=demo-prev]');
   check(await page.locator('text=Paso 1 de').count() === 1, '«Anterior» vuelve al paso 1');
-  await page.click('[data-a=close-modal]');
+  await page.click('button[data-a=close-modal]');
+  await page.waitForSelector('[data-a=open-demo]');
+  const unlocked = await page.evaluate(() => getComputedStyle(document.body).position !== 'fixed' && !document.body.classList.contains('modal-open'));
+  check(unlocked, 'al cerrar, el fondo se desbloquea');
 
   // Limpieza: Ana abandona (la mesa se borra sola al ser la última).
   await page.goto(url);

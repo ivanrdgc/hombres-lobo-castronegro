@@ -35,12 +35,25 @@
 
   let modalEl: HTMLElement | null = $state(null);
 
-  // Con un modal abierto, el fondo no debe desplazarse: se bloquea el scroll
-  // del body (y el propio modal contiene su rebote con overscroll-behavior).
+  // Solo importa si hay ALGÚN modal abierto, no cuál: así cambiar de un modal a
+  // otro (p. ej. saltar al detalle de un rol) no re-dispara el bloqueo ni salta.
+  const modalOpen = $derived(!!(app.ui.modal && Current));
+
+  // Con un modal abierto, el fondo no debe desplazarse. En iOS `overflow:hidden`
+  // sobre el body NO frena el scroll táctil, así que se FIJA el body en su sitio
+  // (guardando la posición actual) y se restaura al cerrar; overscroll-behavior
+  // evita además que el scroll del propio modal se encadene al fondo.
   $effect(() => {
-    const open = !!(app.ui.modal && Current);
-    document.body.classList.toggle('modal-open', open);
-    return () => document.body.classList.remove('modal-open');
+    if (!modalOpen) return;
+    const y = window.scrollY;
+    const body = document.body;
+    body.classList.add('modal-open');
+    body.style.top = `-${y}px`;
+    return () => {
+      body.classList.remove('modal-open');
+      body.style.top = '';
+      window.scrollTo(0, y);
+    };
   });
 
   // Un modal puede reabrirse pidiendo recuperar su scroll (p. ej. al volver del
