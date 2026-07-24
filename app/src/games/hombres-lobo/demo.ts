@@ -20,9 +20,9 @@ export const DEMO: DemoScript = {
       title: 'Tu carta secreta',
       text: [
         'Al empezar, cada uno mira su carta en su móvil, a solas: se muestra un instante y se vuelve a ocultar sola. Apréndela bien y confirma.',
-        'Si junto a tu carta aparece una PALABRA CLAVE, memorízala: si la voz la pronuncia de noche, esa llamada va por ti (aunque no nombre tu rol).',
+        'De noche, la voz llama a cada rol por su NOMBRE: «Vidente, abre los ojos…». Solo hay una excepción, que veremos enseguida: los vínculos secretos que nacen DURANTE la partida.',
       ],
-      visual: { kind: 'card', emoji: '🔮', title: 'Eres la Vidente', lines: ['Cada noche descubres la carta de un vecino.', 'Tu palabra clave: «Luna de Plata»'] },
+      visual: { kind: 'card', emoji: '🔮', title: 'Eres la Vidente', lines: ['Cada noche descubres la carta secreta de un vecino.', 'La voz te llamará por tu nombre: «Vidente».'] },
     },
     {
       icon: '🌙',
@@ -34,14 +34,17 @@ export const DEMO: DemoScript = {
     },
     {
       icon: '🤔',
-      title: 'Ponte a prueba',
-      text: ['Es de noche, eres la Vidente y la voz dice: «Luna de Plata…» (tu palabra clave).'],
+      title: 'Ponte a prueba: las palabras clave',
+      text: [
+        'Algunos roles crean vínculos SECRETOS durante la partida: Cupido enamora a dos personas, el Gaitero encanta a otras… La voz no puede llamarlas por su nombre sin delatarlas, así que les reparte una PALABRA CLAVE que solo ellas ven en su pantalla.',
+        'Cupido te ha flechado: eres uno de los enamorados y tu palabra clave es «Luna de Plata». De noche, la voz dice: «Cupido ha disparado sus flechas… si oyes tu palabra clave, abre los ojos: … Luna de Plata…».',
+      ],
       ask: {
         prompt: '¿Qué haces?',
         choices: [
-          { label: 'Abro los ojos con disimulo y toco en mi pantalla a quien quiero investigar', good: true, reply: 'Eso es: la llamada va por ti aunque no diga «vidente». Actúa rápido y en silencio, y vuelve a cerrar los ojos.' },
-          { label: 'Espero a que diga «Vidente» claramente', reply: 'Puede que nunca lo diga: la palabra clave ES tu llamada (así los demás no saben qué rol ha actuado). Si la dejas pasar, la voz te dará un toque… y perderás tiempo.' },
-          { label: 'Pregunto en voz alta si me toca', reply: '¡Ni una palabra de noche! Hablar delata tu rol a toda la mesa. Todo se resuelve en tu pantalla.' },
+          { label: 'Abro los ojos con disimulo y confirmo en mi pantalla', good: true, reply: 'Eso es: la palabra clave ES tu llamada. Reconoces a tu amor en silencio y confirmas; la voz jamás dice vuestros nombres, porque cantaría el vínculo a toda la mesa.' },
+          { label: 'Espero a que diga «enamorados» y nuestros nombres', reply: 'No lo hará nunca: nombraros en alto os delataría. Por eso Cupido reparte palabras clave — solo tú sabes que «Luna de Plata» va por ti.' },
+          { label: 'Pregunto en voz alta quién es mi pareja', reply: '¡Ni una palabra de noche! Os reconocéis con la mirada, en silencio. Y ojo: en Castronegro, si tu amor cae, tú te mueres de pena tras él.' },
         ],
       },
     },

@@ -194,3 +194,18 @@ Estados: 🔴 abierto · 🟢 arreglado (con commit) · 🟡 re-reportado tras u
   párrafo) con segmentos `gap` reales entre ellas (el título, con su propia pausa); los ▶️ por
   apartado leen ahora `[título, …párrafos]` con pausa de 550 ms entre piezas. De paso, todos los
   textos de ayuda/lobby/demos se pregeneran como clips (antes se sintetizaban en vivo al tocar ▶️).
+
+## B15 · Tutorial de Los Hombres Lobo: la palabra clave NO es de la Vidente
+- **2026-07-24 · reporte.** «En el ejemplo del tutorial, la vidente sí se llama por el rol, ya que
+  se conoce desde el principio. Un mal ejemplo. Palabras clave se usan para los enamorados de
+  Cupido.» El paso «Ponte a prueba» del tutorial nuevo de Hombres Lobo ponía a la Vidente con una
+  palabra clave («Luna de Plata») y a la voz llamándola por ella.
+- **Diagnóstico.** Falso: las palabras clave (`KW_ROLES = ['cupido','gaitero','infecto']`, actions.ts)
+  solo se activan con esos roles y sirven para llamar a IDENTIDADES QUE NACEN DURANTE LA PARTIDA
+  (enamorados de Cupido, encantados del Gaitero, infectado) sin nombrarlas en voz alta. Un rol fijo
+  y conocido desde el reparto como la Vidente se llama por su nombre (`STEP_CALL.vidente`:
+  «Vidente, abre los ojos…»). `enamoradosCallUtterance` (compose.ts) es quien locuta la llamada por
+  palabra clave, con `ENAMORADOS_INTRO`.
+- **2026-07-24 · 🟢 arreglado** (este commit): el ejemplo del tutorial pasa a los ENAMORADOS de
+  Cupido (paso «las palabras clave»), con el fraseo real de la voz; la carta de ejemplo de la
+  Vidente ya no lleva palabra clave y aclara que se la llama por su nombre.
