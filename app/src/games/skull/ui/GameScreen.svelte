@@ -1,5 +1,8 @@
 <script lang="ts">
-  // Pantalla de partida de «Skull»: cabecera + tablero de pilas + fase.
+  // Partida de Skull en UNA pantalla (postura 🃏 mano): arriba los hechos con
+  // los que se decide, en medio la mesa (pilas ajenas y su altura), abajo TU
+  // mano y tu decisión. Nada de lo que hace falta para pujar o colocar está
+  // detrás de un gesto; solo el diario y las reglas van plegados.
   import { app, isMaster, matchOf } from '../../../core/sync/store.svelte';
   import { skullGame, flip, nextRound } from '../actions';
   import { guard } from '../../../core/sync/guard';
@@ -9,11 +12,11 @@
   import Flash from '../../../shell/Flash.svelte';
   import CardFab from '../../../shell/CardFab.svelte';
   import GameMenu from './GameMenu.svelte';
+  import SkFacts from './SkFacts.svelte';
   import StacksBoard from './StacksBoard.svelte';
-  import SetupPhase from './SetupPhase.svelte';
-  import PlayPhase from './PlayPhase.svelte';
-  import BidPhase from './BidPhase.svelte';
-  import RevealPhase from './RevealPhase.svelte';
+  import HandDock from './HandDock.svelte';
+  import BidPanel from './BidPanel.svelte';
+  import RulesFold from './RulesFold.svelte';
   import EndPhase from './EndPhase.svelte';
 
   const { group, my }: { group: GroupDoc; my: PlayerDoc } = $props();
@@ -29,62 +32,57 @@
   let logEl: HTMLElement | null = $state(null);
   $effect(() => { void (game.log || []).length; if (logEl) logEl.scrollTop = logEl.scrollHeight; });
   const nm = (pid: string) => game.names[pid] || '¿?';
-  // En qué momento de la ronda estamos, sin tener que leerlo entre líneas.
-  const phaseChip = $derived(
-    game.phase === 'setup' ? '🌸 Colocación'
-      : game.phase === 'play' ? '🎬 Turnos'
-        : game.phase === 'bid' ? '🗣️ Puja'
-          : game.phase === 'reveal' ? '🎲 Revelado'
-            : game.phase === 'roundEnd' ? '🔄 Fin de ronda' : '',
-  );
 </script>
 
+<!-- La fase no se repite aquí: la primera línea de los hechos ya dice qué toca. -->
 <div class="topbar">
   <h2>💀 Skull</h2>
   {#if game.phase !== 'end'}<span class="chip">Ronda {game.round}</span>{/if}
-  {#if phaseChip}<span class="chip">{phaseChip}</span>{/if}
   <GameMenu {game} {my} />
 </div>
 <Flash />
 
+<!-- Avisos de una línea: en un móvil, una tarjeta grande aquí empuja la mano
+     y la decisión fuera de la pantalla. -->
 {#if needsUnlock}
-  <div class="card" style="text-align:center"><span class="moon">🔊</span><h3>Este dispositivo pone la voz</h3>
-    <button class="primary block" data-a="unlock-voice" onclick={unlockVoice}>🔊 Activar la voz</button></div>
+  <button class="primary block" data-a="unlock-voice" onclick={unlockVoice}>🔊 Activar la voz en este móvil (es el que narra)</button>
 {/if}
 {#if game.paused}
-  <div class="card" style="text-align:center"><span class="moon">⏸️</span><h3>Partida en pausa</h3>
-    <p class="small-note">La ha pausado {game.paused.name || 'alguien'}.</p></div>
+  <p class="skpaused">⏸️ <b>Partida en pausa</b> — la ha pausado {game.paused.name || 'alguien'}. Se reanuda desde el menú ⋯</p>
 {/if}
 
 {#if game.phase === 'end'}
-  <EndPhase {game} {my} />
+  <EndPhase {game} />
 {:else}
-  <div class="card"><StacksBoard {game} {my} onflip={(pid) => guard(() => flip(pid))} /></div>
-  {#if game.phase === 'setup'}
-    <SetupPhase {game} {my} />
-  {:else if game.phase === 'play'}
-    <PlayPhase {game} {my} />
-  {:else if game.phase === 'bid'}
-    <BidPhase {game} {my} />
-  {:else if game.phase === 'reveal'}
-    <RevealPhase {game} {my} />
-  {:else if game.phase === 'roundEnd'}
-    {#if game.lastResult}<div class="narration">{game.lastResult.text}</div>{/if}
-    <div class="card">
-      <p class="hint" style="margin:0">🔄 Se recogen todas las pilas: cada uno recupera sus discos (menos el descartado al fallar).</p>
-      <p class="small-note">La ronda {game.round + 1} la empieza <b>{nm(game.starter)}</b>. Los ⭐ del tablero son los retos ganados: con dos se acaba la partida.</p>
-    </div>
+  <SkFacts {game} {my} />
+  <StacksBoard {game} {my} onflip={(pid) => guard(() => flip(pid))} />
+
+  {#if inGame}
+    <HandDock {game} {my} onflip={(pid) => guard(() => flip(pid))} />
+    <BidPanel {game} {my} />
     <!-- El espectador no juega: no le ofrecemos el botón de continuar. -->
-    {#if inGame}
+    {#if game.phase === 'roundEnd'}
       <button class="primary block" data-a="sk-next-round" onclick={() => guard(nextRound)}>▶️ Siguiente ronda (empieza {nm(game.starter)})</button>
     {/if}
+  {:else}
+    <p class="small-note" style="text-align:center">👀 Sigues la partida de espectador: ves las alturas de las pilas, no lo que hay dentro.</p>
   {/if}
-  {#if !inGame}<p class="small-note" style="text-align:center">👀 Sigues la partida de espectador (sin ver las pilas ocultas).</p>{/if}
+
+  <RulesFold phase={game.phase} />
 {/if}
 
 {#if game.log && game.log.length}
-  <div class="card"><h3>📜 Diario</h3>
-    <div class="log" bind:this={logEl}>{#each game.log as l, i (i)}<p>{l.txt}</p>{/each}</div></div>
+  <details class="sklog">
+    <summary data-a="sk-log">📜 Diario de la partida ({game.log.length})</summary>
+    <div class="log" bind:this={logEl}>{#each game.log as l, i (i)}<p>{l.txt}</p>{/each}</div>
+  </details>
 {/if}
 
 <CardFab modal="sk-mycard" />
+
+<style>
+  .skpaused { margin: 6px 0; padding: 8px 11px; font-size: 0.83rem; border-radius: var(--r-1, 8px); border: 1px solid var(--accent, #c8a24a); background: color-mix(in srgb, var(--accent, #c8a24a) 12%, transparent); }
+  /* El diario, plegado: es historia, no decisión. Se abre y se queda abierto. */
+  .sklog { margin: 4px 0 0; }
+  .sklog summary { font-size: 0.82rem; color: var(--muted, #999); cursor: pointer; min-height: 30px; display: flex; align-items: center; }
+</style>

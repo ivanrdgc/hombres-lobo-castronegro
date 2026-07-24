@@ -10,7 +10,7 @@
 </script>
 
 <details class="cnref">
-  <summary data-a="cn-ref">📖 Los colores del tablero y cómo va la pista</summary>
+  <summary data-a="cn-ref">📖 Los colores y cómo va la pista</summary>
   {#each rows as r (r.name)}
     <div class="settingrow">
       <div class="sinfo">

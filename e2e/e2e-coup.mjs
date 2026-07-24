@@ -37,6 +37,8 @@ async function waitState(page, fn, what, timeout = 45000) {
 }
 let NAMES = {};
 let sawTargetStats = false, sawActionInfo = false, sawPlanStep = false, sawRecap = false;
+// Nombres en pantalla de cada personaje (para comprobar que la mano se lee).
+const CHAR_ES = { duque: 'Duque', asesino: 'Asesino', capitan: 'Capitán', embajador: 'Embajador', condesa: 'Condesa' };
 const pg = (pid) => pages[(NAMES[pid] || pid).toLowerCase()];
 const st = () => hlc(pages.ana);
 const alive = (s, pid) => (s.hands[pid] || []).some((c) => !c.lost);
@@ -84,6 +86,9 @@ async function passWindow(windows) {
       await page.waitForSelector('text=/Qué está pasando/', { timeout: 15000 });
       check(await page.locator('text=/Si nadie lo impide/').count() >= 1, 'la ventana de reacción dice qué pasa si nadie lo impide');
       check(await page.locator('text=/Falta por contestar|Todos han contestado/').count() >= 1, 'y quién falta por contestar');
+      // 🃏 MANO (B28): la ventana y tu mano se leen A LA VEZ, sin abrir nada.
+      check(await page.locator('[data-a=coup-myhand]').count() === 1, 'la ventana de reacción se lee con tu mano a la vista, sin abrir nada');
+      check(await page.locator('[data-a=coup-peek]').count() === 0, 'y sin ningún «👁 Ver mis influencias» de por medio');
       sawRecap = true;
     }
     await clickWait(page, '[data-a=coup-pass]', sig(s));
@@ -148,6 +153,12 @@ try {
   await ana.click('button[data-a=select-game][data-p=coup]');
   await ana.waitForSelector('[data-a=coup-open-help]');
   ok('el catálogo ofrece Coup y su lobby carga');
+  // El lobby tiene un solo trabajo (B29): de qué va + tres caminos claros, y el
+  // aviso de postura del móvil (B28: Coup es de MANO).
+  check(/mano/i.test(await ana.locator('[data-a=coup-posture]').innerText()), 'el lobby avisa de la postura: móvil en la mano');
+  check(await ana.locator('[data-a=open-start]').count() === 1
+    && await ana.locator('[data-a=open-demo]').count() === 1
+    && await ana.locator('[data-a=coup-open-help]').count() === 1, 'y ofrece los tres caminos: empezar, tutorial y cómo se juega');
   await ana.click('[data-a=coup-open-help]');
   await ana.waitForSelector('text=/Cómo se juega/');
   check(await ana.locator('.modal [data-a=coup-play-howto]').count() >= 5, 'el «cómo se juega» tiene un ▶️ por apartado');
@@ -163,11 +174,17 @@ try {
   check(s.playerIds.length === 4, '4 jugadores en la corte');
   check(s.playerIds.every((pid) => s.hands[pid].length === 2), 'cada uno tiene 2 influencias');
   check(s.playerIds.every((pid) => s.coins[pid] === 2), 'cada uno empieza con 2 monedas');
+  // 🃏 MANO (B28): el reparto ENSEÑA las dos cartas, sin «👁 ver» previo.
+  let sawDeal = false;
   for (const pid of s.playerIds) {
     const p = pg(pid);
-    await p.waitForSelector('[data-a=coup-reveal]', { timeout: 15000 });
-    await p.click('[data-a=coup-reveal]');
-    await p.waitForSelector('[data-a=coup-seen]');
+    await p.waitForSelector('[data-a=coup-deal]', { timeout: 15000 });
+    if (!sawDeal) {
+      check(await p.locator('[data-a=coup-reveal]').count() === 0, 'el reparto enseña tus influencias sin ningún gesto previo');
+      const deal = await p.locator('[data-a=coup-deal]').innerText();
+      check(s.hands[pid].every((c) => deal.includes(CHAR_ES[c.char])), 'y salen las dos con su nombre y su poder');
+      sawDeal = true;
+    }
     await p.click('[data-a=coup-seen]');
     await p.waitForTimeout(80);
   }
@@ -175,6 +192,22 @@ try {
   await pg(s.playerIds[0]).click('[data-a=coup-begin]');
   s = await waitState(ana, (x) => x.phase === 'turn', 'arranca la partida');
   ok('reparto confirmado y partida en marcha');
+
+  // ——— Postura de MANO: todo lo de decidir, en una pantalla ———
+  {
+    const pid0 = s.playerIds[0];
+    const p0 = pg(pid0);
+    await p0.waitForSelector('[data-a=coup-myhand]', { timeout: 15000 });
+    check(await p0.locator('[data-a=coup-peek]').count() === 0, 'tus influencias están siempre a la vista (sin «👁 Ver mis influencias»)');
+    const chars = [...new Set(s.hands[pid0].map((c) => c.char))];
+    const hand = await p0.locator('[data-a=coup-myhand]').innerText();
+    check(chars.every((c) => hand.includes(CHAR_ES[c])), 'la mano dice qué personajes escondes y qué te dejan hacer');
+    check(/🪙\s*\d/.test(await p0.locator('[data-a=coup-purse]').innerText()), 'y tus monedas van con ella');
+    const rival = await p0.locator('[data-a=coup-seat]').first().innerText();
+    check(/🪙\s*\d/.test(rival) && /🂠|Duque|Asesino|Capitán|Embajador|Condesa|eliminado/.test(rival),
+      'de los demás se ven sus monedas y las influencias que les quedan');
+    check(await p0.locator('text=/boca arriba/').count() >= 1, 'y qué cartas están ya descubiertas en la corte');
+  }
 
   // ——— Motor de partida: cobertura guiada + asesinatos hasta un ganador ———
   let didChallenge = false, didExchange = false, didAyuda = false, sawBlock = false;

@@ -9,10 +9,11 @@
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
   import { validTargets, playableIdx, countessForced, outCounts } from '../engine';
-  import { CARD_INFO, NEEDS_TARGET, VALUE, PLAN, ASK_TARGET } from '../cards';
+  import { CARD_INFO, NEEDS_TARGET, VALUE, PLAN, ASK_TARGET, copiesNote } from '../cards';
   import type { Card } from '../cards';
   import type { PlayerDoc } from '../../../core/sync/schema';
   import type { LoveLetterState } from '../types';
+  import CardFace from './CardFace.svelte';
 
   const { game, my }: { game: LoveLetterState; my: PlayerDoc } = $props();
   const hand = $derived(game.hands[my.id] || []);
@@ -47,7 +48,7 @@
   const nmObj = (pid: string) => (pid === my.id ? 'ti mismo' : game.names[pid] || '¿?');
   // Quién NO aparece en la lista de objetivos, y por qué (nunca una ausencia muda).
   const shielded = $derived(game.playerIds.filter((p) => p !== my.id && game.alive[p] && game.protected[p]));
-  const copies = (c: Card) => `${CARD_INFO[c].count} en el mazo · ya ${out[c] === 1 ? 'ha salido' : 'han salido'} ${out[c]}`;
+  const copies = (c: Card) => copiesNote(c, out[c]);
   // Resumen de lo elegido, para leerlo antes de confirmar.
   const summary = $derived(!card ? '' : `${CARD_INFO[card].emoji} ${CARD_INFO[card].name}`
     + (tgt ? ` sobre ${nmObj(tgt)}` : '')
@@ -60,35 +61,23 @@
 </script>
 
 <div class="actionpanel">
-  <h3>🎴 Tu turno · {sel === null ? 'paso 1 de 2: ¿qué juegas?' : 'paso 2 de 2: confirma'}</h3>
+  <h3>🎴 Tu turno · {sel === null ? '1 de 2: ¿qué juegas?' : '2 de 2: confirma'}</h3>
 
   {#if paused}<p class="llwarn">⏸️ Partida en pausa: puedes mirar y decidir, pero no se juega hasta que alguien la reanude.</p>{/if}
   {#if sel === null}
-    <p class="hint">Tienes dos cartas: juegas UNA (con su efecto) y la otra se queda en tu mano. Toca la que quieras jugar.</p>
+    <p class="hint">Juegas una; la otra se queda en tu mano.</p>
     <div class="llhand">
       {#each hand as c, i (i)}
         {@const locked = !playable.includes(i)}
-        <button class="llcard {locked ? 'locked' : ''}" data-a="ll-card" data-p={String(i)}
-          disabled={locked} onclick={() => (sel = i)}>
-          <div class="llhead"><span class="llemo">{CARD_INFO[c].emoji}</span>
-            <span class="llname">{CARD_INFO[c].name}</span><span class="llval">valor {VALUE[c]}</span></div>
-          <div class="llcount">{copies(c)}</div>
-          <div class="lleff">{CARD_INFO[c].short}</div>
-          {#if locked && forced}
-            <div class="lllock">🔒 Bloqueada: con el Rey o el Príncipe en la mano, la Condesa es OBLIGATORIA.</div>
-          {/if}
+        <button class="llpick" data-a="ll-card" data-p={String(i)} disabled={locked} onclick={() => (sel = i)}>
+          <CardFace card={c} tone={locked ? 'locked' : 'mine'}
+            foot={`${copies(c)}${locked && forced ? ' · 🔒 obligatorio descartar la Condesa mientras tengas el Rey o el Príncipe' : ''}`} />
         </button>
       {/each}
     </div>
   {:else if card}
-    <div class="llchosen">
-      <div class="llhead"><span class="llemo">{CARD_INFO[card].emoji}</span>
-        <span class="llname">{CARD_INFO[card].name}</span><span class="llval">valor {VALUE[card]}</span></div>
-      <div class="lleff">{PLAN[card]}</div>
-      {#if kept}
-        <div class="llkept">🖐 Te quedas con <b>{CARD_INFO[kept].emoji} {CARD_INFO[kept].name} (valor {VALUE[kept]})</b>{#if card === 'baron'} — es la que pelea el duelo{:else if card === 'king'} — es la que entregas a cambio{/if}.</div>
-      {/if}
-    </div>
+    <CardFace {card} tone="chosen" effect={PLAN[card]}
+      foot={kept ? `🖐 Te quedas con ${CARD_INFO[kept].emoji} ${CARD_INFO[kept].name} (valor ${VALUE[kept]})${card === 'baron' ? ' — es la que pelea el duelo' : card === 'king' ? ' — es la que entregas a cambio' : ''}.` : ''} />
     <button class="ghost block pick" style="margin:8px 0" data-a="ll-back" onclick={() => (sel = null)}>↩️ Cambiar de carta</button>
 
     {#if needTarget}
@@ -109,10 +98,14 @@
 
     {#if card === 'guard' && tgt}
       <p class="small-note" style="margin:10px 0 2px"><b>¿Qué carta crees que tiene {nm(tgt)}?</b> Si aciertas, queda fuera.</p>
-      <div class="btnrow" style="flex-wrap:wrap">
+      <!-- Dos columnas: las siete entran sin empujar el botón de confirmar fuera
+           de la pantalla, y cada una dice cuántas siguen sin verse. -->
+      <div class="llguess">
         {#each guessable as gc (gc)}
-          <button class="pick {gss === gc ? 'primary' : 'ghost'}" data-a="ll-guess" data-p={gc} onclick={() => (gss = gc)}>
-            {CARD_INFO[gc].emoji} {CARD_INFO[gc].name} ({VALUE[gc]}) · quedan {CARD_INFO[gc].count - out[gc]}
+          {@const left = CARD_INFO[gc].count - out[gc]}
+          <button class="pick {gss === gc ? 'primary' : 'ghost'} {left ? '' : 'none'}" data-a="ll-guess" data-p={gc} onclick={() => (gss = gc)}>
+            <span class="gname">{CARD_INFO[gc].emoji} {CARD_INFO[gc].name} ({VALUE[gc]})</span>
+            <span class="gleft">{left === 0 ? 'ya han salido todas' : left === 1 ? 'queda 1 sin salir' : `quedan ${left} sin salir`}</span>
           </button>
         {/each}
       </div>
@@ -131,8 +124,10 @@
     {/if}
   {/if}
 
+  <!-- La referencia entera, plegada DENTRO del panel (B26·4): decidir no obliga
+       a salir de esta pantalla. -->
   <details class="llref">
-    <summary data-a="ll-ref">📖 Las 8 cartas del mazo (16 cartas) y lo que ya ha salido</summary>
+    <summary data-a="ll-ref">📖 Las 8 cartas del mazo</summary>
     {#each ALL as c (c)}
       <div class="settingrow">
         <div class="sinfo">
@@ -141,32 +136,20 @@
         </div>
       </div>
     {/each}
-    <p class="small-note" style="margin-top:8px">Cuenta lo que ya ha salido para deducir qué queda: los descartes de la fila de jugadores son públicos.</p>
   </details>
 </div>
 
 <style>
   /* Móvil primero (B26·9): nada esencial por debajo de 0,8 rem y todo lo tocable
-     con 44 px de alto. Las tarjetas son grandes a propósito: se juegan con el
-     móvil en la mano y el pulgar. */
+     con 44 px de alto. Las cartas son grandes a propósito: se juegan con el
+     móvil en la mano y el pulgar (B28 · postura de mano). */
+  /* Título de una línea: el panel entero tiene que caber sin desplazar (B29·7). */
+  .actionpanel h3 { font-size: 1.05rem; }
   .llhand { display: flex; flex-direction: column; gap: 8px; }
-  .llcard {
-    display: block; width: 100%; text-align: left; padding: 12px; min-height: 44px;
-    border-radius: var(--r-2); border: 1px solid var(--line-2); background: var(--card2);
-  }
-  .llcard.locked { opacity: 0.6; border-style: dashed; }
-  .llchosen {
-    padding: 12px; border-radius: var(--r-2);
-    border: 1px solid var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--card2));
-  }
-  .llhead { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
-  .llemo { font-size: 1.6rem; }
-  .llname { font-size: 1.05rem; font-weight: 700; color: var(--moon); }
-  .llval { font-size: 0.8rem; color: var(--muted); }
-  .llcount { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
-  .lleff { font-size: 0.88rem; color: var(--text); margin-top: 6px; white-space: normal; }
-  .lllock { font-size: 0.8rem; color: var(--moon); margin-top: 8px; }
-  .llkept { font-size: 0.82rem; color: var(--text); margin-top: 8px; opacity: 0.92; }
+  /* El botón no pinta nada: la carta entera ES la zona de toque. */
+  .llpick { display: block; width: 100%; padding: 0; border: none; background: none; text-align: left; }
+  .llpick:disabled { cursor: default; }
+  .llpick:active:not(:disabled) { transform: scale(0.99); }
   .llwarn {
     font-size: 0.82rem; color: var(--moon); margin: 10px 0 0; padding: 8px 10px;
     border-radius: var(--r-1); border: 1px solid var(--accent);
@@ -174,6 +157,12 @@
   }
   /* Objetivos y adivinanzas: pastillas cómodas, no botones «small» de 34 px. */
   .pick { min-height: 44px; padding: 10px 12px; font-size: 0.85rem; border-radius: 10px; }
+  /* Las siete adivinanzas, en dos columnas: caben sin empujar el ▶️ Jugar. */
+  .llguess { display: grid; grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); gap: 6px; }
+  .llguess .pick { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; }
+  .gname { font-size: 0.88rem; font-weight: 700; }
+  .gleft { font-size: 0.8rem; font-weight: 400; opacity: 0.85; }
+  .llguess .pick.none { opacity: 0.5; }
   .llref { margin-top: 14px; border-top: 1px solid var(--border); padding-top: 8px; }
   .llref summary { cursor: pointer; font-size: 0.88rem; color: var(--accent); padding: 12px 0; }
   .llref .sdesc { font-size: 0.8rem; }

@@ -7,6 +7,12 @@
 // (mirar y ejecutar, con el ejecutado viendo que está fuera) → victoria. Empuja
 // decretos fascistas para disparar los poderes y, en cuanto puede, mata a
 // Hitler → gana el Bien por la bala.
+//
+// Y la postura 🍽️ MESA (B28): NADA secreto se pinta solo —la carta y los
+// decretos exigen un gesto y viven en la cortina de privacidad—, la carta
+// abierta tiene el mismo marco y el mismo alto para los tres bandos, desde los
+// móviles de fuera no se ve nada distinto durante la legislatura y al terminarla
+// no queda rastro en pantalla de qué cartas tuvo el Presidente.
 import { chromium } from 'playwright';
 const BASE = process.env.BASE; if (!BASE) { console.error('Define BASE=https://tu-sitio.web.app'); process.exit(1); }
 let fail = 0;
@@ -60,6 +66,14 @@ try {
   await ana.click('button[data-a=select-game][data-p=secret_hitler]');
   await ana.waitForSelector('[data-a=sh-open-help]');
   ok('el catálogo ofrece Secret Hitler y su lobby carga');
+  // El lobby: los tres caminos (jugar, aprender, consultar), la postura del
+  // móvil… y el nombre del juego UNA sola vez (B29: la cabecera ya lo dice).
+  check(await ana.locator('[data-a=open-start]').count() === 1 && await ana.locator('[data-a=open-demo]').count() === 1,
+    'el lobby ofrece empezar, tutorial y «cómo se juega»');
+  const postura = await ana.textContent('[data-a=sh-posture]').catch(() => '');
+  check(/plano en la mesa/i.test(postura || ''), `el lobby dice cómo se sostiene el móvil («${(postura || '').slice(0, 60)}…»)`);
+  const titulos = (await ana.locator('h2, h3').allTextContents()).filter((t) => /Secret Hitler/i.test(t));
+  check(titulos.length === 1, `el nombre del juego sale una sola vez en los títulos (${titulos.length})`);
   await ana.click('[data-a=sh-open-help]');
   await ana.waitForSelector('text=/Cómo se juega/');
   await ana.locator('.modal [data-a=sh-role]').first().click();
@@ -81,14 +95,29 @@ try {
   const liberals = st.playerIds.filter((p) => st.roles[p] === 'liberal');
   check(!!hitler && !!fascist && liberals.length === 3, `1 Hitler, 1 fascista y 3 liberales (${st.playerIds.map((p) => st.roles[p]).join(', ')})`);
   console.log('  roles:', st.playerIds.map((id) => `${st.names[id]}=${st.roles[id]}`).join(', '));
+  // Postura MESA: la pantalla de reparto es la MISMA tarjeta neutra en los cinco
+  // móviles y la carta solo aparece dentro de la cortina, tras el gesto.
+  const frames = [];
+  let noPaint = true;
   for (const pid of st.playerIds) {
     const p = pg(pid);
     await p.waitForSelector('[data-a=sh-reveal]', { timeout: 15000 });
+    if (await p.locator('[data-a=sh-rolecard]').count()) noPaint = false;
     await p.click('[data-a=sh-reveal]');
     await p.waitForSelector('[data-a=sh-seen]');
+    // Chivato de FORMA: antes el marco iba teñido por bando (rojo/azul) y el
+    // panel del fascista era dos líneas más largo, así que de reojo se leía el
+    // bando sin leer una palabra.
+    const card = p.locator('[data-a=sh-rolecard]').first();
+    const box = await card.boundingBox().catch(() => null);
+    frames.push({ role: st.roles[pid], cls: (await card.getAttribute('class') || '').trim(), h: Math.round(box?.height ?? 0) });
     await p.click('[data-a=sh-seen]');
     await p.waitForTimeout(120);
   }
+  check(noPaint, 'la carta no se pinta sola: en reposo ningún móvil la enseña');
+  check(new Set(frames.map((f) => f.cls)).size === 1, `la carta abierta lleva el mismo marco en los tres bandos («${frames[0].cls}»)`);
+  const hs = frames.map((f) => f.h);
+  check(Math.max(...hs) - Math.min(...hs) <= 8, `y el mismo alto (${frames.map((f) => `${f.role}:${f.h}px`).join(' · ')})`);
   st = await waitState(ana, (s) => s.playerIds.every((pid) => s.seen[pid]), 'todos confirman');
   await pg(st.playerIds[0]).waitForSelector('[data-a=sh-begin]', { timeout: 15000 });
   await pg(st.playerIds[0]).click('[data-a=sh-begin]');
@@ -96,7 +125,7 @@ try {
   // ——— Bucle de gobierno: empuja decretos fascistas para disparar poderes ———
   let sawPeek = false; let execCount = 0; let sawLegPres = false; let sawLegChan = false;
   let killedHitler = false; let neinRoundDone = false; let deadNoteChecked = false;
-  let sawLegHint = false; let sawEnactHint = false; let sawNomWhy = false;
+  let sawLegHint = false; let sawEnactHint = false; let sawNomWhy = false; let sawHandoff = false;
   st = await waitState(ana, (s) => s.phase === 'nominate', 'primera nominación');
   // El tablero dice de un vistazo qué desbloquea la casilla que viene.
   await ana.waitForSelector('[data-a=sh-next]', { timeout: 15000 });
@@ -159,6 +188,18 @@ try {
       const idx = draw.findIndex((c) => c === 'liberal');
       const discard = idx >= 0 ? idx : 0;
       const p = pg(presidentPid(st));
+      // MESA→MANO: los decretos NO se pintan solos al cambiar de fase (el móvil
+      // sigue plano en la mesa); hay que abrir la cortina de privacidad.
+      await p.waitForSelector('[data-a=sh-open-cards]', { timeout: 15000 });
+      const primeraLeg = !sawHandoff;
+      if (primeraLeg) {
+        sawHandoff = true;
+        check(await p.locator('[data-a=sh-pres-discard]').count() === 0, 'los tres decretos no se pintan solos: hace falta el gesto');
+        const otro = st.playerIds.find((x) => x !== presidentPid(st) && x !== st.nominatedChancellor);
+        const fuera = await pg(otro).locator('[data-a=sh-open-cards], [data-a=sh-sheet], .pol').count();
+        check(fuera === 0, 'desde fuera (otro móvil) no se ve nada de la legislatura');
+      }
+      await p.click('[data-a=sh-open-cards]');
       await p.waitForSelector(`[data-a=sh-pres-discard][data-p="${discard}"]`, { timeout: 15000 });
       // Cada decreto dice en su tarjeta qué implica descartarlo (a quién pasan
       // los otros dos): elegir a ciegas era lo que hacía el juego ilegible.
@@ -171,6 +212,11 @@ try {
       // Nada irreversible de un solo toque: se marca y se confirma.
       await p.click('[data-a=sh-pres-discard-go]');
       await waitState(ana, (s) => s.phase !== 'legislativePresident', 'presidente descarta');
+      if (primeraLeg) {
+        // Al terminar, en su pantalla no queda rastro de qué cartas tuvo.
+        await p.waitForSelector('[data-a=sh-sheet]', { state: 'detached', timeout: 10000 }).catch(() => {});
+        check(await p.locator('[data-a=sh-sheet], .pol').count() === 0, 'al terminar no queda rastro en pantalla de los decretos del Presidente');
+      }
     } else if (st.phase === 'legislativeChancellor') {
       sawLegChan = true;
       check(Array.isArray(st.chancellorDraw) && st.chancellorDraw.length === 2, 'el Canciller ve 2 decretos en secreto');
@@ -178,6 +224,8 @@ try {
       const idx = draw.findIndex((c) => c === 'fascist');
       const enact = idx >= 0 ? idx : 0;
       const p = pg(st.nominatedChancellor);
+      await p.waitForSelector('[data-a=sh-open-cards]', { timeout: 15000 });
+      await p.click('[data-a=sh-open-cards]');
       await p.waitForSelector(`[data-a=sh-chan-enact][data-p="${enact}"]`, { timeout: 15000 });
       if (!sawEnactHint) {
         sawEnactHint = true;
@@ -192,6 +240,10 @@ try {
       const p = pg(pres);
       if (st.power.type === 'peek') {
         sawPeek = true;
+        // Las tres cartas del mazo también viven tras la cortina.
+        await p.waitForSelector('[data-a=sh-open-peek]', { timeout: 15000 });
+        check(await p.locator('.policy').count() === 0, 'las tres cartas del 🔮 no se pintan solas');
+        await p.click('[data-a=sh-open-peek]');
         await p.waitForSelector('[data-a=sh-peek-done]', { timeout: 15000 });
         await p.click('[data-a=sh-peek-done]');
       } else {
@@ -216,6 +268,10 @@ try {
         } else if (st.power.type === 'investigate') {
           await p.click(`.player[data-a=sh-sel][data-p="${cands[0]}"]`);
           await p.click('[data-a=sh-investigate]:not([disabled])');
+          // La afiliación (lo único secreto del poder) exige abrir la cortina.
+          await p.waitForSelector('[data-a=sh-open-loyalty]', { timeout: 15000 });
+          check(await p.locator('.result').count() === 0, 'la afiliación investigada no se pinta sola');
+          await p.click('[data-a=sh-open-loyalty]');
           await p.waitForSelector('[data-a=sh-invest-done]');
           await p.click('[data-a=sh-invest-done]');
         } else if (st.power.type === 'special') {

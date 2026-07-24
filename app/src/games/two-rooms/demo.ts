@@ -37,15 +37,15 @@ export const DEMO: DemoScript = {
       title: 'Ronda 1: hablar y enseñar cartas',
       who: { actor: 'TODOS habláis DENTRO de vuestra sala mientras corre el reloj (3 min)', others: 'el temporizador se ve en cada móvil; la voz suena según el modo elegido al empezar.' },
       text: [
-        'Enseñar la carta es EL mecanismo del juego, y se hace con el móvil: abres tu carta, tapas la pantalla con la mano y se la enseñas a esa persona, cara a cara. Solo a quien tú decidas, y solo si quieres.',
-        'También puedes enseñar SOLO EL COLOR: el botón «🎨 Enseñar solo el color» deja en pantalla un panel con tu bando y nada más. Es la jugada favorita del Presidente, que necesita azules de confianza sin cantar que es el Presidente.',
+        'Enseñar la carta es EL mecanismo del juego, y se hace con el móvil: «🤝 Enseñársela a alguien» pone tu carta a pantalla completa —sin reloj, sin tablero, sin nada más— y le pones el móvil delante, cara a cara. Solo a quien tú decidas, y solo si quieres; la guardas tú cuando hayáis acabado.',
+        'Se abre por el lado menos comprometido, SOLO EL COLOR: se ve tu bando y nada más. Es la jugada favorita del Presidente, que necesita azules de confianza sin cantar que es el Presidente. Con «🎴 Enseñar también el rol» destapas la carta entera.',
         'Los azules quieren localizar y proteger al Presidente; los rojos, averiguar dónde está para acercarle al Bombardero.',
       ],
       visual: {
         kind: 'screens',
         panes: [
-          { title: 'Carta entera', lines: ['🔵 Equipo AZUL', '🎖️ Eres el PRESIDENTE'], buttons: [{ label: '🎨 Enseñar solo el color', kind: 'ghost' }] },
-          { title: 'Solo el color', lines: ['🔵 EQUIPO AZUL', 'Solo el bando: tu rol no sale en pantalla.'] },
+          { title: 'Tu carta, en tu móvil', lines: ['🔵 Equipo AZUL', '🎖️ Eres el PRESIDENTE'], buttons: [{ label: '🤝 Enseñársela a alguien', kind: 'ghost' }] },
+          { title: 'A pantalla completa', lines: ['🔵 EQUIPO AZUL', 'Solo el bando · el rol no sale en pantalla'] },
         ],
       },
     },
@@ -66,7 +66,7 @@ export const DEMO: DemoScript = {
     {
       icon: '🔄',
       title: 'Fin del reloj: el voto de rehén',
-      who: { actor: 'CADA SALA vota en su móvil a quién manda de rehén (tocas a alguien de TU sala y pulsas «🗳️ Votar»)', others: 'el voto es secreto: en pantalla solo se ve cuántos han votado y a quién se espera.' },
+      who: { actor: 'CADA SALA vota en su móvil a quién manda de rehén (abres tu papeleta, tocas a alguien de TU sala y pulsas «🗳️ Votar»)', others: 'el voto es secreto también dentro de tu sala: la papeleta va tapada y fuera solo se ve cuántos han votado y a quién se espera.' },
       text: [
         'En la Sala 1 os ponéis de acuerdo… o no: puedes votarte a ti mismo para ofrecerte. Cruza el más votado de cada sala (con salas grandes, uno de cada cuatro; empate: decide el orden de la mesa).',
         'La votación se cierra cuando ha votado toda la sala. Si alguien no vota, con la mayoría echada aparece «🔒 Cerrar la votación» y, si nadie lo pulsa, un minuto de reloj la cierra sola.',
@@ -75,7 +75,7 @@ export const DEMO: DemoScript = {
       visual: {
         kind: 'screens',
         panes: [
-          { title: 'TÚ (Sala 1)', lines: ['¿A quién mandáis de tu sala?', 'Tocas a Carlos.'], buttons: [{ label: '🗳️ Votar a Carlos', kind: 'primary' }] },
+          { title: 'TÚ (Sala 1)', lines: ['🗳️ Abres tu papeleta y la tapas.', '¿A quién mandáis de tu sala? Tocas a Carlos.'], buttons: [{ label: '🗳️ Votar a Carlos', kind: 'primary' }] },
           { title: 'David (Sala 2)', lines: ['Su sala vota a la vez.', 'Sala 2: 2 de 3 votos…'] },
         ],
       },

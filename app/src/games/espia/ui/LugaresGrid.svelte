@@ -4,12 +4,10 @@
   // local (descartes propios: se ven en gris y tachados, solo en este móvil).
   import { LOCATIONS } from '../locations';
 
-  const { selectable = false, selected = null, onPick, reveal = null, crossable = false, crossed = null }: {
+  const { selectable = false, selected = null, onPick, crossable = false, crossed = null }: {
     selectable?: boolean;
     selected?: string | null;
     onPick?: (id: string) => void;
-    /** Al final de la ronda: localización real, destacada. */
-    reveal?: string | null;
     /** Cada toque tacha o destacha (el id llega por onPick). */
     crossable?: boolean;
     /** id → tachada por MÍ (marca local, nadie más la ve). */
@@ -30,7 +28,7 @@
         data-a="espia-lugar-tacha" data-p={l.id} aria-pressed={isCrossed(l.id)}
         onclick={() => onPick?.(l.id)}>{l.emoji} {l.name}</button>
     {:else}
-      <span class="chip {reveal === l.id ? 'sel' : ''}" data-p={l.id}>{l.emoji} {l.name}</span>
+      <span class="chip" data-p={l.id}>{l.emoji} {l.name}</span>
     {/if}
   {/each}
 </div>

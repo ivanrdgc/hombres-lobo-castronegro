@@ -11,14 +11,13 @@
   const ranked = $derived([...game.playerIds].sort((a, b) => (game.tokens[b] || 0) - (game.tokens[a] || 0)));
 </script>
 
-<div class="card" style="text-align:center">
-  <span class="moon">👑</span>
-  <h3 style="margin:6px 0">¡{nm(game.winner || '')} gana la partida!</h3>
-  <p class="small-note">Ha reunido los {game.need} favores en {game.round} {game.round === 1 ? 'ronda' : 'rondas'}.</p>
-</div>
-
+<!-- Una sola idea, una sola tarjeta (B29·3): quién ha ganado y cómo ha quedado. -->
 <div class="card">
-  <h3>🏆 Favores</h3>
+  <div style="text-align:center">
+    <span class="moon">👑</span>
+    <h3 style="margin:6px 0">¡{nm(game.winner || '')} gana la partida!</h3>
+    <p class="small-note" style="margin-bottom:10px">Ha reunido los {game.need} favores en {game.round} {game.round === 1 ? 'ronda' : 'rondas'}.</p>
+  </div>
   {#each ranked as pid, i (pid)}
     <div class="settingrow" style="align-items:center">
       <div class="sinfo"><div class="sname">{i + 1}. {nm(pid)}{pid === my.id ? ' (tú)' : ''}{game.winner === pid ? ' 👑' : ''}</div></div>

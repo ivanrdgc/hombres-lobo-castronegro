@@ -8,7 +8,7 @@
   const keyOf = (i: number) => 'll-howto:' + i;
 </script>
 
-<h3 style="margin:0 0 4px">💌 Cómo se juega Love Letter</h3>
+<h3 style="margin:0 0 4px">📖 Cómo se juega</h3>
 
 {#each HOW_TO as sec, i (i)}
   {@const st = localAudioState(keyOf(i))}

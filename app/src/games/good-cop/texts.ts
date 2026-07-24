@@ -23,8 +23,8 @@ export function refRows(n: number): { emoji: string; name: string; desc: string 
 }
 
 export const INTRO_LOBBY: string[] = [
-  'Good Cop Bad Cop: una comisaría podrida. Cada uno esconde 3 cartas de integridad, y tu bando es su MAYORÍA: policías honestos contra corruptos. Un honesto es el AGENTE (líder) y un corrupto es el JEFE (líder).',
-  'Por turnos: investigas cartas ajenas en secreto, te armas, apuntas… y disparas. Si cae un líder, su bando pierde en el acto. Deduce quién es quién, alía con los tuyos y no te equivoques de diana.',
+  'Una comisaría podrida. Cada uno esconde 3 cartas de integridad y su MAYORÍA dice tu bando: 👮 honestos contra 🦹 corruptos. Entre los honestos se esconde el 🕵️ AGENTE; entre los corruptos, el 👑 JEFE.',
+  'En tu turno haces UNA cosa: investigar una carta ajena en secreto, armarte, apuntar o disparar. En cuanto cae un líder, su bando pierde: habla, acusa… y no te equivoques de diana.',
 ];
 
 export interface HelpSection { heading: string; items: string[] }
@@ -35,7 +35,7 @@ export const HOW_TO: HelpSection[] = [
     items: [
       'De 4 a 8 jugadores. Cada uno tiene 3 cartas de integridad boca abajo (👮 honestas o 🦹 corruptas). Tu BANDO es la mayoría de tus tres cartas; nadie más lo sabe.',
       'Entre los honestos hay un 🕵️ AGENTE y entre los corruptos un 👑 JEFE: los líderes. Ganan los honestos si cae el Jefe; ganan los corruptos si cae el Agente.',
-      'La app custodia las cartas: solo tú ves las tuyas (y lo que investigues). Las de un caído se destapan para todos.',
+      'El móvil se queda PLANO en la mesa y solo lo coges en tu turno: todas las pantallas son iguales y lo tuyo (cartas y lo que hayas visto) aparece únicamente al tocar el botón 🎴… y se tapa solo a los pocos segundos.',
     ],
   },
   {
@@ -43,15 +43,15 @@ export const HOW_TO: HelpSection[] = [
     items: [
       'Los bandos van casi a la par, y cuántos hay de cada uno se sabe desde el minuto uno: con 4 jugadores, 2 honestos y 2 corruptos; con 5, 3 y 2; con 6, 3 y 3; con 7, 4 y 3; con 8, 4 y 4.',
       'El reparto es SIEMPRE 2 cartas de tu bando y 1 del contrario. Por eso ver dos 🦹 de alguien lo delata al 100 %, y una sola carta no prueba nada: todos tenemos una del bando rival.',
-      'La app te recuerda estos números en el botón 🎴, junto a tus cartas y a todo lo que hayas investigado.',
+      'Estos números están siempre en pantalla: en el tablero y en la chuleta del botón 🎴. No hay que memorizar nada.',
     ],
   },
   {
     heading: '🔍 Tu turno: una acción',
     items: [
-      'En tu turno eliges UNA acción en tu móvil: INVESTIGAR (miras en secreto una carta boca abajo de otro), ARMARTE (coges una pistola), APUNTAR (eliges blanco) o DISPARAR (al que tienes apuntado).',
+      'En tu turno eliges UNA acción en tu móvil: INVESTIGAR (miras a solas una carta boca abajo de otro), ARMARTE (coges una pistola), APUNTAR (eliges blanco) o DISPARAR (al que tienes apuntado).',
       'Hay un orden obligatorio: para apuntar tienes que ir armado, y para disparar tienes que tener a alguien apuntado. Es decir: armarte, apuntar y disparar son TRES turnos tuyos, y la mesa ve venir los dos primeros. Ese retraso es el ritmo del juego.',
-      'Investigar es tu radar: el resultado solo lo ves tú, aunque todos ven a quién investigas y qué carta suya miras. Armarte y apuntar son públicos: la mesa ve el arma y la diana, y eso ya es presión.',
+      'Investigar es tu radar: todos ven a quién investigas y qué carta suya miras, pero el resultado se abre solo en TU 🎴 —y queda ahí guardado hasta el final—. Armarte y apuntar son públicos: la mesa ve el arma y la diana, y eso ya es presión.',
     ],
   },
   {
@@ -75,7 +75,7 @@ export const HOW_TO: HelpSection[] = [
     items: [
       'La partida termina en cuanto cae un líder: pierde su bando entero (los eliminados incluidos). Todo el bando ganador puntúa.',
       'Al acabar se destapan todas las cartas y aparece el marcador. Con «🔁 Otra partida» se reparte de nuevo con los mismos jugadores y el marcador se conserva; con «🏁 Terminar» volvéis al lobby.',
-      'La app anuncia cada acción en voz alta y dice de quién es el turno (nunca las cartas ocultas). Si alguien no responde, cualquiera puede saltar su turno desde la pantalla de espera.',
+      'La voz canta cada acción pública y de quién es el turno, nunca las cartas ni lo investigado. Si alguien no responde, cualquiera puede saltar su turno desde la pantalla de espera.',
     ],
   },
   {

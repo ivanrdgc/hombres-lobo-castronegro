@@ -91,6 +91,8 @@ try {
   const voters = s.playerIds.filter((pid) => pid !== target && s.room[pid] === roomOfT).slice(0, 2);
   for (const v of voters) {
     const p = pg(v);
+    // La papeleta va cerrada (el voto es secreto dentro de la sala): se abre.
+    await p.click('[data-a=tr-ballot]', { timeout: 15000 });
     await p.click(`.player[data-a=tr-hostage][data-p="${target}"]`, { timeout: 15000 });
     await p.click('[data-a=tr-hostage-confirm]:not([disabled])');
     await waitState(ana, (x) => x.hVotes[v] !== undefined, `voto de ${NAMES[v]}`);

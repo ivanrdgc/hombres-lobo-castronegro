@@ -25,11 +25,14 @@ export const DEMO: DemoScript = {
       text: [
         'Tú eres común: sabes que NO sabes. Bea, la Maestra, ve la palabra: «brújula». Y el Insider —Carlos o David, aún no puedes saberlo— la ve también en su carta.',
       ],
+      // Las dos pantallas van a propósito con la MISMA forma (mismo 🎴, mismo
+      // recuadro de palabra, mismo alto): es lo que se ve de reojo desde la otra
+      // punta de la mesa. Lo único que cambia es lo que pone dentro del recuadro.
       visual: {
         kind: 'screens',
         panes: [
-          { title: 'TÚ (común)', lines: ['👤 Eres del equipo', 'No conoces la palabra: pregunta y deduce.'] },
-          { title: 'El INSIDER (no ves quién)', lines: ['🕵️ Eres el INSIDER', 'La palabra es: «brújula»', 'Debe guiaros hacia ella… con disimulo.'] },
+          { title: 'TÚ (común)', lines: ['🎴 Eres del EQUIPO', '🔑 Palabra: no la conoces', 'Descúbrela preguntando de sí o no.'] },
+          { title: 'El INSIDER (no ves quién)', lines: ['🎴 Eres el INSIDER', '🔑 Palabra: «brújula»', 'Empuja hacia ella… sin cantarte.'] },
         ],
       },
     },
@@ -80,7 +83,7 @@ export const DEMO: DemoScript = {
       visual: {
         kind: 'screens',
         panes: [
-          { title: 'TÚ (votando)', lines: ['¿Quién guiaba demasiado bien?', 'Tocas a David.'], buttons: [{ label: '👉 Señalar a David', kind: 'danger' }] },
+          { title: 'TÚ (votando)', lines: ['¿Quién guiaba demasiado bien?', 'Tocas a David: ✔️ en su fila.'], buttons: [{ label: '👉 Señalar en secreto a quien he marcado', kind: 'danger' }] },
           { title: 'David (Insider, votando)', lines: ['Vota a otro para despistar.', 'Falta por votar: Carlos'] },
         ],
       },

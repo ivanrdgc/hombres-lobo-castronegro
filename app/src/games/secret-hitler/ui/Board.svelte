@@ -1,9 +1,12 @@
 <script lang="ts">
-  // Tablero público: los dos marcadores de decretos CON SU CUENTA (2/5, 3/6), la
-  // casilla que viene marcada y dicha en texto («el siguiente 🐷 desbloquea 💀
-  // Ejecutar»), los gobiernos caídos, el mazo, presidente/canciller, las fichas
-  // de la mesa y el DESTAPE de la última votación con nombres (los votos son
-  // públicos: son la prueba principal para deducir).
+  // Tablero PÚBLICO, lo que la mesa mira sin coger el móvil: los dos marcadores
+  // con su cuenta (2/5, 3/6), la casilla que viene marcada y dicha en texto («el
+  // siguiente 🐷 desbloquea 💀 Ejecutar»), quién gobierna, los gobiernos caídos,
+  // quién sigue vivo y el DESTAPE de la última votación con nombres (los votos
+  // son públicos: son la prueba principal para deducir).
+  //
+  // Tres alturas (B29): marcadores y qué viene → estado de la ronda y la mesa →
+  // referencia (poderes de esta mesa y mazo) plegada al pie.
   import { presidentId, playersOf, POWER_LABEL } from '../engine';
   import { powerFor, LIBERAL_TRACK, FASCIST_TRACK, VETO_AT } from '../roles';
   import type { PowerType } from '../roles';
@@ -13,6 +16,7 @@
 
   const n = $derived(game.playerIds.length);
   const nm = (pid: string | null) => (pid && game.names[pid]) || '—';
+  const over = $derived(game.phase === 'end');
   const POWER_ICON: Record<string, string> = { peek: '🔮', investigate: '🔎', special: '🗳️', execution: '💀' };
   const fascistSlots = $derived([1, 2, 3, 4, 5, 6].map((i) => ({
     i, filled: game.fascistPolicies >= i, next: game.fascistPolicies === i - 1,
@@ -59,40 +63,36 @@
 <div class="card shboard">
   <div class="track lib">
     <span class="tlabel">🕊️ Liberal</span>
-    <div class="slots">{#each libSlots as s (s.i)}<span class="slot {s.filled ? 'on' : ''} {s.next ? 'next' : ''}">{s.filled ? '🕊️' : s.win ? '🏁' : ''}</span>{/each}</div>
+    <div class="slots">{#each libSlots as s (s.i)}<span class="slot {s.filled ? 'on' : ''} {s.next && !over ? 'next' : ''}">{s.filled ? '🕊️' : s.win ? '🏁' : ''}</span>{/each}</div>
     <span class="tcount" data-a="sh-lib-count">{game.liberalPolicies}/{LIBERAL_TRACK}</span>
   </div>
   <div class="track fas">
     <span class="tlabel">🐷 Fascista</span>
-    <div class="slots">{#each fascistSlots as s (s.i)}<span class="slot {s.filled ? 'on' : ''} {s.next ? 'next' : ''}" title={s.power ? POWER_LABEL[s.power] : ''}>{s.filled ? '🐷' : s.win ? '🏁' : s.power ? POWER_ICON[s.power] : ''}</span>{/each}</div>
+    <div class="slots">{#each fascistSlots as s (s.i)}<span class="slot {s.filled ? 'on' : ''} {s.next && !over ? 'next' : ''}">{s.filled ? '🐷' : s.win ? '🏁' : s.power ? POWER_ICON[s.power] : ''}</span>{/each}</div>
     <span class="tcount" data-a="sh-fas-count">{game.fascistPolicies}/{FASCIST_TRACK}</span>
   </div>
-  <div class="nextbox" data-a="sh-next">
-    {#if nextFas}<p>{nextFas}</p>{/if}
-    {#if nextLib}<p>{nextLib}</p>{/if}
-  </div>
-  {#if legend.length}
-    <p class="small-note legend" data-a="sh-powers-legend">⚡ Poderes de esta mesa, según el nº de decreto 🐷: {legend.join(' · ')}. Los ejerce el Presidente del gobierno que lo promulgue.</p>
-  {/if}
-  <div class="shmeta">
-    <span>🪙 Presidente: <b>{nm(pres)}</b></span>
-    <span>🎩 Canciller: <b>{nm(game.nominatedChancellor)}</b></span>
-  </div>
-  <div class="shmeta">
-    <span class="eltrack">🗳️ Gobiernos caídos: {#each [0, 1, 2] as i (i)}<span class="dot {i < game.electionTracker ? 'on' : ''}"></span>{/each} <b>{game.electionTracker}/3</b></span>
-    <span class="small-note" style="margin-top:0">🃏 Mazo: {game.draw.length} · 🗑️ descartes: {game.discard.length}{game.vetoUnlocked ? ' · ✋ veto disponible' : ''}</span>
-  </div>
-  {#if game.electionTracker >= 1}
-    <p class="small-note chaosnote">{game.electionTracker === 2 ? 'Si cae otro gobierno' : 'Al tercer gobierno caído'} el país entra en caos: se promulga a ciegas el decreto de arriba del mazo, sin poder presidencial, y se borran los límites de mandato.</p>
+  {#if !over}
+    <div class="nextbox" data-a="sh-next">
+      {#if nextFas}<p>{nextFas}</p>{/if}
+      {#if nextLib}<p>{nextLib}</p>{/if}
+    </div>
+    <div class="shmeta">
+      <span>🪙 Presidente: <b>{nm(pres)}</b></span>
+      <span>🎩 Canciller: <b>{nm(game.nominatedChancellor)}</b></span>
+    </div>
+    <p class="eltrack">
+      🗳️ Gobiernos caídos: {#each [0, 1, 2] as i (i)}<span class="dot {i < game.electionTracker ? 'on' : ''}"></span>{/each} <b>{game.electionTracker}/3</b>
+      {#if game.electionTracker >= 1}<span class="chaosnote">— {game.electionTracker === 2 ? 'si cae otro' : 'al tercero'}, el país entra en caos: decreto a ciegas del mazo, sin poder presidencial y sin límites de mandato.</span>{/if}
+    </p>
   {/if}
   <div class="pchips" data-a="sh-players">
     {#each players as p (p.id)}
       <span class="pchip {p.alive ? '' : 'dead'}" data-p={p.id}>
-        {p.id === pres ? '🪙 ' : ''}{p.id === game.nominatedChancellor ? '🎩 ' : ''}{p.name}{p.alive ? '' : ' 💀'}
+        {p.id === pres && !over ? '🪙 ' : ''}{p.id === game.nominatedChancellor && !over ? '🎩 ' : ''}{p.name}{p.alive ? '' : ' 💀'}
       </span>
     {/each}
   </div>
-  {#if players.some((p) => !p.alive)}
+  {#if players.some((p) => !p.alive) && !over}
     <p class="small-note chipkey">💀 = ejecutado: ya no vota ni puede gobernar, y su carta no se destapa hasta el final.</p>
   {/if}
   {#if lastEl}
@@ -102,6 +102,15 @@
       <p class="small-note">👍 Ja ({lastEl.ja.length}): <b>{lastEl.ja.length ? lastEl.ja.map(nm).join(', ') : '—'}</b></p>
       <p class="small-note">👎 Nein ({lastEl.nein.length}): <b>{lastEl.nein.length ? lastEl.nein.map(nm).join(', ') : '—'}</b></p>
     </div>
+  {/if}
+  {#if !over}
+    <details class="ref">
+      <summary data-a="sh-powers-legend">⚡ Poderes y mazo de esta mesa</summary>
+      {#if legend.length}
+        <p class="small-note">Según el nº de decreto 🐷: {legend.join(' · ')}. Los ejerce el Presidente del gobierno que lo promulgue.</p>
+      {/if}
+      <p class="small-note">🃏 Mazo: {game.draw.length} · 🗑️ descartes: {game.discard.length} (se rebaraja al bajar de 3){game.vetoUnlocked ? ' · ✋ veto disponible' : ''}. El mazo lleva 11 🐷 y 6 🕊️.</p>
+    </details>
   {/if}
 </div>
 
@@ -128,13 +137,12 @@
     font-size: 0.84rem; line-height: 1.4;
   }
   .nextbox p + p { margin-top: 4px; }
-  .legend { margin: 6px 0 0; line-height: 1.35; }
-  .chaosnote { margin-top: 4px; line-height: 1.35; }
   .chipkey { margin-top: 5px; }
   .shmeta { display: flex; justify-content: space-between; gap: 8px; font-size: 0.9rem; margin-top: 8px; flex-wrap: wrap; }
-  .eltrack { display: inline-flex; align-items: center; gap: 4px; }
+  .eltrack { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; margin: 6px 0 0; font-size: 0.85rem; }
   .eltrack .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--border, #444); display: inline-block; }
   .eltrack .dot.on { background: #f3a0a0; }
+  .eltrack .chaosnote { color: var(--muted); font-size: 0.8rem; line-height: 1.35; flex: 1 1 100%; }
   .pchips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
   .pchip {
     padding: 3px 8px; border-radius: 999px; font-size: 0.82rem;
@@ -144,4 +152,6 @@
   .votes { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border, #333); }
   .votes .vhead { margin: 0 0 3px; font-size: 0.88rem; font-weight: 700; }
   .votes .small-note { margin: 1px 0; }
+  .ref { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 8px; }
+  .ref summary { cursor: pointer; font-size: 0.82rem; color: var(--accent); }
 </style>

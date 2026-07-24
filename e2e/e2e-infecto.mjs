@@ -17,6 +17,20 @@ const bad = (m) => { fail++; console.log('  ✖', m); };
 const check = (c, m) => (c ? ok(m) : bad(m));
 const browser = await chromium.launch();
 const pages = {};
+
+// B28 · postura 🍽️ MESA: de noche TODAS las pantallas se ven iguales y el panel
+// de acción solo aparece tras el gesto de su dueño («👁 Abrir mi turno»).
+async function openTurn(pg, sel, timeout = 25000) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < timeout) {
+    if (await pg.locator(sel).count()) return;
+    const gate = pg.locator('[data-a=open-night-turn]');
+    if (await gate.count()) await gate.click().catch(() => {});
+    await pg.waitForTimeout(200);
+  }
+  await pg.waitForSelector(sel, { timeout: 3000 });
+}
+
 async function mk(label) {
   const ctx = await browser.newContext({ locale: 'es-ES' });
   // Semilla de test: sin audio (locuciones registradas, no reproducidas) y con
@@ -130,11 +144,11 @@ try {
     lastKey = key;
     const ip = pages[infecto.name.toLowerCase()];
     if (stepId === 'lobos_reconocen') {
-      await ip.waitForSelector('button[data-a=act-lobos-reconocido]', { timeout: 15000 });
+      await openTurn(ip, 'button[data-a=act-lobos-reconocido]', 15000);
       await ip.click('button[data-a=act-lobos-reconocido]');
     } else if (stepId === 'cupido') {
       const cp = pages[cupido.name.toLowerCase()];
-      await cp.waitForSelector('button[data-a=act-cupido]', { timeout: 15000 });
+      await openTurn(cp, 'button[data-a=act-cupido]', 15000);
       await cp.click(`.actionpanel .player.selectable[data-p=${otros[0].id}]`);
       await cp.click(`.actionpanel .player.selectable[data-p=${otros[1].id}]`);
       await cp.click('button[data-a=act-cupido]');
@@ -144,7 +158,7 @@ try {
       // enseña junto al botón ANTES de confirmar.
       for (const lover of [otros[0], otros[1]]) {
         const lp = pages[lover.name.toLowerCase()];
-        const seen = await lp.waitForSelector('button[data-a=act-lover-ok]', { timeout: 15000 }).then(() => true).catch(() => false);
+        const seen = await openTurn(lp, 'button[data-a=act-lover-ok]', 15000).then(() => true).catch(() => false);
         check(seen, `${lover.name} ve el panel de enamorados`);
         if (seen) {
           const conNueva = await lp.locator('.actionpanel:has-text("NUEVA")').count();
@@ -154,17 +168,17 @@ try {
         await lp.waitForTimeout(150);
       }
     } else if (stepId === 'lobos') {
-      await ip.waitForSelector('button[data-a=act-lobos]', { timeout: 15000 });
+      await openTurn(ip, 'button[data-a=act-lobos]', 15000);
       await ip.click(`.actionpanel .player.selectable[data-p=${victim.id}]`);
       await ip.click('button[data-a=act-lobos]');
       ok(`la manada muerde a ${victim.name}`);
     } else if (stepId === 'infecto_decision') {
-      await ip.waitForSelector('button[data-a=act-infecto][data-p=si]', { timeout: 15000 });
+      await openTurn(ip, 'button[data-a=act-infecto][data-p=si]', 15000);
       await ip.click('button[data-a=act-infecto][data-p=si]');
       ok('el Infecto usa su poder: infectar');
     } else if (stepId === 'infectado') {
       const vp = pages[victim.name.toLowerCase()];
-      const seen = await vp.waitForSelector('button[data-a=act-infectado-ok]', { timeout: 20000 }).then(() => true).catch(() => false);
+      const seen = await openTurn(vp, 'button[data-a=act-infectado-ok]', 20000).then(() => true).catch(() => false);
       check(seen, `${victim.name} ve el panel del mordisco (te ha mordido)`);
       if (seen) {
         // SIN gaitero en juego nadie puede volver a llamarlo: su palabra no
@@ -173,8 +187,13 @@ try {
         check(sinCambio >= 1, `${victim.name} ve que su palabra NO cambia (sin gaitero no hay reutilizador)`);
         // Los demás vivos ven el panel neutral: ninguna pantalla delata nada.
         const op = pages[otros[0].name.toLowerCase()];
-        const neutral = await op.locator('.actionpanel:has-text("Atención al narrador")').count();
-        check(neutral >= 1, `${otros[0].name} solo ve el panel neutral («Atención al narrador»)`);
+        const neutral = await op.locator('.actionpanel:has-text("Atención a la voz")').count();
+        check(neutral >= 1, `${otros[0].name} solo ve la tarjeta neutra («Atención a la voz»)`);
+        // Y si la abre, recibe «no es tu turno»: tocar no delata (B28).
+        await op.click('[data-a=open-night-turn]');
+        const noTurn = await op.locator('.actionpanel:has-text("No es tu turno")').count();
+        check(noTurn >= 1, `${otros[0].name} abre su turno y solo recibe «no es tu turno»`);
+        await op.click('[data-a=close-night-turn]');
         await vp.click('button[data-a=act-infectado-ok]');
         ok(`${victim.name} confirma su nueva sangre`);
       }
@@ -215,7 +234,8 @@ try {
     if (key === lastKey) { await ana.waitForTimeout(400); continue; }
     lastKey = key;
     if (stepId === 'lobos') {
-      const wolfPanel = await vp.waitForSelector('.actionpanel:has-text("Manada")', { timeout: 15000 }).then(() => true).catch(() => false);
+      const wolfPanel = await openTurn(vp, 'button[data-a=act-lobos]', 15000)
+        .then(() => vp.locator('.actionpanel:has-text("Manada")').count().then((n) => n > 0)).catch(() => false);
       check(wolfPanel, `${victim.name} (infectado) despierta con la manada la noche siguiente`);
       const nota = await vp.locator('.actionpanel:has-text("te unió a la manada")').count();
       check(nota >= 1, 'su panel le recuerda que caza y gana con los lobos');
@@ -225,8 +245,11 @@ try {
     } else if (stepId === 'infectado') {
       // Poder gastado: nadie tiene nada que tocar; los señuelos suenan y el
       // paso avanza solo.
+      const gate = vp.locator('[data-a=open-night-turn]');
+      if (await gate.count()) await gate.click().catch(() => {});
+      await vp.waitForTimeout(300);
       const panel = await vp.locator('button[data-a=act-infectado-ok]').count();
-      check(panel === 0, 'sin infección, ningún jugador ve el panel del mordisco');
+      check(panel === 0, 'sin infección, ni abriendo su turno ve nadie el panel del mordisco');
       const avanzó = await waitState(ana, (s) => s.phase !== 'night' || s.steps[s.stepIdx] !== 'infectado', 'los señuelos suenan y el paso avanza solo', 90000).then(() => true).catch(() => false);
       check(avanzó, 'la llamada falsa avanza sola (señuelos + espera humana)');
       // La llamada de esta noche fue SEÑUELO: no nombró la palabra del mordido.

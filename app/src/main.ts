@@ -8,6 +8,7 @@ import { loadClipManifest } from './core/audio/clips';
 import { initDeviceVoice } from './core/audio/device-voice';
 import { applyRoute, state, viewGroup } from './core/sync/store.svelte';
 import { installPresence } from './core/sync/presence';
+import { installAmbienceDirector } from './core/audio/ambience-director';
 import { installUiHygiene } from './shell/ui-hygiene';
 import { installVersionCheck } from './core/version-check';
 import { installNarrator } from './games/hombres-lobo/narrator/install';
@@ -59,6 +60,7 @@ installGoodCopNarrator();
 installShadowHNarrator();
 installSonarNarrator();
 installPresence();
+installAmbienceDirector();
 
 window.addEventListener('popstate', applyRoute);
 applyRoute();

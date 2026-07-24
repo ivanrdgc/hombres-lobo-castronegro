@@ -85,16 +85,17 @@
   {:else if game.phase === 'hostages'}
     <HostagePhase {game} {my} />
   {:else if game.phase === 'move'}
+    <!-- Lo que tienes que hacer TÚ, en una frase; el tablero de arriba ya dice
+         cómo quedan las salas y el reloj no corre (B29). -->
     {#if iCross}
-      <div class="narration" data-a="tr-cross">🚶 TE TOCA CRUZAR a la Sala {iCross}. Coge tus cosas y cambia de espacio.</div>
+      <div class="narration" data-a="tr-cross">🚶 TE TOCA CRUZAR a la Sala {iCross}. Coge tus cosas y cambia de espacio, sin prisa.</div>
     {:else if incoming.length}
       <div class="narration">🚶 Os quedáis donde estáis. Recibís a {incoming.map(nm).join(', ')}.</div>
     {:else}
-      <div class="narration">🚶 Los rehenes cruzan de sala (mirad el tablero de arriba). Sin prisa: el reloj no corre.</div>
+      <div class="narration">🚶 Los rehenes cruzan de sala. Sin prisa: el reloj no corre.</div>
     {/if}
     {#if inGame}
-      <div class="card"><p class="hint">Cuando todos estéis cada uno en vuestra sala, que cualquiera arranque la ronda.</p>
-        <button class="primary block" data-a="tr-begin" onclick={() => guard(A.beginRound)}>▶️ Empezar la ronda {game.round}</button></div>
+      <button class="primary block" data-a="tr-begin" onclick={() => guard(A.beginRound)}>▶️ Ya estamos: empezar la ronda {game.round}</button>
     {/if}
   {/if}
   {#if !inGame}<p class="small-note" style="text-align:center">👀 Sigues la partida de espectador.</p>{/if}

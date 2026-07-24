@@ -1,15 +1,23 @@
 <script lang="ts">
-  // Dial de Wavelength: barra 0..100 con marcas de escala. Muestra la DIANA
-  // (bandas 2/3/4) solo si `target` viene dado (la ve el Psíquico, y todos al
-  // final). `marker` pinta la marca fijada. `selectable` lo hace arrastrable:
-  // pomo gordo para el pulgar, botones ±1 para afinar y el número FUERA de
-  // donde va el dedo (una aguja de 3 px no se agarra ni se lee en un móvil
-  // pasando de mano en mano, y un número bajo el pulgar no se lee nunca).
+  // Dial de Wavelength: barra 0..100 con marcas de escala. Aquí conviven las DOS
+  // posturas del móvil de este juego (B28), que son opuestas:
+  //
+  //  · 🃏 MANO — el dial del Psíquico (`secret`). Su móvil está en la MISMA
+  //    mesa que los demás. El número del objetivo es texto pequeño y no se lee
+  //    a dos metros, pero la MANCHA VERDE de la diana sí: por dónde cae el
+  //    color delata la zona aunque no se lea un solo número. Por eso en reposo
+  //    su dial es idéntico al público y la diana solo aparece mientras
+  //    MANTIENE PULSADO: nunca queda a la vista sin que él la esté sujetando.
+  //  · 👥 EQUIPO — el dial que manosea el equipo (`selectable`). Se mira entre
+  //    varios y desde varios ángulos: barra alta, pomo gordo para el pulgar,
+  //    botones ±1 para afinar, número FUERA de donde va el dedo y marcas
+  //    numeradas cada 25 (una aguja de 3 px no se agarra ni se lee en un móvil
+  //    que pasa de mano en mano).
   import { spectrumById } from '../spectrums';
 
   const {
     spectrumId, target = null, marker = null, selectable = false, value = 50,
-    onpick = null, onpickend = null, legend = null,
+    onpick = null, onpickend = null, legend = null, secret = false,
   }: {
     spectrumId: string;
     target?: number | null;
@@ -22,12 +30,30 @@
     /** Pie explicativo: `bands` (la diana y lo que puntúa) o `result` (leyenda
      *  de agujas: cuál es el objetivo y cuál vuestra marca). */
     legend?: 'bands' | 'result' | null;
+    /** El objetivo es secreto de UNA persona: se tapa y solo se ve pulsando. */
+    secret?: boolean;
   } = $props();
 
   const spec = $derived(spectrumById(spectrumId));
+
+  // ——— La diana, tapada mientras no se pulse ———
+  let peeking = $state(false);
+  // Nada del objetivo (bandas, aguja amarilla, números de la leyenda) se pinta
+  // si está tapado: `shown` es la ÚNICA puerta por la que sale a pantalla.
+  const shown = $derived(secret && !peeking ? null : target);
+  // Ronda nueva (u otro espectro) = se vuelve a tapar sola.
+  $effect(() => { void target; void spectrumId; peeking = false; });
+  function peekOn(e: PointerEvent) {
+    peeking = true;
+    // Capturar el puntero garantiza que el «suelta» llegue aquí aunque el dedo
+    // se haya ido del botón: sin esto la diana se podía quedar destapada.
+    try { (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); } catch { /* sin captura: basta con pointerup */ }
+  }
+  const peekOff = () => (peeking = false);
+
   // Bandas de la diana (en % del dial), centradas en target.
-  const band = (half: number) => target === null ? null
-    : { left: Math.max(0, target - half), width: Math.min(100, target + half) - Math.max(0, target - half) };
+  const band = (half: number) => shown === null ? null
+    : { left: Math.max(0, shown - half), width: Math.min(100, shown + half) - Math.max(0, shown - half) };
   const b2 = $derived(band(15));
   const b3 = $derived(band(9));
   const b4 = $derived(band(4));
@@ -40,7 +66,7 @@
     if (value < 80) return `tirando a «${r}»`;
     return `casi al tope de «${r}»`;
   });
-  const dist = $derived(target !== null && marker !== null ? Math.abs(target - marker) : null);
+  const dist = $derived(shown !== null && marker !== null ? Math.abs(shown - marker) : null);
 
   let barEl: HTMLElement | null = $state(null);
   let dragging = $state(false);
@@ -88,14 +114,14 @@
 
   <!-- Los extremos, pegados a la barra; los números 0/50/100 van debajo, en la
        escala (repetirlos aquí dejaba un «100» huérfano con nombres largos). -->
-  <div class="ends">
+  <div class="ends {selectable ? 'loud' : ''}">
     <span class="e"><i>◀</i>{spec?.left ?? ''}</span>
     <span class="e r">{spec?.right ?? ''}<i>▶</i></span>
   </div>
 
   <div class="track {selectable ? 'pad' : ''}">
     {#if selectable}
-      <div class="bubble" style="left:clamp(24px,{value}%,calc(100% - 24px))">{value}</div>
+      <div class="bubble" style="left:clamp(26px,{value}%,calc(100% - 26px))">{value}</div>
     {/if}
     <div
       class="bar {selectable ? 'sel' : ''}"
@@ -123,21 +149,42 @@
         <div class="tick small" style="left:25%"></div>
         <div class="tick small" style="left:75%"></div>
       </div>
-      {#if target !== null}<div class="needle target" style="left:{target}%"><i class="pin"></i></div>{/if}
+      {#if shown !== null}<div class="needle target" style="left:{shown}%"><i class="pin"></i></div>{/if}
       {#if marker !== null}<div class="needle mark" style="left:{marker}%" data-a="wl-marker"><i class="pin down"></i></div>{/if}
       {#if selectable}
         <div class="needle pick" style="left:{value}%"></div>
         <div class="knob {dragging ? 'on' : ''}" style="left:{value}%"><i class="grip"></i></div>
       {/if}
     </div>
-    <div class="scale">
-      <span class="s-l">0</span><span class="s-m">50</span><span class="s-r">100</span>
+    <div class="scale {selectable ? 'loud' : ''}">
+      <span class="s-l">0</span>
+      {#if selectable}<span class="s-q" style="left:25%">25</span>{/if}
+      <span class="s-m">50</span>
+      {#if selectable}<span class="s-q" style="left:75%">75</span>{/if}
+      <span class="s-r">100</span>
     </div>
   </div>
 
-  {#if legend === 'bands' && target !== null}
+  {#if secret && target !== null}
+    <!-- El interruptor de la diana: pulsado = visible, suelto = tapada. Nunca
+         queda encendida sola, así que el móvil no puede delatar la zona ni
+         apoyado en la mesa ni si alguien pasa por detrás. -->
+    <button
+      class="peek {peeking ? 'on' : ''}" data-a="wl-peek" aria-pressed={peeking}
+      onpointerdown={peekOn} onpointerup={peekOff} onpointercancel={peekOff}
+      onlostpointercapture={peekOff} oncontextmenu={(e) => e.preventDefault()}
+      onkeydown={(e) => { if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) { e.preventDefault(); peeking = true; } }}
+      onkeyup={(e) => { if (e.key === ' ' || e.key === 'Enter') peeking = false; }}
+    >{peeking ? '👁️ Diana a la vista — suelta y se tapa' : '🙈 Mantén pulsado para ver la diana'}</button>
+  {/if}
+
+  <!-- El pie de colores no delata nada (dice cuánto vale cada franja, no dónde
+       cae): se queda puesto con la diana tapada, y así el dial no da un salto
+       cada vez que se destapa. Lo que sí es secreto —el número del objetivo y
+       la distancia— pasa por `shown`. -->
+  {#if legend === 'bands'}
     <p class="lg">
-      <span class="li">🎯 diana en <b>{target}</b></span>
+      {#if shown !== null}<span class="li">🎯 diana en <b>{shown}</b></span>{/if}
       <span class="li"><i class="sw s4"></i> centro <b>4</b></span>
       <span class="li"><i class="sw s3"></i> <b>3</b></span>
       <span class="li"><i class="sw s2"></i> <b>2</b></span>
@@ -145,7 +192,7 @@
     </p>
   {:else if legend === 'result'}
     <p class="lg">
-      {#if target !== null}<span class="li"><i class="key tgt"></i> aguja amarilla = objetivo <b>{target}</b></span>{/if}
+      {#if shown !== null}<span class="li"><i class="key tgt"></i> aguja amarilla = objetivo <b>{shown}</b></span>{/if}
       {#if marker !== null}<span class="li"><i class="key mk"></i> aguja roja = marca del equipo <b>{marker}</b></span>{/if}
       {#if dist !== null}<span class="li">📏 a <b>{dist}</b> del centro</span>{/if}
       <span class="li"><i class="sw s4"></i> 4</span>
@@ -159,19 +206,23 @@
 <style>
   .dial { margin: 10px 0; }
 
-  /* ——— Lectura y ajuste fino (solo cuando se puede mover) ——— */
+  /* ——— Lectura y ajuste fino (solo cuando se puede mover: es el dial de la
+         mesa, y lo leen tres o cuatro a la vez desde donde estén sentados) ——— */
   .tuner { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
-  .tuner .tv { flex: 1; text-align: center; line-height: 1.15; min-width: 0; }
-  .tuner .tv b { display: block; font-size: 1.9rem; font-weight: 800; color: var(--moon, #fff); }
-  .tuner .tv span { display: block; font-size: 0.8rem; color: var(--muted, #9aa); }
+  .tuner .tv { flex: 1; text-align: center; line-height: 1.1; min-width: 0; }
+  .tuner .tv b { display: block; font-size: 2.4rem; font-weight: 800; color: var(--moon, #fff); }
+  .tuner .tv span { display: block; font-size: 0.85rem; color: var(--muted, #9aa); }
   .tick-btn {
-    min-width: 52px; min-height: 44px; padding: 0; font-size: 1rem; font-weight: 800;
+    min-width: 62px; min-height: 54px; padding: 0; font-size: 1.25rem; font-weight: 800;
     background: var(--card2, #222639); border: 1px solid var(--line-2, #3b4060); color: var(--text, #fff);
   }
   .tick-btn:disabled { opacity: 0.35; }
 
   /* ——— Extremos: la palabra Y su número, que es lo que dice la app ——— */
   .ends { display: flex; justify-content: space-between; gap: 10px; font-size: 0.82rem; font-weight: 700; color: var(--muted, #9aa); margin-bottom: 5px; }
+  /* En el dial de la mesa mandan los extremos: son la única referencia de qué
+     significa cada lado y se leen desde el otro lado del sofá. */
+  .ends.loud { font-size: 1rem; color: var(--text, #fff); margin-bottom: 7px; }
   /* La flecha, como elemento aparte: con nombres largos se quedaba sola en una
      segunda línea. */
   .ends .e { display: flex; align-items: flex-start; gap: 4px; max-width: 48%; }
@@ -180,12 +231,12 @@
 
   .track { position: relative; }
   /* Sitio para la burbuja cuando la hay (el dial de solo lectura no la lleva). */
-  .track.pad { padding-top: 28px; }
+  .track.pad { padding-top: 32px; }
   /* El número, encima del pomo pero FUERA de la barra: donde no llega el dedo. */
   .bubble {
-    position: absolute; top: 24px; transform: translate(-50%, -100%);
-    background: var(--moon, #ffd98a); color: #241a05; font-weight: 800; font-size: 0.95rem;
-    padding: 3px 10px; border-radius: 999px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    position: absolute; top: 27px; transform: translate(-50%, -100%);
+    background: var(--moon, #ffd98a); color: #241a05; font-weight: 800; font-size: 1.15rem;
+    padding: 3px 12px; border-radius: 999px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
     pointer-events: none; white-space: nowrap;
   }
   .bubble::after {
@@ -193,12 +244,15 @@
     background: var(--moon, #ffd98a); transform: translateX(-50%) rotate(45deg);
   }
   .bar { position: relative; height: 44px; border-radius: 10px; border: 1px solid var(--border, #333); touch-action: none; }
-  .bar.sel { cursor: ew-resize; height: 58px; }
+  .bar.sel { cursor: ew-resize; height: 68px; border: 2px solid var(--line-2, #3b4060); }
   .bar:focus-visible { outline: none; box-shadow: var(--focus, 0 0 0 3px rgba(242, 181, 82, 0.4)); }
   /* La capa de color se recorta sola; las agujas y el pomo viven FUERA de ella
      para poder sobresalir de la barra. */
   .fill { position: absolute; inset: 0; border-radius: 9px; overflow: hidden;
     background: linear-gradient(90deg, #212c42, #2b2740 55%, #3a2f4a); }
+  /* Más claro en el dial de la mesa: un móvil tumbado y mirado de lado apaga
+     los grises oscuros, y entonces no se distingue dónde acaba la barra. */
+  .bar.sel .fill { background: linear-gradient(90deg, #2c3a58, #37325e 55%, #4a3b60); }
   .zone { position: absolute; top: 0; bottom: 0; }
   .z2 { background: #2d5a3c; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14); }
   .z3 { background: #40875a; }
@@ -206,6 +260,8 @@
   .tick { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(255, 255, 255, 0.18); }
   .tick.mid { width: 2px; margin-left: -1px; background: rgba(255, 255, 255, 0.5); }
   .tick.small { top: 34%; bottom: 34%; }
+  .bar.sel .tick { background: rgba(255, 255, 255, 0.3); }
+  .bar.sel .tick.mid { width: 3px; background: rgba(255, 255, 255, 0.62); }
 
   .needle { position: absolute; top: -5px; bottom: -5px; width: 3px; transform: translateX(-50%); border-radius: 2px; pointer-events: none; }
   .needle .pin { position: absolute; left: 50%; top: -7px; width: 11px; height: 11px; border-radius: 50%; transform: translateX(-50%); background: inherit; border: 1px solid rgba(0, 0, 0, 0.4); }
@@ -213,28 +269,39 @@
   .needle.target { background: #ffd76a; box-shadow: 0 0 6px #ffd76a; }
   .needle.mark { background: #e86a6a; box-shadow: 0 0 6px #e86a6a; }
   .needle.pick { background: #fff; box-shadow: 0 0 6px #fff; }
+  .bar.sel .needle { width: 4px; }
 
   .knob {
     position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    width: 46px; height: 46px; border-radius: 50%;
+    width: 56px; height: 56px; border-radius: 50%;
     background: radial-gradient(circle at 50% 32%, #fff, #d9d9e4);
     border: 2px solid rgba(0, 0, 0, 0.3); box-shadow: 0 3px 10px rgba(0, 0, 0, 0.55);
     display: flex; align-items: center; justify-content: center; pointer-events: none;
     transition: transform var(--t-fast, 140ms);
   }
   /* Estrías: se ve que ESO es lo que se agarra (y no tapa ningún número). */
-  .knob .grip { width: 14px; height: 20px; border-radius: 2px;
+  .knob .grip { width: 16px; height: 24px; border-radius: 2px;
     background: repeating-linear-gradient(90deg, #6f6c8a 0 2px, transparent 2px 5px); }
   .knob.on { transform: translate(-50%, -50%) scale(1.14); box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6); }
 
   .scale { position: relative; height: 16px; margin-top: 3px; font-size: 0.8rem; color: var(--muted, #9aa); }
+  .scale.loud { height: 19px; font-size: 0.92rem; color: var(--text, #fff); }
   .scale span { position: absolute; top: 0; }
   .s-l { left: 0; }
   .s-m { left: 50%; transform: translateX(-50%); font-weight: 700; }
+  .s-q { transform: translateX(-50%); opacity: 0.75; }
   .s-r { right: 0; }
 
+  /* ——— El interruptor de la diana (postura de MANO) ——— */
+  .peek {
+    display: block; width: 100%; margin-top: 10px; padding: 14px 12px;
+    font-size: 1rem; font-weight: 700; touch-action: none; user-select: none;
+    background: var(--card2, #222639); border: 2px dashed var(--line-2, #3b4060); color: var(--text, #fff);
+  }
+  .peek.on { border-style: solid; border-color: #63c47f; background: color-mix(in srgb, #63c47f 18%, var(--card2, #222639)); }
+
   /* ——— Pie: qué significan los colores (sin esto, el dial es un adorno) ——— */
-  .lg { display: flex; flex-wrap: wrap; align-items: center; gap: 3px 10px; margin-top: 6px; font-size: 0.8rem; color: var(--muted, #9aa); }
+  .lg { display: flex; flex-wrap: wrap; align-items: center; gap: 3px 10px; margin-top: 6px; font-size: 0.8rem; color: var(--muted, #9aa); min-height: 19px; }
   .li { white-space: nowrap; }
   .lg b { color: var(--text, #fff); }
   .sw, .key { display: inline-block; vertical-align: -1px; margin-right: 2px; width: 12px; height: 12px; border-radius: 3px; }

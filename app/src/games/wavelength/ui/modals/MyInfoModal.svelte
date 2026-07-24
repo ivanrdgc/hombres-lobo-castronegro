@@ -12,6 +12,7 @@
   const inGame = $derived(!!game && !!my && game.playerIds.includes(my.id));
   const iAmPsychic = $derived(!!game && !!my && psychicId(game) === my.id);
   const rows = [
+    { emoji: '🙈', name: 'Cómo se coge el móvil', desc: 'El Psíquico sujeta el suyo mirando hacia él y no lo enseña a nadie (su diana va tapada: aparece mientras mantiene pulsado). El equipo comparte un dial público que se mira y se mueve entre todos.' },
     { emoji: '🔮', name: 'El Psíquico', note: 'rota cada ronda', desc: 'Ve la diana en su dial y da UNA pista en voz alta que caiga justo ahí (puede escribirla para que la mesa la relea). Después calla: ni aclaraciones ni tocar el dial.' },
     { emoji: '🎚️', name: 'El equipo', desc: 'Debate la pista y mueve el marcador, que es COMPARTIDO: se ve igual en todos los móviles. Uno lo fija por consenso, con doble toque. El Psíquico no participa.' },
     { emoji: '📏', name: 'El dial', note: 'de 0 a 100', desc: '0 es el extremo izquierdo del espectro, 100 el derecho y 50 el centro. La app dice el objetivo en esa escala.' },
@@ -26,7 +27,7 @@
     <div class="rolecard"><span class="remoji">{iAmPsychic ? '🔮' : '🎚️'}</span>
       <span class="rname">{iAmPsychic ? 'Eres el Psíquico' : 'Eres del equipo'}</span>
       <div class="rdesc">Espectro: <b>{spectrumLabel(game.spectrumId)}</b>.
-        {iAmPsychic ? 'Solo tú ves la diana (en tu pantalla de fase).' : 'Interpretad la pista y colocad el marcador.'}</div></div>
+        {iAmPsychic ? '🙈 Solo tú ves la diana: móvil hacia ti y no la enseñes a nadie, tampoco a los tuyos.' : 'Interpretad la pista y colocad el marcador entre todos.'}</div></div>
   {:else}
     <p class="small-note">👀 Miras de espectador.</p>
   {/if}

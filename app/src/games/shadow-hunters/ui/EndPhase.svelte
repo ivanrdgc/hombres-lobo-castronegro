@@ -24,7 +24,9 @@
   {/if}
 </div>
 
-<div class="card"><h3>🎭 Todas las identidades</h3>
+<!-- Aquí ya no hay nada que esconder: al terminar, el motor destapa a todos y
+     el tablero se lee igual en las ocho pantallas. -->
+<div class="card"><h3>🎭 Quién era quién</h3>
   <PlayersBoard {game} {my} /></div>
 
 <div class="card">

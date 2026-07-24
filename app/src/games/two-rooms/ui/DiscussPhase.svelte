@@ -11,7 +11,6 @@
 
   const { game, my }: { game: TwoRoomsState; my: PlayerDoc } = $props();
   const inGame = $derived(game.playerIds.includes(my.id));
-  const myRoom = $derived(inGame ? game.room[my.id] + 1 : 0);
   const hostages = $derived(hostagesPerRoom(game));
 
   $effect(() => {
@@ -24,21 +23,21 @@
   });
 </script>
 
-<!-- El reloj lo pinta GameScreen encima del tablero de salas. -->
-<div class="narration">🚪 Ronda {game.round} de {game.totalRounds}. {inGame ? `Estás en la Sala ${myRoom}.` : ''} Hablad dentro de vuestra sala y enseñad la carta (la pantalla de tu móvil) a quien queráis, en persona. Al acabar el tiempo, cada sala mandará {hostages === 1 ? 'un rehén' : `${hostages} rehenes`}.</div>
+<!-- El reloj lo pinta GameScreen encima del tablero de salas, y la ronda va en
+     la cabecera: aquí solo se dice QUÉ HACER ahora (B29). En qué sala estás lo
+     dice el tablero, que lo marca con «aquí estás». -->
+<div class="narration">🗣️ Hablad dentro de vuestra sala y enseñad vuestra carta —con el móvil, cara a cara— a quien queráis. Al acabar el tiempo, cada sala mandará {hostages === 1 ? 'un rehén' : `${hostages} rehenes`} a la otra: ve pensando a quién te conviene sacar… o retener.</div>
 
 {#if inGame}
   <MyCard {game} pid={my.id} mini={true} />
   <!-- La referencia, aquí mismo: enseñar la carta es EL mecanismo del juego y
        no es evidente que se haga con la pantalla del móvil. -->
   <details class="trref">
-    <summary data-a="tr-ref-discuss">📖 Cómo se enseña la carta (y qué viene después)</summary>
-    <p class="small-note">Abre tu carta con «👁 Ver mi carta», tapa la pantalla con la mano y enséñasela cara a cara a quien tú decidas. Nadie está obligado a enseñar nada, y la app no arbitra: es un trato entre vosotros.</p>
-    <p class="small-note">«🎨 Enseñar solo el color» deja en pantalla tu bando y esconde el rol: es la jugada de siempre del Presidente, que busca azules de confianza sin destaparse.</p>
-    <p class="small-note">Al acabar el reloj, cada sala votará {hostages === 1 ? 'a una persona' : `a ${hostages} personas`} para mandar de rehén a la otra. Ve pensando a quién te conviene sacar… o retener.</p>
+    <summary data-a="tr-ref-discuss">📖 Cómo se enseña la carta</summary>
+    <p class="small-note">«🤝 Enseñársela a alguien» pone tu carta a pantalla completa, en grande, para ponerle el móvil delante a quien tú decidas. No se apaga sola: la guardas tú cuando hayáis acabado. Nadie está obligado a enseñar nada, y la app no arbitra: es un trato entre vosotros.</p>
+    <p class="small-note">Se abre por el lado menos comprometido, «🎨 solo el color»: se ve tu bando y NO tu rol —la jugada de siempre del Presidente, que busca azules de confianza sin destaparse—. Con «🎴 Enseñar también el rol» destapas la carta entera.</p>
+    <p class="small-note">«👁 Ver mi carta» es solo para ti: se oculta sola a los pocos segundos, para que el móvil pueda volver a la mesa sin dejar tu bando encendido.</p>
   </details>
-{:else}
-  <div class="card"><p class="small-note" style="margin:0">👀 No juegas esta partida: puedes seguir el reloj desde aquí.</p></div>
 {/if}
 
 <style>

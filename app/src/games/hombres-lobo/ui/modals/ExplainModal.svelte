@@ -4,11 +4,10 @@
   // sección tiene su propio botón de lectura, SOLO en este dispositivo (nunca en
   // el narrador), para poder escuchar únicamente lo que interese.
   import { app } from '../../../../core/sync/store.svelte';
-  import { EXPLANATIONS, explainSections, explainRoleIds } from '../../texts/explain';
+  import { explainSections, explainRoleIds } from '../../texts/explain';
   import { explainAudioState, toggleExplainAudio } from '../../../../shell/explain-audio';
 
   const g = $derived(app.group);
-  const ex = $derived(EXPLANATIONS[g?.currentGame || ''] || EXPLANATIONS.hombres_lobo);
   // Solo las secciones distintas de la intro: cómo se juega, roles y ajustes.
   const sections = $derived(explainSections(g || {}).filter((s) => s.id !== 'intro'));
   // Ids paralelos a los items de la sección de roles (para el ℹ️ de cada uno).
@@ -21,7 +20,8 @@
   }
 </script>
 
-<h3>{ex.title}</h3>
+<!-- Sin título propio: se entra desde «📖 Cómo se juega» y la primera sección ya
+     se llama así (un dato, un sitio). -->
 {#each sections as sec (sec.id)}
   {@const audio = explainAudioState(sec.id)}
   <div style="display:flex;align-items:center;gap:8px;margin-top:14px">

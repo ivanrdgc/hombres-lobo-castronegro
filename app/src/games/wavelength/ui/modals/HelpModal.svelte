@@ -9,7 +9,7 @@
   const keyOf = (i: number) => 'wl-howto:' + i;
 </script>
 
-<h3 style="margin:0 0 4px">📡 Cómo se juega Wavelength</h3>
+<h3 style="margin:0 0 4px">📖 Cómo se juega</h3>
 
 {#each HOW_TO as sec, i (i)}
   {@const st = localAudioState(keyOf(i))}

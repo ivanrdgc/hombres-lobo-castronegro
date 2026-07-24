@@ -33,11 +33,14 @@ export const DEMO: DemoScript = {
       text: [
         'A ti te escribe la palabra secreta: «Tiburón». A Bea (aunque nadie lo sabe) le ha tocado ser el Camaleón: su carta le dice que disimule.',
       ],
+      // Las dos cartas son la MISMA carta: mismo marco, mismo emoji, mismo alto
+      // y mismo texto. Solo cambia la palabra del centro, para que el móvil
+      // pueda quedarse plano sin que el vecino deduzca nada de reojo.
       visual: {
         kind: 'screens',
         panes: [
-          { title: 'TÚ', lines: ['🔑 La palabra secreta es:', '«TIBURÓN»', 'Da una pista que demuestre que la conoces… sin regalarla.'] },
-          { title: 'Bea (tú no lo ves)', lines: ['🦎 Eres el CAMALEÓN', 'No conoce la palabra: escuchará las pistas e improvisará.'] },
+          { title: 'TÚ', lines: ['🎴 Tu carta de esta ronda', '«Tiburón»', 'Una palabra del tema: es la secreta.'] },
+          { title: 'Bea (tú no lo ves)', lines: ['🎴 Tu carta de esta ronda', '«Camaleón»', 'Idéntica por fuera: de reojo no se distinguen.'] },
         ],
       },
     },

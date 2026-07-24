@@ -1,11 +1,10 @@
 <script lang="ts">
-  // 🎧🗒️ La herramienta central del juego, en UNA tarjeta: lo que el rival ha
-  // cantado (su tira de rumbos) y, justo debajo, el cuaderno donde se apunta lo
-  // que se deduce. Estaban en dos tarjetas separadas y se leían como dos cosas
-  // sin relación; se miran a la vez, así que van juntas.
+  // 🎧🗒️ La herramienta de la tripulación, en UNA tarjeta: lo que el rival ha
+  // cantado (su tira de rumbos, numerada) y, justo debajo, el mapa en blanco
+  // donde se apunta lo que se deduce. Se miran a la vez, así que van juntas.
+  // Postura de EQUIPO: esto lo mira el corro entero, sin gestos ni modales.
   // Las marcas son LOCALES de este móvil (localStorage, NO Firestore): son
-  // deducciones, no estado de la partida, y cada móvil apunta lo suyo sin
-  // chivarle nada a nadie.
+  // deducciones, no estado de la partida, y cada móvil apunta lo suyo.
   import { rival } from '../engine';
   import { DIR_ARROW, type Cell } from '../map';
   import type { Announce, SonarState, Team } from '../types';
@@ -52,9 +51,9 @@
 </script>
 
 <div class="card">
-  <h3>🎧 Lo que ha cantado el {tag} · 🗒️ vuestro cuaderno</h3>
+  <h3>🎧 Cazar al {tag}</h3>
   <p class="small-note" style="margin:0">
-    Cada rumbo que canta el rival queda apuntado aquí; con las flechas y el mapa de abajo se le acorrala. Salió de {home}.
+    Salió de {home} y cada rumbo que canta queda aquí, numerado. Probad su ruta desde varias salidas: las islas y los bordes descartan caminos.
   </p>
 
   {#if moves.length}
@@ -65,33 +64,31 @@
         </span>
       {/each}
     </div>
-    <p class="small-note" style="margin:2px 0 0">
-      El último ({moves.length}) fue <b>{arrow(moves[moves.length - 1])} {label(moves[moves.length - 1])}</b>.
-      Probad su ruta desde varias salidas: las islas y los bordes descartan caminos.
-      🤫 = se deslizó sin decir rumbo (1 o 2 casillas); ⏫ = emergió y cantó cuadrante.
-    </p>
+    <p class="small-note" style="margin:4px 0 0">🤫 = se deslizó sin decir rumbo (1 o 2 casillas) · ⏫ = emergió y cantó cuadrante.</p>
   {:else}
-    <p class="small-note" style="margin:8px 0 0">Aún no ha navegado: en cuanto lo haga, su rumbo aparecerá aquí numerado.</p>
+    <p class="small-note" style="margin:8px 0 0">Aún no ha navegado: en cuanto lo haga, su rumbo aparecerá aquí.</p>
   {/if}
 
   <hr class="sep" />
 
   <p class="small-note" style="margin:0">
-    🗒️ <b>Cuaderno (solo en tu móvil).</b> Toca una casilla y va pasando por ❌ descartada → ⭕ candidata → limpia.
-    Nadie más ve tus marcas: es tu papel y boli para tachar dónde NO puede estar.
+    🗒️ <b>Vuestro cuaderno.</b> Tocad una casilla y va pasando por ❌ descartada → ⭕ candidata → limpia. Es papel y boli: solo vive en este móvil.
   </p>
   <MapGrid sub={game.subs[team]} {team} {notes} onNote={toggle} />
-  <p class="small-note" style="margin:0 0 8px">
-    {#if out || maybe}❌ {out} descartada{out === 1 ? '' : 's'} · ⭕ {maybe} candidata{maybe === 1 ? '' : 's'}. {/if}
-    Vuestro submarino sale de referencia para medir el alcance del torpedo.
-  </p>
-  <button class="small ghost" data-a="sn-notes-clear" disabled={!vals.length} onclick={clear}>🧹 Borrar mis marcas ({vals.length})</button>
+  <div class="snfoot">
+    <span class="small-note" style="margin:0">
+      {#if out || maybe}❌ {out} · ⭕ {maybe} · {/if}vuestro submarino sale de referencia para medir el alcance del torpedo.
+    </span>
+    <button class="small ghost" data-a="sn-notes-clear" disabled={!vals.length} onclick={clear}>🧹 Borrar ({vals.length})</button>
+  </div>
 </div>
 
 <style>
   .sntrack { display: flex; flex-wrap: wrap; gap: 4px; margin: 10px 0 0; }
-  .snmark { display: inline-flex; flex-direction: column; align-items: center; min-width: 32px; padding: 3px 4px 1px; border-radius: 7px; border: 1px solid var(--border); background: var(--bg2); }
-  .snmark b { font-size: 1.05rem; line-height: 1.1; }
-  .snmark i { font-size: 0.58rem; font-style: normal; color: var(--muted); }
+  .snmark { display: inline-flex; flex-direction: column; align-items: center; min-width: 36px; padding: 4px 5px 2px; border-radius: 7px; border: 1px solid var(--border); background: var(--bg2); }
+  .snmark b { font-size: 1.2rem; line-height: 1.1; }
+  .snmark i { font-size: 0.6rem; font-style: normal; color: var(--muted); }
   .snmark.snlast { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--bg-1)); }
+  .snfoot { display: flex; align-items: center; gap: 10px; margin-top: 2px; }
+  .snfoot span { flex: 1; }
 </style>

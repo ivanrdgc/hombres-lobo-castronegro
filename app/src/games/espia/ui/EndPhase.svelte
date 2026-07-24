@@ -1,7 +1,7 @@
 <script lang="ts">
-  // Fin de la ronda: desenlace, puntos, marcador acumulado e historial. Entre
-  // rondas la mesa también se recompone: quien llega puede sentarse y quien se
-  // va usa ⋯ → Dejar la ronda.
+  // Fin de la ronda, en tres tarjetas: qué ha pasado (con el espía y el lugar
+  // ya destapados), el marcador acumulado y la próxima ronda —quién juega,
+  // quién se suma y los dos botones que la mesa puede pulsar—.
   import { app, ctxMatch, matchOf } from '../../../core/sync/store.svelte';
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
@@ -9,7 +9,6 @@
   import { locationById } from '../locations';
   import type { PlayerDoc } from '../../../core/sync/schema';
   import type { EspiaState } from '../types';
-  import LugaresGrid from './LugaresGrid.svelte';
 
   const { game }: { game: EspiaState; my: PlayerDoc } = $props();
 
@@ -38,6 +37,7 @@
   let adds = $state<string[]>([]);
   const picked = $derived(adds.filter((pid) => candidates.some((p) => p.id === pid)));
   const roomLeft = $derived(ESPIA_MAX_PLAYERS - game.playerIds.length);
+  const nextDealer = $derived(game.names[game.playerIds[game.round % game.playerIds.length]] || '¿?');
 
   function toggle(pid: string) {
     adds = adds.includes(pid) ? adds.filter((x) => x !== pid) : [...adds, pid];
@@ -52,9 +52,9 @@
 {#if o}
   <div class="card" style="text-align:center;border-color:var(--accent)">
     <span class="moon">{voided ? '🚪' : spyWon ? '🕵️' : '🎉'}</span>
-    <h3>{voided ? 'Ronda anulada' : spyWon ? 'El espía gana la ronda' : 'Los agentes ganan la ronda'}</h3>
+    <h3>{voided ? 'Ronda anulada' : spyWon ? 'Gana el espía' : 'Ganan los agentes'}</h3>
     <p style="margin:10px 0">{o.txt}</p>
-    <p class="small-note">El espía era <b>{game.names[game.spyId] || '¿?'}</b> · el lugar, <b>{loc ? `${loc.emoji} ${loc.name}` : game.locationId}</b>.</p>
+    <p class="small-note">🕵️ El espía era <b>{game.names[game.spyId] || '¿?'}</b> · 📍 estabais en <b>{loc ? `${loc.emoji} ${loc.name}` : game.locationId}</b>.</p>
   </div>
 {/if}
 
@@ -77,15 +77,10 @@
 </div>
 
 <div class="card">
-  <h3>📍 El lugar era…</h3>
-  <LugaresGrid reveal={game.locationId} />
-</div>
-
-<div class="card">
-  <h3>🪑 La mesa de la próxima ronda</h3>
-  <p class="small-note" style="margin-top:0">Juegan <b>{game.playerIds.length}</b>: {game.playerIds.map((pid) => game.names[pid] || pid).join(', ')}. Quien quiera retirarse, ⋯ → 🚪 Dejar la ronda.</p>
+  <h3>▶️ La próxima ronda</h3>
+  <p class="small-note" style="margin-top:0">Juegan <b>{game.playerIds.length}</b>: {game.playerIds.map((pid) => game.names[pid] || pid).join(', ')}{tooFew ? '' : ` · reparte ${nextDealer}`}. Para retirarte: ⋯ → 🚪 Dejar la ronda.</p>
   {#if candidates.length && roomLeft > 0}
-    <p class="small-note">Entre rondas se puede sumar gente (hasta {ESPIA_MAX_PLAYERS}). Añade solo a quien esté delante: si no confirma su carta, la ronda no arranca.</p>
+    <p class="small-note">Se puede sumar gente (hasta {ESPIA_MAX_PLAYERS}). Añade solo a quien esté delante: si no confirma su carta, la ronda no arranca.</p>
     <div class="players">
       {#each candidates as p (p.id)}
         <div class="player selectable {adds.includes(p.id) ? 'selected' : ''}" data-a="espia-add-pick" data-p={p.id}
@@ -100,16 +95,11 @@
     </button>
     {#if picked.length > roomLeft}<p class="small-note">⚠️ Solo caben {roomLeft} más (máximo {ESPIA_MAX_PLAYERS}: 7 papeles y el espía).</p>{/if}
   {:else if roomLeft <= 0}
-    <p class="small-note">Mesa llena ({ESPIA_MAX_PLAYERS} jugadores): nadie más cabe hasta que alguien deje la ronda.</p>
-  {:else}
-    <p class="small-note">Nadie más libre en la mesa. Quien llegue ahora tiene que entrar en la mesa (y no estar en otra partida) para poder sentarse aquí.</p>
+    <p class="small-note">Mesa llena ({ESPIA_MAX_PLAYERS}): nadie más cabe hasta que alguien deje la ronda.</p>
   {/if}
-</div>
-
-<div class="card">
   {#if tooFew}
-    <p class="small-note" style="margin-top:0">⚠️ Sois {game.playerIds.length}: El Espía necesita {ESPIA_MIN_PLAYERS} para otra ronda. Sentad a alguien más… o terminad el juego.</p>
+    <p class="small-note">⚠️ Sois {game.playerIds.length}: hacen falta {ESPIA_MIN_PLAYERS} para repartir otra vez. Sentad a alguien más… o terminad el juego.</p>
   {/if}
-  <button class="primary block" data-a="espia-next-round" disabled={tooFew} onclick={() => guard(A.nextRound)}>▶️ Otra ronda{tooFew ? '' : ` (reparte ${game.names[game.playerIds[(game.round) % game.playerIds.length]] || '¿?'})`}</button>
-  <button class="ghost block" data-a="espia-end-game" onclick={() => guard(A.endEspia)}>🏁 Terminar el juego</button>
+  <button class="primary block" style="margin-top:10px" data-a="espia-next-round" disabled={tooFew} onclick={() => guard(A.nextRound)}>▶️ Repartir otra ronda</button>
+  <button class="ghost block" data-a="espia-end-game" onclick={() => guard(A.endEspia)}>🏁 Terminar el juego (se cierra el marcador)</button>
 </div>

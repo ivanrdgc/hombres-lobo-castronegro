@@ -22,14 +22,13 @@
 
 {#if list.length}
   <div class="card">
-    <h3>🎴 Cartas en juego · toca una para ver qué hace</h3>
-    <p class="small-note" style="margin:0 0 8px">Las {total} del mazo, en el orden en que la voz las llama de noche: una por jugador y {CENTER_COUNT} en el centro. Es público: nadie sabe QUIÉN tiene cada una.</p>
+    <h3>🎴 Las {total} cartas de esta partida</h3>
+    <p class="small-note" style="margin:0 0 8px">{teamN('lobos')} 🐺 del bando lobo · {teamN('pueblo')} 🏡 del pueblo{#if teamN('tanner')} · {teamN('tanner')} 🪢 en solitario{/if}. {CENTER_COUNT} están en el centro y nadie sabe cuáles. Toca una para ver qué hace.</p>
     <div class="chips">
       {#each list as [id, n] (id)}
         <button class="chip rolechip" data-a="una-ingame-role" data-p={id} onclick={() => open(id)}>{ROLES[id].emoji} {ROLES[id].name}{n > 1 ? ` ×${n}` : ''} <span class="i">ℹ️</span></button>
       {/each}
     </div>
-    <p class="small-note">Recuento: {teamN('lobos')} 🐺 del bando lobo · {teamN('pueblo')} 🏡 del pueblo{#if teamN('tanner')} · {teamN('tanner')} 🪢 en solitario{/if}. Ojo: algunas están entre las {CENTER_COUNT} del centro.</p>
   </div>
 {/if}
 

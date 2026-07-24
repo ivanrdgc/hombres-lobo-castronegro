@@ -19,10 +19,11 @@ export const DEMO: DemoScript = {
     {
       icon: '🎴',
       title: 'El reparto',
-      who: { actor: 'TODOS miráis vuestras 2 cartas a la vez («👁 Ver mis influencias» → «✅ Lo tengo»)', others: 'cuando el último confirma, cualquiera pulsa «▶️ Todos listos».' },
+      who: { actor: 'TODOS veis vuestras 2 cartas en pantalla y pulsáis «Lo tengo»', others: 'cuando el último confirma, cualquiera pulsa «Empezar la partida».' },
       text: [
         'A ti te tocan 🎩 Duque y 🎭 Embajador. Buen combo: puedes cobrar impuestos con la verdad… y farolear el resto.',
-        'Las 15 cartas de la corte (el mazo) son 5 personajes con 3 copias de cada uno. Abajo a la derecha tienes SIEMPRE el botón flotante 🎴: tus influencias, tus monedas y la chuleta de los 5 personajes, en cualquier fase y sin que nadie lo vea.',
+        'Tus dos cartas se quedan ancladas arriba en tu pantalla toda la partida, con tus monedas al lado: sujeta el móvil mirando a ti, como una mano de cartas, y no lo dejes en la mesa.',
+        'Las 15 cartas de la corte (el mazo) son 5 personajes con 3 copias de cada uno. La chuleta completa está en el botón flotante de abajo a la derecha, para consultarla en cualquier fase.',
       ],
       visual: {
         kind: 'screens',
@@ -116,7 +117,7 @@ export const DEMO: DemoScript = {
       who: { actor: 'El último con influencia gana; la voz va cantando cada jugada', others: 'revancha con «🔁 Otra partida»: el marcador se guarda.' },
       text: [
         'Chuleta rápida: 🪙 Renta +1 (nadie la para) · 🤝 Ayuda +2 (la bloquea cualquier «Duque») · 🎩 Impuestos +3 · ⚓ Robar 2 · 🗡️ Asesinar (3 monedas) · 🎭 Intercambiar cartas · 💥 Golpe 7 monedas (imparable) · 👑 Condesa: sin acción propia, solo bloquea el asesinato.',
-        'Esa chuleta y tus cartas viven en el botón flotante 🎴 de abajo a la derecha: consúltalo cuando quieras, es privado. Ganas si eres quien queda en pie: 1 punto al marcador y se destapan todas las manos.',
+        'Tus cartas están siempre arriba en tu pantalla y esa chuleta, en el botón flotante de abajo a la derecha: consúltalo cuando quieras, es privado. Ganas si eres quien queda en pie: 1 punto al marcador y se destapan todas las manos.',
         'Farolea, duda de todos y no enseñes la pantalla. 🎭',
       ],
     },

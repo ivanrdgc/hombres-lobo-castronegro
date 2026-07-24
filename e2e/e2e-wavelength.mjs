@@ -54,6 +54,18 @@ async function moveDial(page, pct) {
 }
 // La diana (bandas .zone) es el secreto de la ronda: contarlas delata la fuga.
 const zones = (page) => page.locator('.zone').count();
+// B28 (postura): el móvil del Psíquico está en la MISMA mesa, así que su diana
+// tampoco puede estar pintada en reposo —la mancha verde se lee a dos metros
+// aunque no se lean los números—. Solo aparece mientras mantiene pulsado.
+async function peekZones(page) {
+  const box = await page.locator('[data-a=wl-peek]').boundingBox();
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.waitForFunction(() => document.querySelectorAll('.zone').length > 0, null, { timeout: 4000 }).catch(() => {});
+  const n = await zones(page);
+  await page.mouse.up();
+  return n;
+}
 
 try {
   const GROUP = 'WL ' + Date.now().toString(36).slice(-5);
@@ -73,8 +85,17 @@ try {
   await ana.click('button[data-a=select-game][data-p=wavelength]');
   await ana.waitForSelector('[data-a=wl-open-help]');
   ok('el catálogo ofrece Wavelength y su lobby carga');
+  // B29: el lobby tiene UN trabajo — de qué va, cómo se coge el móvil y tres
+  // caminos (empezar, aprender, consultar). El nombre del juego, solo en la
+  // cabecera: no se repite en una tarjeta debajo.
+  check(await ana.locator('h2:has-text("Wavelength")').count() === 1, 'el nombre del juego sale UNA vez (en la cabecera)');
+  check(await ana.locator('[data-a=wl-posture]').count() === 1, 'el lobby avisa de la postura del móvil antes de repartir');
+  check(await ana.locator('[data-a=wl-posture] >> text=/no la puede ver/').count() >= 1, 'y matiza que la pantalla del Psíquico no la ve NADIE, ni los suyos');
+  for (const a of ['open-start', 'open-demo', 'wl-open-help']) {
+    check(await ana.locator(`[data-a=${a}]`).count() === 1, `el lobby deja el camino «${a}» a un toque`);
+  }
   await ana.click('[data-a=wl-open-help]');
-  await ana.waitForSelector('text=/Cómo se juega/');
+  await ana.waitForSelector('.modal >> text=/Cómo se juega/');
   check(await ana.locator('.modal [data-a=wl-play-howto]').count() >= 4, 'el «cómo se juega» tiene un ▶️ por apartado');
   check(await ana.locator('.modal >> text=/Saltar ronda/').count() >= 1, 'la ayuda cuenta cómo se acaba y las salidas del menú ⋯');
   await ana.click('button[data-a=close-modal]');
@@ -114,8 +135,12 @@ try {
   check(await dani.locator('.modal [data-a=table-player]').count() === 4, 'el menú ⋯ ofrece «🪑 La mesa» con los cuatro dispositivos');
   await dani.click('.modal [data-a=close-modal]');
 
-  // La cabecera dice a cuánto está la meta (no solo el número de ronda).
+  // La cabecera dice a cuánto está la meta (no solo el número de ronda), y lo
+  // dice UNA sola vez: el chip «Ronda 1/3» de la barra de título repetía el
+  // mismo dato dos dedos más arriba (B29).
   check(await dani.locator('text=/Ronda 1 de 3/').count() >= 1, 'la cabecera lleva el progreso hacia la meta');
+  check(await dani.locator('.topbar .chip').count() === 0, 'la ronda no se repite en la barra de título');
+  check(await dani.locator('[data-a=wl-team-score]').count() === 1, 'el total del equipo (el marcador que importa) está siempre a la vista');
 
   // ——— Ronda 1: cambiar espectro, pista escrita, marca compartida ———
   s = await waitState(ana, (x) => x.phase === 'clue' && x.round === 1, 'ronda 1 en fase de pista');
@@ -126,9 +151,19 @@ try {
   check(await pg(other).locator('[data-a=wl-clue-done]').count() === 0, 'el resto no puede dar la pista');
   // FUGA: la diana solo se pinta en el móvil del Psíquico. Ni el equipo, ni el
   // dispositivo de la voz que NO juega (está en el centro de la mesa).
-  check(await zones(pg(psychic)) > 0, 'el Psíquico SÍ ve la diana en su dial');
   check(await zones(pg(other)) === 0, 'el equipo NO ve la diana (objetivo secreto)');
   check(await zones(dani) === 0, 'FUGA: el dispositivo de la voz que no juega NO ve la diana (pista)');
+  // CHIVATO DE POSTURA (B28): ni en el móvil del propio Psíquico está pintada
+  // en reposo. Su pantalla se ve igual que la de los demás hasta que él tapa el
+  // móvil con la mano y mantiene pulsado.
+  check(await zones(pg(psychic)) === 0, 'CHIVATO: en reposo el dial del Psíquico no enseña la mancha verde');
+  check(await pg(psychic).locator('[data-a=wl-peek]').count() === 1, 'el Psíquico tiene el «mantén pulsado para ver la diana»');
+  check(await peekZones(pg(psychic)) > 0, 'manteniendo pulsado, el Psíquico SÍ ve su diana');
+  await pg(psychic).waitForFunction(() => document.querySelectorAll('.zone').length === 0, null, { timeout: 4000 }).catch(() => {});
+  check(await zones(pg(psychic)) === 0, 'al soltar, la diana se tapa sola (no se queda encendida en la mesa)');
+  check(await pg(psychic).locator('[data-a=wl-private]').count() === 1, 'el Psíquico lleva el aviso permanente de pantalla privada');
+  check(await pg(other).locator('[data-a=wl-private]').count() === 0, 'el equipo no lo lleva: su pantalla es pública');
+  check(await pg(other).locator('[data-a=wl-peek]').count() === 0, 'y no tiene nada que destapar');
   // El Psíquico ve QUÉ se espera de él: el valor del objetivo y la chuleta de
   // la pista, sin salir de la pantalla en la que decide.
   const aim = `text=/Tu objetivo está en ${s.target}/`;
@@ -149,6 +184,11 @@ try {
   check(await pg(other).locator('text=/una sauna/').count() >= 1, 'el equipo puede releer la pista durante el debate');
   check(await zones(dani) === 0, 'FUGA: el dispositivo de la voz tampoco ve la diana al adivinar');
   check(await zones(pg(other)) === 0, 'el equipo sigue sin ver la diana al adivinar');
+  // El peor momento para un chivato: todos debatiendo, mirando alrededor, y el
+  // Psíquico con el objetivo en el móvil.
+  check(await zones(pg(psychic)) === 0, 'CHIVATO: mientras el equipo debate, el dial del Psíquico sigue tapado');
+  check(await pg(psychic).locator('[data-a=wl-private]').count() === 1, 'y el aviso de pantalla privada sigue ahí');
+  check(await peekZones(pg(psychic)) > 0, 'el Psíquico puede asomarse a su diana manteniendo pulsado');
 
   // Sin marca movida no se puede fijar (un toque accidental ya no cierra la ronda).
   check(s.pick === null, 'la ronda empieza SIN marca puesta');

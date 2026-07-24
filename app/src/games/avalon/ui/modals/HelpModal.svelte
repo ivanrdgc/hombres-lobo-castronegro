@@ -18,7 +18,8 @@
   }
 </script>
 
-<h3 style="margin:0 0 4px">🏰 Cómo se juega Ávalon</h3>
+<!-- Mismo rótulo que el botón que lo abre (vocabulario estable, B29). -->
+<h3 style="margin:0 0 4px">🎲 Cómo se juega</h3>
 
 {#each HOW_TO as sec, i (i)}
   {@const st = localAudioState(keyOf(i))}

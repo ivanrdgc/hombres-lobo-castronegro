@@ -51,13 +51,15 @@
 <div class="card">
   <h3>🎮 ¿Quién juega?</h3>
   <SeatPicker {group} {meId} gameId="decrypto" onState={(s) => (seat = s)} />
-  <p class="small-note">La app repartirá dos equipos (rojo y azul) al azar, con 4 palabras clave secretas cada uno.
+  <p class="small-note">Los dos equipos (rojo y azul) los reparte la app al azar, con 4 palabras clave secretas cada uno. En cuanto salgan, <b>sentaos con los vuestros y el rival enfrente</b>.
     {#if n >= MIN_PLAYERS && n % 2}Sois {n}: un equipo tendrá uno más ({Math.ceil(n / 2)} contra {Math.floor(n / 2)}), que en Decrypto no da ventaja.{/if}</p>
+  {#if n && n < MIN_PLAYERS}<p class="small-note">⚠️ Faltan jugadores: Decrypto necesita al menos {MIN_PLAYERS} (dos por equipo).</p>{/if}
+  {#if n > MAX_PLAYERS}<p class="small-note">⚠️ Sobran jugadores: como mucho {MAX_PLAYERS}.</p>{/if}
 </div>
 
 <div class="card">
   <h3>🔊 ¿Dónde suena la voz?</h3>
-  <p class="small-note" style="margin-top:6px">Se juega en una sola mesa (las pistas son públicas), así que basta un altavoz. Solo anuncia turnos y resultados; nunca palabras ni códigos.</p>
+  <p class="small-note" style="margin-top:6px">Basta un altavoz: la voz solo canta turnos y resultados, nunca palabras ni códigos.</p>
   <div class="btnrow" style="margin-top:6px">
     {#each rows.filter((p) => !matchOf(p.id)) as p (p.id)}
       <button class="small {narrator === p.id ? 'primary' : 'ghost'}" data-a="pick-narrator" data-p={p.id} style="flex:0 1 auto;min-width:0" onclick={() => (narrPick = p.id)}>
@@ -68,10 +70,5 @@
   {#if narratorP}<p class="small-note">🔊 <b>{narratorP.name}</b> pone la voz{seat.chosen.includes(narratorP.id) ? ' y también juega' : ' (no juega)'}.</p>{/if}
 </div>
 
-<div class="card">
-  <p class="small-note" style="margin-top:0">🔐 Jugarán <b>{n}</b>{n ? ': ' : ''}<span style="opacity:.75">{chosen.map((p) => p.name).join(', ')}</span></p>
-  {#if n < MIN_PLAYERS}<p class="small-note">⚠️ Decrypto necesita al menos {MIN_PLAYERS} jugadores (dos por equipo).</p>{/if}
-  {#if n > MAX_PLAYERS}<p class="small-note">⚠️ Máximo {MAX_PLAYERS} jugadores.</p>{/if}
-  <div id="form-error">{#if app.ui.formError}<div class="flash error">{app.ui.formError}</div>{/if}</div>
-  <button class="primary block" disabled={!okStart} data-a="de-start" onclick={startNow}>🔐 ¡Empezar!</button>
-</div>
+<div id="form-error">{#if app.ui.formError}<div class="flash error">{app.ui.formError}</div>{/if}</div>
+<button class="primary block" disabled={!okStart} data-a="de-start" onclick={startNow}>🔐 Repartir equipos y empezar{okStart ? ` (${n})` : ''}</button>

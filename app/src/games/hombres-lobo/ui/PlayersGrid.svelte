@@ -6,6 +6,7 @@
   // insignia queda sin explicar: debajo va su leyenda, siempre visible.
   import { app, me, viewGroup } from '../../../core/sync/store.svelte';
   import { ROLES } from '../roles';
+  import { autoHide } from './autohide.svelte';
   import type { RoleId } from '../roles';
   import type { PlayerDoc } from '../../../core/sync/schema';
 
@@ -26,8 +27,18 @@
 
   // Los muertos pueden descubrir, si quieren, el rol de cualquier jugador
   // (como en el juego físico: los eliminados observan la noche con los ojos abiertos).
-  const canPeek = $derived(!!(viewer && viewer.inGame && viewer.alive === false
+  // Pero eso vive tras un gesto y se cierra solo (postura 🍽️ MESA): en reposo,
+  // la parrilla de un muerto se ve EXACTAMENTE igual que la de los vivos — antes
+  // dejaba a la vista de sus vecinos, para siempre, media partida destapada.
+  const mayPeek = $derived(!!(viewer && viewer.inGame && viewer.alive === false
     && viewGroup()?.game && viewGroup()!.game!.phase !== 'end'));
+  let peekOpen = $state(false);
+  const touchPeek = autoHide(() => peekOpen, () => closePeek());
+  function closePeek() {
+    peekOpen = false;
+    app.ui.deadPeek = {};
+  }
+  const canPeek = $derived(mayPeek && peekOpen);
   const peeked = $derived(app.ui.deadPeek || {});
   const marks = (p: PlayerDoc) =>
     `${p.infected ? ' 🧛' : ''}${p.transformed ? ' 🐾→🐺' : ''}${p.wolfSide ? ' →🐺' : ''}${p.lover ? ' 💘' : ''}${p.charmed ? ' 🎶' : ''}`;
@@ -54,6 +65,7 @@
   function deadPeek(pid: string) {
     const my = me();
     if (!my || my.alive !== false) return;
+    touchPeek();
     if (!app.ui.deadPeek) app.ui.deadPeek = {};
     app.ui.deadPeek[pid] = !app.ui.deadPeek[pid];
   }
@@ -91,5 +103,12 @@
 </div>
 {#if legend.length}<p class="small-note">{legend.join(' · ')}</p>{/if}
 {#if narratorP && !narratorP.inGame}<p class="small-note">🔊 Narra: {narratorP.name}</p>{/if}
-{#if canPeek}<p class="small-note">💀 Estás muerto: toca un jugador para descubrir su rol (solo tú lo ves). Y recuerda: los muertos no hablan.</p>{/if}
+{#if mayPeek}
+  {#if peekOpen}
+    <p class="small-note">💀 Toca a quien quieras para descubrir su carta (solo tú la ves). Se vuelve a tapar sola… y recuerda: los muertos no hablan.</p>
+    <button class="ghost block" data-a="dead-peek-close" onclick={closePeek}>🙈 Volver a tapar las cartas</button>
+  {:else}
+    <button class="ghost block" data-a="dead-peek-open" onclick={() => { peekOpen = true; touchPeek(); }}>👁 Destapar cartas (solo tú)</button>
+  {/if}
+{/if}
 </div>

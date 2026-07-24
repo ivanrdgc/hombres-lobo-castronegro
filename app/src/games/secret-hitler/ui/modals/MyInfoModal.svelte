@@ -1,10 +1,14 @@
 <script lang="ts">
   // «🎴 Mi carta + referencia» (B19/B21): tu bando (con lo que sabes) y la
   // chuleta de cartas y poderes. Accesible en cualquier fase.
+  //
+  // Postura 🍽️ MESA (B28): la carta se abre dentro de la cortina de privacidad
+  // —abrir este modal ES el gesto, así que entra ya destapada— y se oculta sola.
+  // La chuleta es pública y puede quedarse a la vista.
   import { app, viewGroup, me } from '../../../../core/sync/store.svelte';
   import { shGame } from '../../actions';
   import RefRows from '../../../../shell/RefRows.svelte';
-  import RoleCard from '../RoleCard.svelte';
+  import MyCard from '../MyCard.svelte';
 
   const g = $derived(viewGroup());
   const game = $derived(g ? shGame(g) : null);
@@ -20,9 +24,8 @@
 </script>
 
 {#if game && my}
-  <h3 style="margin:0 0 4px">🎴 Tu carta</h3>
   {#if inGame}
-    <RoleCard {game} pid={my.id} />
+    <MyCard {game} pid={my.id} startOpen />
   {:else}
     <p class="small-note">👀 Miras de espectador: sin carta propia.</p>
   {/if}

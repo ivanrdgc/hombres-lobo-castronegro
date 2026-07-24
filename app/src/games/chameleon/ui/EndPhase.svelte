@@ -18,17 +18,17 @@
   void my;
 </script>
 
-<div class="narration">🌟 Fin de la ronda.</div>
-
+<!-- B29: la banda «Fin de la ronda» repetía el chip de la cabecera, y el nombre
+     del Camaleón salía tres veces en cuatro líneas. Ahora: quién gana, por qué,
+     y los dos datos que la mesa quiere ver (quién era y cuál era la palabra). -->
 <div class="card" style="text-align:center">
   <h3 style="margin:6px 0">{game.winner ? WIN_LABELS[game.winner] : ''}</h3>
-  <p class="small-note">{outcomeReason(game)}</p>
-  <p class="small-note">El Camaleón era <b>{nm(game.chameleonId)}</b>. La palabra secreta: <b>«{game.grid[game.secret]}»</b>{game.guess !== null ? ` · apostó por «${game.grid[game.guess]}»` : ''}.</p>
+  <p class="reason">{outcomeReason(game)}</p>
+  <p class="facts">🦎 <b>{nm(game.chameleonId)}</b> · 🔑 <b>«{game.grid[game.secret]}»</b>{game.guess !== null ? ` · 🎯 apostó por «${game.grid[game.guess]}»` : ''}</p>
   <Grid grid={game.grid} secret={game.secret} guess={game.guess} />
-  <p class="small-note" style="margin-top:6px">🔑 la palabra secreta{game.guess !== null ? ' · 🎯 la casilla que apostó el Camaleón' : ''}</p>
 </div>
 
-<div class="card">
+<div class="card tally">
   <h3>🗳️ El recuento</h3>
   {#if rows.length}
     {#each rows as r (r.pid)}
@@ -60,3 +60,14 @@
 <button class="primary block" data-a="ch-again" onclick={() => guard(A.nextRound)}>🔁 Otra ronda</button>
 <!-- Con confirmación: al lado de «Otra ronda», un toque de más borraba la partida y el marcador. -->
 <button class="ghost block" data-a="ch-back-lobby" onclick={() => (app.ui.modal = { type: 'ch-end' })}>🏁 Terminar y volver al lobby</button>
+
+<style>
+  /* El recuento es PÚBLICO y es la recompensa de la ronda: se lee a un palmo,
+     con el móvil todavía plano en la mesa. A 0,78 rem y en gris de nota al pie
+     era justo el tipo de letra que Iván no podía leer. */
+  .tally :global(.sdesc) { font-size: 0.86rem; color: var(--text, #eceaf6); opacity: 0.85; }
+  .tally :global(.sname) { font-size: 1rem; font-weight: 600; }
+  .reason { font-size: 0.95rem; margin: 4px 0 8px; }
+  /* Los dos datos que todo el mundo mira: ni en gris ni en letra de nota. */
+  .facts { font-size: 1rem; margin: 0 0 2px; }
+</style>

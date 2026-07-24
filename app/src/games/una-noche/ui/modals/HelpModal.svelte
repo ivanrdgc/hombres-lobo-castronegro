@@ -21,7 +21,9 @@
   }
 </script>
 
-<h3 style="margin:0 0 4px">🌘 Cómo se juega Una Noche</h3>
+<!-- B29 · vocabulario estable: el botón del lobby dice «Cómo se juega y los
+     roles» y este modal se llama igual (el juego ya lo dice la cabecera). -->
+<h3 style="margin:0 0 4px">📖 Cómo se juega y los roles</h3>
 
 {#each HOW_TO as sec, i (i)}
   {@const st = localAudioState(keyOf(i))}
@@ -40,7 +42,7 @@
   {#each sec.items as it, j (j)}<p class="small-note" style="margin:7px 0">{it}</p>{/each}
 {/each}
 
-<h3 style="margin-top:16px">🌙 Orden de la noche</h3>
+<h3 style="margin-top:16px">🌙 Orden en que la voz llama de noche</h3>
 <p class="small-note" style="margin-top:2px">Toca un rol para ver en detalle cómo funciona.</p>
 <div class="chips" style="margin-top:6px">
   {#each NIGHT as r (r)}

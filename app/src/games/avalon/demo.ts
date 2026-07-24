@@ -76,13 +76,16 @@ export const DEMO: DemoScript = {
       title: 'Misión 1 · El equipo actúa en secreto',
       who: { actor: 'Solo Bea y Eva (equipo aprobado) eligen carta en su móvil', others: 'el resto esperáis: la app solo anunciará CUÁNTOS sabotajes hubo, nunca de quién.' },
       text: [
-        'Volvamos atrás: supón que la propuesta sí salió aprobada (3 a 2). Cada miembro juega ÉXITO o FRACASO en secreto; los del Bien ni siquiera tienen el botón rojo (la app no les deja sabotear).',
+        'Volvamos atrás: supón que la propuesta sí salió aprobada (3 a 2). Cada miembro juega ÉXITO o FRACASO en secreto, y las dos pantallas se ven idénticas: si eres del Bien y tocas el rojo, la app te lo impide en tu mano y nadie más se entera.',
         'Resultado: «💥 Misión 1: FRACASO (1 sabotaje)». ¿Quién de las dos fue? Ese es el juego. Tras leerlo, cualquiera pulsa «▶️ Continuar».',
       ],
+      // B28: las dos pantallas del equipo son IDÉNTICAS (leal o malvado) para que
+      // el vecino no deduzca tu bando mirando el móvil de reojo; la app le niega
+      // el sabotaje al leal en su propia mano, después de tocar.
       visual: {
         kind: 'screens',
         panes: [
-          { title: 'Bea (en la misión)', lines: ['Elige en secreto:'], buttons: [{ label: '✅ Éxito', kind: 'primary' }, { label: '💥 Fracaso', kind: 'danger' }] },
+          { title: 'Bea y Eva (en la misión): la misma pantalla', lines: ['Los dos botones salen iguales en los dos móviles.', 'Si quien toca 💥 es del Bien, la app se lo impide en su mano y nadie más se entera.'], buttons: [{ label: '✅ Éxito', kind: 'primary' }, { label: '💥 Sabotaje', kind: 'danger' }] },
           { title: 'TÚ (fuera de la misión)', lines: ['«⚔️ El equipo parte a la misión 1…»', 'Esperas el resultado, sin ver nada más.'] },
         ],
       },

@@ -29,15 +29,12 @@
   });
 </script>
 
-<div class="narration">🌅 Cae el telón sobre Ávalon: se destapan todas las lealtades.</div>
-
-<div class="card" style="text-align:center">
-  <h3 style="margin:6px 0">{game.winner ? WIN_LABELS[game.winner] : ''}</h3>
-  {#if game.winReason}<p class="small-note">{game.winReason}</p>{/if}
-</div>
-
+<!-- Quién ganó, por qué y quién era quién: una sola tarjeta (eran tres bloques
+     que la mesa leía como uno solo). -->
 <div class="card">
-  <h3>🎭 Las lealtades</h3>
+  <h3 style="margin:2px 0;text-align:center">{game.winner ? WIN_LABELS[game.winner] : ''}</h3>
+  {#if game.winReason}<p class="small-note" style="text-align:center">{game.winReason}</p>{/if}
+  <h3 style="margin:14px 0 2px">🎭 Las lealtades</h3>
   {#each players as pid (pid)}
     <div class="settingrow" style="align-items:center">
       <div class="sinfo">

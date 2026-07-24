@@ -20,10 +20,10 @@
 </script>
 
 {#if game && my}
-  <h3 style="margin:0 0 4px">🎴 Tu carta</h3>
   {#if inGame}
-    <!-- `mini`: la palabra secreta se enseña a petición y se auto-oculta; abierta
-         de par en par se quedaba a la vista de cualquier vecino de mesa. -->
+    <!-- Sin título: la carta ya se presenta sola («Tu carta de esta ronda») y el
+         botón dice lo que hace. `mini`: se enseña a petición y se auto-oculta,
+         que abierta de par en par se quedaba a la vista del vecino de mesa. -->
     <MyCard {game} pid={my.id} mini={true} />
   {:else}
     <p class="small-note">👀 Miras de espectador: sin carta propia.</p>

@@ -1,7 +1,9 @@
 <script lang="ts">
-  // «Empezar partida» de Captain Sonar: quién juega (SeatPicker del shell) y
-  // CÓMO suena la voz (mecanismo compartido: un narrador, un altavoz por
-  // equipo o todos los móviles). La app reparte tripulaciones y posiciones.
+  // «Empezar partida»: dos decisiones y un botón. Quién juega (SeatPicker del
+  // shell, con el resumen dentro: es la misma idea) y cómo suena la voz, que en
+  // este juego no es un detalle — se juega en dos corros separados y un solo
+  // altavoz deja a media sala sin oír los anuncios. La app reparte las
+  // tripulaciones y coloca los submarinos en secreto.
   import { app, matchOf, me, navigate } from '../../../core/sync/store.svelte';
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
@@ -59,59 +61,57 @@
 
 <div class="topbar">
   <button class="small ghost" data-a="back-lobby-game" aria-label="Volver" title="Volver" style="font-size:1.25rem;line-height:1;padding:6px 12px" onclick={() => navigate(`/g/${group.id}/sonar`)}>←</button>
-  <h2>⚓ Captain Sonar: empezar</h2>
+  <h2>⚓ Empezar partida</h2>
 </div>
 <Flash />
 
 <div class="card">
-  <h3>🎮 ¿Quién juega?</h3>
+  <h3>🎮 ¿Quién se sumerge?</h3>
   <SeatPicker {group} {meId} gameId="sonar" onState={(s) => (seat = s)} />
-  <p class="small-note">La app repartirá dos tripulaciones al azar (🔴 y 🔵) y colocará los submarinos en secreto, cada uno en las 3 columnas de su lado. Luego, cada tripulación a su corro. Lo ideal: de {BEST_PLAYERS} jugadores.</p>
+  <p class="small-note" style="margin-top:10px">
+    ⚓ <b>{n}</b> a bordo{n ? ': ' : ''}<span style="opacity:.75">{chosen.map((p) => p.name).join(', ')}</span>.
+    La app hará dos tripulaciones al azar (🔴 y 🔵) y colocará cada submarino en secreto, en las 3 columnas de su lado.
+  </p>
+  {#if n < MIN_PLAYERS}<p class="small-note">⚠️ Hacen falta al menos {MIN_PLAYERS}.</p>
+  {:else if n > MAX_PLAYERS}<p class="small-note">⚠️ Como mucho {MAX_PLAYERS}.</p>
+  {:else if n < 4}<p class="small-note">💡 Con {n} sale un duelo de dos solitarios: lo bueno del juego es deliberar en corro (mejor de {BEST_PLAYERS}).</p>{/if}
 </div>
 
 <div class="card">
-  <h3>🔊 ¿Cómo suena la voz?</h3>
-  <p class="small-note" style="margin-top:6px">Si las tripulaciones se sientan separadas, un solo altavoz no llega a las dos. Todo lo que narra es público (rumbos, torpedos, dron), así que da igual cuántos móviles lo digan.</p>
+  <h3>🔊 ¿Por dónde suena la voz?</h3>
+  <p class="small-note" style="margin-top:6px">Las tripulaciones se sientan separadas y un solo altavoz no llega a las dos. Todo lo que canta es público (rumbos, torpedos, dron), así que da igual cuántos móviles lo digan.</p>
   <div class="btnrow" style="margin-top:6px">
     <button class="small {voiceMode === 'single' ? 'primary' : 'ghost'}" data-a="sn-voice-mode" data-p="single" onclick={() => (voiceMode = 'single')}>🔊 Un narrador</button>
-    <button class="small {voiceMode === 'perRoom' ? 'primary' : 'ghost'}" data-a="sn-voice-mode" data-p="perRoom" onclick={() => (voiceMode = 'perRoom')}>🔊🔊 Uno por equipo</button>
+    <button class="small {voiceMode === 'perRoom' ? 'primary' : 'ghost'}" data-a="sn-voice-mode" data-p="perRoom" onclick={() => (voiceMode = 'perRoom')}>🔊🔊 Uno por corro</button>
     <button class="small {voiceMode === 'all' ? 'primary' : 'ghost'}" data-a="sn-voice-mode" data-p="all" onclick={() => (voiceMode = 'all')}>📣 Todos los móviles</button>
   </div>
 
   {#if voiceMode === 'all'}
-    <p class="small-note">📣 Sonarán TODOS los móviles de los jugadores: cada corro se oye solo. Puede quedar algo «a coro».</p>
+    <p class="small-note">📣 Sonarán todos los móviles de los jugadores: cada corro se oye solo. Puede quedar algo «a coro».</p>
   {:else}
-    <div style="margin-top:10px">
-      <p class="small-note" style="margin:0 0 4px"><b>🔊 {voiceMode === 'perRoom' ? 'Altavoz del primer corro' : '¿Qué dispositivo narra?'}</b></p>
+    <p class="small-note" style="margin:10px 0 4px"><b>{voiceMode === 'perRoom' ? '🔊 Altavoz del primer corro' : '🔊 ¿Qué dispositivo narra?'}</b></p>
+    <div class="btnrow">
+      {#each speakerCands as p (p.id)}
+        <button class="small {narrator === p.id ? 'primary' : 'ghost'}" data-a="pick-narrator" data-p={p.id} style="flex:0 1 auto;min-width:0" onclick={() => (narrPick = p.id)}>
+          {narrator === p.id ? '🔊 ' : ''}{p.name}{p.id === meId ? ' (tú)' : ''}{!isActiveDevice(p, now) ? ' 💤' : ''}
+        </button>
+      {/each}
+    </div>
+    {#if voiceMode === 'perRoom'}
+      <p class="small-note" style="margin:10px 0 4px"><b>🔊 Altavoz del segundo corro</b></p>
       <div class="btnrow">
-        {#each speakerCands as p (p.id)}
-          <button class="small {narrator === p.id ? 'primary' : 'ghost'}" data-a="pick-narrator" data-p={p.id} style="flex:0 1 auto;min-width:0" onclick={() => (narrPick = p.id)}>
-            {narrator === p.id ? '🔊 ' : ''}{p.name}{p.id === meId ? ' (tú)' : ''}{!isActiveDevice(p, now) ? ' 💤' : ''}
+        {#each speakerCands.filter((p) => p.id !== narrator) as p (p.id)}
+          <button class="small {speaker1 === p.id ? 'primary' : 'ghost'}" data-a="sn-pick-speaker2" data-p={p.id} style="flex:0 1 auto;min-width:0" onclick={() => (spk1Pick = p.id)}>
+            {speaker1 === p.id ? '🔊 ' : ''}{p.name}{p.id === meId ? ' (tú)' : ''}{!isActiveDevice(p, now) ? ' 💤' : ''}
           </button>
         {/each}
       </div>
-    </div>
-    {#if voiceMode === 'perRoom'}
-      <div style="margin-top:10px">
-        <p class="small-note" style="margin:0 0 4px"><b>🔊 Altavoz del segundo corro</b></p>
-        <div class="btnrow">
-          {#each speakerCands.filter((p) => p.id !== narrator) as p (p.id)}
-            <button class="small {speaker1 === p.id ? 'primary' : 'ghost'}" data-a="sn-pick-speaker2" data-p={p.id} style="flex:0 1 auto;min-width:0" onclick={() => (spk1Pick = p.id)}>
-              {speaker1 === p.id ? '🔊 ' : ''}{p.name}{p.id === meId ? ' (tú)' : ''}{!isActiveDevice(p, now) ? ' 💤' : ''}
-            </button>
-          {/each}
-        </div>
-        {#if !speaker1}<p class="small-note">⚠️ Elige un segundo altavoz (distinto del primero).</p>{/if}
-        <p class="small-note" style="margin:6px 0 0">🔀 Al repartir, la app se asegura de que los dos altavoces caigan en tripulaciones DISTINTAS: así cada corro tiene su voz.</p>
-      </div>
+      {#if !speaker1}<p class="small-note">⚠️ Elige un segundo altavoz (distinto del primero).</p>{/if}
+      <p class="small-note" style="margin:6px 0 0">🔀 Al repartir, la app pone a los dos altavoces en tripulaciones distintas: así cada corro tiene su voz.</p>
     {/if}
   {/if}
 </div>
 
-<div class="card">
-  <p class="small-note" style="margin-top:0">⚓ Jugarán <b>{n}</b>{n ? ': ' : ''}<span style="opacity:.75">{chosen.map((p) => p.name).join(', ')}</span></p>
-  {#if n < MIN_PLAYERS}<p class="small-note">⚠️ Captain Sonar necesita al menos {MIN_PLAYERS} jugadores.</p>{/if}
-  {#if n > MAX_PLAYERS}<p class="small-note">⚠️ Máximo {MAX_PLAYERS} jugadores.</p>{/if}
-  <div id="form-error">{#if app.ui.formError}<div class="flash error">{app.ui.formError}</div>{/if}</div>
-  <button class="primary block" disabled={!okStart} data-a="sn-start" onclick={startNow}>⚓ ¡Inmersión!</button>
-</div>
+<div id="form-error">{#if app.ui.formError}<div class="flash error">{app.ui.formError}</div>{/if}</div>
+<p class="small-note" style="text-align:center;margin:12px 0 6px">👥 Cada tripulación a su corro y la pantalla mirando hacia dentro: lo que sale en ella es secreto de equipo.</p>
+<button class="primary block" disabled={!okStart} data-a="sn-start" onclick={startNow}>⚓ ¡Inmersión!</button>

@@ -1,6 +1,6 @@
 <script lang="ts">
-  // «🎴 Mi carta + referencia» (B19/B21): tu equipo/papel y la chuleta de
-  // colores y reglas. Accesible en cualquier fase.
+  // «🎴 Mi carta + referencia» (B19/B21): tu papel, cómo se sostiene tu móvil y
+  // la chuleta de colores y reglas. Accesible en cualquier fase.
   import { app, viewGroup, me } from '../../../../core/sync/store.svelte';
   import { codenamesGame } from '../../actions';
   import { boardRef } from '../../texts';
@@ -16,12 +16,11 @@
 </script>
 
 {#if game && my}
-  <h3 style="margin:0 0 4px">🎴 Tu papel</h3>
   {#if inGame}
     <MyCard {game} pid={my.id} />
   {:else}
-    <p class="small-note">👀 Miras de espectador (sin ver el mapa oculto).</p>
+    <p class="small-note">👀 Miras de espectador: ves las 25 palabras, pero no el mapa de los Jefes.</p>
   {/if}
-  <RefRows title="📖 El tablero (25 palabras)" {rows} />
+  <RefRows title="📖 Los colores del tablero" {rows} />
 {/if}
 <button class="primary block" style="margin-top:14px" data-a="close-modal" onclick={() => (app.ui.modal = null)}>Cerrar</button>

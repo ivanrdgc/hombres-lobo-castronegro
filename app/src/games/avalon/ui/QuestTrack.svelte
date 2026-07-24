@@ -45,9 +45,9 @@
       </button>
     {/each}
   </div>
-  <p class="small-note qlegend" style="margin:0">
-    Cada casilla es una misión: el número son los caballeros que van (misiones 1 a 5: {[1, 2, 3, 4, 5].map((q) => teamSize(n, q)).join(' · ')}). Tócala para ver su ficha.
-  </p>
+  <!-- Los tamaños ya están escritos en cada casilla: repetir la fila entera aquí
+       era el mismo dato dos veces (B29). La chuleta completa vive en el 🎴. -->
+  <p class="small-note qlegend" style="margin:0">El número de cada casilla es cuántos van a esa misión. Tócala para ver quién fue y cómo acabó.</p>
 
   {#if open}
     <div class="qdetail" data-a="av-quest-detail">

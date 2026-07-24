@@ -1,10 +1,11 @@
 <script lang="ts">
-  // «🎴 Mi carta + referencia» (B19/B21): tu carta (lugar y papel, o espía) y la
-  // chuleta de reglas y puntos, con acceso a las localizaciones posibles.
+  // «🎴 Mi carta + reglas» (B19/B21): la carta va detrás del mismo panel que en
+  // la pantalla de juego (se abre a petición y se cierra sola, B28), y debajo
+  // la chuleta de reglas y puntos.
   import { app, viewGroup, me } from '../../../../core/sync/store.svelte';
   import { espiaGame } from '../../actions';
   import RefRows from '../../../../shell/RefRows.svelte';
-  import SpyCard from '../SpyCard.svelte';
+  import PrivatePanel from '../PrivatePanel.svelte';
 
   const g = $derived(viewGroup());
   const game = $derived(g ? espiaGame(g) : null);
@@ -19,14 +20,12 @@
 </script>
 
 {#if game && my}
-  <h3 style="margin:0 0 4px">🎴 Tu carta</h3>
   {#if inGame}
-    <SpyCard {game} pid={my.id} />
+    <PrivatePanel {game} {my} full={true} notes={false} />
   {:else}
-    <p class="small-note">👀 Miras de espectador: sin carta propia.</p>
+    <p class="small-note" style="margin-top:0">👀 Miras de espectador: sin carta propia.</p>
   {/if}
   <RefRows title="📖 Chuleta" {rows} />
   <button class="block" style="margin-top:8px" data-a="espia-lugares-open" onclick={() => (app.ui.modal = { type: 'espia-lugares' })}>🗺️ Ver las localizaciones posibles</button>
-  <p class="small-note" style="margin-top:6px">Durante la ronda las tienes también al pie de la pantalla de juego, y ahí puedes ir tachando las que descartes (solo en tu móvil).</p>
 {/if}
 <button class="primary block" style="margin-top:10px" data-a="close-modal" onclick={() => (app.ui.modal = null)}>Cerrar</button>

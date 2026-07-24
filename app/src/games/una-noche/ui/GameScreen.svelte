@@ -19,6 +19,15 @@
 
   const game = $derived(unaNocheGame(group)!);
   const inGame = $derived(game.playerIds.includes(my.id));
+  // B29: la cabecera decía el nombre del juego DOS veces (título + chip). El
+  // chip pasa a decir lo único que no está escrito en ningún otro sitio: en qué
+  // momento de la partida estamos. Es público (la voz lo canta), así que se ve
+  // igual en todos los móviles.
+  const phaseChip = $derived(
+    game.phase === 'reveal' ? '🎴 Reparto'
+      : game.phase === 'night' ? '🌙 Noche'
+        : game.phase === 'day' ? '☀️ Día' : '🌅 Se destapa todo',
+  );
   // Solo pedimos activar si el audio NO suena ya (estado real del AudioContext).
   const needsUnlock = $derived(isMaster() && !app.ui.audioReady && !app.ui.muted);
 
@@ -34,7 +43,7 @@
 
 <div class="topbar">
   <h2>🌘 Una Noche</h2>
-  <span class="chip">🌘 Una Noche</span>
+  <span class="chip" data-a="una-phase">{phaseChip}</span>
   <GameMenu {game} {my} />
 </div>
 <Flash />

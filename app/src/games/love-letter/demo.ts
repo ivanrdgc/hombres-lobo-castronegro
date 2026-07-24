@@ -39,7 +39,7 @@ export const DEMO: DemoScript = {
         kind: 'screens',
         panes: [
           { title: 'Bea (su turno)', lines: ['Paso 1 · sus dos cartas con el efecto entero: 💂 Guardia (1) o 🛡️ Doncella (4)', 'Paso 2 · toca el Guardia → ¿a quién? Carlos → ¿qué carta tiene? Barón'], buttons: [{ label: '▶️ Jugar 💂 Guardia sobre Carlos', kind: 'primary' }] },
-          { title: 'TÚ (esperando)', lines: ['«🎴 Turno de Bea…»', 'Tu carta sigue en tu mano, tapada: toca «👁 Ver mi carta» para mirarla.', 'Ves en el diario: «❌ Carlos queda fuera: el Guardia acierta…»'] },
+          { title: 'TÚ (esperando)', lines: ['«🎴 Juega Bea…»', 'Tu carta sigue a la vista en tu pantalla, con su efecto: sujeta el móvil mirando hacia ti y no hay nada que destapar.', 'Arriba, los descartes de todos y cuántas cartas quedan sin salir.'] },
         ],
       },
     },

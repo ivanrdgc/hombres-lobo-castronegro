@@ -2,12 +2,17 @@
   // Panel del dispositivo que pone la VOZ. Dos usos:
   //  · detail=true (quien narra y NO juega): su móvil es el que la mesa mira
   //    cuando algo se atasca, y antes no veía nada de la partida (U1). Aquí ve
-  //    la fase, el paso en curso y a quién se espera.
+  //    la fase y el paso en curso.
   //  · detail=false (quien narra jugando): SOLO el escape, nunca a quién se
   //    espera — eso le diría qué rol tiene cada cual.
   // El escape (R2): la noche solo avanza cuando todos los llamados actúan; si
   // alguien bloqueó el móvil, se colgaba para siempre. Tras un par de
   // recordatorios aparece «⏭️ Saltar este turno».
+  //
+  // Postura 🍽️ MESA (B28): este móvil suele quedarse EN EL CENTRO de la mesa
+  // sonando, o sea, a la vista de todos. Por eso los nombres de quien falta —y
+  // el «no actúa nadie», que delataría un paso fantasma— no se pintan solos:
+  // se piden con un gesto y se ocultan a los 12 s.
   import { guard } from '../../../core/sync/guard';
   import { e2eTestMode } from '../../../core/test-hooks';
   import * as A from '../actions';
@@ -31,6 +36,16 @@
   );
   const pendingSeen = $derived(game.playerIds.filter((pid) => !(game.seen || {})[pid]).map(nm));
 
+  // «¿A quién se espera?»: se pide y se oculta solo (nunca queda escrito en la
+  // pantalla que está en medio de la mesa).
+  let who = $state(false);
+  $effect(() => { void game.stepIdx; void game.phase; who = false; });
+  $effect(() => {
+    if (!who) return;
+    const t = setTimeout(() => (who = false), e2eTestMode() ? 120000 : 12000);
+    return () => clearTimeout(t);
+  });
+
   // El botón solo asoma si el paso se eterniza (≈2 recordatorios). Los pasos
   // fantasma también pueden llegar ahí (se hacen de rogar), así que su aparición
   // no delata si el rol existe: solo dice que la noche está encallada, que a
@@ -52,24 +67,29 @@
 
 {#if detail}
   <div class="card">
-    <h3>🎙️ Estás poniendo la voz</h3>
+    <h3>🎙️ Pones la voz</h3>
     {#if game.phase === 'reveal'}
-      <p class="hint">🎴 Reparto: cada uno mira su carta en su móvil.
+      <p class="hint">🎴 Cada uno mira su carta en su móvil.
         {pendingSeen.length ? `Faltan por confirmar: ${pendingSeen.join(', ')}.` : 'Todos han confirmado: que alguien pulse «🌙 Comenzar la noche».'}</p>
     {:else if game.phase === 'night'}
-      <p class="hint">🌙 Paso en curso: <b>{stepName}</b> ({game.stepIdx + 1} de {game.steps.length}).</p>
-      <p class="hint">{#if skipped}⏭️ Paso saltado: la voz lo cierra y sigue.{:else if waiting.length}⏳ Se espera a: <b>{waiting.join(', ')}</b>.{:else}✅ Nadie tiene que actuar ya: la voz cerrará el paso.{/if}</p>
-      <p class="small-note">🤫 Solo para quien narra: no enseñes esta pantalla a la mesa.</p>
+      <p class="hint">🌙 Llamada en curso: <b>{stepName}</b> ({game.stepIdx + 1} de {game.steps.length}).</p>
+      {#if who}
+        <p class="hint">{#if skipped}⏭️ Paso saltado: la voz lo cierra y sigue.{:else if waiting.length}⏳ Se espera a: <b>{waiting.join(', ')}</b>.{:else}✅ Nadie tiene que actuar en esta llamada: la voz la cerrará sola.{/if}</p>
+        <button class="small ghost" data-a="una-who-hide" onclick={() => (who = false)}>🙈 Ocultar</button>
+      {:else}
+        <button class="small ghost" data-a="una-who" onclick={() => (who = true)}>👁 ¿Por quién se espera? (se oculta solo)</button>
+      {/if}
+      <p class="small-note">🤫 Este móvil suele quedarse en el centro de la mesa: por eso los nombres solo salen si los pides.</p>
     {:else if game.phase === 'day'}
       <DebateTimer {game} />
-      <p class="hint">{#if game.pendingHunter}🏹 {nm(game.pendingHunter)} era el Cazador: espera a que decida su flecha.{:else if game.lynched != null}⚖️ Decisión registrada. Resolviendo…{:else}☀️ Debate en curso. Cuando se acabe el tiempo, que cuenten hasta tres, señalen todos a la vez y una persona lo registre.{/if}</p>
+      <p class="hint">{#if game.pendingHunter}🏹 {nm(game.pendingHunter)} era el Cazador: espera a que decida su flecha.{:else if game.lynched != null}⚖️ Veredicto registrado. Resolviendo…{:else}☀️ Debate en curso. Al acabarse el tiempo: contad hasta tres, señalad todos a la vez y que una persona lo registre.{/if}</p>
     {/if}
   </div>
 {/if}
 
 {#if canSkip}
   <div class="card">
-    <p class="hint">⏳ Este turno se está eternizando. Si alguien se ha dormido (o bloqueó el móvil), puedes saltarlo: la voz cerrará el paso con normalidad y la noche seguirá.</p>
-    <button class="ghost block" data-a="una-skip-step" onclick={() => guard(() => A.skipCurrentStep(game.stepIdx))}>⏭️ Saltar este turno</button>
+    <p class="hint">⏳ Esta llamada se está eternizando. Si alguien se ha dormido (o bloqueó el móvil), sáltala: la voz cerrará el paso con normalidad y la noche seguirá.</p>
+    <button class="ghost block" data-a="una-skip-step" onclick={() => guard(() => A.skipCurrentStep(game.stepIdx))}>⏭️ Saltar esta llamada</button>
   </div>
 {/if}

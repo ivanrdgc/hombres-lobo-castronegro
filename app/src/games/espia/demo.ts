@@ -21,7 +21,7 @@ export const DEMO: DemoScript = {
       who: { actor: 'TODOS miráis vuestra carta a la vez, a solas, y confirmáis', others: 'nadie enseña su móvil, y cuando confirma el último, cualquiera pone el reloj en marcha.' },
       text: [
         'Tu carta: 🏖️ La playa, papel de socorrista. La de Bea (nadie lo sabe): ESPÍA. La lista completa de localizaciones posibles es pública — consúltala cuando quieras.',
-        'La carta se pliega enseguida para que el móvil pueda quedarse boca arriba. Durante toda la ronda, el botón flotante 🎴 de la esquina te la devuelve, con la chuleta de reglas y el mapa de localizaciones.',
+        'La carta se cierra sola enseguida: el móvil se queda plano en la mesa y todas las pantallas se ven iguales, así que nadie deduce nada mirando de reojo. Para volver a verla, «Mi carta»; para ir tachando lugares descartados, «Mi libreta». Lo que hagas ahí no lo ve nadie.',
       ],
       visual: {
         kind: 'screens',

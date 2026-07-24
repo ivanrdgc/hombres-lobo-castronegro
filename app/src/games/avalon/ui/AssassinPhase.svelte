@@ -3,6 +3,16 @@
   // crea Merlín; si acierta, gana el Mal. Solo actúa el Asesino; los demás miran.
   // El tiro se decide con la HISTORIA de la partida delante (quién fue a qué
   // misión, quién propuso, quién votó qué): de memoria era imposible.
+  //
+  // POSTURA DE MESA (B28): la rejilla del Asesino era el chivato más gordo de
+  // toda la partida. Su móvil se llenaba de nombres, misiones y votaciones
+  // mientras el resto tenía una tarjeta de dos líneas: desde el otro lado de la
+  // mesa se leía «ese es el Asesino» solo por el LARGO de la pantalla. Y la
+  // rejilla solo lista al Bien, así que quien la viera de refilón sabía también
+  // quiénes son los malvados (los que faltan). Ahora la entrada es la misma para
+  // todos —el mismo botón, en la misma tarjeta— y quien no es el Asesino recibe
+  // un «no es tu turno» que se borra solo: tocar no delata. La mira, además, se
+  // auto-oculta si el móvil se queda quieto.
   import { guard } from '../../../core/sync/guard';
   import { sel1, clearSel } from '../../../shell/selection';
   import * as A from '../actions';
@@ -25,11 +35,31 @@
   const note = (pid: string) => recordLine(publicRecord(game, pid));
   const missions = $derived(game.missions || []);
   const proposals = $derived(game.proposals || []);
+
+  let open = $state(false); // la mira, abierta por el propio Asesino
+  let denied = $state(false); // «no es tu turno», solo para quien tocó
+  $effect(() => {
+    if (!denied) return;
+    const t = setTimeout(() => (denied = false), 6000);
+    return () => clearTimeout(t);
+  });
+  // Mientras elige blanco (cada toque cambia `pick`) el contador se reinicia;
+  // si deja el móvil en la mesa, la mira se cierra sola.
+  $effect(() => {
+    if (!open) return;
+    void pick;
+    const t = setTimeout(() => (open = false), 75000);
+    return () => clearTimeout(t);
+  });
+
+  function enter() {
+    if (!amAssassin) { denied = true; return; }
+    denied = false;
+    open = true;
+  }
 </script>
 
-<div class="narration">🗡️ El Bien ha completado tres misiones… pero el Asesino aún puede robar la victoria si encuentra a Merlín.</div>
-
-{#if amAssassin}
+{#if amAssassin && open}
   <div class="actionpanel"><h3>🗡️ Tu última bala</h3>
     <p class="hint">Señala a quien creas que es <b>Merlín</b>. Si aciertas, el Mal gana la partida; si fallas, gana el Bien. Solo salen los del Bien: entre ellos está.</p>
     <AvGrid {players} selKey={key} meId={my.id} noteOf={note} />
@@ -55,10 +85,18 @@
       {/each}
       {#if !proposals.length}<p class="small-note">Sin votaciones registradas.</p>{/if}
     </details>
+    <button class="ghost block" data-a="av-assassin-hide" onclick={() => (open = false)}>🙈 Ocultar la mira (sigue siendo tu turno)</button>
   </div>
 {:else}
-  <div class="card"><p class="hint">🗡️ El Asesino medita su golpe: busca a Merlín entre vosotros. Nadie más puede hacer nada; si acierta, el Mal gana la partida.</p>
-    {#if assassin && game.playerIds.includes(my.id)}<p class="small-note">⏳ Se espera a una sola persona: el Asesino (la app ya sabe quién es). Mientras tanto, ni una palabra de más.</p>{/if}</div>
+  <!-- La MISMA tarjeta y el MISMO botón en todos los móviles: solo al Asesino
+       le abre la mira; a los demás les contesta y se borra el aviso. -->
+  <div class="card" data-a="av-assassin-gate">
+    <h3>🗡️ Tres misiones para el Bien… y queda el disparo</h3>
+    <p class="hint">El Asesino señalará a quien crea <b>Merlín</b>: si acierta, el Mal roba la partida; si falla, gana el Bien. Nadie sabe quién es el Asesino hasta que dispare.</p>
+    <button class="danger block" data-a="av-assassin-open" onclick={enter}>🗡️ Abrir la mira</button>
+    <p class="small-note">Puede tocarlo cualquiera: solo al Asesino se le abre. Así, coger el móvil no delata a nadie.</p>
+    {#if denied}<p class="small-note denied" data-a="av-assassin-denied">🙅 No es tu turno: el disparo es solo del Asesino. Este aviso lo ves solo tú y desaparece solo.</p>{/if}
+  </div>
 {/if}
 
 <style>
@@ -67,4 +105,9 @@
   .hrow { font-size: 0.8rem; color: var(--muted); padding: 5px 0; border-bottom: 1px solid var(--border, #2a2f45); line-height: 1.35; }
   .hrow.small { font-size: 0.75rem; }
   .hrow:last-child { border-bottom: none; }
+  .denied {
+    margin-top: 10px; padding: 9px 11px; border-radius: 10px; line-height: 1.35;
+    border: 1px solid var(--border, #333);
+    background: color-mix(in srgb, var(--accent, #c8a24a) 10%, transparent);
+  }
 </style>

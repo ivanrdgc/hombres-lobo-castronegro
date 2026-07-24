@@ -13,6 +13,20 @@ const bad = (m) => { fail++; console.log('  ✖', m); };
 const check = (c, m) => (c ? ok(m) : bad(m));
 const browser = await chromium.launch();
 const pages = {};
+
+// B28 · postura 🍽️ MESA: de noche TODAS las pantallas se ven iguales y el panel
+// de acción solo aparece tras el gesto de su dueño («👁 Abrir mi turno»).
+async function openTurn(pg, sel, timeout = 25000) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < timeout) {
+    if (await pg.locator(sel).count()) return;
+    const gate = pg.locator('[data-a=open-night-turn]');
+    if (await gate.count()) await gate.click().catch(() => {});
+    await pg.waitForTimeout(200);
+  }
+  await pg.waitForSelector(sel, { timeout: 3000 });
+}
+
 async function mk(label) {
   const ctx = await browser.newContext({ locale: 'es-ES' });
   await ctx.addInitScript(() => { window.__hlcTest = true; }); // e2e veloz: sin audio, colchones mínimos
@@ -102,7 +116,7 @@ try {
   // N1: el lobo devora al primer aldeano.
   await waitState(ana, (s) => s.steps[s.stepIdx] === 'lobos', 'turno de lobos');
   const lp = pageOf(lobo);
-  await lp.waitForSelector('[data-a=act-lobos]', { timeout: 15000 });
+  await openTurn(lp, '[data-a=act-lobos]', 15000);
   await lp.click(`.actionpanel .player.selectable[data-p=${aldeanos[0].id}]`);
   await lp.click('[data-a=act-lobos]');
   st = await waitState(ana, (s) => s.phase === 'day', 'amanecer 1');
@@ -124,6 +138,10 @@ try {
   st = await waitState(ana, (s) => s.pending[0]?.type === 'sirvienta', 'ventana de la Sirvienta abierta');
   // Todos ven la MISMA cuenta atrás neutral; la decisión vive DENTRO de su carta.
   check((await lp.locator('.actionpanel:has-text("El juicio se resuelve")').count()) >= 1, 'los demás solo ven la cuenta atrás neutral');
+  // B28: el gesto se le pide a TODA la mesa («abrid la carta»), no solo a quien
+  // decide — si lo hiciera solo ella, abrir la carta la delataría.
+  check(await lp.isVisible('[data-a=open-day-card]') && await sp.isVisible('[data-a=open-day-card]'),
+    'todos los móviles invitan a abrir la carta durante la ventana secreta');
   await sp.click('button[data-a=toggle-rolecard]');
   await sp.waitForSelector('[data-a=sirvienta-yes]', { timeout: 15000 });
   await sp.click('[data-a=sirvienta-yes]');
@@ -146,7 +164,7 @@ try {
   await pageOf(aldeanos[2]).click('button[data-a=begin-night]');
   st = await waitState(ana, (s) => s.phase === 'night' && s.night === 2, 'noche 2');
   await waitState(ana, (s) => s.steps[s.stepIdx] === 'lobos', 'lobos noche 2');
-  await lp.waitForSelector('[data-a=act-lobos]', { timeout: 15000 });
+  await openTurn(lp, '[data-a=act-lobos]', 15000);
   await lp.click(`.actionpanel .player.selectable[data-p=${sirvienta.id}]`);
   await lp.click('[data-a=act-lobos]');
   st = await waitState(ana, (s) => s.phase === 'end', 'fin por paridad');

@@ -51,14 +51,14 @@
 <Flash />
 
 <div class="card">
-  <h3>🎮 ¿Quién juega?</h3>
+  <h3>🎮 Quién juega, en el orden de la mesa</h3>
+  <p class="small-note" style="margin-top:0">La presidencia rotará en ese sentido.{n >= MIN_PLAYERS ? ` Con ${n} jugadores la app repartirá ${fascistCountFor(n)} fascista${fascistCountFor(n) === 1 ? '' : 's'} + Hitler; el resto, liberales.` : ''}</p>
   <SeatPicker {group} {meId} gameId="secret_hitler" onState={(s) => (seat = s)} />
-  <p class="small-note">El orden es el de la mesa (la presidencia rota en ese sentido).{n >= MIN_PLAYERS ? ` Con ${n} jugadores: ${fascistCountFor(n)} fascista${fascistCountFor(n) === 1 ? '' : 's'} + Hitler.` : ''}</p>
 </div>
 
 <div class="card">
-  <h3>🔊 ¿Dónde suena la voz?</h3>
-  <p class="small-note" style="margin-top:6px">La voz ambienta y anuncia el estado público (presidencia, decretos, poderes). Puede ponerla alguien que también juega.</p>
+  <h3>🔊 Quién pone la voz</h3>
+  <p class="small-note" style="margin-top:6px">Ambienta y anuncia lo público: quién preside, el decreto promulgado, los poderes. Puede ponerla alguien que también juega.</p>
   <div class="btnrow" style="margin-top:6px">
     {#each rows.filter((p) => !matchOf(p.id)) as p (p.id)}
       <button class="small {narrator === p.id ? 'primary' : 'ghost'}" data-a="pick-narrator" data-p={p.id} style="flex:0 1 auto;min-width:0" onclick={() => (narrPick = p.id)}>
@@ -69,10 +69,8 @@
   {#if narratorP}<p class="small-note">🔊 <b>{narratorP.name}</b> pone la voz{seat.chosen.includes(narratorP.id) ? ' y también juega' : ' (no juega)'}.</p>{/if}
 </div>
 
-<div class="card">
-  <p class="small-note" style="margin-top:0">🏛️ Jugarán <b>{n}</b>{n ? ': ' : ''}<span style="opacity:.75">{chosen.map((p) => p.name).join(', ')}</span></p>
-  {#if n < MIN_PLAYERS}<p class="small-note">⚠️ Secret Hitler necesita al menos {MIN_PLAYERS} jugadores.</p>{/if}
-  {#if n > MAX_PLAYERS}<p class="small-note">⚠️ Máximo {MAX_PLAYERS} jugadores.</p>{/if}
-  <div id="form-error">{#if app.ui.formError}<div class="flash error">{app.ui.formError}</div>{/if}</div>
-  <button class="primary block" disabled={!okStart} data-a="sh-start" onclick={startNow}>🏛️ ¡Empezar!</button>
-</div>
+{#if n < MIN_PLAYERS}<p class="small-note" style="text-align:center">⚠️ Faltan jugadores: Secret Hitler necesita {MIN_PLAYERS} como mínimo.</p>{/if}
+{#if n > MAX_PLAYERS}<p class="small-note" style="text-align:center">⚠️ Sobran jugadores: {MAX_PLAYERS} como máximo.</p>{/if}
+<div id="form-error">{#if app.ui.formError}<div class="flash error">{app.ui.formError}</div>{/if}</div>
+<button class="primary block" disabled={!okStart} data-a="sh-start" onclick={startNow}>🏛️ Repartir bandos y empezar{okStart ? ` (${n} jugadores)` : ''}</button>
+<p class="small-note" style="text-align:center;margin-top:6px">Cada uno mirará su carta en su móvil, en secreto.</p>

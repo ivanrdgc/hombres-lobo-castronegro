@@ -7,6 +7,20 @@ const ok = (m) => console.log('  ✔', m);
 const bad = (m) => { fail++; console.log('  ✖', m); };
 const browser = await chromium.launch();
 const pages = {};
+
+// B28 · postura 🍽️ MESA: de noche TODAS las pantallas se ven iguales y el panel
+// de acción solo aparece tras el gesto de su dueño («👁 Abrir mi turno»).
+async function openTurn(pg, sel, timeout = 25000) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < timeout) {
+    if (await pg.locator(sel).count()) return;
+    const gate = pg.locator('[data-a=open-night-turn]');
+    if (await gate.count()) await gate.click().catch(() => {});
+    await pg.waitForTimeout(200);
+  }
+  await pg.waitForSelector(sel, { timeout: 3000 });
+}
+
 const mk = async (l) => { const c = await browser.newContext(); await c.addInitScript(() => { window.__hlcTest = true; }); const p = await c.newPage(); p.on('pageerror', (e) => bad(`[${l}] ${e.message}`)); pages[l] = p; return p; };
 const hlc = (p) => p.evaluate(() => { const s = window.__hlc; return { phase: s.group?.game?.phase, steps: s.group?.game?.steps, stepIdx: s.group?.game?.stepIdx, players: s.players.map((x) => ({ name: x.name, role: x.role, alive: x.alive })) }; });
 const wait = async (p, fn, what, t = 40000) => { const t0 = Date.now(); while (Date.now() - t0 < t) { const s = await hlc(p); if (fn(s)) return s; await p.waitForTimeout(300); } throw new Error('timeout ' + what); };
@@ -50,12 +64,18 @@ const wolf = st.players.find((p) => p.role === 'hombre_lobo');
 const prey = st.players.find((p) => p.role === 'aldeano');
 const wolfPage = pages[wolf.name.toLowerCase()];
 await wait(ana, (s) => s.steps[s.stepIdx] === 'lobos', 'lobos');
+await openTurn(wolfPage, 'button[data-a=act-lobos]');
 await wolfPage.click(`.actionpanel .player.selectable:has-text("${prey.name}")`);
 await wolfPage.click('button[data-a=act-lobos]');
 st = await wait(ana, (s) => s.phase === 'day', 'día');
 const deadName = st.players.find((p) => p.alive === false).name;
 const deadPage = pages[deadName.toLowerCase()];
 ok(`${deadName} ha sido devorado`);
+// La parrilla de un muerto se ve IGUAL que la de los vivos hasta que él
+// destapa las cartas con un gesto (y se vuelven a tapar solas).
+if ((await deadPage.locator('.player[data-a=dead-peek]').count()) === 0) ok('en reposo, la parrilla del muerto no enseña ninguna carta');
+else bad('la parrilla del muerto enseña cartas sin pedirlo');
+await deadPage.click('[data-a=dead-peek-open]');
 await deadPage.waitForSelector('.player[data-a=dead-peek]');
 await deadPage.click(`.player[data-a=dead-peek]:has-text("${wolf.name}")`);
 await deadPage.waitForSelector(`.player[data-a=dead-peek]:has-text("${wolf.name}") small`);
@@ -63,7 +83,7 @@ const txt = await deadPage.locator(`.player[data-a=dead-peek]:has-text("${wolf.n
 if (/Hombre Lobo/.test(txt)) ok('el muerto revela el rol del lobo tocándolo: ' + txt.trim());
 else bad('rol revelado incorrecto: ' + txt);
 // verificar que un VIVO no puede espiar
-const alivePeek = await wolfPage.locator('.player[data-a=dead-peek]').count();
+const alivePeek = await wolfPage.locator('.player[data-a=dead-peek], [data-a=dead-peek-open]').count();
 if (alivePeek === 0) ok('los vivos no tienen la opción de espiar roles');
 else bad('un jugador vivo puede espiar roles');
 

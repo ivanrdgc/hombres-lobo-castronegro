@@ -1,6 +1,7 @@
 <script lang="ts">
-  // «Empezar partida» de El Espía: quién juega y en qué orden (SeatPicker del
-  // shell), qué dispositivo pone la voz, y la duración de la ronda.
+  // «Empezar partida»: tres decisiones y un botón — quién juega y en qué orden
+  // (SeatPicker del shell), cómo es la ronda (duración y dónde suena la voz) y
+  // el resumen con el ¡Empezar!.
   import { app, matchOf, me, navigate } from '../../../core/sync/store.svelte';
   import { guard } from '../../../core/sync/guard';
   import * as G from '../../../core/sync/group-actions';
@@ -72,12 +73,19 @@
 <div class="card">
   <h3>🎮 ¿Quién juega?</h3>
   <SeatPicker {group} {meId} gameId="espia" onState={(s) => (seat = s)} />
-  <p class="small-note">El primero de la lista reparte y pregunta primero (el turno rota cada ronda).</p>
+  <p class="small-note">El primero reparte y hace la primera pregunta; el turno de repartir rota cada ronda.</p>
 </div>
 
 <div class="card">
-  <h3>🔊 ¿Dónde suena la voz?</h3>
-  <p class="small-note" style="margin-top:6px">La app ambienta la ronda: arranque, avisos de tiempo y desenlaces. Todos juegan, también quien pone la voz.</p>
+  <h3>⏱ ¿Cuánto dura la ronda?</h3>
+  <div class="btnrow" style="margin-top:6px">
+    {#each ESPIA_DURATIONS_MIN as m (m)}
+      <button class="small {minutes === m ? 'primary' : 'ghost'}" data-a="espia-duration" data-p={String(m)}
+        onclick={() => guard(() => G.setSettings({ espiaMin: m }))}>{m} min{m === 8 ? ' (oficial)' : ''}</button>
+    {/each}
+  </div>
+  <h3 style="margin-top:14px">🔊 ¿Dónde suena la voz?</h3>
+  <p class="small-note" style="margin-top:2px">Un solo móvil ambienta la ronda: arranque, avisos de tiempo y desenlaces. También juega.</p>
   <div class="btnrow" style="margin-top:6px">
     {#each rows.filter((p) => !matchOf(p.id)) as p (p.id)}
       <button class="small {narrator === p.id ? 'primary' : 'ghost'}" data-a="pick-narrator" data-p={p.id} style="flex:0 1 auto;min-width:0" onclick={() => (narrPick = p.id)}>
@@ -88,27 +96,17 @@
   {#if displaced}
     <p class="small-note">💤 <b>{displaced.name}</b> ponía la voz la última vez, pero su dispositivo está inactivo: la voz pasa a este. Si vuelve, tócalo arriba.</p>
   {/if}
-  {#if narratorP}<p class="small-note">🔊 <b>{narratorP.name}</b> pone la voz{seat.chosen.includes(narratorP.id) ? ' y también juega' : ' (no juega: tele o altavoz)'}. Pantalla encendida y volumen alto.</p>{/if}
-</div>
-
-<div class="card">
-  <h3>⏱ Duración de la ronda</h3>
-  <div class="btnrow" style="margin-top:6px">
-    {#each ESPIA_DURATIONS_MIN as m (m)}
-      <button class="small {minutes === m ? 'primary' : 'ghost'}" data-a="espia-duration" data-p={String(m)}
-        onclick={() => guard(() => G.setSettings({ espiaMin: m }))}>{m} min{m === 8 ? ' (oficial)' : ''}</button>
-    {/each}
-  </div>
+  {#if narratorP}<p class="small-note">🔊 <b>{narratorP.name}</b>: pantalla encendida y volumen alto{seat.chosen.includes(narratorP.id) ? '' : ' (no juega: tele o altavoz)'}.</p>{/if}
 </div>
 
 <div class="card">
   <p class="small-note" style="margin-top:0">
-    🕵️ Jugarán <b>{chosen.length}</b>{chosen.length ? ': ' : ''}<span style="opacity:.75">{chosen.map((p) => p.name).join(', ')}</span>
+    🕵️ Ronda de <b>{minutes} min</b> con <b>{chosen.length}</b> jugador{chosen.length === 1 ? '' : 'es'}{chosen.length ? ': ' : ''}<span style="opacity:.75">{chosen.map((p) => p.name).join(', ')}</span>
   </p>
-  {#if tooFew}<p class="small-note">⚠️ El Espía necesita al menos {ESPIA_MIN_PLAYERS} jugadores.</p>{/if}
-  {#if tooMany}<p class="small-note">⚠️ Máximo {ESPIA_MAX_PLAYERS} jugadores (7 papeles + el espía): deja fuera a {chosen.length - ESPIA_MAX_PLAYERS}. Los demás pueden mirar de espectadores.</p>{/if}
+  {#if tooFew}<p class="small-note">⚠️ Hacen falta al menos {ESPIA_MIN_PLAYERS} jugadores.</p>{/if}
+  {#if tooMany}<p class="small-note">⚠️ Máximo {ESPIA_MAX_PLAYERS} (7 papeles + el espía): deja fuera a {chosen.length - ESPIA_MAX_PLAYERS}. Los demás pueden mirar de espectadores.</p>{/if}
   <div id="form-error">
     {#if app.ui.formError}<div class="flash error">{app.ui.formError}</div>{/if}
   </div>
-  <button class="primary block" disabled={tooFew || tooMany} data-a="espia-start" onclick={startNow}>🕵️ ¡Empezar!</button>
+  <button class="primary block" disabled={tooFew || tooMany} data-a="espia-start" onclick={startNow}>🕵️ Repartir identidades y empezar</button>
 </div>

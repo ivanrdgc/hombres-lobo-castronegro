@@ -103,7 +103,7 @@ export const DEMO: DemoScript = {
       who: { actor: 'Vuestra tripulación (con 3 de energía ⚡) toca la casilla E5 en el mapa', others: 'todos oyen el disparo y el resultado.' },
       text: [
         'Alcance: 4 casillas o menos contando en línea recta, sin diagonales (moverse en diagonal cuenta 2). Impacto directo en la casilla elegida: 2 de daño; en las 8 que la rodean, diagonales incluidas: 1 de daño.',
-        'Esa onda también alcanza a quien dispara. Estáis en D7 y E5 os queda a 3 casillas de recorrido y a 2 de vuestro casco: se puede disparar sin quemarse. En el mapa de puntería, las casillas que os quitarían vida a vosotros salen con un estallido 💥 en vez de la diana.',
+        'Esa onda también alcanza a quien dispara. Estáis en D7 y E5 os queda a 3 casillas de recorrido y a 2 de vuestro casco: se puede disparar sin quemarse. Apuntáis sobre vuestro mapa de siempre: se marcan las casillas a tiro y, avisadas en ámbar, las que os quitarían vida también a vosotros.',
         'Hasta el agua informa: un fallo dice al rival dónde creéis que está… y a vosotros, dónde NO está.',
       ],
       visual: { kind: 'log', lines: ['🚀 Torpedo del submarino Rojo 🔴 contra E5: ¡IMPACTO DIRECTO en el submarino Azul 🔵! (2 de daño, le quedan 1).'] },

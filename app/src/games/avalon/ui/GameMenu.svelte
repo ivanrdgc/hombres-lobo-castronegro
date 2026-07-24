@@ -30,7 +30,7 @@
            muere el móvil y la fase se queda esperando su voto para siempre. -->
       <button role="menuitem" data-a="table-open" onclick={() => { app.ui.modal = { type: 'table' }; close(); }}>🪑 La mesa</button>
       {#if playing}
-        <button role="menuitem" data-a="av-repeat" onclick={() => { guard(A.requestRepeat); close(); }}>🔁 Repetir</button>
+        <button role="menuitem" data-a="av-repeat" onclick={() => { guard(A.requestRepeat); close(); }}>🔁 Repetir lo último en voz alta</button>
         {#if game.paused}
           <button role="menuitem" data-a="av-resume" onclick={() => { guard(A.resumeGame); close(); }}>▶️ Reanudar</button>
         {:else}
@@ -43,7 +43,7 @@
       {#if !spectator}
         <button role="menuitem" class="danger-text" data-a="av-leave-open" onclick={() => { app.ui.modal = { type: 'av-leave' }; close(); }}>🚪 Dejar la partida</button>
       {/if}
-      <button role="menuitem" class="danger-text" data-a="av-end-open" onclick={() => { app.ui.modal = { type: 'av-end' }; close(); }}>🏳️ Terminar</button>
+      <button role="menuitem" class="danger-text" data-a="av-end-open" onclick={() => { app.ui.modal = { type: 'av-end' }; close(); }}>🏳️ Terminar la partida</button>
     </div>
   {/if}
 </div>

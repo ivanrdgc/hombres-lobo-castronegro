@@ -1,8 +1,10 @@
 // E2E de «Love Letter»: 3 jugadores (Ana narra y juega). God-view (el doc tiene
 // las manos): catálogo → empezar → el panel de turno en dos pasos (carta con su
 // efecto → objetivo/adivinanza) hasta que alguien gana una ronda → verifica el
-// favor, el aviso del eliminado y la FUGA (quien espera no ve NINGUNA carta:
-// la suya está tapada tras «👁 Ver mi carta»). Dirige siempre desde god-view.
+// favor, el aviso del eliminado y la FUGA. Al ser un juego de MANO (B28), la
+// carta propia está SIEMPRE a la vista sin tocar nada: lo que se comprueba es
+// que en la pantalla de quien espera aparece la SUYA y ninguna ajena.
+// Dirige siempre desde god-view.
 import { chromium } from 'playwright';
 const BASE = process.env.BASE; if (!BASE) { console.error('Define BASE=https://tu-sitio.web.app'); process.exit(1); }
 let fail = 0;
@@ -99,6 +101,13 @@ try {
   await ana.click('button[data-a=select-game][data-p=love_letter]');
   await ana.waitForSelector('[data-a=ll-open-help]');
   ok('el catálogo ofrece Love Letter y su lobby carga');
+  // El lobby (B29·8) tiene un solo trabajo: de qué va + tres caminos claros, y
+  // avisa de la postura del móvil (B28) antes de que nadie lo deje en la mesa.
+  const lobbyTxt = await ana.evaluate(() => document.body.innerText);
+  check(/Móvil en la mano/i.test(lobbyTxt), 'el lobby avisa de la postura: móvil en la mano');
+  check(await ana.locator('[data-a=open-demo]').count() === 1
+    && await ana.locator('[data-a=ll-open-help]').count() === 1
+    && await ana.locator('[data-a=open-start]').count() === 1, 'el lobby ofrece los tres caminos: aprender, consultar y jugar');
   await ana.click('[data-a=ll-open-help]');
   await ana.waitForSelector('text=/Cómo se juega/');
   check(await ana.locator('.modal [data-a=ll-play-howto]').count() >= 4, 'el «cómo se juega» tiene un ▶️ por apartado');
@@ -119,23 +128,24 @@ try {
   const turnPage = pg(s.turn);
   check(await turnPage.locator('[data-a=ll-card]').count() === 2, 'el jugador de turno ve sus dos cartas para elegir');
   const firstCard = await turnPage.locator('[data-a=ll-card]').first().innerText();
-  check(/valor \d/.test(firstCard) && firstCard.length > 60, 'cada carta muestra valor, copias y su efecto entero');
+  check(/valor/i.test(firstCard) && /(quedan? \d|salido todas)/.test(firstCard) && firstCard.length > 60,
+    'cada carta muestra su valor, cuántas quedan sin salir y su efecto entero');
   check(await turnPage.locator('[data-a=ll-ref]').count() === 1, 'la referencia de las 8 cartas se consulta desde el panel');
   check(await turnPage.locator('[data-a=ll-target]').count() === 0, 'el objetivo no se pide hasta elegir carta');
 
-  // Fuga: quien espera no tiene botones de jugar NI ve carta ajena alguna (su
-  // propia carta está tapada tras «👁 Ver mi carta»).
+  // Postura de MANO (B28): quien espera ve SU carta sin tocar nada —no hay
+  // «👁 Ver mi carta»— y no se le cuela ninguna carta ajena.
   const otherP = s.playerIds.find((p) => p !== s.turn);
   check(await pg(otherP).locator('[data-a=ll-card]').count() === 0, 'quien no es de turno no tiene botones de jugar');
   const waitTxt = await pg(otherP).evaluate(() => document.body.innerText);
-  const leaked = [...new Set([...s.hands[s.turn], ...s.hands[otherP]])].map((c) => ES[c]).filter((n) => waitTxt.includes(n));
-  check(leaked.length === 0, `la pantalla de quien espera no enseña ninguna carta${leaked.length ? ` (se cuela: ${leaked.join(', ')})` : ''}`);
-  check(await pg(otherP).locator('[data-a=ll-show-card]').count() === 1, 'quien espera puede destapar SU carta a propósito');
-  await pg(otherP).click('[data-a=ll-show-card]');
-  await pg(otherP).waitForSelector('[data-a=ll-hide-card]', { timeout: 10000 });
-  const shownTxt = await pg(otherP).evaluate(() => document.body.innerText);
-  check(shownTxt.includes(ES[s.hands[otherP][0]]), 'al destaparla ve SU carta (y solo la suya)');
-  await pg(otherP).click('[data-a=ll-hide-card]');
+  check(await pg(otherP).locator('[data-a=ll-my-hand]').count() === 1, 'quien espera tiene su mano en pantalla, sin gestos');
+  check(await pg(otherP).locator('[data-a=ll-show-card]').count() === 0, 'ya no hay que destapar la carta propia');
+  check(waitTxt.includes(ES[s.hands[otherP][0]]), 'y ve SU carta con nombre y efecto');
+  check(/sin salir/.test(waitTxt), 'la cuenta de lo que queda por salir está en la pantalla principal');
+  // Cartas que SOLO tiene el de turno: ninguna puede aparecer en la pantalla ajena.
+  const onlyTheirs = [...new Set(s.hands[s.turn])].filter((c) => !s.hands[otherP].includes(c));
+  const leaked = onlyTheirs.map((c) => ES[c]).filter((n) => waitTxt.includes(n));
+  check(leaked.length === 0, `la pantalla de quien espera no enseña la mano ajena${leaked.length ? ` (se cuela: ${leaked.join(', ')})` : ''}`);
 
   // Juega turnos (dirigidos) hasta que termine una ronda (roundEnd o end).
   let bannerSeen = null;

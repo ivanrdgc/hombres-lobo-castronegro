@@ -39,7 +39,7 @@
 
 <div class="topbar">
   <h2>🕵️ El Espía</h2>
-  <span class="chip">🕵️ Ronda {game.round}</span>
+  <span class="chip">Ronda {game.round}</span>
   <GameMenu {game} {my} />
 </div>
 <Flash />
@@ -62,8 +62,8 @@
 {#if !inRound && game.phase !== 'end'}
   <div class="card" style="text-align:center">
     <span class="moon">👀</span>
-    <h3>Hay una ronda en curso</h3>
-    <p class="small-note">Este dispositivo no juega esta ronda: puedes seguir el reloj y las votaciones desde aquí. Nada de mirar pantallas ajenas.</p>
+    <h3>Miras desde fuera</h3>
+    <p class="small-note">No juegas esta ronda: sigue el reloj y las votaciones desde aquí. Entre rondas puedes sentarte a la mesa.</p>
   </div>
   {#if game.vote}<VotePanel {game} {my} />{/if}
   <!-- El espectador ve la MISMA fase que la mesa: en «timeup» no hay reloj,

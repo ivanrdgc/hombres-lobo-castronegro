@@ -1,6 +1,7 @@
 <script lang="ts">
-  // Final: submarino ganador, posiciones reveladas (ambos mapas, con la estela
-  // de cada uno para poder repasar la caza) y marcador acumulado.
+  // Final: quién gana y, en la misma tarjeta, las dos posiciones reveladas con
+  // su estela — es el momento de repasar la caza. Aquí ya no hay secreto de
+  // equipo: los móviles se pueden girar y comparar.
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
   import { teamOf, TEAM_NAME } from '../engine';
@@ -22,13 +23,13 @@
   {#if game.winReason}<p class="small-note" style="margin-top:0">{game.winReason}</p>{/if}
   {#if game.winner}
     <p class="small-note" style="margin-top:4px">
-      Tripulación: <b>{crew(game.winner)}</b>{myTeam === game.winner ? ' — ¡vosotros!' : ''}. +1 punto para cada uno.
+      Tripulación: <b>{crew(game.winner)}</b>{myTeam === game.winner ? ' — ¡vosotros!' : ''}.
     </p>
   {/if}
-</div>
 
-<div class="card"><h3>🗺️ Dónde estaba cada uno</h3>
-  <p class="small-note" style="margin:0">Ahora sí se ven los dos mapas: la posición final y la estela (• casillas por las que pasó desde su última emersión). Buen momento para ver dónde fallaron vuestras deducciones.</p>
+  <hr class="sep" />
+  <h3 style="margin:0">🔓 Dónde estaba cada uno</h3>
+  <p class="small-note" style="margin:2px 0 0">Ya podéis girar los móviles: se acabó el secreto. • son las casillas por las que pasó desde su última emersión.</p>
   <div class="snmaps">
     {#each ['red', 'blue'] as const as t (t)}
       <div class="snside">
@@ -41,13 +42,10 @@
       </div>
     {/each}
   </div>
-  <p class="snlegend">
-    <span>🔴 / 🔵 posición final</span><span>• estela</span><span>⛰️ isla</span>
-  </p>
 </div>
 
 <div class="card">
-  <h3>🏆 Marcador (se acumula partida tras partida)</h3>
+  <h3>🏆 Marcador · +1 por victoria, se acumula</h3>
   {#each ranked as pid (pid)}
     {@const t = teamOf(game, pid)}
     <div class="settingrow" style="align-items:center">
@@ -57,12 +55,11 @@
   {/each}
 </div>
 
-<button class="primary block" data-a="sn-again" onclick={() => guard(A.playAgain)}>🔁 Otra partida</button>
-<p class="small-note" style="text-align:center;margin:4px 0 10px">Con las MISMAS tripulaciones: nadie cambia de corro ni de altavoz, solo se recolocan los submarinos (y el cuaderno empieza en blanco).</p>
+<button class="primary block" data-a="sn-again" onclick={() => guard(A.playAgain)}>🔁 Otra partida (mismas tripulaciones)</button>
+<p class="small-note" style="text-align:center;margin:4px 0 10px">Nadie cambia de corro ni de altavoz: solo se recolocan los submarinos y el cuaderno empieza en blanco.</p>
 <button class="ghost block" data-a="sn-back-lobby" onclick={() => guard(() => A.endSonar())}>🏁 Terminar y volver al lobby</button>
 
 <style>
-  .snmaps { display: flex; gap: 12px; flex-wrap: wrap; }
+  .snmaps { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
   .snside { flex: 1; min-width: 240px; }
-  .snlegend { display: flex; flex-wrap: wrap; gap: 3px 10px; font-size: 0.7rem; color: var(--muted); margin: 4px 0 0; }
 </style>

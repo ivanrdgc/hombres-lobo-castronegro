@@ -11,6 +11,20 @@ const bad = (m) => { fail++; console.log('  ✖', m); };
 const check = (c, m) => (c ? ok(m) : bad(m));
 const browser = await chromium.launch();
 const pages = {};
+
+// B28 · postura 🍽️ MESA: de noche TODAS las pantallas se ven iguales y el panel
+// de acción solo aparece tras el gesto de su dueño («👁 Abrir mi turno»).
+async function openTurn(pg, sel, timeout = 25000) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < timeout) {
+    if (await pg.locator(sel).count()) return;
+    const gate = pg.locator('[data-a=open-night-turn]');
+    if (await gate.count()) await gate.click().catch(() => {});
+    await pg.waitForTimeout(200);
+  }
+  await pg.waitForSelector(sel, { timeout: 3000 });
+}
+
 async function mk(label) {
   const ctx = await browser.newContext({ locale: 'es-ES' });
   // Semilla de test: sin audio (locuciones registradas, no reproducidas) y con
@@ -117,12 +131,13 @@ try {
     if (stepId === 'lobos_reconocen') {
       for (const p of st.players.filter((x) => x.alive && wolfRoles.includes(x.role))) {
         const pg = pages[p.name.toLowerCase()];
+        await openTurn(pg, 'button[data-a=act-lobos-reconocido]', 8000).catch(() => {});
         if (await pg.isVisible('button[data-a=act-lobos-reconocido]')) await pg.click('button[data-a=act-lobos-reconocido]');
       }
     } else if (stepId === 'gaitero') {
       const g = st.players.find((p) => p.role === 'gaitero' && p.alive);
       const pg = pages[g.name.toLowerCase()];
-      await pg.waitForSelector('button[data-a=act-gaitero]');
+      await openTurn(pg, 'button[data-a=act-gaitero]');
       const targets = await pg.locator('.actionpanel .player.selectable').count();
       const n = Math.min(2, targets);
       for (let i = 0; i < n; i++) { await pg.click('.actionpanel .player.selectable:not(.selected) >> nth=0'); await pg.waitForTimeout(150); }
@@ -132,7 +147,7 @@ try {
       check(charmed.length > 0, 'hay encantados tras la música del gaitero');
       for (const p of charmed) {
         const pg = pages[p.name.toLowerCase()];
-        const seen = await pg.waitForSelector('button[data-a=act-encantado-ok]', { timeout: 12000 }).then(() => true).catch(() => false);
+        const seen = await openTurn(pg, 'button[data-a=act-encantado-ok]', 12000).then(() => true).catch(() => false);
         check(seen, `el encantado ${p.name} ve el botón de confirmar`);
         if (seen) {
           // La palabra NUEVA (kwNext) se enseña en la MISMA pantalla, junto al botón.
@@ -146,7 +161,7 @@ try {
     } else if (stepId === 'lobos') {
       const wolf = st.players.find((p) => p.alive && wolfRoles.includes(p.role));
       const pg = pages[wolf.name.toLowerCase()];
-      await pg.waitForSelector('button[data-a=act-lobos]');
+      await openTurn(pg, 'button[data-a=act-lobos]');
       await pg.click('.actionpanel .player.selectable >> nth=0');
       await pg.click('button[data-a=act-lobos]');
     }

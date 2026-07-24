@@ -82,7 +82,7 @@
 
 <div class="topbar">
   <button class="small ghost" data-a="back-lobby-game" aria-label="Volver" title="Volver" style="font-size:1.25rem;line-height:1;padding:6px 12px" onclick={() => navigate(`/g/${group.id}/hombres_lobo`)}>←</button>
-  <h2>🎬 Hombres Lobo: empezar</h2>
+  <h2>🎬 Empezar partida</h2>
 </div>
 <Flash />
 
@@ -125,17 +125,15 @@
 </div>
 
 <div class="card">
-  <p class="small-note" style="margin-top:0">
-    🎮 Jugarán <b>{finalPlayers.length}</b>{finalPlayers.length ? ': ' : ''}<span style="opacity:.75">{finalPlayers.map((p) => p.name).join(', ')}</span>
-    · 🐺 <b>{lobos}</b> lobo{lobos > 1 ? 's' : ''}
-  </p>
+  <!-- Quiénes juegan ya está arriba, nombre a nombre: aquí solo lo que el botón
+       necesita decir de sí mismo (cuántos reparte y cuántos lobos saldrán). -->
   {#if tooFew}
-    <p class="small-note">⚠️ Mínimo {minP} jugadores{casual ? '' : ` (reglas oficiales). Para jugar desde ${CASUAL_MIN_PLAYERS}, activa el modo casual en los ajustes del juego`}.</p>
+    <p class="small-note" style="margin-top:0">⚠️ Mínimo {minP} jugadores{casual ? '' : ` (reglas oficiales). Para jugar desde ${CASUAL_MIN_PLAYERS}, activa el modo casual en los ajustes del juego`}.</p>
   {/if}
   <div id="form-error">
     {#if app.ui.formError}<div class="flash error">{app.ui.formError}</div>{/if}
   </div>
   <button class="primary block" disabled={tooFew}
     data-a={mode === 'auto' ? 'start-auto' : mode === 'guiado' ? 'start-guided' : 'start-manual'}
-    onclick={startNow}>🎬 ¡Empezar!</button>
+    onclick={startNow}>🎬 Repartir y empezar · {finalPlayers.length} jugando, {lobos} 🐺</button>
 </div>

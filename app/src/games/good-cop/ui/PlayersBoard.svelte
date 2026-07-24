@@ -1,18 +1,25 @@
 <script lang="ts">
   // Tablero público, todo lo que en la mesa real está a la vista: cuántos hay de
   // cada bando, quién queda en pie, quién va armado 🔫, a quién apunta cada uno
-  // 🎯, y de los caídos sus 3 cartas destapadas (con el bando que resultaron
-  // ser). NADIE ve cartas de cara mientras vive, ni siquiera las suyas: los
-  // móviles acaban sobre la mesa y el 🎴 (privado) ya te las enseña.
+  // 🎯, quién está en la mira de quién, y de los caídos sus 3 cartas destapadas
+  // (con el bando que resultaron ser). NADIE ve cartas de cara mientras vive,
+  // ni siquiera las suyas: los móviles acaban sobre la mesa y el 🎴 (privado)
+  // ya te las enseña.
+  // POSTURA DE MESA (B28): este tablero se dibuja IGUAL en los ocho móviles.
+  // Ninguna fila cambia de alto ni de color según quién mire; el único rastro
+  // de identidad es el «(tú)» del nombre, que no dice nada que la mesa no vea.
   import { cardLabel } from '../cards';
-  import { aimersOf, bandCounts, bandOf, nextAlive } from '../engine';
+  import { aimersOf, bandCounts, bandOf } from '../engine';
   import type { PlayerDoc } from '../../../core/sync/schema';
   import type { GoodCopState } from '../types';
 
   const { game, my }: { game: GoodCopState; my: PlayerDoc } = $props();
   const nm = (pid: string) => game.names[pid] || '¿?';
-  // Quién me apunta a MÍ: con 6-8 filas, leerlas todas era imposible.
-  const aimingAtMe = $derived(game.alive[my.id] ? aimersOf(game, my.id).map(nm) : []);
+  // Quién apunta a cada cual: con 6-8 filas, cruzar las dianas a ojo era
+  // imposible. Antes esto solo salía en TU fila (y en rojo), que era un chivato
+  // de forma; ahora se dibuja en la fila de CUALQUIERA a quien apunten, así que
+  // todos los móviles enseñan exactamente lo mismo… y la mesa lo comenta.
+  const huntersOf = (pid: string): string[] => (game.alive[pid] ? aimersOf(game, pid).map(nm) : []);
 
   const total = $derived(game.playerIds.length);
   const counts = $derived(bandCounts(total));
@@ -28,7 +35,6 @@
     return fallen.length ? `❌ Han caído: ${h} 👮 y ${fallen.length - h} 🦹` : '';
   });
   const inTurn = $derived(game.phase === 'turn');
-  const nextPid = $derived(inTurn && aliveN > 1 ? nextAlive(game, game.turn) : null);
 </script>
 
 <!-- Los números públicos, sin memorizar (punto 7 del contrato de UI). -->
@@ -46,8 +52,8 @@
     <div class="gcrow {turn ? 'active' : ''} {dead ? 'out' : ''}">
       <div class="gcmain">
         <span class="gcname">{dead ? '❌ ' : ''}{nm(pid)}{mine ? ' (tú)' : ''}</span>
-        {#if turn}<span class="gcbadge turnb">🎬 juega ahora</span>
-        {:else if !dead && pid === nextPid}<span class="gcbadge">⏭️ siguiente</span>{/if}
+        <!-- Quién va DESPUÉS lo dice la línea de espera, una sola vez (B29). -->
+        {#if turn}<span class="gcbadge turnb">🎬 juega ahora</span>{/if}
         {#if dead}
           <span class="gcflag dead">
             {shown(pid)
@@ -55,10 +61,11 @@
               : 'eliminado'}
           </span>
         {:else}
+          {@const hunters = huntersOf(pid)}
           {#if game.armed[pid]}<span class="gcflag gun">🔫 armado</span>{/if}
           {#if game.aimAt[pid]}<span class="gcflag aim">🎯 apunta a {nm(game.aimAt[pid]!)}</span>{/if}
           {#if !game.armed[pid] && !game.aimAt[pid]}<span class="gcflag calm">sin arma</span>{/if}
-          {#if mine && aimingAtMe.length}<span class="gcflag danger" data-a="gc-aimed-at-me">⚠️ TE apuntan: {aimingAtMe.join(', ')}</span>{/if}
+          {#if hunters.length}<span class="gcflag hunted" data-a="gc-aimed" data-p={pid}>⚠️ en la mira de {hunters.join(', ')}</span>{/if}
         {/if}
       </div>
 
@@ -72,7 +79,7 @@
     </div>
   {/each}
 </div>
-<p class="gclegend">🂠 carta boca abajo (nadie la ve) · 1 2 3 el número que dice el diario al investigar · 🔫 armado · 🎯 su diana. Al caer, las 3 cartas se destapan para todos.</p>
+<p class="gclegend">🂠 carta oculta · 1 2 3 el número con el que se investiga · 🔫 armado · 🎯 a quién apunta · ⚠️ quién lo apunta. Al caer, sus 3 cartas se destapan para todos.</p>
 
 <style>
   .gctally { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -98,7 +105,9 @@
   .gcflag.gun { color: var(--moon); border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); }
   .gcflag.aim { color: #e0aab2; border-color: color-mix(in srgb, var(--danger) 45%, var(--border)); }
   .gcflag.calm { opacity: 0.6; }
-  .gcflag.danger { color: #f3c2c2; font-weight: 700; background: color-mix(in srgb, var(--danger) 20%, transparent); border-color: var(--danger); }
+  /* «En la mira de…»: mismo aviso y mismo color en la fila de cualquiera, mires
+     desde el móvil que mires (postura de mesa). */
+  .gcflag.hunted { color: #f3c2c2; font-weight: 700; background: color-mix(in srgb, var(--danger) 20%, transparent); border-color: var(--danger); }
   .gcflag.dead { font-style: italic; }
   .gclegend { font-size: 0.76rem; color: var(--ink-3); line-height: 1.35; }
 </style>

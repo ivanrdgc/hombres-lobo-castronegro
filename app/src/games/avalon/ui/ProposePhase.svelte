@@ -34,21 +34,16 @@
   }
 </script>
 
-<!-- Los requisitos de ESTA misión, en grande y antes de tocar nada. -->
-<div class="reqbox" data-a="av-req">
-  <span class="reqbig">Misión {game.quest} · van <b>{size}</b></span>
-  <span class="reqline">{req === 2 ? '💥 Necesita 2 sabotajes para fracasar (uno solo no basta).' : '💥 Un solo sabotaje la hace fracasar.'}</span>
-  {#if game.voteTrack}
-    <span class="reqline {game.voteTrack >= 4 ? 'warn' : ''}">↪️ Van <b>{game.voteTrack}/5</b> propuestas rechazadas seguidas{game.voteTrack >= 4 ? ' — si se rechaza esta, GANA EL MAL' : ' (a las 5 gana el Mal)'}.</span>
-  {/if}
-</div>
-
 {#if amLeader}
-  <div class="actionpanel"><h3>🧭 Eres el líder: forma el equipo</h3>
-    <p class="hint">Toca a <b>{size}</b> caballero{size === 1 ? '' : 's'} (puedes incluirte). Después toda la mesa votará tu propuesta: si la tumban, el liderazgo pasa al siguiente.</p>
+  <!-- Lo que exige la misión va DENTRO del panel (B29): antes era una caja
+       aparte encima que repetía el número de misión del tablero y empujaba la
+       parrilla fuera de la pantalla. -->
+  <div class="actionpanel"><h3>🧭 Te toca: forma el equipo</h3>
+    <p class="hint" data-a="av-req">A la misión {game.quest} van <b>{size}</b> caballero{size === 1 ? '' : 's'} y {req === 2 ? '💥 necesita DOS sabotajes para fracasar' : '💥 basta UN sabotaje para hundirla'}. Tócalos en la lista (puedes incluirte); luego vota toda la mesa.</p>
     <AvGrid {players} selKey={key} max={size} leaderId={leader} meId={my.id} noteOf={note} />
     {#if sel.length}<p class="small-note" data-a="av-sel-count">{left > 0 ? `Te falta${left === 1 ? '' : 'n'} ${left} por elegir (${sel.length}/${size}).` : `Equipo completo: ${sel.map(nm).join(', ')}. Toca a alguien para quitarlo.`}</p>{/if}
     <button class="primary block" data-a="av-propose" disabled={sel.length !== size} onclick={propose}>⚔️ {sel.length === size ? `Proponer a ${sel.map(nm).join(', ')}` : `Elige a ${size} (${sel.length}/${size})`}</button>
+    {#if game.voteTrack}<p class="small-note {game.voteTrack >= 4 ? 'warn' : ''}">↪️ Van <b>{game.voteTrack}/5</b> propuestas rechazadas seguidas{game.voteTrack >= 4 ? ' — si tumban esta, GANA EL MAL' : ''}.</p>{/if}
 
     <!-- La referencia, DENTRO del panel: nadie debe salir de la pantalla en la
          que está decidiendo. -->
@@ -62,8 +57,9 @@
   </div>
 {:else}
   <div class="card">
-    <p class="hint">🧭 <b>{nm(leader)}</b> está eligiendo el equipo de la misión {game.quest}: {size} caballero{size === 1 ? '' : 's'}. Su elección no aparece hasta que la propone.</p>
-    <p class="small-note" data-a="av-propose-pending">⏳ Se espera a <b>{nm(leader)}</b>. Mientras tanto: repasa quién fue a cada misión (tablero de arriba) y decide ya si vas a aprobar o rechazar.</p>
+    <h3>🧭 {nm(leader)} forma el equipo</h3>
+    <p class="hint" data-a="av-req">A la misión {game.quest} van <b>{size}</b> caballero{size === 1 ? '' : 's'} y {req === 2 ? '💥 necesita DOS sabotajes para fracasar' : '💥 basta UN sabotaje para hundirla'}.</p>
+    <p class="small-note" data-a="av-propose-pending">⏳ Su elección no aparece hasta que la propone. Mientras esperas a <b>{nm(leader)}</b>: repasa el tablero y decide ya si vas a aprobar o rechazar.</p>
     <details class="avref">
       <summary data-a="av-ref">📖 Qué está pasando y qué haré yo</summary>
       <p class="small-note">Cuando {nm(leader)} proponga, votaréis TODOS (vayáis o no en la misión): 👍 aprobar o 👎 rechazar ese equipo. Los votos se destapan a la vez y son públicos.</p>
@@ -72,18 +68,12 @@
     </details>
   </div>
 {/if}
-{#if inGame}<RoleCard {game} pid={my.id} mini={true} />{/if}
+<!-- Plegada y con el mismo botón en los 5 móviles: en la mesa, quien mira de
+     reojo no puede distinguir una pantalla de otra. -->
+{#if inGame}<RoleCard {game} pid={my.id} />{/if}
 
 <style>
-  .reqbox {
-    display: flex; flex-direction: column; gap: 3px; margin: 12px 0 0;
-    border: 1px solid var(--accent, #c8a24a); border-radius: var(--r-2, 14px);
-    background: color-mix(in srgb, var(--accent, #c8a24a) 12%, transparent);
-    padding: 10px 12px;
-  }
-  .reqbig { font-size: 1.06rem; font-weight: 700; }
-  .reqline { font-size: 0.8rem; color: var(--muted); }
-  .reqline.warn { color: #f3a0a0; }
+  .warn { color: #f3a0a0; }
   .avref { margin-top: 14px; border-top: 1px solid var(--border, #333); padding-top: 8px; }
   .avref summary { cursor: pointer; font-size: 0.88rem; color: var(--accent, #c8a24a); padding: 6px 0; }
 </style>

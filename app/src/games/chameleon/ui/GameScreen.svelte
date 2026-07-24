@@ -59,7 +59,11 @@
   <div class="card">
     <h3 style="margin:0 0 2px">🗺️ {topicName(game.topicId)}</h3>
     {#if showGrid}
-      <p class="small-note" style="margin:0">Las 16 palabras del tema, a la vista de todos. Una de ellas es la secreta: la sabéis todos menos el Camaleón.</p>
+      <!-- La explicación, solo en el reparto: en las pistas y en el voto la
+           rejilla ya se sabe y la línea era ruido en todas las pantallas. -->
+      {#if game.phase === 'reveal'}
+        <p class="small-note" style="margin:0">Las 16 palabras, a la vista de todos. Una es la secreta: la sabéis todos menos el Camaleón.</p>
+      {/if}
       <Grid grid={game.grid} />
     {/if}
   </div>

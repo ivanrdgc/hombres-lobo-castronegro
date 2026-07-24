@@ -26,6 +26,15 @@
   // Solo pedimos activar si el audio NO suena ya (estado real del AudioContext).
   const needsUnlock = $derived(isMaster() && !app.ui.audioReady && !app.ui.muted);
 
+  // El chip de la cabecera dice QUÉ TOCA AHORA. El número de misión ya lo canta
+  // el tablero (casilla resaltada) y el panel de la fase: decirlo aquí otra vez
+  // era el mismo dato en tres sitios (B29).
+  const PHASE_CHIP: Record<string, string> = {
+    reveal: '🎴 Reparto', propose: '🧭 Propuesta', vote: '🗳️ Votación',
+    voteReveal: '🗳️ Votos', quest: '⚔️ Misión', result: '📜 Resultado',
+    assassin: '🗡️ Asesino', end: '🌅 Final',
+  };
+
   function unlockVoice() {
     unlockAudio();
     play({ id: 'unlock', segments: [{ kind: 'clip', text: 'La voz está lista.' }] }).catch(() => {});
@@ -38,7 +47,7 @@
 
 <div class="topbar">
   <h2>🏰 Ávalon</h2>
-  <span class="chip">Misión {Math.min(game.quest, 5)}</span>
+  <span class="chip">{PHASE_CHIP[game.phase] ?? ''}</span>
   <GameMenu {game} {my} />
 </div>
 <Flash />

@@ -36,10 +36,9 @@
 </script>
 
 {#if mine && ex}
-  <div class="narration">🎭 Intercambio con la corte. Elige las <b>{ex.keep}</b> carta{ex.keep === 1 ? '' : 's'} que conservas; el resto vuelve a la corte.</div>
   <div class="actionpanel">
-    <h3 style="margin-top:0">🎭 Elige {ex.keep} de {ex.options.length}</h3>
-    <p class="hint">Nadie ve esta pantalla. Las que no elijas vuelven barajadas a la corte, así que también sirve para <b>deshacerte de un farol descubierto</b>.</p>
+    <h3 style="margin-top:0">🎭 Quédate con {ex.keep} de estas {ex.options.length}</h3>
+    <p class="hint">Las que no elijas vuelven barajadas a la corte, así que esto también sirve para <b>deshacerte de un farol que ya no te sostiene</b>.</p>
     {#each ex.options as char, i (i)}
       <button class="exopt {keep.includes(i) ? 'sel' : ''}" data-a="coup-keep" data-p={String(i)} onclick={() => toggle(i)}>
         <b>{keep.includes(i) ? '✔️ ' : ''}{CHARACTERS[char].emoji} {CHARACTERS[char].name}</b>
@@ -57,9 +56,9 @@
     <CharRef {game} />
   </div>
 {:else}
-  <div class="narration">🎭 <b>{game.names[ex?.pid || ''] || '¿?'}</b> baraja con la corte y decide qué se queda…</div>
   <div class="card">
-    <p class="hint">🎭 Ha robado 2 cartas de la corte y elige con cuáles se queda; las que devuelva vuelven barajadas. Nadie (ni la app) dirá cuáles eran: solo que ya no es el mismo de antes.</p>
+    <h3 style="margin-top:0">🎭 {game.names[ex?.pid || ''] || '¿?'} baraja con la corte</h3>
+    <p class="hint">⏳ Ha robado 2 cartas y elige con cuáles se queda; el resto vuelve barajado. Nadie dirá cuáles eran: solo que ya no tiene por qué ser el mismo de antes.</p>
     <CharRef {game} label="📖 Repasa la corte mientras esperas" />
   </div>
 {/if}

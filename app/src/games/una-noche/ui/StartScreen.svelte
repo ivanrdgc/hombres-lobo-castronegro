@@ -3,6 +3,8 @@
   // qué dispositivo pone la voz. El MAZO se configura en el lobby (settings.
   // unaNoche); aquí solo se valida que sume jugadores + 3 y, si no cuadra
   // (cambió el nº de jugadores), se ofrece ajustarlo sin salir.
+  // B29: tres decisiones, tres tarjetas, y el botón final dice a cuántos reparte
+  // (la lista de quién juega ya está arriba, no se repite abajo).
   import { app, matchOf, me, navigate } from '../../../core/sync/store.svelte';
   import { guard } from '../../../core/sync/guard';
   import { isActiveDevice } from '../../../core/sync/presence';
@@ -71,12 +73,11 @@
 <div class="card">
   <h3>🎮 ¿Quién juega?</h3>
   <SeatPicker {group} {meId} gameId="una_noche" onState={(s) => (seat = s)} />
-  <p class="small-note">El orden es el de la mesa (cuenta para intercambios entre vecinos que añadamos más adelante).</p>
 </div>
 
 <div class="card">
-  <h3>🔊 ¿Dónde suena la voz?</h3>
-  <p class="small-note" style="margin-top:6px">La app llama a cada rol en su orden. Todos juegan, también quien pone la voz.</p>
+  <h3>🔊 ¿Qué móvil pone la voz?</h3>
+  <p class="small-note" style="margin-top:6px">Ese móvil llama a cada carta en voz alta para toda la mesa: déjalo en el centro, sonando. Puede jugar además de narrar.</p>
   <div class="btnrow" style="margin-top:6px">
     {#each rows.filter((p) => !matchOf(p.id)) as p (p.id)}
       <button class="small {narrator === p.id ? 'primary' : 'ghost'}" data-a="pick-narrator" data-p={p.id} style="flex:0 1 auto;min-width:0" onclick={() => (narrPick = p.id)}>
@@ -88,22 +89,21 @@
 </div>
 
 <div class="card">
-  <h3>🎴 El mazo</h3>
+  <h3>🎴 El mazo · {total} carta{total === 1 ? '' : 's'}</h3>
   <div class="chips" style="margin-top:2px">
     {#each deckRoles as r (r)}<button class="chip rolechip" data-a="una-role" data-p={r} onclick={() => (app.ui.modal = { type: 'una-role-detail', role: r })}>{ROLES[r].emoji} {ROLES[r].name}{(comp[r] || 0) > 1 ? ` ×${comp[r]}` : ''}</button>{/each}
   </div>
   {#if !deckOk}
-    <p class="small-note">⚠️ El mazo tiene <b>{total}</b> cartas, pero para <b>{n}</b> jugadores hacen falta <b>{need}</b> ({n} + {CENTER_COUNT}).</p>
+    <p class="small-note">⚠️ Para <b>{n}</b> jugadores el mazo debe sumar <b>{need}</b> ({n} + {CENTER_COUNT} al centro): {total < need ? `te faltan ${need - total}` : `te sobran ${total - need}`}.</p>
     <button class="block" data-a="una-fix-deck" onclick={() => (app.ui.modal = { type: 'una-deck', targetN: n })}>🎴 Ajustar el mazo</button>
   {:else}
-    <p class="small-note">✅ {total} cartas para {n} jugadores + {CENTER_COUNT} al centro. <button class="small ghost" data-a="una-fix-deck" onclick={() => (app.ui.modal = { type: 'una-deck', targetN: n })}>Editar</button></p>
+    <p class="small-note">✅ Cuadra: {n} para repartir + {CENTER_COUNT} al centro. <button class="small ghost" data-a="una-fix-deck" onclick={() => (app.ui.modal = { type: 'una-deck', targetN: n })}>Cambiarlo</button></p>
   {/if}
 </div>
 
 <div class="card">
-  <p class="small-note" style="margin-top:0">🌘 Jugarán <b>{n}</b>{n ? ': ' : ''}<span style="opacity:.75">{chosen.map((p) => p.name).join(', ')}</span></p>
-  {#if n < MIN_PLAYERS}<p class="small-note">⚠️ Una Noche necesita al menos {MIN_PLAYERS} jugadores.</p>{/if}
-  {#if n > MAX_PLAYERS}<p class="small-note">⚠️ Máximo {MAX_PLAYERS} jugadores.</p>{/if}
+  {#if n < MIN_PLAYERS}<p class="small-note" style="margin-top:0">⚠️ Una Noche necesita al menos {MIN_PLAYERS} jugadores (marca arriba a quién juega).</p>{/if}
+  {#if n > MAX_PLAYERS}<p class="small-note" style="margin-top:0">⚠️ Máximo {MAX_PLAYERS} jugadores.</p>{/if}
   <div id="form-error">{#if app.ui.formError}<div class="flash error">{app.ui.formError}</div>{/if}</div>
-  <button class="primary block" disabled={!okStart} data-a="una-start" onclick={startNow}>🌘 ¡Empezar!</button>
+  <button class="primary block" disabled={!okStart} data-a="una-start" onclick={startNow}>🌘 Repartir y empezar la noche{n ? ` (${n})` : ''}</button>
 </div>

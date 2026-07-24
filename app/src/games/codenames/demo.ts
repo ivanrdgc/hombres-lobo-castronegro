@@ -28,14 +28,14 @@ export const DEMO: DemoScript = {
       title: 'El reparto: dos pantallas muy distintas',
       who: { actor: 'Todos miráis vuestro tablero a la vez', others: 'nadie toca nada todavía: cada uno descubre solo lo que le toca ver.' },
       text: [
-        'Tu carta te dice tu papel. Y aquí está la clave del juego: Bea, la Jefa roja, ve el tablero COLOREADO; tú lo ves en gris. Que nadie mire la pantalla de su Jefe.',
-        'Si se te olvida qué eres, el botón 🎴 de abajo a la derecha te vuelve a enseñar tu papel y una chuleta con los colores: rojas, azules, transeúntes y asesino.',
+        'Aquí está la clave del juego: Bea, la Jefa roja, abre en su móvil el mapa con los colores; tú ves las mismas 25 palabras, sin color.',
+        'Ese mapa no lo puede ver NADIE, tampoco su propio equipo: Bea sujeta el móvil como una mano de cartas, y si lo suelta lo tapa con un botón. Tu móvil, en cambio, es público: déjalo en medio de la mesa y decidid en voz alta.',
       ],
       visual: {
         kind: 'screens',
         panes: [
-          { title: 'Bea (Jefa roja 🔴)', lines: ['Ve las 25 palabras CON su color:', '🔴 Volcán, Rayo, Faro… (9)', '🔵 Nieve, Puente… (8)', '⬜ 7 transeúntes · 💀 Serpiente'] },
-          { title: 'TÚ (agente rojo 🔴)', lines: ['Ves las mismas 25 palabras…', '…todas grises, sin colores.', 'Tu información llegará por la pista de Bea.'] },
+          { title: 'Bea (Jefa roja 🔴)', lines: ['Toca «Ver mi mapa» y ya no lo suelta:', '🔴 Volcán, Rayo, Faro… (9)', '🔵 Nieve, Puente… (8)', '⬜ 7 transeúntes · 💀 Serpiente'] },
+          { title: 'TÚ (agente rojo 🔴)', lines: ['Las mismas 25 palabras…', '…todas sin color, en grande.', 'El botón 🎴 te recuerda tu papel.'] },
         ],
       },
     },
@@ -51,7 +51,7 @@ export const DEMO: DemoScript = {
         kind: 'screens',
         panes: [
           { title: 'Bea (Jefa roja 🔴)', lines: ['Escribe: «fuego»', 'Número: 2'], buttons: [{ label: '💬 Dar la pista «fuego» · 2', kind: 'primary' }] },
-          { title: 'TÚ (agente rojo 🔴)', lines: ['«💬 La Jefa roja está preparando su pista…»', 'La voz cantará la pista cuando la confirme.'] },
+          { title: 'TÚ (agente rojo 🔴)', lines: ['«⏳ Bea escribe su pista»', 'La voz la cantará en cuanto la confirme.'] },
         ],
       },
     },

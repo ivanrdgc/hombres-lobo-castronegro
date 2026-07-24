@@ -2,6 +2,8 @@
 // doc tiene palabras y código): catálogo → empezar → transmisión (pistas →
 // intercepción del rival → descifrado propio → fichas) hasta ganar por 2
 // intercepciones. Verifica la FUGA: cada equipo solo ve sus palabras.
+// Y la POSTURA (B28, juego 👥 equipo): aviso de quién puede mirar, nada secreto
+// en la franja de arriba, y misma silueta interceptando que descifrando.
 import { chromium } from 'playwright';
 const BASE = process.env.BASE; if (!BASE) { console.error('Define BASE=https://tu-sitio.web.app'); process.exit(1); }
 let fail = 0;
@@ -42,10 +44,24 @@ async function setCode(page, code) {
   for (let pos = 0; pos < 3; pos++) await page.click(`[data-a=de-digit][data-p="${pos}-${code[pos]}"]`, { timeout: 15000 });
 }
 
+// Silueta del selector de código: cuántas casillas y de cuántas columnas es la
+// rejilla. Interceptar y descifrar tienen que dar EXACTAMENTE lo mismo, o el
+// equipo de enfrente lee de lejos lo que estás haciendo (B28, chivatos).
+const pickerShape = (page) => page.evaluate(() => {
+  const opts = document.querySelectorAll('.codepick .cpopt').length;
+  const grid = document.querySelector('.codepick .cpopts');
+  const cols = grid ? getComputedStyle(grid).gridTemplateColumns.split(' ').filter(Boolean).length : 0;
+  const rows = document.querySelectorAll('.codepick .cprow').length;
+  return { opts, cols, rows };
+});
+const boxOf = async (page, sel) => page.locator(sel).first().boundingBox();
+
 // Juega una transmisión completa. `intercept`: si true, el rival ACIERTA el
 // código; el propio equipo siempre acierta. Devuelve el estado en 'reveal'.
 let checkedDecodeUi = false;
 let checkedClueUi = false;
+let checkedInterceptUi = false;
+let decodeShape = null; // silueta del selector al DESCIFRAR, para comparar
 async function transmit(s, { rivalIntercepts }) {
   const active = s.active;
   const code = s.code;
@@ -60,6 +76,13 @@ async function transmit(s, { rivalIntercepts }) {
     // palabra) ANTES de soltarlo; el botón sigue apagado hasta las tres.
     const say = await pg(enc).locator('[data-a=de-clue-say]').innerText();
     check(/pista uno/i.test(say) && say.includes(code.join('-')), 'el encriptador ve en claro lo que va a transmitir antes de darlo');
+    // P1 (postura): el código sigue a mano, pero avisado y en pequeño; y el aviso
+    // de arriba le dice que esa pantalla no la puede ver NADIE, ni los suyos.
+    const codeBox = await pg(enc).locator('[data-a=de-code]').innerText();
+    check(code.every((d) => codeBox.includes(String(d))), 'el encriptador tiene su código a la vista, dentro del recuadro avisado');
+    check(await pg(enc).locator('[data-a=de-shield][data-p=solo]').count() === 1, 'al encriptador se le avisa de que el código no lo ve nadie, ni los suyos');
+    const mate = teamMembers(s, active).find((p) => p !== enc);
+    check(await pg(mate).locator('[data-a=de-shield][data-p=team]').count() === 1, 'a sus compañeros se les avisa de que la pantalla es solo para el equipo');
   }
   await pg(enc).click('[data-a=de-clue-give]:not([disabled])');
   s = await waitState(pages.ana, (x) => x.phase === 'intercept' || x.phase === 'decode', 'pistas registradas');
@@ -67,6 +90,18 @@ async function transmit(s, { rivalIntercepts }) {
     const rival = teamMembers(s, other(active)).find((p) => true);
     const guess = rivalIntercepts ? code : [code[1], code[0], code[2]];
     await pg(rival).waitForSelector('[data-a=de-intercept]', { timeout: 15000 });
+    if (!checkedInterceptUi) {
+      checkedInterceptUi = true;
+      // P2 (chivatos): interceptar y descifrar dan la MISMA silueta —3 filas, 12
+      // casillas, rejilla de 2 columnas—, así que desde el otro lado de la mesa
+      // no se puede leer qué está haciendo el equipo de enfrente.
+      const shape = await pickerShape(pg(rival));
+      check(shape.opts === 12 && shape.rows === 3 && shape.cols === 2, 'interceptando salen 3 filas de 4 casillas en 2 columnas');
+      if (decodeShape) check(shape.cols === decodeShape.cols && shape.opts === decodeShape.opts && shape.rows === decodeShape.rows,
+        'interceptar y descifrar tienen la MISMA silueta (no se lee de lejos qué haces)');
+      const w = await pg(rival).locator('[data-a=de-digit][data-p="0-1"] .cpw').innerText();
+      check(w.includes('¿?'), 'quien intercepta no ve las palabras del rival: solo «¿?»');
+    }
     await setCode(pg(rival), guess);
     await pg(rival).click('[data-a=de-intercept]:not([disabled])');
     s = await waitState(pages.ana, (x) => x.phase === 'decode', 'a descifrar');
@@ -85,6 +120,7 @@ async function transmit(s, { rivalIntercepts }) {
     check(/pista/i.test(row) && /pista uno/i.test(row), 'el selector rotula cada fila con la pista que se está colocando');
     const digit = await pg(decoder).locator('[data-a=de-digit][data-p="0-1"]').innerText();
     check(digit.trim().length > 1, 'quien descifra ve el nombre de la palabra en los botones 1-4');
+    decodeShape = await pickerShape(pg(decoder));
   }
   await setCode(pg(decoder), code);
   if (firstUi) {
@@ -114,6 +150,12 @@ try {
   await ana.click('button[data-a=select-game][data-p=decrypto]');
   await ana.waitForSelector('[data-a=de-open-help]');
   ok('el catálogo ofrece Decrypto y su lobby carga');
+  // B29: el lobby tiene un solo trabajo y tres caminos (jugar, aprender,
+  // consultar); el nombre del juego sale UNA vez, en la cabecera.
+  check(await ana.locator('h2:has-text("Decrypto")').count() === 1 && await ana.locator('.card h3').count() === 0, 'el lobby no repite el nombre del juego debajo de la cabecera');
+  for (const a of ['open-start', 'open-demo', 'de-open-help']) check(await ana.locator(`[data-a=${a}]`).count() === 1, `el lobby ofrece «${a}»`);
+  // P0 (postura): la mesa sabe cómo se sostiene el móvil antes de repartir.
+  check(/rival/i.test(await ana.locator('[data-a=de-posture]').innerText()), 'el lobby avisa de la postura: pantalla de equipo, tapada al rival');
   await ana.click('[data-a=de-open-help]');
   await ana.waitForSelector('text=/Cómo se juega/');
   check(await ana.locator('.modal [data-a=de-play-howto]').count() >= 4, 'el «cómo se juega» tiene un ▶️ por apartado');
@@ -139,6 +181,13 @@ try {
   check(await pg(redP).locator('[data-a=de-tokens]').count() === 2, 'el marcador enseña las fichas de los dos equipos');
   const redBoard = await pg(redP).locator('[data-a=de-tokens][data-p=red]').innerText();
   check(/vosotros/i.test(redBoard), 'el marcador dice cuál es TU equipo y quién va en él');
+
+  // ——— P3 (postura): arriba solo lo público; lo secreto, al pie ———
+  const bShield = await boxOf(pg(redP), '[data-a=de-shield]');
+  const bBoard = await boxOf(pg(redP), '[data-a=de-board]');
+  const bWords = await boxOf(pg(redP), '[data-a=de-words]');
+  check(!!bShield && !!bBoard && bShield.y < bBoard.y, 'el aviso de «quién puede mirar» va lo primero');
+  check(!!bWords && !!bBoard && bWords.y > bBoard.y + bBoard.height, 'las 4 palabras van por debajo de lo público: nada secreto en la franja de arriba');
 
   // ——— Ronda 1: rojo y azul transmiten (sin intercepción en la ronda 1) ———
   s = await transmit(s, { rivalIntercepts: false });
@@ -183,7 +232,7 @@ try {
   check(s.winner === 'blue', 'el azul gana al interceptar dos veces');
   check(s.tokens.blue.intercepts >= 2, 'el azul acumuló 2 intercepciones');
   check(s.log.some((t) => /gana/i.test(t)), 'la voz anuncia el ganador');
-  await ana.waitForSelector('text=/Equipos/');
+  await ana.waitForSelector('text=/Cómo ha quedado/');
   // U4 + H2: al final se destapan las 8 palabras (el «ahhh, era Faro») y se ve
   // el marcador de la mesa; la hoja de pistas sigue en pantalla.
   await pg(redP).waitForSelector('[data-a=de-final-words]', { timeout: 15000 });

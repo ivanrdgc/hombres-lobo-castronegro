@@ -19,15 +19,16 @@ export const DEMO: DemoScript = {
     {
       icon: '🎴',
       title: 'El reparto: tres cartas, una mayoría',
-      who: { actor: 'TODOS miráis vuestras 3 cartas a la vez, con el botón 🎴 de abajo, cuando queráis', others: 'en el tablero, las cartas ajenas se ven siempre por el dorso.' },
+      who: { actor: 'TODOS miráis vuestras 3 cartas con el botón 🎴 de abajo, cuando queráis', others: 'en el tablero, TODAS las cartas se ven por el dorso: también las tuyas.' },
       text: [
         'Tus cartas 👮 👮 🦹 son dos honestas y una corrupta: tu bando por mayoría es el HONESTO. Y una de esas dos es… el 🕵️ Agente: ¡eres el líder honesto! Que nadie lo huela.',
+        'El móvil se queda plano en la mesa: las cuatro pantallas son idénticas y lo tuyo solo sale al tocar el 🎴 —y se tapa solo a los pocos segundos, por si lo dejas ahí—.',
       ],
       visual: {
         kind: 'screens',
         panes: [
-          { title: 'TÚ', lines: ['🕵️ Agente · 👮 Honesto · 🦹 Corrupto', 'Mayoría honesta → tu bando. Y llevas al líder.'] },
-          { title: 'Lo que ven de ti', lines: ['🂠 🂠 🂠', 'Tres dorsos. Nada más.'] },
+          { title: 'Tu 🎴 (a solas)', lines: ['🕵️ Agente · 👮 Honesto · 🦹 Corrupto', 'Mayoría honesta → tu bando. Y llevas al líder.'] },
+          { title: 'El tablero (todos)', lines: ['🂠 🂠 🂠', 'Tres dorsos. Nada más.'] },
         ],
       },
     },
@@ -36,15 +37,15 @@ export const DEMO: DemoScript = {
       title: 'Turno de Bea: investigar',
       who: { actor: 'Bea (su turno) elige «Investigar», te señala y elige una de tus cartas', others: 'la mesa VE que te investiga… pero solo Bea ve el resultado.' },
       text: [
-        'Bea mira tu carta 2 (👮 Honesto). En su pantalla le sale una tarjeta privada; en el diario, todos leen «Bea investiga la carta 2 de TÚ»: se sabe QUÉ carta ha mirado, no lo que ha visto.',
+        'Bea mira tu carta 2 (👮 Honesto). El resultado se abre en su botón 🎴 y en ningún otro sitio; en el diario, todos leen «Bea investiga la carta 2 de TÚ»: se sabe QUÉ carta ha mirado, no lo que ha visto.',
         'Cuidado: al investigar puede salir la carta de LÍDER. Si Bea llega a ver tu 🕵️ Agente (o el 👑 Jefe de un corrupto), sabe de golpe a quién hay que disparar. Ese es todo el juego.',
-        'Lo que investigas queda guardado en tu botón 🎴, en «lo que has visto»: no hace falta memorizarlo.',
+        'Todo lo que investigues se queda guardado en tu botón 🎴, en «lo que has visto»: no hace falta memorizarlo… ni asoma en la pantalla que ve la mesa.',
       ],
       visual: {
         kind: 'screens',
         panes: [
-          { title: 'Bea (investiga)', lines: ['🔍 «TÚ, carta 2: 👮 Honesto. Solo tú lo sabes.»', 'Si hubiera elegido tu carta 1: 🕵️ Agente.'], buttons: [{ label: 'Entendido', kind: 'ghost' }] },
-          { title: 'TÚ', lines: ['📜 «Bea investiga la carta 2 de TÚ.»', 'Sabes cuál ha mirado, no qué opina.'] },
+          { title: 'El 🎴 de Bea', lines: ['🔍 «TÚ, carta 2: 👮 Honesto.»', 'Si hubiera elegido tu carta 1: 🕵️ Agente.'], buttons: [{ label: '🙈 Tapar ya', kind: 'ghost' }] },
+          { title: 'La pantalla de todos', lines: ['📜 «Bea investiga la carta 2 de TÚ.»', 'Sabes cuál ha mirado, no qué ha visto.'] },
         ],
       },
     },

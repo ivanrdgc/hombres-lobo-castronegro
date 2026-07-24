@@ -1,6 +1,7 @@
 <script lang="ts">
   // Final: equipo ganador (o tablas), las 8 palabras destapadas —el momento
-  // «ahhh, era Faro»— y el marcador acumulado. Otra partida re-reparte palabras.
+  // «ahhh, era Faro»— y, en UNA sola tarjeta, cómo ha quedado: fichas de cada
+  // equipo y marcador acumulado de la mesa. Otra partida re-reparte palabras.
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
   import { TEAM_LABEL, teamMembers } from '../engine';
@@ -30,7 +31,7 @@
   {/each}
 </div>
 
-<div class="card"><h3>🏆 Equipos</h3>
+<div class="card"><h3 style="margin:0 0 6px">🏆 Cómo ha quedado</h3>
   {#each (['red', 'blue'] as const) as t (t)}
     <div class="settingrow" style="align-items:center">
       <div class="sinfo"><div class="sname">{TEAM_LABEL[t]}{game.winner === t ? ' 👑' : ''}</div>
@@ -38,9 +39,7 @@
       <b>{game.tokens[t].intercepts}🕵️ · {game.tokens[t].errors}❌</b>
     </div>
   {/each}
-</div>
-
-<div class="card"><h3>🥇 Marcador de la mesa</h3>
+  <h3 style="margin:14px 0 2px;font-size:1rem">🥇 Marcador de la mesa</h3>
   <p class="small-note" style="margin:0 0 6px">Cada partida ganada suma 1 punto a todos los del equipo vencedor.</p>
   {#each ranked as pid (pid)}
     <div class="settingrow" style="align-items:center">

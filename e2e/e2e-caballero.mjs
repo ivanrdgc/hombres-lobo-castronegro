@@ -11,6 +11,20 @@ const bad = (m) => { fail++; console.log('  ✖', m); };
 const check = (c, m) => (c ? ok(m) : bad(m));
 const browser = await chromium.launch();
 const pages = {};
+
+// B28 · postura 🍽️ MESA: de noche TODAS las pantallas se ven iguales y el panel
+// de acción solo aparece tras el gesto de su dueño («👁 Abrir mi turno»).
+async function openTurn(pg, sel, timeout = 25000) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < timeout) {
+    if (await pg.locator(sel).count()) return;
+    const gate = pg.locator('[data-a=open-night-turn]');
+    if (await gate.count()) await gate.click().catch(() => {});
+    await pg.waitForTimeout(200);
+  }
+  await pg.waitForSelector(sel, { timeout: 3000 });
+}
+
 async function mk(label) {
   const ctx = await browser.newContext({ locale: 'es-ES' });
   await ctx.addInitScript(() => { window.__hlcTest = true; }); // e2e veloz: sin audio, colchones mínimos
@@ -106,11 +120,11 @@ try {
     lastKey = key;
     if (stepId === 'lobos_reconocen') {
       const pg = pages[lobo.name.toLowerCase()];
-      await pg.waitForSelector('button[data-a=act-lobos-reconocido]', { timeout: 15000 });
+      await openTurn(pg, 'button[data-a=act-lobos-reconocido]', 15000);
       await pg.click('button[data-a=act-lobos-reconocido]');
     } else if (stepId === 'lobos') {
       const pg = pages[lobo.name.toLowerCase()];
-      await pg.waitForSelector('button[data-a=act-lobos]', { timeout: 15000 });
+      await openTurn(pg, 'button[data-a=act-lobos]', 15000);
       await pg.click(`.actionpanel .player.selectable[data-p=${caballero.id}]`);
       await pg.click('button[data-a=act-lobos]');
       ok(`el lobo devora al caballero (${caballero.name})`);

@@ -27,6 +27,16 @@ export function fullDeck(): Card[] {
 
 export const cardName = (c: Card): string => `${CARD_INFO[c].emoji} ${CARD_INFO[c].name}`;
 
+/** Nota de conteo que acompaña a una carta en pantalla: «5 en el mazo · quedan 3
+ *  por salir». `out` son las copias ya descartadas (públicas). Contar es media
+ *  partida, así que la cuenta va hecha allí donde se decide. */
+export function copiesNote(c: Card, out: number): string {
+  const total = CARD_INFO[c].count;
+  const left = total - out;
+  const cuantas = left === 0 ? 'ya han salido todas' : left === 1 ? 'queda 1 por salir' : `quedan ${left} por salir`;
+  return `${total === 1 ? 'única en el mazo' : `${total} en el mazo`} · ${cuantas}`;
+}
+
 /** Cartas cuyo efecto apunta a otro jugador. */
 export const NEEDS_TARGET: Record<Card, boolean> = {
   guard: true, priest: true, baron: true, handmaid: false, prince: true, king: true, countess: false, princess: false,

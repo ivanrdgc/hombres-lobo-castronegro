@@ -3,7 +3,7 @@
   import { cloudAvailable, getLastCloudError, testCloudSynth } from '../core/audio/tts';
   import { play, stopSpeech, INTER_PIECE_GAP_MS } from '../core/audio/player';
   import type { Utterance } from '../core/audio/player';
-  import { ensureAmbience, stopAmbience } from '../core/audio/ambience';
+  import { ensureAmbience, stopAmbience, type SceneId } from '../core/audio/ambience';
   import { getVoiceConfig, setVoiceConfig, CLOUD_VOICES } from '../core/audio/voice-config';
   import { initDeviceVoice, speakDevice } from '../core/audio/device-voice';
   import { COMPO, ENAMORADOS_INTRO, narr } from '../games/hombres-lobo/texts/corpus';
@@ -95,6 +95,27 @@
     cfg = getVoiceConfig();
     log(`voz → ${cfg.cloudVoice}`);
   }
+
+  // Escenas de ambiente, para auditarlas de una en una (B30).
+  const SCENE_LIST: { id: SceneId; label: string }[] = [
+    { id: 'night', label: '🌕 Pueblo de noche' },
+    { id: 'day', label: '🐦 Pueblo de día' },
+    { id: 'espia', label: '🕵️ Lugar público' },
+    { id: 'insider', label: '🤫 Contrarreloj' },
+    { id: 'chameleon', label: '🦎 Sala tranquila' },
+    { id: 'coup', label: '🃏 Corte de intrigas' },
+    { id: 'avalon', label: '🏰 Castillo' },
+    { id: 'secret_hitler', label: '🏛️ Sala de gobierno' },
+    { id: 'two_rooms', label: '💣 Cuenta atrás' },
+    { id: 'codenames', label: '🕵️ Cuartel de espías' },
+    { id: 'decrypto', label: '🔐 Sala de radio' },
+    { id: 'good_cop', label: '🚔 Comisaría' },
+    { id: 'shadow_hunters', label: '🌘 Bosque de sombras' },
+    { id: 'sonar', label: '⚓ Submarino' },
+    { id: 'wavelength', label: '📡 Sintonía' },
+    { id: 'skull', label: '💀 Taberna' },
+    { id: 'love_letter', label: '💌 Palacio' },
+  ];
 </script>
 
 <main>
@@ -115,9 +136,14 @@
     <button data-a="lab-larga" disabled={busy} onclick={locucionLarga}>🌙 Multi-frase (pausas)</button>
     <button data-a="lab-device" onclick={probarDispositivo}>📱 Voz del dispositivo</button>
     <button data-a="lab-stop" onclick={() => { stopSpeech('hard'); log('stop hard'); }}>⏹️ Parar</button>
-    <button data-a="lab-amb-noche" onclick={() => { ensureAmbience('night'); log('ambience: noche'); }}>🦉 Ambiente noche</button>
-    <button data-a="lab-amb-dia" onclick={() => { ensureAmbience('day'); log('ambience: día'); }}>🐦 Ambiente día</button>
     <button data-a="lab-amb-off" onclick={() => { stopAmbience(); log('ambience: off'); }}>🔇 Ambiente off</button>
+  </section>
+
+  <!-- Banco de escenas: para escucharlas una a una sin montar una partida. -->
+  <section class="btns">
+    {#each SCENE_LIST as sc (sc.id)}
+      <button data-a="lab-amb" data-p={sc.id} onclick={() => { ensureAmbience(sc.id); log('ambiente: ' + sc.id); }}>{sc.label}</button>
+    {/each}
   </section>
 
   <label class="voz">

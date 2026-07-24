@@ -29,7 +29,7 @@
 
 {#if amCham}
   <div class="actionpanel"><h3>🦎 Tu última bala</h3>
-    <p class="hint">Te han pillado. Señala en la rejilla cuál crees que era la palabra secreta y confirma.</p>
+    <p class="hint">Señala en la rejilla la palabra que crees que era la secreta.</p>
     <div class="stake">
       <p class="sline">✅ <b>Si aciertas</b> → escapas por la puerta grande: ganas la ronda y te llevas 1 punto.</p>
       <p class="sline">❌ <b>Si fallas</b> → gana el grupo: 1 punto para cada uno de los demás.</p>
@@ -49,12 +49,12 @@
   </div>
 {:else}
   <div class="card">
-    <h3 style="margin-bottom:2px">🦎 {nm(game.chameleonId)} está apostando</h3>
-    <p class="small-note" style="margin:0">Vosotros sabéis la palabra: no la digáis ni la señaléis en su pantalla. Solo {nm(game.chameleonId)} puede tocar la rejilla.</p>
+    <h3 style="margin-bottom:2px">⌛ Está apostando</h3>
+    <p class="small-note" style="margin:0">Vosotros sabéis la palabra: ni la digáis ni se la señaléis. Solo {nm(game.chameleonId)} puede tocar la rejilla.</p>
     <Grid grid={game.grid} />
     <p class="small-note">🗣️ Las pistas fueron, por orden: <b>{spoke.join(' → ')}</b>.</p>
     {#if canResolve}
-      <p class="small-note">⏱️ Lleva un buen rato sin señalar nada.</p>
+      <p class="small-note">⏱️ Lleva un buen rato sin señalar nada (móvil bloqueado, se ha levantado…).</p>
       <button class="ghost block" data-a="ch-resolve-guess" onclick={() => guard(A.resolveNoGuess)}>⏱️ Dar la ronda por resuelta (cuenta como fallo)</button>
     {/if}
   </div>

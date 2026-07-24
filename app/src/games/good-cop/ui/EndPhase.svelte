@@ -18,7 +18,7 @@
   {#if game.winReason}<p class="small-note">{game.winReason}</p>{/if}
 </div>
 
-<div class="card"><h3>🃏 Todas las cartas</h3>
+<div class="card"><h3>🃏 Quién era quién</h3>
   <PlayersBoard game={{ ...game, cards: Object.fromEntries(Object.entries(game.cards).map(([pid, cs]) => [pid, cs.map((c) => ({ ...c, up: true }))])) }} {my} /></div>
 
 <div class="card">
@@ -29,6 +29,7 @@
       <b>{game.scores[pid] || 0}</b>
     </div>
   {/each}
+  <p class="small-note">⭐ llevaba la carta de líder · ✅ bando ganador. Puntúa el bando entero, también los eliminados.</p>
 </div>
 
 <button class="primary block" data-a="gc-again" onclick={() => guard(A.playAgain)}>🔁 Otra partida</button>

@@ -1,17 +1,24 @@
 <script lang="ts">
-  // Pantalla de partida de «Codenames»: cabecera + tu carta + tablero + fase.
+  // Pantalla de partida de «Codenames». El orden es el de la mesa real: quién
+  // eres (una línea) → la pista que está en el aire → el tablero → lo que te
+  // toca hacer → el diario. Y hay DOS pantallas, según cómo se sostiene el
+  // móvil (B28): el Jefe lleva su mapa en la mano (tarjeta SpyMap, tapada al
+  // repartir) y todos los demás llevan un tablero público, grande, para dejarlo
+  // en medio de la mesa.
   import { app, isMaster, matchOf } from '../../../core/sync/store.svelte';
   import { codenamesGame, revealCell } from '../actions';
   import { guard } from '../../../core/sync/guard';
   import { unlockAudio } from '../../../core/audio/engine';
   import { play } from '../../../core/audio/player';
   import { e2eTestMode } from '../../../core/test-hooks';
-  import { CLUE_STALL_MS, clueStalled } from '../engine';
+  import { CLUE_STALL_MS, clueStalled, isSpymaster, TEAM_LABEL } from '../engine';
   import type { GroupDoc, PlayerDoc } from '../../../core/sync/schema';
   import Flash from '../../../shell/Flash.svelte';
   import CardFab from '../../../shell/CardFab.svelte';
   import GameMenu from './GameMenu.svelte';
   import Board from './Board.svelte';
+  import SpyMap from './SpyMap.svelte';
+  import ClueBand from './ClueBand.svelte';
   import MyCard from './MyCard.svelte';
   import CluePhase from './CluePhase.svelte';
   import GuessPhase from './GuessPhase.svelte';
@@ -20,6 +27,7 @@
   const { group, my }: { group: GroupDoc; my: PlayerDoc } = $props();
   const game = $derived(codenamesGame(group)!);
   const inGame = $derived(game.playerIds.includes(my.id) && !!matchOf(my.id));
+  const iAmSpy = $derived(inGame && isSpymaster(game, my.id));
   const needsUnlock = $derived(isMaster() && !app.ui.audioReady && !app.ui.muted);
 
   function unlockVoice() {
@@ -46,8 +54,8 @@
 <div class="topbar">
   <h2>🕵️ Codenames</h2>
   {#if game.phase !== 'end'}
-    <span class="chip" data-a="cn-turn-chip">{game.turn === 'red' ? '🔴 Turno rojo' : '🔵 Turno azul'} · {game.phase === 'clue' ? 'pista' : 'toques'}</span>
-    <span class="chip">🔴 {game.remaining.red} · 🔵 {game.remaining.blue}</span>
+    <span class="chip" data-a="cn-turn-chip">Turno de {TEAM_LABEL[game.turn]}</span>
+    <span class="chip">Faltan 🔴 {game.remaining.red} · 🔵 {game.remaining.blue}</span>
   {/if}
   <GameMenu {game} {my} {stalled} />
 </div>
@@ -65,14 +73,20 @@
 {#if game.phase === 'end'}
   <EndPhase {game} {my} />
 {:else}
-  {#if inGame}<MyCard {game} pid={my.id} />{/if}
-  <div class="card"><Board {game} {my} {sel} onpick={(i) => (sel = sel === i ? null : i)} /></div>
+  {#if inGame}<MyCard {game} pid={my.id} compact />{/if}
+  {#if game.phase === 'guess'}<ClueBand {game} />{/if}
+  {#if iAmSpy}
+    <SpyMap {game} {my} />
+  {:else}
+    <div class="card"><Board {game} {my} {sel} onpick={(i) => (sel = sel === i ? null : i)} />
+      {#if !inGame}<p class="small-note" style="text-align:center;margin:0">👀 Miras de espectador: el mapa de los Jefes no lo ves.</p>{/if}
+    </div>
+  {/if}
   {#if game.phase === 'clue'}
     <CluePhase {game} {my} {stalled} />
   {:else if game.phase === 'guess'}
     <GuessPhase {game} {my} {sel} onconfirm={() => guard(() => revealCell(sel!))} oncancel={() => (sel = null)} />
   {/if}
-  {#if !inGame}<p class="small-note" style="text-align:center">👀 Sigues la partida de espectador (sin ver el mapa oculto).</p>{/if}
 {/if}
 
 {#if game.log && game.log.length}

@@ -1,7 +1,8 @@
 <script lang="ts">
-  // La mesa de la ronda de un vistazo: quién abrió el interrogatorio, quién ya
-  // gastó su acusación y —tras el tiempo— de quién es el turno. Todo escrito:
-  // en el móvil no hay «title» que valga (B25/B26, punto 9).
+  // La mesa de la ronda de un vistazo, y todo lo que muestra es PÚBLICO: quién
+  // abrió el interrogatorio, quién ya gastó su acusación y —tras el tiempo— de
+  // quién es el turno. Es idéntica en todos los móviles (B28) y va escrita, sin
+  // «title» que en el móvil no se ve (B25/B26, punto 9).
   import { timeupOrder } from '../engine';
   import type { EspiaState } from '../types';
 
@@ -11,7 +12,6 @@
   const order = $derived(timeup ? timeupOrder(game) : game.playerIds);
   const turnPid = $derived(timeup && game.timeupTurn !== null ? order[game.timeupTurn] : null);
   const anyUsed = $derived(!timeup && game.playerIds.some((id) => game.accusedUsed[id]));
-  const anyDone = $derived(timeup && (game.timeupTurn ?? 0) > 0);
 </script>
 
 <div class="mesa">
@@ -27,10 +27,7 @@
   {/each}
 </div>
 <p class="small-note" style="margin-top:6px">
-  🪑 Juegan {game.playerIds.length} · <b>❓ abrió</b> el interrogatorio (reparte y pregunta primero)
-  {#if timeup}· <b>👉 le toca</b> acusar o pasar{/if}
-  {#if anyDone}· <b>✔️ ya pasó</b> por su turno{/if}
-  {#if anyUsed}· <b>🛑 ya acusó</b> = gastó SU acusación de esta ronda, lo que no dice nada de su culpa{/if}
+  <b>❓ abrió</b> = repartió y preguntó primero{#if timeup} · <b>👉 le toca</b> acusar o pasar{/if}{#if anyUsed} · <b>🛑 ya acusó</b> = gastó SU acusación, lo que no dice nada de su culpa{/if}
 </p>
 
 <style>

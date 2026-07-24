@@ -3,6 +3,12 @@
   // las 3 pistas. Cada casilla lleva delante su cifra, SU palabra y lo que el
   // equipo ya dijo para ese número (repetir un campo es lo que regala la palabra
   // al rival). Su equipo y el rival esperan, sabiendo a quién y para qué.
+  //
+  // Postura (B28): esta es la pantalla más delicada del juego —el código no lo
+  // puede ver NI su propio equipo—, así que el código no encabeza el panel: va
+  // después de la instrucción, en cifras del tamaño de las de las casillas, y
+  // con el aviso de que se mira de cerca. El grito de «no lo enseñes» lo da la
+  // tira de postura de arriba.
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
   import { cluesForWord, encoderId, teamMembers, teamOf, other, TEAM_LABEL } from '../engine';
@@ -39,13 +45,12 @@
 </script>
 
 {#if iEncode}
-  <div class="actionpanel"><h3>🔐 Eres el encriptador ({TEAM_LABEL[game.active]})</h3>
-    <div class="kwbox">
-      <span class="kwlabel">Tu código secreto</span>
-      <span class="kw">{game.code.join(' - ')}</span>
-      <span class="kwhint">Solo lo ves tú. Nadie más, ni los tuyos.</span>
+  <div class="actionpanel"><h3>🔐 Encriptas tú: una pista por cifra</h3>
+    <p class="hint" style="margin:0 0 8px">En el orden de las cifras. Escríbelas aquí y dilas en voz alta: la pista no puede ser la palabra clave ni un derivado suyo.</p>
+    <div class="decodebox" data-a="de-code">
+      <span class="dcblab">🙈 Tu código, solo tuyo</span>
+      <span class="dcbnums">{#each game.code as d, i (i)}<span class="dn">{d}</span>{/each}</span>
     </div>
-    <p class="hint" style="margin:10px 0 4px">Escribe <b>una pista por cifra, en este orden</b>, y dilas también en voz alta. La pista no puede ser la palabra clave ni un derivado suyo.</p>
     {#each rows as r (r.i)}
       {@const warn = warnOf(cl[r.i], r.word)}
       <div class="declue">
@@ -64,30 +69,36 @@
       <p class="desay" data-a="de-clue-say">Vas a transmitir <b>{game.code.join('-')}</b>: {rows.map((r) => `«${cl[r.i].trim()}» → ${r.n} ${r.word}`).join(', ')}.</p>
     {/if}
     <button class="primary block" style="margin-top:8px" data-a="de-clue-give" disabled={!ready}
-      onclick={() => guard(() => A.giveClues([cl[0], cl[1], cl[2]]))}>💬 Dar las 3 pistas y decirlas en voz alta</button>
+      onclick={() => guard(() => A.giveClues([cl[0], cl[1], cl[2]]))}>💬 Transmitir las 3 pistas y decirlas en voz alta</button>
     {#if !ready}
       <p class="small-note" style="margin:6px 0 0">Falta{missing.length > 1 ? 'n' : ''} la {missing.join(' y la ')} pista: con las tres se enciende el botón.</p>
     {/if}
   </div>
 {:else}
-  <div class="narration">🔐 <b>{encName}</b> (equipo {TEAM_LABEL[game.active]}) está preparando las pistas de su código…</div>
+  <div class="narration">🔐 <b>{encName}</b> ({TEAM_LABEL[game.active]}) está preparando las pistas de su código…</div>
   <div class="card"><p class="hint" style="margin:0">
-    {#if myTeam === game.active}🤝 Es vuestro encriptador: cuando diga las 3 pistas tendréis que descifrar su código (sin él). Id repasando vuestras 4 palabras de arriba.
-    {:else if myTeam === other(game.active)}🕵️ Sois el rival: en cuanto las diga intentaréis interceptar. Mientras, repasad la hoja de pistas del equipo {TEAM_LABEL[game.active]}: lo que ya dijeron para cada número.
+    {#if myTeam === game.active}🤝 Es vuestro encriptador: cuando diga las 3 pistas tendréis que descifrar su código, sin él. Id repasando vuestras 4 palabras, al final de la pantalla.
+    {:else if myTeam === other(game.active)}🕵️ Sois el rival: en cuanto las diga intentaréis interceptar. Mientras, repasad en la hoja de pistas (al final de la pantalla) lo que el {TEAM_LABEL[game.active]} ya dijo para cada número.
     {:else}👀 Espectador: verás las pistas en cuanto {encName} las dé (las palabras de los equipos siguen tapadas).{/if}
-  </p></div>
+  </p>
   {#if canRelieve}
-    <button class="ghost block" data-a="de-relieve" onclick={() => guard(A.relieveEncoder)}>🔄 {encName} no puede: que encripte otro</button>
-    <p class="small-note" style="text-align:center">Se reparte un código nuevo (el anterior ya lo ha visto) y encripta el siguiente de vuestro equipo.</p>
+    <button class="ghost block" style="margin-top:10px" data-a="de-relieve" onclick={() => guard(A.relieveEncoder)}>🔄 {encName} no puede: que encripte otro</button>
+    <p class="small-note" style="margin:6px 0 0">Se reparte un código nuevo (el anterior ya lo ha visto) y encripta el siguiente de vuestro equipo.</p>
   {/if}
+  </div>
 {/if}
 
 <style>
+  /* El código, en las mismas cifras que las casillas de abajo: legible en la
+     mano, ilegible desde el otro lado de la mesa. Nada de titular gigante. */
+  .decodebox { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; padding: 8px 10px; margin-bottom: 4px; border-radius: 10px; border: 1px dashed color-mix(in srgb, var(--danger, #e0526b) 55%, transparent); background: color-mix(in srgb, var(--danger, #e0526b) 8%, transparent); }
+  .dcblab { font-size: 0.74rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.4px; color: var(--muted, #a9a6c0); }
+  .dcbnums { display: flex; gap: 5px; margin-left: auto; }
   .declue { border: 1px solid var(--border, #333); border-radius: 12px; padding: 8px 9px 9px; margin: 8px 0; background: color-mix(in srgb, var(--bg-1, #12141f) 70%, transparent); }
   .dchead { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 5px; }
   .dchead .dcord { font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.4px; color: var(--moon, #ffd98a); }
   .dchead .dcarrow { opacity: 0.6; }
-  .declue .dn { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; flex: 0 0 auto; border-radius: 50%; background: var(--accent, #c8a24a); color: #000; font-weight: 800; font-size: 0.82rem; }
+  .dn { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; flex: 0 0 auto; border-radius: 50%; background: var(--accent, #c8a24a); color: #000; font-weight: 800; font-size: 0.82rem; }
   .declue .dw { font-size: 0.98rem; font-weight: 800; overflow-wrap: anywhere; }
   .depast { margin: 0 0 6px; font-size: 0.78rem; opacity: 0.78; }
   .dewarn { margin: 6px 0 0; font-size: 0.8rem; color: #f3c2c2; }

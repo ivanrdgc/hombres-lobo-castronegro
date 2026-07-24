@@ -4,9 +4,12 @@
 import { cleanForSpeech } from '../../core/util/speech';
 import type { CodenamesState } from './types';
 
+// De qué va, en dos líneas: es lo primero que lee (y escucha) una mesa que no
+// ha jugado nunca. Todo lo demás vive en «Consultar las reglas» o en el
+// tutorial, no aquí.
 export const INTRO_LOBBY: string[] = [
-  'Codenames: dos equipos, rojo y azul, frente a un tablero de 25 palabras. Cada equipo tiene un JEFE de espías que ve, solo en su móvil, qué palabras son de los suyos, cuáles del rival, cuáles neutrales… y cuál esconde al ASESINO.',
-  'Por turnos, cada Jefe da una pista de UNA palabra y un número, y sus agentes tocan las palabras que creen suyas. El primero que descubre todas las suyas gana; pero quien toque al asesino, pierde en el acto. La app hace de tablero secreto: solo los Jefes ven los colores.',
+  'Dos equipos y 25 palabras sobre la mesa. Cada equipo tiene un Jefe de espías que ve en su móvil cuáles son suyas, cuáles del rival, cuáles no son de nadie… y cuál esconde al asesino.',
+  'El Jefe solo puede decir UNA palabra y un número; sus agentes tocan las que crean suyas. Gana quien destape todas las suyas, y quien toque al asesino pierde en el acto.',
 ];
 
 export interface HelpSection { heading: string; items: string[] }
@@ -24,7 +27,7 @@ export const HOW_TO: HelpSection[] = [
     heading: '🗺️ El reparto',
     items: [
       'Jugáis de 4 a 16 personas. La app reparte los equipos casi a la par y designa un Jefe por equipo (lo veréis en vuestra carta). El equipo que empieza tiene 9 palabras; el otro, 8. Hay 7 neutrales y 1 asesino.',
-      'Colocaos de modo que los agentes NO vean la pantalla de su Jefe: ahí está el mapa con los colores. Con el botón 🎴 podéis volver a mirar vuestro papel y la chuleta de colores cuando queráis.',
+      'Sentaos de modo que NADIE vea la pantalla del Jefe, tampoco sus propios agentes: ahí está el mapa con los colores. El Jefe lo abre de un toque al empezar y lo tapa con un botón si suelta el móvil. Con el botón 🎴 cualquiera vuelve a ver su papel y la chuleta de colores.',
     ],
   },
   {

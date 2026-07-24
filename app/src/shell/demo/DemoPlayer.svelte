@@ -161,7 +161,7 @@
       {/each}
     </div>
     {#if picked !== null}
-      <p class="small-note" style="margin:8px 0 0">{step.ask.choices[picked].good ? '✅' : '💡'} {step.ask.choices[picked].reply}</p>
+      <p class="small-note" data-a="demo-reply" style="margin:8px 0 0">{step.ask.choices[picked].good ? '✅' : '💡'} {step.ask.choices[picked].reply}</p>
     {/if}
   </div>
 {/if}

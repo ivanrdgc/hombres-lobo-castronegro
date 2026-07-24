@@ -5,6 +5,13 @@
 // (contador de rechazos + rotación del liderazgo) → misión con SABOTAJE del
 // Mal y misiones limpias → fase del Asesino → final. Contrasta las reglas
 // oficiales (bandos, tamaños de equipo) con el estado del motor.
+//
+// Y la POSTURA DE MESA (B28), que en Ávalon es media partida: con el móvil
+// plano, ninguna pantalla en reposo puede delatar tu bando. Se comprueba que la
+// carta de rol no se pinta sola ni lleva color por bando, que el panel de misión
+// del leal y el del malvado son idénticos LETRA A LETRA (y que el rojo solo se
+// le niega al leal cuando lo toca, en su mano) y que la pantalla del Asesino es
+// igual que la de los demás hasta que él mismo abre la mira.
 import { chromium } from 'playwright';
 const BASE = process.env.BASE; if (!BASE) { console.error('Define BASE=https://tu-sitio.web.app'); process.exit(1); }
 let fail = 0;
@@ -27,6 +34,7 @@ const hlc = (page) => page.evaluate(() => {
     leaderIdx: g.leaderIdx, quest: g.quest, results: g.results, voteTrack: g.voteTrack,
     team: g.team, votes: g.votes, lastVote: g.lastVote, lastQuest: g.lastQuest,
     seen: g.seen, winner: g.winner, assassinTarget: g.assassinTarget, enabledRoles: g.enabledRoles,
+    questCards: g.questCards,
   };
 });
 async function waitState(page, fn, what, timeout = 60000) {
@@ -39,6 +47,7 @@ let NAMES = {};
 const pg = (pid) => pages[(NAMES[pid] || pid).toLowerCase()];
 const leaderPid = (st) => st.playerIds[st.leaderIdx % st.playerIds.length];
 const TEAM_SIZES = { 5: [2, 3, 2, 3, 3] };
+const EVIL_ROLES = ['assassin', 'morgana', 'mordred', 'oberon', 'minion'];
 
 async function proposeAs(leader, pids) {
   const p = pg(leader);
@@ -58,6 +67,22 @@ async function checkProposeScreen(leader, size) {
   const other = Object.keys(NAMES).find((pid) => pid !== leader);
   await pg(other).waitForSelector('[data-a=av-propose-pending]', { timeout: 15000 });
   ok('a los demás se les dice por nombre a quién se espera y qué pueden ir haciendo');
+}
+/** POSTURA DE MESA (B28): con el móvil plano, la carta de rol no puede pintarse
+ *  sola ni llevar color por bando; se pide con un gesto idéntico en todos los
+ *  móviles y se puede ocultar al momento (además se auto-oculta a los 12 s). */
+async function checkTableCard(pid) {
+  const p = pg(pid);
+  await p.waitForSelector('[data-a=av-togglecard]', { timeout: 15000 });
+  check(await p.locator('.rolecard').count() === 0, 'en reposo la carta de rol NO se pinta sola');
+  check(await p.locator('[data-a=av-togglecard]').count() === 1, 'se pide con un gesto (el mismo botón en todos los móviles)');
+  await p.click('[data-a=av-togglecard]');
+  await p.waitForSelector('.rolecard', { timeout: 5000 });
+  const cls = (await p.locator('.rolecard').first().getAttribute('class')) || '';
+  check(!/(^|\s)(good|evil)(\s|$)/.test(cls), 'la carta abierta no lleva borde de color por bando');
+  await p.click('[data-a=av-togglecard]');
+  await p.waitForSelector('.rolecard', { state: 'detached', timeout: 5000 });
+  ok('y se oculta en cuanto se toca');
 }
 /** Toda la mesa vota lo mismo (aprobar o rechazar). */
 async function everyoneVotes(st, approve) {
@@ -110,7 +135,7 @@ try {
   let st = await waitState(ana, (s) => s.phase === 'reveal', 'reparto');
   NAMES = st.names;
   check(st.playerIds.length === 5, 'los 5 juegan');
-  const evil = st.playerIds.filter((pid) => ['assassin', 'morgana', 'mordred', 'oberon', 'minion'].includes(st.roles[pid]));
+  const evil = st.playerIds.filter((pid) => EVIL_ROLES.includes(st.roles[pid]));
   check(evil.length === 2, `2 malvados (${evil.map((p) => st.roles[p]).join(', ')})`);
   check(Object.values(st.roles).includes('merlin') && Object.values(st.roles).includes('assassin'), 'Merlín y Asesino repartidos');
   console.log('  roles:', st.playerIds.map((id) => `${st.names[id]}=${st.roles[id]}`).join(', '));
@@ -129,7 +154,7 @@ try {
   // ——— Misiones ———
   const merlin = st.playerIds.find((pid) => st.roles[pid] === 'merlin');
   const assassin = st.playerIds.find((pid) => st.roles[pid] === 'assassin');
-  const goods = st.playerIds.filter((pid) => !['assassin', 'morgana', 'mordred', 'oberon', 'minion'].includes(st.roles[pid]));
+  const goods = st.playerIds.filter((pid) => !EVIL_ROLES.includes(st.roles[pid]));
   let sabotagedOnce = false;
   let rejectedOnce = false; // la primera propuesta se tumba a propósito (caso más frecuente en mesa)
   const uiSeen = {}; // pantallas ya revisadas (cada comprobación de UI, una vez)
@@ -146,7 +171,11 @@ try {
       const team = (st.quest === 1)
         ? [assassin, goods[0]]
         : goods.slice(0, size);
-      if (!uiSeen.propose) { uiSeen.propose = true; await checkProposeScreen(leaderPid(st), size); }
+      if (!uiSeen.propose) {
+        uiSeen.propose = true;
+        await checkProposeScreen(leaderPid(st), size);
+        await checkTableCard(st.playerIds.find((pid) => pid !== leaderPid(st)));
+      }
       await proposeAs(leaderPid(st), team.slice(0, size));
       await waitState(ana, (s) => s.phase === 'vote', 'abre el voto');
     } else if (st.phase === 'vote') {
@@ -183,25 +212,43 @@ try {
         check(after.quest === 1 && after.team.length === 0, 'sigue la misión 1 y el equipo se vacía para la nueva propuesta');
       }
     } else if (st.phase === 'quest') {
+      // POSTURA DE MESA: antes de que nadie toque, la pantalla de un leal y la
+      // de un malvado del MISMO equipo tienen que ser indistinguibles (era el
+      // chivato gordo: el leal veía «💥 Sabotear 🔒» gris y un botón menos).
+      if (!uiSeen.questSame) {
+        const evilOnTeam = st.team.find((pid) => EVIL_ROLES.includes(st.roles[pid]));
+        const goodOnTeam = st.team.find((pid) => !EVIL_ROLES.includes(st.roles[pid]));
+        if (evilOnTeam && goodOnTeam) {
+          uiSeen.questSame = true;
+          const pe = pg(evilOnTeam); const pgood = pg(goodOnTeam);
+          await pe.waitForSelector('[data-a=av-quest-panel]', { timeout: 15000 });
+          await pgood.waitForSelector('[data-a=av-quest-panel]', { timeout: 15000 });
+          const te = await pe.locator('[data-a=av-quest-panel]').innerText();
+          const tg = await pgood.locator('[data-a=av-quest-panel]').innerText();
+          check(te === tg, 'la pantalla de misión del Bien y la del Mal son IDÉNTICAS letra a letra');
+          check(await pgood.locator('[data-a=av-quest][data-p=fail]:not([disabled])').count() === 1,
+            'el leal ve el botón de sabotear vivo, igual que el malvado (nada gris que lo delate)');
+          // …y solo al TOCARLO se le niega, en su mano y con el motivo.
+          await pgood.click('[data-a=av-quest][data-p=fail]');
+          await pgood.waitForSelector('[data-a=av-quest-refused]', { timeout: 5000 });
+          check(await pgood.locator('[data-a=av-quest-confirm]').count() === 0, 'y no se le arma ninguna carta de sabotaje');
+          check((await hlc(ana)).questCards[goodOnTeam] === undefined, 'tocar el rojo siendo del Bien no juega ninguna carta');
+        }
+      }
       for (const pid of st.team) {
         const p = pg(pid);
-        const isEvil = ['assassin', 'morgana', 'mordred', 'oberon', 'minion'].includes(st.roles[pid]);
-        if (st.quest === 1 && isEvil) {
-          await p.waitForSelector('[data-a=av-quest][data-p=fail]', { timeout: 15000 });
-          await p.click('[data-a=av-quest][data-p=fail]');
-          sabotagedOnce = true;
-        } else {
-          await p.waitForSelector('[data-a=av-quest][data-p=ok]', { timeout: 15000 });
-          // El Bien SOLO tiene el botón de Éxito (no puede sabotear).
-          if (!isEvil) check((await p.locator('[data-a=av-quest][data-p=fail]').count()) === 0, `${st.names[pid]} (Bien) no puede sabotear`);
-          if (!isEvil && !uiSeen.quest) {
-            uiSeen.quest = true;
-            // …y se le dice POR QUÉ, junto al botón bloqueado (no un gris mudo).
-            check(await p.locator('[data-a=av-quest-locked][disabled]').count() > 0, 'el Bien ve el botón de sabotear bloqueado, no ausente');
-            check((await p.locator('.actionpanel').innerText()).includes('no te deja sabotear'), 'con el motivo escrito al lado del botón bloqueado');
-          }
-          await p.click('[data-a=av-quest][data-p=ok]');
+        const isEvil = EVIL_ROLES.includes(st.roles[pid]);
+        const want = st.quest === 1 && isEvil ? 'fail' : 'ok';
+        await p.waitForSelector(`[data-a=av-quest][data-p=${want}]`, { timeout: 15000 });
+        await p.click(`[data-a=av-quest][data-p=${want}]`);
+        // Nada irreversible de un solo toque: la carta se confirma.
+        await p.waitForSelector('[data-a=av-quest-confirm]', { timeout: 5000 });
+        if (!uiSeen.questConfirm) {
+          uiSeen.questConfirm = true;
+          check((await hlc(ana)).phase === 'quest', 'el primer toque solo arma la carta: aún no se ha jugado');
         }
+        await p.click('[data-a=av-quest-confirm]');
+        if (want === 'fail') sabotagedOnce = true;
         await p.waitForTimeout(120);
       }
       await waitState(ana, (s) => s.phase === 'result', 'resultado de la misión');
@@ -235,6 +282,21 @@ try {
     // Falla a propósito: señala a un BUENO que NO es Merlín → gana el Bien.
     const target = goods.find((pid) => pid !== merlin);
     const ap = pg(assassin);
+    // POSTURA DE MESA: en reposo, la pantalla del Asesino es IGUAL que la de los
+    // demás (antes su móvil se llenaba de nombres y misiones: el largo bastaba
+    // para señalarlo, y su rejilla solo lista al Bien, o sea que enseñaba de
+    // paso quiénes son los malvados). Solo su propio gesto abre la mira.
+    const bystander = st.playerIds.find((pid) => pid !== assassin);
+    const pb = pg(bystander);
+    await ap.waitForSelector('[data-a=av-assassin-open]', { timeout: 15000 });
+    await pb.waitForSelector('[data-a=av-assassin-open]', { timeout: 15000 });
+    check(await ap.locator('[data-a=av-assassin-gate]').innerText()
+      === await pb.locator('[data-a=av-assassin-gate]').innerText(),
+    'la pantalla del Asesino es idéntica a la de los demás hasta que abre la mira');
+    await pb.click('[data-a=av-assassin-open]');
+    await pb.waitForSelector('[data-a=av-assassin-denied]', { timeout: 5000 });
+    check(await pb.locator('[data-a=av-assassinate]').count() === 0, 'quien no es el Asesino recibe «no es tu turno»: tocar no delata');
+    await ap.click('[data-a=av-assassin-open]');
     await ap.waitForSelector('[data-a=av-assassinate]', { timeout: 15000 });
     // Dispara con la partida delante: historial de misiones y ficha de cada
     // candidato (de memoria, este tiro era una moneda al aire).

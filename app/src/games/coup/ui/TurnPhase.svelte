@@ -35,6 +35,16 @@
     return `Te falta${need === 1 ? '' : 'n'} ${need} 🪙 (cuesta ${ACTIONS[t].cost} y tienes ${myCoins}).`;
   }
 
+  // Tu mano está anclada arriba (juego de MANO, B28): aquí solo se resuelve la
+  // cuenta que se haría de memoria — «¿esta jugada la puedo declarar sin
+  // mentir?»— en la propia tarjeta.
+  const myChars = $derived((game.hands[my.id] || []).filter((c) => !c.lost).map((c) => c.char));
+  function truthTag(t: ActionType): string {
+    const c = ACTIONS[t].claim;
+    if (!c) return '';
+    return myChars.includes(c) ? '✅ La tienes: no es farol' : '🎲 No la tienes: sería farol';
+  }
+
   let chosen = $state<ActionType | null>(null);
   let target = $state<string | null>(null);
   const chosenInfo = $derived(chosen ? ACTIONS[chosen] : null);
@@ -72,11 +82,11 @@
 </script>
 
 {#if myTurn}
-  <div class="narration">🎯 Es tu turno. Declara tu jugada… di la verdad o farolea.</div>
+  <div class="narration">🎯 Es tu turno: declara una jugada… con la verdad o de farol.</div>
 
   <div class="actionpanel">
     {#if chosen === null}
-      <h3 style="margin-top:0">🎬 Tu jugada · 🪙 {myCoins} monedas</h3>
+      <h3 style="margin-top:0">🎬 ¿Qué declaras?</h3>
       {#if forced}
         <p class="small-note" style="margin-top:0">💰 Tienes 10 o más monedas: estás obligado a dar un golpe de Estado. El resto de jugadas quedan bloqueadas este turno.</p>
       {:else}
@@ -91,6 +101,7 @@
             <span class="ad">{ACTIONS[t].short}</span>
             <span class="atag">{claimLine(t)}</span>
             <span class="atag">{blockLine(t)}</span>
+            {#if truthTag(t)}<span class="atag {myChars.includes(ACTIONS[t].claim!) ? 'tru' : 'blf'}">{truthTag(t)}</span>{/if}
           </button>
         {/each}
       </div>
@@ -113,6 +124,7 @@
         <p class="planline">{chosenInfo.plan}</p>
         <p class="atag">{claimLine(chosen)}</p>
         <p class="atag">{blockLine(chosen)}</p>
+        {#if truthTag(chosen)}<p class="atag {myChars.includes(chosenInfo.claim!) ? 'tru' : 'blf'}">{truthTag(chosen)}</p>{/if}
       </div>
       <button class="ghost block small" style="margin:8px 0" data-a="coup-back" onclick={() => { chosen = null; target = null; }}>↩️ Cambiar de jugada</button>
 
@@ -146,11 +158,12 @@
     <CharRef {game} />
   </div>
 {:else}
-  <div class="narration">⏳ Es el turno de <b>{turnName}</b>. A ver qué se atreve a declarar…</div>
+  <!-- La cabecera ya dice de quién es el turno: aquí solo lo que TÚ haces
+       (nada) y con qué monedas juega quien declara. -->
   <div class="card">
-    <h3 style="margin-top:0">⏳ Le toca a {turnName}</h3>
-    <p class="small-note" style="margin-top:0">🪙 Tiene {turnCoins} monedas. {purse}</p>
-    <p class="small-note">Tú no tienes nada que tocar todavía: en cuanto declare, aquí mismo te saldrán los botones para <b>desafiar su farol</b> o <b>bloquearlo</b>. Ve repasando quién ha enseñado qué.</p>
+    <h3 style="margin-top:0">⏳ Nada que tocar todavía</h3>
+    <p class="small-note" style="margin-top:0"><b>{turnName}</b> está eligiendo jugada con 🪙 {turnCoins} monedas. {purse}</p>
+    <p class="small-note">En cuanto declare algo, aquí mismo te saldrán los botones para <b>desafiar su farol</b> o <b>bloquearlo</b>.</p>
     <CharRef {game} />
   </div>
 {/if}
@@ -158,7 +171,7 @@
 <style>
   .acts { display: flex; flex-direction: column; gap: 8px; }
   .act {
-    display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto auto auto; column-gap: 10px; row-gap: 1px;
+    display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto auto auto auto; column-gap: 10px; row-gap: 1px;
     text-align: left; padding: 11px 12px; border-radius: var(--r-2); border: 1px solid var(--line-2);
     background: var(--card2); color: inherit; cursor: pointer; width: 100%; min-height: 44px;
   }
@@ -168,6 +181,8 @@
   .an { font-weight: 700; color: var(--moon); }
   .ad { font-size: 0.84rem; color: var(--text); margin-top: 2px; }
   .atag { font-size: 0.8rem; color: var(--muted); margin: 0; }
+  .atag.tru { color: var(--ok); }
+  .atag.blf { color: var(--moon); }
   .plan { padding: 12px; border-radius: var(--r-2); border: 1px solid var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--card2)); }
   .planline { margin: 0 0 6px; font-size: 0.9rem; }
 </style>

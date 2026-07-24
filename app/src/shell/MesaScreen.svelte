@@ -13,7 +13,7 @@
   import { guard } from '../core/sync/guard';
   import * as A from '../core/sync/group-actions';
   import { isActiveDevice } from '../core/sync/presence';
-  import { GAME_DEFS, gameDef, gameMeta } from '../games/registry';
+  import { GAME_DEFS, gameDef, gameMeta, POSTURE_HINT } from '../games/registry';
   import { seatingOrder } from './ui-helpers';
   import { seatInsertIndex } from '../core/util/seat-insert';
   import type { GroupDoc, MatchDoc, PlayerDoc } from '../core/sync/schema';
@@ -158,36 +158,67 @@
 <div class="topbar">
   <h2>🪑 {group.name}</h2>
 </div>
-<div class="card">
-  <h3>🔗 Invita a tu mesa</h3>
-  <div class="linkbox">
-    <input type="text" id="share-url" value={shareUrl} readonly />
-    <button class="small primary" data-a="copy-url" onclick={copyUrl}>📋 Copiar</button>
-  </div>
-  <div id="copy-feedback">
-    {#if copied}<p class="copyok">✔️ Enlace copiado: compártelo por WhatsApp o donde quieras.</p>{/if}
-  </div>
-</div>
 <Flash />
-{#if app.matches.length}
+
+<!-- Orden por lo que la mesa necesita EN CADA MOMENTO (B29): con un solo
+     dispositivo lo urgente es invitar; con la mesa montada, elegir juego. Lo
+     demás (quién está, la voz) baja a su sitio. -->
+{#if app.players.length < 2}
   <div class="card">
-    <h3>🎲 Partidas en curso</h3>
-    {#each app.matches as m (m.id)}
-      {@const def = gameDef(m.gameId)}
-      <div class="card" style="margin:10px 0 4px" data-match={m.id}>
-        <h3>{def.emoji} {def.name} <span class="chip">{statusLine(m)}</span></h3>
-        <p class="small-note">{names(m)}</p>
-        <div class="btnrow">
-          <button class="small" data-a="watch-match" data-p={m.id}
-            onclick={() => navigate(`/g/${group.id}/${m.gameId}/partida/${m.id}`)}>👀 Mirar</button>
-          <button class="small danger" data-a="end-match-open" data-p={m.id}
-            onclick={() => (app.ui.modal = { type: 'confirm-end-match', mid: m.id })}>🛑 Terminar…</button>
-        </div>
-      </div>
-    {/each}
-    <p class="small-note">Los que no estén en ninguna partida pueden empezar otra abajo.</p>
+    <h3>🔗 Que se una la gente</h3>
+    <p class="small-note" style="margin-top:0">Pásales este enlace: entran desde su móvil, sin instalar nada.</p>
+    <div class="linkbox">
+      <input type="text" id="share-url" value={shareUrl} readonly />
+      <button class="small primary" data-a="copy-url" onclick={copyUrl}>📋 Copiar</button>
+    </div>
+    <div id="copy-feedback">
+      {#if copied}<p class="copyok">✔️ Enlace copiado: mándalo por WhatsApp o donde queráis.</p>{/if}
+    </div>
   </div>
 {/if}
+
+{#if app.matches.length}
+  <div class="card">
+    <h3>🎲 Se está jugando</h3>
+    {#each app.matches as m (m.id)}
+      {@const def = gameDef(m.gameId)}
+      <div class="settingrow" data-match={m.id}>
+        <div class="sinfo">
+          <div class="sname">{def.emoji} {def.name} <span class="chip" style="font-weight:400">{statusLine(m)}</span></div>
+          <div class="sdesc">{names(m)}</div>
+        </div>
+      </div>
+      <div class="btnrow" style="margin:0 0 8px">
+        <button class="small" data-a="watch-match" data-p={m.id}
+          onclick={() => navigate(`/g/${group.id}/${m.gameId}/partida/${m.id}`)}>👀 Mirar</button>
+        <button class="small danger" data-a="end-match-open" data-p={m.id}
+          onclick={() => (app.ui.modal = { type: 'confirm-end-match', mid: m.id })}>🛑 Terminar…</button>
+      </div>
+    {/each}
+    <p class="small-note" style="margin-bottom:0">Quien no esté jugando puede empezar otra partida a la vez.</p>
+  </div>
+{/if}
+
+<div class="card">
+  <h3>🎮 ¿A qué jugamos?</h3>
+  <p class="small-note" style="margin-top:0">Los <b>🌱 fáciles de explicar</b> se cuentan en dos minutos: buen sitio para empezar. Dentro de cada juego hay un tutorial antes de repartir nada.</p>
+  {#each GAME_DEFS as j (j.id)}
+    {@const meta = gameMeta(j.id)}
+    <div class="card" style="margin:10px 0 4px">
+      <h3 style="margin-bottom:2px">{j.emoji} {j.name}</h3>
+      {#if meta.vibe}<p class="small-note" style="margin:0 0 5px;opacity:.9"><b>{meta.vibe}</b></p>{/if}
+      <p class="chips" style="margin:0 0 6px">
+        <span class="chip">👥 {j.minPlayers}–{j.maxPlayers}</span>
+        <span class="chip">⏱️ {meta.mins[0]}–{meta.mins[1]} min</span>
+        {#if meta.easy}<span class="chip">🌱 fácil</span>{/if}
+      </p>
+      <p class="small-note" style="margin:0 0 6px">{j.desc}</p>
+      <p class="small-note" style="margin:0 0 8px;opacity:.75">{POSTURE_HINT[meta.posture]}</p>
+      <button class="primary block" data-a="select-game" data-p={j.id} onclick={() => { navigate(`/g/${group.id}/${j.id}`); guard(() => A.selectGame(j.id)); }}>{j.emoji} Jugar a esto</button>
+    </div>
+  {/each}
+</div>
+
 <div class="card">
   <h3>📱 Dispositivos ({app.players.length})</h3>
   <div class="players seatable" bind:this={listEl}>
@@ -207,38 +238,26 @@
       >
         <span class="draghandle" data-a="noop" data-drag={p.id} title="Arrastra para ordenar la mesa">⠿</span>
         <span class="pname">{p.name}</span>
-        {#if busy}<span class="badge" title="Jugando a {gameDef(busy.gameId).name}">{gameDef(busy.gameId).emoji}</span>{/if}
-        {#if !isActiveDevice(p, now)}<span class="badge zz" title="Sin señales recientes de este dispositivo">💤</span>{/if}
+        {#if busy}<span class="badge">{gameDef(busy.gameId).emoji}</span>{/if}
+        {#if !isActiveDevice(p, now)}<span class="badge zz">💤</span>{/if}
         {#if p.id === meId}<span class="badge you">Tú</span>{/if}
       </div>
     {/each}
   </div>
-  <p class="small-note">Arrastra el asa ⠿ para ordenar la mesa (sentido horario, como estáis sentados); se recuerda para todas las partidas. Toca un dispositivo para expulsarlo{app.matches.length ? ' o sacarlo de su partida' : ''}; toca el TUYO para abandonar la mesa.</p>
-</div>
-<div class="card">
-  <h3>🗣️ Voz del narrador</h3>
-  <p class="small-note" style="margin-top:0">Prueba y ajusta la voz de este dispositivo (motor, voz, velocidad y ambiente). Déjalo a punto aquí y las partidas sonarán sin cortes cuando le deis a jugar.</p>
-  <button class="ghost block" data-a="voice-open" onclick={() => { app.ui.modal = { type: 'voice' }; app.ui.voiceTest = null; }}>🗣️ Probar o configurar la voz de este dispositivo</button>
-</div>
-<div class="card">
-  <h3>🎮 ¿A qué jugamos?</h3>
-  <p class="small-note" style="margin-top:0">Cada ficha dice para cuántos es, cuánto dura y de qué palo va. Los marcados <b>🌱 fácil</b> se explican en dos minutos: buen sitio para empezar si es vuestra primera noche. Dentro de cada juego tenéis «🎓 Tutorial interactivo» antes de repartir nada.</p>
-  {#each GAME_DEFS as j (j.id)}
-    {@const meta = gameMeta(j.id)}
-    <div class="card" style="margin:10px 0 4px">
-      <h3>{j.emoji} {j.name}</h3>
-      <p class="chips" style="margin:2px 0 6px">
-        <span class="chip">👥 {j.minPlayers}–{j.maxPlayers}</span>
-        <span class="chip">⏱️ {meta.mins[0]}–{meta.mins[1]} min</span>
-        {#if meta.easy}<span class="chip">🌱 fácil de explicar</span>{/if}
-      </p>
-      {#if meta.vibe}<p class="small-note" style="margin:0 0 4px;opacity:.85"><b>{meta.vibe}</b></p>{/if}
-      <p class="small-note">{j.desc}</p>
-      <button class="primary block" data-a="select-game" data-p={j.id} onclick={() => { navigate(`/g/${group.id}/${j.id}`); guard(() => A.selectGame(j.id)); }}>{j.emoji} Jugar a esto</button>
+  <p class="small-note">Arrastra ⠿ para poner el orden en el que estáis sentados (se recuerda). Toca a alguien para sacarlo{app.matches.length ? ' de su partida o' : ''} de la mesa; 💤 = ese móvil lleva un rato sin dar señales.</p>
+  {#if app.players.length >= 2}
+    <div class="linkbox" style="margin-top:8px">
+      <input type="text" id="share-url" value={shareUrl} readonly />
+      <button class="small" data-a="copy-url" onclick={copyUrl}>📋 Invitar</button>
     </div>
-  {/each}
-  <p class="small-note">Puede haber varias partidas a la vez: cada una con su grupo de la mesa.</p>
+    <div id="copy-feedback">
+      {#if copied}<p class="copyok">✔️ Enlace copiado.</p>{/if}
+    </div>
+  {/if}
 </div>
+
+<button class="ghost block" data-a="voice-open" onclick={() => { app.ui.modal = { type: 'voice' }; app.ui.voiceTest = null; }}>🗣️ Probar la voz de este móvil</button>
+
 <p class="small-note" style="text-align:center;opacity:.7">La mesa se borra sola cuando se marchan todos: tocad vuestro nombre y «Abandonar» para dejarla.</p>
 <!-- Sello del build a la vista: si un móvil enseña una fecha vieja, está
      sirviendo caché y cualquier «bug» debe verificarse tras recargar. -->

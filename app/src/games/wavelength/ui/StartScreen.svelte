@@ -1,6 +1,7 @@
 <script lang="ts">
-  // «Empezar partida» de Wavelength: quién juega (SeatPicker) y qué dispositivo
-  // pone la voz (opcional).
+  // «Empezar partida» de Wavelength: tres decisiones en orden de importancia
+  // —quién juega, hasta cuándo jugáis y dónde suena la voz— y el botón de
+  // repartir al final, con el recuento de quién entra.
   import { app, matchOf, me, navigate } from '../../../core/sync/store.svelte';
   import { guard } from '../../../core/sync/guard';
   import { isActiveDevice } from '../../../core/sync/presence';
@@ -60,25 +61,13 @@
 <div class="card">
   <h3>🎮 ¿Quién juega?</h3>
   <SeatPicker {group} {meId} gameId="wavelength" onState={(s) => (seat = s)} />
-  <p class="small-note">El orden es el de la mesa (marca el turno del Psíquico).</p>
-</div>
-
-<div class="card">
-  <h3>🔊 ¿Dónde suena la voz?</h3>
-  <p class="small-note" style="margin-top:6px">La voz solo anuncia el espectro (público) y el resultado; nunca el objetivo. Puede ponerla alguien que también juega.</p>
-  <div class="btnrow" style="margin-top:6px">
-    {#each rows.filter((p) => !matchOf(p.id)) as p (p.id)}
-      <button class="small {narrator === p.id ? 'primary' : 'ghost'}" data-a="pick-narrator" data-p={p.id} style="flex:0 1 auto;min-width:0" onclick={() => (narrPick = p.id)}>
-        {narrator === p.id ? '🔊 ' : ''}{p.name}{p.id === meId ? ' (tú)' : ''}{!isActiveDevice(p, now) ? ' 💤' : ''}
-      </button>
-    {/each}
-  </div>
-  {#if narratorP}<p class="small-note">🔊 <b>{narratorP.name}</b> pone la voz{seat.chosen.includes(narratorP.id) ? ' y también juega' : ' (no juega)'}.</p>{/if}
+  <p class="small-note">Por ese orden rotará el Psíquico, uno por ronda.</p>
+  {#if n < MIN_PLAYERS}<p class="small-note">⚠️ Hacen falta al menos {MIN_PLAYERS}: con menos no hay equipo que debata.</p>{/if}
+  {#if n > MAX_PLAYERS}<p class="small-note">⚠️ Como mucho {MAX_PLAYERS}.</p>{/if}
 </div>
 
 <div class="card">
   <h3>🏁 ¿Hasta cuándo jugáis?</h3>
-  <p class="small-note" style="margin-top:6px">Al cumplirse la meta sale el resumen final con el total del equipo. Podéis seguir jugando rondas de propina igualmente.</p>
   <div class="btnrow" style="margin-top:6px">
     {#each goals as g, i (i)}
       <button class="small {goalIdx === i ? 'primary' : 'ghost'}" data-a="wl-goal" data-p={String(i)} style="flex:0 1 auto;min-width:0" onclick={() => (goalIdx = i)}>
@@ -86,12 +75,21 @@
       </button>
     {/each}
   </div>
+  <p class="small-note">Al cumplirse sale el resumen final con el total del equipo; aun así podéis seguir con rondas de propina.</p>
 </div>
 
 <div class="card">
-  <p class="small-note" style="margin-top:0">📡 Jugarán <b>{n}</b>{n ? ': ' : ''}<span style="opacity:.75">{chosen.map((p) => p.name).join(', ')}</span></p>
-  {#if n < MIN_PLAYERS}<p class="small-note">⚠️ Wavelength necesita al menos {MIN_PLAYERS} jugadores.</p>{/if}
-  {#if n > MAX_PLAYERS}<p class="small-note">⚠️ Máximo {MAX_PLAYERS} jugadores.</p>{/if}
-  <div id="form-error">{#if app.ui.formError}<div class="flash error">{app.ui.formError}</div>{/if}</div>
-  <button class="primary block" disabled={!okStart} data-a="wl-start" onclick={startNow}>📡 ¡Empezar!</button>
+  <h3>🔊 ¿En qué móvil suena la voz?</h3>
+  <div class="btnrow" style="margin-top:6px">
+    {#each rows.filter((p) => !matchOf(p.id)) as p (p.id)}
+      <button class="small {narrator === p.id ? 'primary' : 'ghost'}" data-a="pick-narrator" data-p={p.id} style="flex:0 1 auto;min-width:0" onclick={() => (narrPick = p.id)}>
+        {narrator === p.id ? '🔊 ' : ''}{p.name}{p.id === meId ? ' (tú)' : ''}{!isActiveDevice(p, now) ? ' 💤' : ''}
+      </button>
+    {/each}
+  </div>
+  {#if narratorP}<p class="small-note">🔊 <b>{narratorP.name}</b> pone la voz{seat.chosen.includes(narratorP.id) ? ' y también juega' : ' (no juega)'}. Solo canta el espectro y el resultado: el objetivo, nunca.</p>{/if}
 </div>
+
+<p class="small-note" style="text-align:center;margin-top:14px">📡 Jugarán <b>{n}</b>{n ? ': ' : ''}<span style="opacity:.75">{chosen.map((p) => p.name).join(', ')}</span></p>
+<div id="form-error">{#if app.ui.formError}<div class="flash error">{app.ui.formError}</div>{/if}</div>
+<button class="primary block" disabled={!okStart} data-a="wl-start" onclick={startNow}>📡 Repartir y empezar la ronda 1</button>

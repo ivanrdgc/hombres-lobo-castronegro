@@ -44,6 +44,19 @@ async function waitState(page, fn, what, timeout = 90000) {
   throw new Error('timeout esperando: ' + what);
 }
 
+// B28 · postura 🍽️ MESA: de noche TODAS las pantallas se ven iguales y el panel
+// de acción solo aparece tras el gesto de su dueño («👁 Abrir mi turno»).
+async function openTurn(pg, sel, timeout = 25000) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < timeout) {
+    if (await pg.locator(sel).count()) return;
+    const gate = pg.locator('[data-a=open-night-turn]');
+    if (await gate.count()) await gate.click().catch(() => {});
+    await pg.waitForTimeout(200);
+  }
+  await pg.waitForSelector(sel, { timeout: 3000 });
+}
+
 try {
   // ——— 1. Creación de grupo ———
   console.log('— Creación de grupo —');
@@ -272,6 +285,17 @@ try {
   // Noche 1: vidente mira al lobo.
   await waitState(ana, (s) => s.steps[s.stepIdx] === 'vidente', 'turno de la vidente');
   const vidPage = pages[roleOf.vidente];
+  // Postura de mesa (B28): en reposo, la pantalla de la Vidente es LA MISMA que
+  // la de los demás — nada de un panel más largo que la delate de reojo.
+  check(await vidPage.isVisible('[data-a=open-night-turn]'), 'de noche todos los móviles muestran la misma tarjeta neutra');
+  check(await wolfPage.isVisible('[data-a=open-night-turn]'), 'quien no actúa ve exactamente lo mismo');
+  check(!(await vidPage.isVisible('[data-a=act-vidente]')), 'el panel de la Vidente NO aparece solo: hay que pedirlo');
+  // Y quien lo abre sin que le toque recibe «no es tu turno»: ni el lobo que
+  // espía las pantallas de la mesa averigua quién es la Vidente.
+  await wolfPage.click('[data-a=open-night-turn]');
+  await wolfPage.waitForSelector('text=/No es tu turno/i');
+  await wolfPage.click('[data-a=close-night-turn]');
+  await openTurn(vidPage, '[data-a=act-vidente]');
   await vidPage.click(`.actionpanel .player.selectable:has-text("${wolfName}")`);
   await vidPage.click('[data-a=act-vidente]');
   await vidPage.waitForSelector(`text=/es .*Hombre Lobo/`);
@@ -291,6 +315,7 @@ try {
 
   // Lobo: elige víctima (la vidente).
   const videnteName = st.players.find((p) => p.role === 'vidente').name;
+  await openTurn(wolfPage, '[data-a=act-lobos]');
   await wolfPage.click(`.actionpanel .player.selectable:has-text("${videnteName}")`);
   await wolfPage.click('[data-a=act-lobos]');
   ok('el lobo elige víctima');
@@ -298,6 +323,7 @@ try {
   // Bruja: cura a la víctima y termina.
   await waitState(ana, (s) => s.steps[s.stepIdx] === 'bruja', 'turno de la bruja');
   const brujaPage = pages[roleOf.bruja];
+  await openTurn(brujaPage, '[data-a=act-bruja-done]');
   await brujaPage.waitForSelector(`text=${videnteName}`);
   await brujaPage.click('.switch[data-a=act-bruja-heal-toggle]');
   await brujaPage.click('[data-a=act-bruja-done]');

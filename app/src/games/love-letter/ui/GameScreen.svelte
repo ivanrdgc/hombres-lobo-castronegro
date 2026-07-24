@@ -1,11 +1,16 @@
 <script lang="ts">
-  // Pantalla de partida de «Love Letter»: cabecera + jugadores + tu carta + fase.
+  // Partida de «Love Letter», pensada para el móvil EN LA MANO y mirando hacia
+  // ti (B28 · postura de mano): la pantalla es tu baraja. Todo lo que hace falta
+  // para decidir cabe de una vez y sin gestos previos — tu carta con su efecto,
+  // los descartes de todos, lo que queda sin salir, quién está protegido y de
+  // quién es el turno. Lo accesorio (el diario) va plegado al pie.
   import { app, isMaster, matchOf } from '../../../core/sync/store.svelte';
   import { loveLetterGame, clearPeek, nextRound, resumeGame } from '../actions';
   import { myPeek } from '../engine';
   import { isActiveDevice } from '../../../core/sync/presence';
   import { guard } from '../../../core/sync/guard';
   import { CARD_INFO, VALUE } from '../cards';
+  import { lastLogLine } from '../texts';
   import { unlockAudio } from '../../../core/audio/engine';
   import { play } from '../../../core/audio/player';
   import type { GroupDoc, PlayerDoc } from '../../../core/sync/schema';
@@ -13,6 +18,8 @@
   import CardFab from '../../../shell/CardFab.svelte';
   import GameMenu from './GameMenu.svelte';
   import PlayersRow from './PlayersRow.svelte';
+  import DeckStrip from './DeckStrip.svelte';
+  import MyHand from './MyHand.svelte';
   import TurnPanel from './TurnPanel.svelte';
   import EndPhase from './EndPhase.svelte';
 
@@ -20,14 +27,12 @@
   const game = $derived(loveLetterGame(group)!);
   const inGame = $derived(game.playerIds.includes(my.id) && !!matchOf(my.id));
   const myTurn = $derived(game.turn === my.id && game.phase === 'turn');
-  const hand = $derived(game.hands[my.id] || []);
-  const out = $derived(inGame && game.phase === 'turn' && !game.alive[my.id]);
   const needsUnlock = $derived(isMaster() && !app.ui.audioReady && !app.ui.muted);
   const peekMine = $derived(myPeek(game, my.id));
   const paused = $derived(!!game.paused);
   // Cabecera: siempre se sabe de quién es el turno (B26·5).
   const turnChip = $derived(game.phase === 'roundEnd' ? '🏁 Fin de ronda'
-    : myTurn ? '🎴 Te toca' : `🎴 ${game.names[game.turn] || '¿?'}`);
+    : myTurn ? '🎴 Te toca' : `🎴 Juega ${game.names[game.turn] || '¿?'}`);
   // Prohibido el estado sin salida (B26·8): si el móvil de quien tiene el turno
   // lleva un rato sin latir, la mesa entera espera sin saber por qué. Se dice, y
   // se dice también cómo desatascarlo.
@@ -44,11 +49,6 @@
     play({ id: 'unlock', segments: [{ kind: 'clip', text: 'La voz está lista.' }] }).catch(() => {});
     app.ui.voiceUnlocked = true;
   }
-  // Con los móviles sobre la mesa, la carta propia NO puede estar a la vista
-  // permanente: el vecino la lee de reojo. Se destapa a petición y se vuelve a
-  // tapar sola en cuanto cambia la mano (nueva ronda, Rey, Príncipe…).
-  let reveal = $state(false);
-  $effect(() => { void hand.join(','); reveal = false; });
   let logEl: HTMLElement | null = $state(null);
   $effect(() => { void (game.log || []).length; if (logEl) logEl.scrollTop = logEl.scrollHeight; });
 </script>
@@ -58,12 +58,9 @@
   <GameMenu {game} {my} />
 </div>
 {#if game.phase !== 'end'}
-  <!-- Los números públicos de la mesa, siempre a la vista y sin comerle sitio al
-       nombre de la mesa en un móvil de 360 px (B26·5 y B26·7). -->
   <div class="statusbar">
     <span class="chip turnchip" data-a="ll-turn-chip">{turnChip}</span>
-    <span class="chip" data-a="ll-deck-left">Ronda {game.round} · 🃏 {game.deck.length} por robar</span>
-    <span class="chip">💌 {game.need} favores para ganar</span>
+    <span class="chip">Ronda {game.round} · 💌 {game.need} favores para ganar</span>
   </div>
 {/if}
 <Flash />
@@ -80,46 +77,41 @@
     <button class="primary block" data-a="ll-resume-here" onclick={() => guard(resumeGame)}>▶️ Reanudar la partida</button></div>
 {/if}
 
+<!-- La mesa: lo público de todos. Va arriba mientras miras (como las cartas boca
+     arriba entre los jugadores) y pasa DEBAJO de tu panel cuando te toca: lo que
+     hay que hacer ahora manda sobre el contexto (B29·2). -->
+{#snippet board()}
+  <div class="card table">
+    <PlayersRow {game} meId={my.id} />
+    <DeckStrip {game} />
+    {#if game.asideUp.length}
+      <p class="small-note" style="margin:6px 0 0">🚫 Fuera de esta ronda, boca arriba: {game.asideUp.map((c) => `${CARD_INFO[c].emoji} ${CARD_INFO[c].name}`).join(', ')}.</p>
+    {/if}
+  </div>
+{/snippet}
+
 {#if game.phase === 'end'}
   <EndPhase {game} {my} />
 {:else}
-  <div class="card">
-    <PlayersRow {game} meId={my.id} />
-    <p class="small-note" style="margin:6px 0 0">🃏 Quedan <b>{game.deck.length}</b> cartas por robar · 1 apartada boca abajo{#if game.asideUp.length} · fuera de la ronda, boca arriba: {game.asideUp.map((c) => `${CARD_INFO[c].emoji} ${CARD_INFO[c].name}`).join(', ')}{/if}.</p>
-  </div>
-
   {#if peekMine}
-    <div class="card" style="border-color:#c86ab0"><p class="small-note" style="margin:0">
+    <!-- Lo que has visto solo tú: arriba del todo, porque es con lo que decides. -->
+    <div class="card peek"><p style="margin:0">
       {#if peekMine.via === 'baron'}🎩 En el duelo del Barón, <b>{game.names[peekMine.target] || '¿?'}</b> tenía{:else}🔍 Con el Sacerdote viste que <b>{game.names[peekMine.target] || '¿?'}</b> tiene{/if}:
-      <b>{CARD_INFO[peekMine.card].emoji} {CARD_INFO[peekMine.card].name}</b>. Solo tú lo ves.</p>
-      <button class="ghost block" style="margin-top:6px" data-a="ll-peek-ok" onclick={() => guard(clearPeek)}>✅ Entendido · ocultarlo (no vuelve a salir)</button></div>
-  {/if}
-
-  {#if out}
-    <div class="card" style="text-align:center" data-a="ll-out-banner"><span class="moon">❌</span>
-      <h3 style="margin:6px 0">Fuera de esta ronda</h3>
-      <p class="small-note">Solo de ESTA ronda: en la siguiente se reparte otra vez y vuelves a jugar. Mientras, mira arriba los descartes de cada uno y repasa las 8 cartas en 🎴 (abajo a la derecha).</p></div>
+      <b>{CARD_INFO[peekMine.card].emoji} {CARD_INFO[peekMine.card].name} ({VALUE[peekMine.card]})</b>. Solo tú lo ves.</p>
+      <button class="ghost block" style="margin-top:8px" data-a="ll-peek-ok" onclick={() => guard(clearPeek)}>✅ Ya lo he memorizado · ocultarlo</button></div>
   {/if}
 
   {#if game.phase === 'turn'}
     {#if myTurn}
       <TurnPanel {game} {my} />
+      {@render board()}
     {:else}
-      <div class="narration">🎴 Turno de <b>{game.names[game.turn] || '¿?'}</b>: roba una carta y juega una de las dos. Tú esperas — mientras, mira arriba los descartes de cada uno y cuenta lo que queda por salir.</div>
+      {@render board()}
+      <p class="waiting" data-a="ll-waiting">🎴 Juega <b>{game.names[game.turn] || '¿?'}</b>. Tú no tienes nada que tocar: ve contando lo que sale.</p>
       {#if turnAsleep}
         <p class="small-note" data-a="ll-turn-asleep">💤 El móvil de <b>{game.names[game.turn] || '¿?'}</b> lleva un rato sin dar señal. Si no vuelve, en el menú ⋯ tienes <b>🪑 La mesa</b> para verlo, y quien empezó la partida puede usar <b>⏭️ Retirar a un ausente</b> para seguir sin él esta ronda.</p>
       {/if}
-      {#if inGame && hand.length}
-        <div class="card">
-          {#if reveal}
-            <p class="small-note" style="margin:0">Tu carta: <b>{CARD_INFO[hand[0]].emoji} {CARD_INFO[hand[0]].name}</b>. {CARD_INFO[hand[0]].short}</p>
-            <button class="ghost block" style="margin-top:6px" data-a="ll-hide-card" onclick={() => (reveal = false)}>🙈 Volver a taparla</button>
-          {:else}
-            <button class="ghost block" data-a="ll-show-card" onclick={() => (reveal = true)}>👁 Ver mi carta (solo tú)</button>
-            <p class="small-note" style="margin:6px 0 0">Tapada a propósito: con el móvil en la mesa, el vecino la lee de reojo.</p>
-          {/if}
-        </div>
-      {/if}
+      {#if inGame}<MyHand {game} meId={my.id} />{/if}
     {/if}
   {:else if game.phase === 'roundEnd'}
     {#if game.roundResult}
@@ -135,16 +127,20 @@
           {/each}</div>
       {/if}
     {/if}
-    <p class="small-note" style="text-align:center">Se baraja de nuevo y vuelven TODOS, también los eliminados; empieza quien ganó la ronda. Gana la partida el primero que reúna {game.need} favores.</p>
-    <button class="primary block" data-a="ll-next-round" disabled={paused} onclick={() => guard(nextRound)}>▶️ Siguiente ronda (la {game.round + 1}): repartir de nuevo</button>
-    <p class="small-note" style="text-align:center">{paused ? '⏸️ La partida está en pausa: reanúdala arriba.' : 'Puede pulsarlo cualquiera: esperad a que todos hayan leído las manos.'}</p>
+    <button class="primary block" data-a="ll-next-round" disabled={paused} onclick={() => guard(nextRound)}>▶️ Repartir la ronda {game.round + 1}</button>
+    <p class="small-note" style="text-align:center">{paused ? '⏸️ La partida está en pausa: reanúdala arriba.' : 'Puede pulsarlo cualquiera, cuando todos hayáis mirado. Vuelven TODOS, también los eliminados, y empieza quien ganó.'}</p>
+    {@render board()}
   {/if}
-  {#if !inGame}<p class="small-note" style="text-align:center">👀 Sigues la partida de espectador: ves los descartes y el diario, no las manos. Con el menú ⋯ puedes abrir 🪑 la mesa, pausar o terminar.</p>{/if}
+  {#if !inGame}<p class="small-note" style="text-align:center">👀 Miras de espectador: ves los descartes y el diario, nunca las manos.</p>{/if}
 {/if}
 
+<!-- El diario es referencia, no decisión: al pie y plegado, con la última línea
+     siempre visible (B29·2). -->
 {#if game.log && game.log.length}
-  <div class="card"><h3>📜 Diario</h3>
-    <div class="log" bind:this={logEl}>{#each game.log as l, i (i)}<p>{l.txt}</p>{/each}</div></div>
+  <details class="diary">
+    <summary data-a="ll-log">📜 {lastLogLine(game)}</summary>
+    <div class="log" bind:this={logEl}>{#each game.log as l, i (i)}<p>{l.txt}</p>{/each}</div>
+  </details>
 {/if}
 
 <CardFab modal="ll-mycard" />
@@ -154,5 +150,14 @@
      360 px en vez de comerse el nombre de la mesa. */
   .statusbar { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 8px; }
   .statusbar .chip { font-size: 0.8rem; }
-  .turnchip { border-color: var(--accent); color: var(--moon); }
+  .turnchip { border-color: #c86ab0; color: var(--moon); }
+  .table { padding: 12px; margin: 8px 0; }
+  /* Lo que ves solo tú: enmarcado para que no se confunda con lo público. */
+  .peek { border-color: #c86ab0; font-size: 0.92rem; }
+  .waiting { font-size: 0.92rem; color: var(--muted); margin: 12px 0 0; line-height: 1.4; }
+  .diary { margin: 12px 0 0; }
+  .diary summary {
+    cursor: pointer; font-size: 0.85rem; color: var(--muted); padding: 12px 0;
+    border-top: 1px solid var(--border); overflow-wrap: anywhere;
+  }
 </style>

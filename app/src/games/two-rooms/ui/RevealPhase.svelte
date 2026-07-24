@@ -13,22 +13,23 @@
   const pend = $derived(game.playerIds.filter((pid) => !game.seen[pid]).map((pid) => game.names[pid] || pid));
 </script>
 
-<div class="narration">💣 Two Rooms. Mira tu carta y tu sala sin que nadie vea tu pantalla, y colócate en el espacio de tu sala.</div>
+<!-- Lo que hay que hacer AHORA, arriba y sin repetirse: el título del juego lo
+     lleva la cabecera y el tablero de abajo dice quién va a cada sala (B29). -->
+<div class="narration">🎴 Mira tu carta a solas —tu bando, tu rol y en qué sala empiezas— y confirma. Que nadie más vea tu pantalla.</div>
 
 {#if inGame && !game.seen[my.id]}
   {#if app.ui.revealOpen}
     <MyCard {game} pid={my.id} />
-    <p class="small-note" style="text-align:center">Podrás volver a verla cuando quieras con el botón 🎴 de abajo a la derecha.</p>
     <button class="primary block" data-a="tr-seen" onclick={() => guard(async () => { await A.confirmSeen(); app.ui.revealOpen = false; })}>✅ Lo tengo</button>
+    <p class="small-note" style="text-align:center">El botón 🎴 de abajo a la derecha te la devuelve en cualquier momento.</p>
   {:else}
-    <div class="card"><p class="small-note">🎴 Tu carta está lista. Mírala a solas y confirma.</p>
-      <button class="primary block" data-a="tr-reveal" onclick={() => (app.ui.revealOpen = true)}>👁 Ver mi carta y mi sala</button></div>
+    <button class="primary block" data-a="tr-reveal" onclick={() => (app.ui.revealOpen = true)}>👁 Ver mi carta y mi sala</button>
   {/if}
 {:else if pend.length}
   <div class="waitlist">Esperando a que confirmen: {pend.join(', ')}</div>
 {:else if inGame}
-  <div class="card"><h3>▶️ Todos listos</h3>
-    <p class="small-note">Repartíos en dos espacios separados según el tablero de aquí abajo. Cuando cada cual esté en su sala, arrancad la primera ronda ({game.totalRounds} rondas en total).</p>
+  <div class="card"><h3>🚪 Colocaos, cada uno en su sala</h3>
+    <p class="small-note">Dos espacios separados, según el tablero de aquí abajo. Cuando estéis, cualquiera arranca la primera de las {game.totalRounds} rondas.</p>
     <button class="primary block" data-a="tr-begin" onclick={() => guard(A.beginRound)}>▶️ Empezar la ronda 1</button></div>
 {:else}
   <!-- Un altavoz que no juega no tiene carta que confirmar: no puede quedarse

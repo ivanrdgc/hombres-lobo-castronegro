@@ -21,7 +21,7 @@ export const DEMO: DemoScript = {
       who: { actor: 'TODOS miráis vuestra carta a la vez, cada uno en su móvil', others: 'nadie enseña la pantalla: la carta se muestra un instante y se oculta sola.' },
       text: [
         'A ti te toca la 🔮 Vidente. A Bea (aunque tú no lo sabes) le ha tocado 🐺 Hombre Lobo. La voz llama a cada rol por su NOMBRE («Vidente, abre los ojos…»), con una excepción que verás en el paso 5.',
-        '¿Se te olvida tu carta? Puedes volver a verla cuando quieras: el botón redondo 🎴 de abajo a la derecha, o «👁 Mostrar mi rol» en tu pantalla. Ahí viven también tu palabra clave y las acciones secretas de día (las del Juez y la Sirvienta). Se oculta sola a los pocos segundos.',
+        '¿Se te olvida tu carta? Puedes volver a verla cuando quieras: el botón redondo 🎴 de abajo a la derecha, o «👁 Ver mi carta» en tu pantalla. Ahí viven también tu palabra clave y las acciones secretas de día (las del Juez y la Sirvienta). Se oculta sola a los pocos segundos.',
       ],
       visual: {
         kind: 'screens',
@@ -36,14 +36,15 @@ export const DEMO: DemoScript = {
       title: 'Cae la noche',
       who: { actor: 'TODOS cerráis los ojos, móvil desbloqueado y boca arriba delante', others: 'la voz irá llamando rol a rol; solo el llamado abre los ojos.' },
       text: [
-        'La voz dice: «Vidente, abre los ojos…». Abres los ojos CON DISIMULO, tocas en tu pantalla a Carlos para investigarlo, lees el resultado y vuelves a cerrar. Tu pantalla se oculta sola al terminar.',
-        'La voz también hace llamadas FALSAS de roles que ni están en juego: ni el tiempo ni el sonido delatan quién actúa de verdad.',
+        'Mientras la noche corre, TODOS los móviles enseñan la misma tarjeta: «👁 Abrir mi turno». Nadie puede saber de reojo a quién ha llamado la voz.',
+        'La voz dice: «Vidente, abre los ojos…». Abres los ojos CON DISIMULO, tocas «👁 Abrir mi turno» y ahí aparece tu panel: tocas a Carlos, lees el resultado y vuelves a cerrar. Se oculta solo al terminar (y a los pocos segundos sin tocarlo).',
+        'Si alguien lo abre sin que le toque, solo lee «no es tu turno»: tocar tampoco delata. Y la voz hace llamadas FALSAS de roles que ni están en juego: ni el tiempo ni el sonido dicen quién actúa de verdad.',
       ],
       visual: {
         kind: 'screens',
         panes: [
-          { title: 'TÚ (te han llamado)', lines: ['Parrilla de vecinos: tocas a Carlos.', '🔮 «Carlos es… 🧑‍🌾 Aldeano.»'], buttons: [{ label: '✅ Visto (cierro los ojos)', kind: 'primary' }] },
-          { title: 'Bea (no es su turno)', lines: ['Pantalla neutra, igual que todas.', 'Ojos cerrados: ni sabe que estás mirando.'] },
+          { title: 'TÚ (te han llamado)', lines: ['Tocas «👁 Abrir mi turno».', 'Parrilla de vecinos: tocas a Carlos.', '🔮 «Carlos es… 🧑‍🌾 Aldeano.»'], buttons: [{ label: '✅ Visto (cierro los ojos)', kind: 'primary' }] },
+          { title: 'Bea (no es su turno)', lines: ['La MISMA tarjeta que la tuya.', 'Si la abre: «no es tu turno».'] },
         ],
       },
     },

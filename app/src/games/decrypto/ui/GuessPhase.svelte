@@ -3,9 +3,14 @@
   // 'decode', el propio equipo (menos su encriptador). Aquí es donde la mesa se
   // equivoca: la pista va PEGADA a cada elección y, antes de registrar, se lee
   // en claro la apuesta entera («apostáis 4-2-1: marea → palabra nº4…»).
+  //
+  // Postura (B28): lo que hay que hacer AHORA va arriba; las palabras del equipo
+  // solo aparecen dentro de los botones (letra normal, a media pantalla), nunca
+  // en un titular. Y la rejilla es idéntica interceptando o descifrando, para
+  // que el rival de enfrente no lea por la silueta lo que estás haciendo.
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
-  import { encoderId, teamOf, teamMembers, other, TEAM_LABEL, TOKENS_TO_WIN } from '../engine';
+  import { cluesForWord, encoderId, teamOf, teamMembers, other, TEAM_LABEL, TOKENS_TO_WIN } from '../engine';
   import type { PlayerDoc } from '../../../core/sync/schema';
   import type { DecryptoState } from '../types';
   import CodePicker from './CodePicker.svelte';
@@ -40,6 +45,10 @@
   // Quien descifra SU código conoce sus palabras: van en los botones. Quien
   // intercepta solo tiene números (las palabras del rival son secretas).
   const options = $derived(intercepting ? null : game.words[game.active]);
+  // Lo que el equipo que transmite ya dijo para cada número, EN EL BOTÓN: es la
+  // munición de la intercepción (y el repaso de quien descifra), y evita subir y
+  // bajar a la hoja de pistas mientras se delibera con el móvil en el centro.
+  const notes = $derived([1, 2, 3, 4].map((n) => cluesForWord(game, game.active, n).map((p) => p.clue).join(' · ')));
   // La frase en claro que se lee antes de registrar nada.
   const say = $derived(
     code.map((d, i) => `«${clues[i] ?? ''}» → palabra nº ${d}${options?.[d - 1] ? ` (${options[d - 1]})` : ''}`).join(', '),
@@ -48,26 +57,23 @@
 
 <div class="narration">
   {#if intercepting}🕵️ El equipo {TEAM_LABEL[other(game.active)]} intenta INTERCEPTAR el código del {TEAM_LABEL[game.active]}.
-  {:else}🔓 El equipo {TEAM_LABEL[game.active]} descifra su propio código (sin {encName}).{/if}
+  {:else}🔓 El equipo {TEAM_LABEL[game.active]} descifra su propio código, sin {encName}.{/if}
 </div>
 
 <div class="card">
-  <h3 style="margin:0 0 6px">💬 Las 3 pistas del equipo {TEAM_LABEL[game.active]}</h3>
+  <h3 style="margin:0 0 6px">💬 Las 3 pistas, en orden</h3>
   <div class="declues">
     {#each clues as c, i (i)}
       <div class="dclue"><span class="dcord">{ORD[i]} pista</span><b>{c}</b></div>
     {/each}
   </div>
-  <p class="small-note" style="margin:8px 0 0">⚠️ El orden de las pistas <b>no</b> es el de las palabras: la 1.ª pista puede apuntar a la palabra nº 3. El código es la palabra de cada pista, en este orden.</p>
+  <p class="small-note" style="margin:8px 0 0">⚠️ El orden de las pistas <b>no</b> es el de las palabras: la 1.ª pista puede apuntar a la palabra nº 3.</p>
 </div>
 
 {#if iCanAct}
-  <div class="actionpanel"><h3>{intercepting ? '🕵️ Vuestra intercepción' : '🔓 Vuestro descifrado'}</h3>
-    <p class="hint">
-      {#if intercepting}Colocad cada pista en el número al que creéis que apunta. No veis sus palabras: usad la hoja de pistas de arriba (lo que ya dijeron para cada número).
-      {:else}Colocad cada pista en la palabra vuestra a la que creéis que apunta.{/if}
-    </p>
-    <CodePicker value={code} {clues} {options} onchange={(c) => (code = c)} />
+  <div class="actionpanel"><h3>{intercepting ? '🕵️ Interceptad el código' : '🔓 Descifrad vuestro código'}</h3>
+    <p class="hint">Colocad cada pista en el número al que creéis que apunta. Debajo de cada uno, {intercepting ? 'lo que ya dijeron para él (sus palabras no las veis)' : 'lo que ya dijisteis vosotros para él'}.</p>
+    <CodePicker value={code} {clues} {options} {notes} onchange={(c) => (code = c)} />
     {#if ready}
       <p class="desay" data-a="de-guess-say"><b>{intercepting ? 'Apostáis' : 'Decís'} {code.join('-')}</b>: {say}</p>
     {:else}
@@ -81,25 +87,24 @@
       <button class="ghost block" style="margin-top:6px" data-a="de-guess-clear" onclick={() => (code = [0, 0, 0])}>↩️ Empezar de nuevo</button>
     {/if}
     <details class="deref">
-      <summary>📖 Qué os jugáis y cómo vais</summary>
+      <summary>📖 Qué os jugáis</summary>
       <p class="small-note" style="margin:6px 0">
         {#if intercepting}🕵️ Si acertáis, os lleváis una ficha de intercepción ({TOKENS_TO_WIN} ganan la partida). Si falláis no perdéis nada: interceptar sale gratis.
         {:else}🔓 Si acertáis no pasa nada. Si falláis, os cae una ficha de error ❌ ({TOKENS_TO_WIN} pierden la partida).{/if}
       </p>
-      <p class="small-note" style="margin:6px 0">🔴 {game.tokens.red.intercepts}🕵️ · {game.tokens.red.errors}❌ &nbsp;|&nbsp; 🔵 {game.tokens.blue.intercepts}🕵️ · {game.tokens.blue.errors}❌</p>
     </details>
   </div>
 {:else if iEncode}
   <!-- El encriptador veía el mismo cartel que el rival («el equipo rojo
        descifra…») siendo él del rojo: aquí lo que necesita es callarse. -->
-  <div class="card"><p class="hint">🤫 Tú diste las pistas: ahora <b>calla</b>.
+  <div class="card"><p class="hint" style="margin:0">🤫 Tú diste las pistas: ahora <b>calla</b>.
     {#if intercepting}{listed} ({TEAM_LABEL[actingTeam]}) {deciders.length > 1 ? 'intentan' : 'intenta'} interceptarlas; después las descifrará tu equipo, también sin ti.
     {:else}{listed} {deciders.length > 1 ? 'deciden' : 'decide'} el código sin ti; no puedes corregir ni hacer señas.{/if}
   </p></div>
 {:else if myTeam === game.active && intercepting}
-  <div class="card"><p class="hint">🤫 Callad: {listed} ({TEAM_LABEL[other(game.active)]}) {deciders.length > 1 ? 'deliberan' : 'delibera'} su intercepción. Después descifraréis vosotros, sin {encName}.</p></div>
+  <div class="card"><p class="hint" style="margin:0">🤫 Callad: {listed} ({TEAM_LABEL[other(game.active)]}) {deciders.length > 1 ? 'deliberan' : 'delibera'} su intercepción. Después descifraréis vosotros, sin {encName}.</p></div>
 {:else}
-  <div class="card"><p class="hint">👀 Esperando a {listed} ({TEAM_LABEL[actingTeam]}): {intercepting ? 'deliberan su intercepción' : 'descifran su código'}. Mientras, repasa la hoja de pistas de arriba.</p></div>
+  <div class="card"><p class="hint" style="margin:0">👀 Esperando a {listed} ({TEAM_LABEL[actingTeam]}): {intercepting ? 'deliberan su intercepción' : 'descifran su código'}. Mientras, repasa la hoja de pistas del final de la pantalla.</p></div>
 {/if}
 
 <style>

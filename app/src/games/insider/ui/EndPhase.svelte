@@ -1,8 +1,9 @@
 <script lang="ts">
   // Final de ronda: se destapa el Insider y la palabra, POR QUÉ se ganó o se
-  // perdió, adónde fue cada voto y cuánto suma cada uno esta ronda. Antes había
-  // que leer el diario para reconstruirlo. Otra ronda rota el Maestro y cambia
-  // la palabra.
+  // perdió, adónde fue cada voto y cuánto suma cada uno esta ronda. Tres
+  // tarjetas, tres ideas (qué pasó · los votos · el marcador) y abajo los dos
+  // caminos: otra ronda o terminar. La cabecera ya dice «🌟 Fin de ronda» y el
+  // número, así que aquí no se repite.
   import { app } from '../../../core/sync/store.svelte';
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
@@ -32,13 +33,14 @@
       : game.outcome === 'timeout' ? ''
         : 'Voto dividido: nadie fue señalado con claridad.',
   );
+  // El porqué, sin repetir los nombres que ya están en la línea de arriba.
   const reason = $derived(
     game.outcome === 'group'
-      ? `Señalasteis al Insider por mayoría: se lleva la ronda el equipo (+1 para el Maestro y para cada común; el Insider no puntúa).`
+      ? 'Lo cazasteis por mayoría: +1 para el Maestro y para cada común (el Insider no puntúa).'
       : game.outcome === 'insider'
         ? (game.accusedId
-          ? `${nm(game.accusedId)} era inocente, así que el Insider se escapa (+2 para él).`
-          : 'Sin mayoría clara nadie queda señalado, y eso basta para que el Insider se escape (+2 para él).')
+          ? 'Era inocente, así que el Insider se escapa: +2 para él.'
+          : 'Sin mayoría clara no hay señalado, y con eso basta para que el Insider escape: +2 para él.')
         : 'El reloj llegó a cero sin que nadie dijera la palabra. En Insider eso lo pierden todos, empezando por el propio Insider: no supo llevaros a tiempo.',
   );
   const emoji = $derived(game.outcome === 'group' ? '👥' : game.outcome === 'insider' ? '🕵️' : '⏰');
@@ -55,12 +57,10 @@
   const nextMaster = $derived(nm(game.playerIds[game.round % game.playerIds.length]));
 </script>
 
-<div class="narration">🌟 Fin de la ronda {game.round}.</div>
-
 <div class="card" style="text-align:center">
   <span class="moon" style="margin-top:6px">{emoji}</span>
   <h3 style="margin:6px 0">{game.outcome ? WIN_LABELS[game.outcome] : ''}</h3>
-  <p class="small-note" data-a="ins-vote-note">El Insider era <b>{nm(game.insiderId)}</b>. La palabra secreta: <b>«{game.word}»</b>.{voteNote ? ` ${voteNote}` : ''}</p>
+  <p class="small-note" data-a="ins-vote-note">El Insider era <b>{nm(game.insiderId)}</b> y la palabra, <b>«{game.word}»</b>.{voteNote ? ` ${voteNote}` : ''}</p>
   <p class="small-note">{reason}</p>
 </div>
 
@@ -70,7 +70,7 @@
     {#each tally as row (row.pid)}
       <div class="settingrow" style="align-items:center">
         <div class="sinfo">
-          <div class="sname">{row.pid === game.accusedId ? '🎯 ' : ''}{nm(row.pid)}{row.pid === game.insiderId ? ' 🕵️ (era el Insider)' : ''}</div>
+          <div class="sname">{row.pid === game.accusedId ? '🎯 ' : ''}{nm(row.pid)}{row.pid === game.insiderId ? ' 🕵️' : ''}</div>
           <div class="sdesc">Señalado por {row.voters.join(', ')}</div>
         </div>
         <b>{row.voters.length}</b>
@@ -91,15 +91,14 @@
       <b>{game.scores[pid] || 0}</b>
     </div>
   {/each}
-  <p class="small-note">🎓 Maestro y 🕵️ Insider de esta ronda. El marcador se guarda mientras la partida siga abierta.</p>
+  <p class="small-note">🎓 Maestro · 🕵️ Insider de esta ronda.</p>
 </div>
 
 <!-- El botón sale en TODAS las pantallas (también en la del que solo pone la
      voz): esperar al Maestro solo servía para atascar la revancha. -->
 <button class="primary block" data-a="ins-again" onclick={() => guard(A.nextRound)}>🔁 Otra ronda — el Maestro pasa a {nextMaster}</button>
-<p class="small-note" style="text-align:center">Palabra nueva y otro Insider en secreto. Lo puede pulsar cualquiera.</p>
+<p class="small-note" style="text-align:center">Palabra nueva y otro Insider en secreto; lo pulsa cualquiera.</p>
 <button class="ghost block" data-a="ins-back-lobby" onclick={() => (app.ui.modal = { type: 'ins-end' })}>🏁 Terminar y volver al lobby</button>
-<p class="small-note" style="text-align:center">Cierra la partida para toda la mesa y se pierde este marcador. Pide confirmación.</p>
 
 <style>
   .plus { color: var(--ok); font-size: 0.85rem; font-weight: 700; }

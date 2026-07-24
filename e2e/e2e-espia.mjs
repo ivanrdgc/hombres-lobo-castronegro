@@ -104,6 +104,32 @@ try {
   const agents = st.playerIds.filter((p) => p !== spy);
   console.log('  espía:', spy, '· lugar:', st.locationId);
 
+  // ——— Postura de MESA (B28): en reposo, todas las pantallas iguales ———
+  // El móvil se queda plano sobre la mesa: si al espía se le viera un botón de
+  // más (o un panel distinto), estaría cazado sin jugar. Comparamos los
+  // controles del juego de su pantalla con los de un agente.
+  const surface = (page) => page.evaluate(() =>
+    [...document.querySelectorAll('[data-a^="espia-"]')].map((e) => e.getAttribute('data-a')).sort().join('|'));
+  const sSpy = await surface(pg(spy));
+  const sAgent = await surface(pg(agents[0]));
+  check(sSpy === sAgent, 'la pantalla en reposo del espía lleva los MISMOS controles que la de un agente');
+  if (sSpy !== sAgent) console.log('   espía:  ' + sSpy + '\n   agente: ' + sAgent);
+  check(!sSpy.includes('espia-guess-open'), 'la jugada del espía no asoma en la pantalla en reposo');
+  check(!sSpy.includes('espia-lugar'), 'los tachones de localizaciones no se quedan a la vista');
+  // Tras el gesto que usan TODOS (👁 Mi carta), cada cual encuentra lo suyo.
+  await pg(spy).click('[data-a=espia-togglecard]');
+  await pg(spy).waitForSelector('[data-a=espia-guess-open]');
+  await pg(spy).click('[data-a=espia-hidecard]');
+  await pg(agents[0]).click('[data-a=espia-togglecard]');
+  await pg(agents[0]).waitForSelector('[data-a=espia-card]');
+  check(await pg(agents[0]).locator('[data-a=espia-guess-open]').count() === 0, 'el agente abre la misma carta y ahí NO hay jugada de espía');
+  await pg(agents[0]).click('[data-a=espia-hidecard]');
+  // La libreta de tachones es igual para todos y también vive tras un gesto.
+  await pg(spy).click('[data-a=espia-notes]');
+  await pg(spy).waitForSelector('[data-a=espia-lugar-tacha]');
+  await pg(spy).click('[data-a=espia-hidecard]');
+  ok('carta, jugada y libreta viven tras el mismo gesto en todos los móviles');
+
   // Pausa de mesa: congela el reloj sin gastar una acusación (⋯ → ⏸️).
   const dl0 = st.deadline;
   await ana.click('[data-a=game-menu]');
@@ -122,6 +148,16 @@ try {
   await pg(accuser1).click('button[data-a=espia-accuse]');
   st = await waitState(ana, (s) => s && !!s.vote, 'votación abierta');
   check(st.deadline === null, 'el reloj se congela durante la votación');
+  // La pantalla del acusado no dice si es inocente: antes ponía «pon cara de
+  // inocente (lo eres)» y, leída de reojo, señalaba al espía.
+  const acusadoTxt = await pg(wrongTarget).innerText('body');
+  check(!/lo eres/i.test(acusadoTxt), 'la pantalla del acusado no delata si es inocente');
+  // Con el reloj congelado no cuesta nada comprobar el auto-ocultado: la carta
+  // abierta se cierra sola y el móvil vuelve a la pantalla común.
+  await pg(spy).click('[data-a=espia-togglecard]');
+  await pg(spy).waitForSelector('[data-a=espia-card]');
+  await pg(spy).waitForSelector('[data-a=espia-togglecard]', { timeout: 20000 });
+  ok('la carta se oculta sola: un móvil olvidado boca arriba no cuenta nada');
   // El primer votante disponible vota NO → la acusación cae.
   const voter = st.playerIds.find((p) => p !== accuser1 && p !== wrongTarget);
   await pg(voter).waitForSelector('button[data-a=espia-vote][data-p=no]');
@@ -187,6 +223,9 @@ try {
   const spy2 = st.spyId;
   const prevScore = { ...st.scores };
   console.log('  espía R2:', spy2, '· lugar:', st.locationId);
+  // Su jugada vive dentro de la carta, tras el mismo 👁 que usan todos.
+  await pg(spy2).waitForSelector('[data-a=espia-togglecard]');
+  await pg(spy2).click('[data-a=espia-togglecard]');
   await pg(spy2).waitForSelector('[data-a=espia-guess-open]');
   await pg(spy2).click('[data-a=espia-guess-open]');
   await pg(spy2).waitForSelector(`button[data-a=espia-lugar][data-p=${st.locationId}]`);

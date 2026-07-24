@@ -1,4 +1,7 @@
 <script lang="ts">
+  // Empezar partida: dos decisiones (quiénes juegan y quién pone la voz) y un
+  // botón. Cada dato en un solo sitio (B29): el reparto público se dice junto a
+  // la selección de jugadores, no repetido abajo.
   import { app, matchOf, me, navigate } from '../../../core/sync/store.svelte';
   import { guard } from '../../../core/sync/guard';
   import { isActiveDevice } from '../../../core/sync/presence';
@@ -45,21 +48,25 @@
 
 <div class="topbar">
   <button class="small ghost" data-a="back-lobby-game" aria-label="Volver" title="Volver" style="font-size:1.25rem;line-height:1;padding:6px 12px" onclick={() => navigate(`/g/${group.id}/good_cop`)}>←</button>
-  <h2>🚔 Good Cop Bad Cop: empezar</h2>
+  <h2>🚔 Empezar partida</h2>
 </div>
 <Flash />
 
 <div class="card">
   <h3>🎮 ¿Quién juega?</h3>
   <SeatPicker {group} {meId} gameId="good_cop" onState={(s) => (seat = s)} />
-  <p class="small-note">La app repartirá 3 cartas de integridad a cada uno (siempre 2 de tu bando y 1 del contrario: tu bando es su mayoría), con un Agente y un Jefe ocultos.</p>
   <!-- El reparto es público: hay que saberlo ANTES de empezar a deducir. -->
-  {#if okStart}<p class="small-note">🧮 Con {n} jugadores saldrán <b>{counts.honest} 👮 honestos</b> y <b>{counts.crook} 🦹 corruptos</b>. Esto lo sabe toda la mesa.</p>{/if}
+  {#if okStart}
+    <p class="small-note">🧮 Sois {n}: saldrán <b>{counts.honest} 👮 honestos</b> y <b>{counts.crook} 🦹 corruptos</b>, y cada uno recibirá 3 cartas (2 de su bando y 1 del contrario). Esto lo sabe toda la mesa.</p>
+  {:else if n < MIN_PLAYERS}
+    <p class="small-note">⚠️ Hacen falta al menos {MIN_PLAYERS} jugadores (sois {n}).</p>
+  {:else}
+    <p class="small-note">⚠️ Como mucho {MAX_PLAYERS} jugadores (sois {n}).</p>
+  {/if}
 </div>
 
 <div class="card">
-  <h3>🔊 ¿Dónde suena la voz?</h3>
-  <p class="small-note" style="margin-top:6px">La voz solo relata acciones públicas (armas, dianas, disparos); nunca cartas ni investigaciones. Puede ponerla alguien que también juega.</p>
+  <h3>🔊 ¿Quién pone la voz?</h3>
   <div class="btnrow" style="margin-top:6px">
     {#each rows.filter((p) => !matchOf(p.id)) as p (p.id)}
       <button class="small {narrator === p.id ? 'primary' : 'ghost'}" data-a="pick-narrator" data-p={p.id} style="flex:0 1 auto;min-width:0" onclick={() => (narrPick = p.id)}>
@@ -67,13 +74,8 @@
       </button>
     {/each}
   </div>
-  {#if narratorP}<p class="small-note">🔊 <b>{narratorP.name}</b> pone la voz{seat.chosen.includes(narratorP.id) ? ' y también juega' : ' (no juega)'}.</p>{/if}
+  {#if narratorP}<p class="small-note">Sonará en el móvil de <b>{narratorP.name}</b>{seat.chosen.includes(narratorP.id) ? ', que también juega' : ' (no juega)'}. Solo canta acciones públicas: armas, dianas y disparos, nunca cartas.</p>{/if}
 </div>
 
-<div class="card">
-  <p class="small-note" style="margin-top:0">🚔 Jugarán <b>{n}</b>{n ? ': ' : ''}<span style="opacity:.75">{chosen.map((p) => p.name).join(', ')}</span></p>
-  {#if n < MIN_PLAYERS}<p class="small-note">⚠️ Good Cop Bad Cop necesita al menos {MIN_PLAYERS} jugadores.</p>{/if}
-  {#if n > MAX_PLAYERS}<p class="small-note">⚠️ Máximo {MAX_PLAYERS} jugadores.</p>{/if}
-  <div id="form-error">{#if app.ui.formError}<div class="flash error">{app.ui.formError}</div>{/if}</div>
-  <button class="primary block" disabled={!okStart} data-a="gc-start" onclick={startNow}>🚔 ¡Empezar!</button>
-</div>
+<div id="form-error">{#if app.ui.formError}<div class="flash error">{app.ui.formError}</div>{/if}</div>
+<button class="primary block" disabled={!okStart} data-a="gc-start" onclick={startNow}>🚔 Repartir cartas y empezar</button>

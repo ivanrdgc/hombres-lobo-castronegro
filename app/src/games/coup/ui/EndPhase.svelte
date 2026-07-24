@@ -13,14 +13,12 @@
   void my;
 </script>
 
-<div class="card" style="text-align:center">
-  <span class="moon">👑</span>
-  <h3 style="margin:6px 0">¡Gana {winnerName(game)}!</h3>
-  <p class="small-note">Último en pie en la corte de Castronegro. Arriba se destapan TODAS las influencias: ahí se ve quién faroleaba.</p>
-</div>
-
+<!-- Un solo bloque para el resultado (ganador + marcador): son la misma idea. -->
 <div class="card">
-  <h3>🏆 Marcador</h3>
+  <span class="moon">👑</span>
+  <h3 style="margin:6px 0;text-align:center">¡Gana {winnerName(game)}!</h3>
+  <p class="small-note" style="text-align:center;margin-top:0">Último en pie. Arriba están destapadas TODAS las manos: ahí se ve quién faroleaba.</p>
+  <h3 style="margin:16px 0 2px">🏆 Marcador</h3>
   {#each ranked as pid (pid)}
     <div class="settingrow" style="align-items:center">
       <div class="sinfo"><div class="sname">{nm(pid)}{pid === game.winner ? ' 👑' : ''}</div></div>
@@ -29,5 +27,5 @@
   {/each}
 </div>
 
-<button class="primary block" data-a="coup-again" onclick={() => guard(A.playAgain)}>🔁 Otra partida</button>
+<button class="primary block" data-a="coup-again" onclick={() => guard(A.playAgain)}>🔁 Repartir otra partida</button>
 <button class="ghost block" data-a="coup-back-lobby" onclick={() => guard(() => A.endCoup())}>🏁 Terminar y volver al lobby</button>

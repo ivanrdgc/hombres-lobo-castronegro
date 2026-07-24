@@ -1,8 +1,12 @@
 <script lang="ts">
+  // Última pantalla antes de repartir: quién juega, dónde suena la voz y el
+  // botón. Tres bloques, ni uno más (B29), y el aviso de POSTURA aquí mismo
+  // (B28): cómo se coloca el móvil decide cómo se juega la partida entera.
   import { app, matchOf, me, navigate } from '../../../core/sync/store.svelte';
   import { guard } from '../../../core/sync/guard';
   import { isActiveDevice } from '../../../core/sync/presence';
   import { defaultNarrator } from '../../../shell/ui-helpers';
+  import { gameMeta, POSTURE_HINT } from '../../registry';
   import { unlockAudio } from '../../../core/audio/engine';
   import { play } from '../../../core/audio/player';
   import type { GroupDoc, PlayerDoc } from '../../../core/sync/schema';
@@ -52,15 +56,17 @@
 <div class="card">
   <h3>🎮 ¿Quién juega?</h3>
   <SeatPicker {group} {meId} gameId="shadow_hunters" onState={(s) => (seat = s)} />
-  <p class="small-note">La app repartirá un personaje secreto a cada uno: 🏹 Cazadores, 🌑 Sombras y (con 5 o más) 🧭 neutrales.</p>
   <!-- El reparto es público: decirlo ANTES de repartir evita la pregunta de
        toda mesa novata («¿cuántos hay de cada bando?»). -->
-  {#if okStart}<p class="small-note" style="margin-top:2px"><b>{factionSummary(n)}</b> Lo secreto es quién es quién, no cuántos hay.</p>{/if}
+  {#if okStart}
+    <p class="small-note" style="margin-top:6px"><b>{factionSummary(n)}</b> Lo secreto es quién es quién, no cuántos hay de cada bando.</p>
+  {:else}
+    <p class="small-note" style="margin-top:6px">Cada uno recibirá un personaje secreto: 🏹 Cazadores, 🌑 Sombras y (de 5 en adelante) 🧭 neutrales.</p>
+  {/if}
 </div>
 
 <div class="card">
   <h3>🔊 ¿Dónde suena la voz?</h3>
-  <p class="small-note" style="margin-top:6px">La voz solo relata lo público (ataques, dados, resultados de pista); nunca identidades ni el texto de las pistas. Puede ponerla alguien que también juega.</p>
   <div class="btnrow" style="margin-top:6px">
     {#each rows.filter((p) => !matchOf(p.id)) as p (p.id)}
       <button class="small {narrator === p.id ? 'primary' : 'ghost'}" data-a="pick-narrator" data-p={p.id} style="flex:0 1 auto;min-width:0" onclick={() => (narrPick = p.id)}>
@@ -68,13 +74,14 @@
       </button>
     {/each}
   </div>
-  {#if narratorP}<p class="small-note">🔊 <b>{narratorP.name}</b> pone la voz{seat.chosen.includes(narratorP.id) ? ' y también juega' : ' (no juega)'}.</p>{/if}
+  {#if narratorP}<p class="small-note">🔊 <b>{narratorP.name}</b> pone la voz{seat.chosen.includes(narratorP.id) ? ' y también juega' : ' (no juega)'}: relata lo público —ataques, dados y resultados—, nunca identidades ni el texto de las pistas.</p>{/if}
 </div>
 
 <div class="card">
   <p class="small-note" style="margin-top:0">🌘 Jugarán <b>{n}</b>{n ? ': ' : ''}<span style="opacity:.75">{chosen.map((p) => p.name).join(', ')}</span></p>
-  {#if n < MIN_PLAYERS}<p class="small-note">⚠️ Shadow Hunters necesita al menos {MIN_PLAYERS} jugadores.</p>{/if}
-  {#if n > MAX_PLAYERS}<p class="small-note">⚠️ Máximo {MAX_PLAYERS} jugadores.</p>{/if}
+  <p class="small-note">{POSTURE_HINT[gameMeta('shadow_hunters').posture]}</p>
+  {#if n < MIN_PLAYERS}<p class="small-note">⚠️ Faltan jugadores: hacen falta {MIN_PLAYERS} como mínimo.</p>{/if}
+  {#if n > MAX_PLAYERS}<p class="small-note">⚠️ Sois demasiados: {MAX_PLAYERS} como máximo.</p>{/if}
   <div id="form-error">{#if app.ui.formError}<div class="flash error">{app.ui.formError}</div>{/if}</div>
-  <button class="primary block" disabled={!okStart} data-a="sh-start" onclick={startNow}>🌘 ¡Empezar!</button>
+  <button class="primary block" disabled={!okStart} data-a="sh-start" onclick={startNow}>🌘 Repartir personajes y empezar</button>
 </div>

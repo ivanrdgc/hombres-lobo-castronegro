@@ -45,8 +45,15 @@ async function twoSel(p) {
   for (let i = 0; i < Math.min(2, n); i++) await p.locator('.player[data-a=una-sel]').nth(i).click({ timeout: 4000 }).catch(() => {});
 }
 
+// B28 · postura 🍽️ MESA: el panel del paso vive tras «👁 Abrir mi panel», que
+// es el mismo botón en todos los móviles (al resto le dice «no es tu turno»).
+async function openPanel(p) {
+  if (await vis(p, '[data-a=una-open]:not([disabled])')) { await clk(p, '[data-a=una-open]'); await p.waitForTimeout(120); }
+}
+
 // Acción genérica del paso en curso (solo actúa quien ve botones).
 async function actStep(p, step) {
+  await openPanel(p);
   if (step === 'doble') {
     if (await vis(p, '[data-a=una-doble-copy]')) { await firstSel(p); await clk(p, '[data-a=una-doble-copy]'); await p.waitForTimeout(200); }
     // B25: primero se elige QUÉ se mira (jugador / centro) y luego a quién.
@@ -145,6 +152,9 @@ try {
   console.log('  roles:', st.playerIds.map((id) => `${st.names[id]}=${st.originalRole[id]}`).join(', '), '· centro:', st.center.join(','));
   for (const pid of st.playerIds) {
     const p = pg(pid);
+    // B28: la carta se mira tras un gesto del dueño (cortina de privacidad).
+    await p.waitForSelector('[data-a=una-open-card]', { timeout: 15000 });
+    await p.click('[data-a=una-open-card]');
     await p.waitForSelector('[data-a=una-seen]', { timeout: 15000 });
     await p.click('[data-a=una-seen]'); await p.waitForTimeout(120);
   }

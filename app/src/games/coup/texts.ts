@@ -27,9 +27,10 @@ export const HOW_TO: HelpSection[] = [
   {
     heading: '🎴 El reparto',
     items: [
-      'Al empezar, toca «👁 Ver mis influencias», míralas A SOLAS y pulsa «✅ Lo tengo». Cuando todos confirman, cualquiera pulsa «▶️ Todos listos» y arranca el primer turno.',
+      'Al empezar, tu móvil te enseña tus dos influencias: míralas sin que nadie vea la pantalla y pulsa «Lo tengo». Cuando todos confirman, cualquiera pulsa «Empezar la partida» y arranca el primer turno.',
+      'Tus dos cartas se quedan a la vista en tu pantalla el resto de la partida, con lo que hace cada una y tus monedas: sujeta el móvil mirando a ti, como una mano de cartas, y no lo dejes en la mesa.',
       'Empiezas con 2 monedas. En el tablero, las influencias perdidas se ven boca arriba; de las ocultas solo se ve el dorso: todos saben CUÁNTAS te quedan, nunca cuáles son.',
-      'Abajo a la derecha tienes siempre el botón flotante 🎴: abre tus influencias, tus monedas y la chuleta de los 5 personajes sin salir de la partida.',
+      'Abajo a la derecha, el botón flotante de la carta abre la chuleta completa: los 5 personajes y las 7 jugadas, sin salir de la partida.',
     ],
   },
   {

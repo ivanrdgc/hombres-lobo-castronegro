@@ -15,6 +15,12 @@
 // al Maestro no se le puede señalar pero SALE en la lista con el motivo, el
 // final enseña a dónde fue cada voto y lo que suma la ronda, y el menú ⋯ ofrece
 // «🪑 La mesa» para rescatar un móvil muerto.
+// De la pasada de POSTURA (B28, 🍽️ mesa: el móvil se queda plano y desbloqueado
+// sobre el mantel): el lobby dice cómo se sostiene el móvil, la carta del
+// reparto se OCULTA SOLA (la palabra no se queda fija en pantalla), la carta
+// abierta del Insider y la de un común son indistinguibles de reojo —mismo
+// emoji, mismos bloques, mismo alto— y el botón de confirmar el voto no canta a
+// quién señalas.
 import { chromium } from 'playwright';
 const BASE = process.env.BASE; if (!BASE) { console.error('Define BASE=https://tu-sitio.web.app'); process.exit(1); }
 let fail = 0;
@@ -101,6 +107,12 @@ try {
   await ana.click('button[data-a=select-game][data-p=insider]');
   await ana.waitForSelector('[data-a=ins-open-help]');
   ok('el catálogo ofrece Insider y su lobby carga');
+  // El lobby tiene un solo trabajo (B29): de qué va + tres caminos (aprender,
+  // consultar, jugar) y CÓMO SE SOSTIENE EL MÓVIL (B28), sin repetir el nombre
+  // del juego que ya está en la cabecera.
+  check(/plano en la mesa/i.test(await ana.innerText('[data-a=ins-posture]')), 'el lobby dice cómo se sostiene el móvil (🍽️ mesa)');
+  check((await ana.locator('h2:has-text("Insider"), h3:has-text("Insider")').count()) === 1, 'el nombre del juego sale UNA vez (solo en la cabecera)');
+  for (const a of ['open-demo', 'ins-open-help', 'open-start']) check(await ana.locator(`[data-a=${a}]`).count() === 1, `el lobby ofrece «${a}»`);
   await ana.click('[data-a=ins-open-help]');
   await ana.waitForSelector('text=/Cómo se juega/');
   check(await ana.locator('.modal [data-a=ins-play-howto]').count() >= 5, 'el «cómo se juega» tiene un ▶️ por apartado');
@@ -128,20 +140,47 @@ try {
       'el reparto dice POR NOMBRE quién responde y quién abre el interrogatorio');
     check(await p.locator('[data-a=ins-ref]').count() >= 1, 'la chuleta de papeles y puntos se consulta sin salir de la fase');
   }
+
+  // ——— La palabra NO se queda fija en pantalla: la carta del reparto se cierra
+  //     sola (el móvil acaba plano sobre la mesa, y basta con distraerse) ———
+  {
+    const p = pg(st.insiderId);
+    await p.click('[data-a=ins-reveal]');
+    await p.waitForSelector('[data-a=ins-word]');
+    await p.waitForSelector('[data-a=ins-word]', { state: 'detached', timeout: 15000 });
+    check(await p.locator('[data-a=ins-reveal]').count() === 1, 'la carta del reparto se oculta sola y vuelve el botón 👁 (la palabra no se queda a la vista)');
+  }
   await revealAndBegin(st);
 
-  // ——— No hay fuga: la palabra solo la ven Maestro e Insider ———
+  // ——— No hay fuga: la palabra solo la ven Maestro e Insider… y sus cartas se
+  //     ven IGUAL que las de un común (postura de mesa: móviles planos) ———
   const common1 = st.playerIds.find((x) => x !== st.insiderId && x !== st.masterId);
+  const shape = {};
   for (const [pid, sabe] of [[common1, false], [st.insiderId, true]]) {
     const p = pg(pid);
     // Durante el interrogatorio TODOS ven la misma carta mini plegada: ni la
     // palabra a la vista ni un aspecto distinto que delate al Insider.
     check(await p.locator('[data-a=ins-word]').count() === 0, `la carta de ${NAMES[pid]} va plegada (nada de palabra a la vista)`);
+    await p.setViewportSize({ width: 390, height: 844 }); // el MISMO móvil en los dos: comparamos forma
     await p.click('[data-a=ins-togglecard]');
     await p.waitForSelector('.rolecard[data-a=ins-togglecard]');
     check(await p.locator('[data-a=ins-word]').count() === (sabe ? 1 : 0), `${NAMES[pid]} ${sabe ? 've' : 'NO ve'} la palabra al desplegar su carta`);
+    const card = p.locator('.rolecard[data-a=ins-togglecard]');
+    shape[sabe ? 'ins' : 'com'] = {
+      h: Math.round((await card.boundingBox()).height),
+      emoji: (await p.locator('.rolecard .remoji').innerText()).trim(),
+      kw: await p.locator('.rolecard .kwbox').count(),
+      blocks: await p.locator('.rolecard > *').count(),
+    };
     await p.click('.rolecard[data-a=ins-togglecard]'); // vuelve a plegarla
+    await p.setViewportSize({ width: 1280, height: 720 });
   }
+  // De reojo, sin leer: mismo emoji, mismos bloques, mismo alto. Cualquier
+  // diferencia de FORMA (un recuadro de más, un panel más largo) ficha al Insider.
+  check(shape.com.emoji === shape.ins.emoji, `la carta abierta lleva el mismo emoji sea cual sea el papel (${shape.com.emoji})`);
+  check(shape.com.kw === 1 && shape.ins.kw === 1, 'las dos llevan recuadro de palabra (el del común, sin palabra dentro)');
+  check(shape.com.blocks === shape.ins.blocks, 'las dos tienen los mismos bloques');
+  check(Math.abs(shape.com.h - shape.ins.h) <= 2, `las dos miden lo mismo (${shape.com.h} px vs ${shape.ins.h} px): de reojo no se distinguen`);
 
   // ——— Pausa: el reloj se congela, los botones de la fase desaparecen y el 🎴
   //     sigue devolviendo la carta (el reloj real no corre mientras tanto) ———
@@ -203,6 +242,11 @@ try {
     const dim = (await p.locator('.player.dim').allInnerTexts()).join(' ');
     check(dim.includes(NAMES[st.masterId]) && /no puede ser el Insider/i.test(dim), '…pero sale en la lista, apagado y con el motivo');
     check(/eres tú/i.test(dim), 'y tu propia ficha explica que no puedes votarte');
+    // El botón de confirmar NO canta tu voto: era el texto más grande de la
+    // pantalla y el vecino lo leía de reojo antes de que lo echaras.
+    await p.click(`.player[data-a=ins-vote][data-p="${st.insiderId}"]`);
+    const btn = await p.innerText('[data-a=ins-vote-confirm]');
+    check(!btn.includes(NAMES[st.insiderId]), 'el botón de confirmar no dice a quién señalas');
   }
   for (const pid of st.playerIds) await vote(pid, pid === st.insiderId ? common1 : st.insiderId);
   st = await waitState(ana, (s) => s.phase === 'end', 'fin de la ronda 1');

@@ -16,6 +16,20 @@ const bad = (m) => { fail++; console.log('  ✖', m); };
 const check = (c, m) => (c ? ok(m) : bad(m));
 const browser = await chromium.launch();
 const pages = {};
+
+// B28 · postura 🍽️ MESA: de noche TODAS las pantallas se ven iguales y el panel
+// de acción solo aparece tras el gesto de su dueño («👁 Abrir mi turno»).
+async function openTurn(pg, sel, timeout = 25000) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < timeout) {
+    if (await pg.locator(sel).count()) return;
+    const gate = pg.locator('[data-a=open-night-turn]');
+    if (await gate.count()) await gate.click().catch(() => {});
+    await pg.waitForTimeout(200);
+  }
+  await pg.waitForSelector(sel, { timeout: 3000 });
+}
+
 async function mk(label) {
   const ctx = await browser.newContext({ locale: 'es-ES' });
   await ctx.addInitScript(() => { window.__hlcTest = true; }); // e2e veloz: sin audio, colchones mínimos
@@ -127,37 +141,37 @@ try {
     lastKey = key;
     if (stepId === 'actor') {
       const pg = pageOf(actor);
-      await pg.waitForSelector('[data-a=act-actor-power][data-p=vidente]', { timeout: 15000 });
+      await openTurn(pg, '[data-a=act-actor-power][data-p=vidente]', 15000);
       await pg.click('[data-a=act-actor-power][data-p=vidente]');
       await pg.click(`.actionpanel .player.selectable[data-p=${wolf1.id}]`);
       await pg.click('[data-a=act-actor-confirm]');
-      await pg.waitForSelector('[data-a=act-actor-seen]', { timeout: 15000 });
+      await openTurn(pg, '[data-a=act-actor-seen]', 15000);
       const esLobo = await pg.locator('.actionpanel:has-text("Hombre Lobo")').count();
       check(esLobo >= 1, 'el Actor-vidente ve que su objetivo ES un hombre lobo');
       await pg.click('[data-a=act-actor-seen]');
     } else if (stepId === 'defensor') {
       const pg = pageOf(defensor);
-      await pg.waitForSelector('[data-a=act-defensor]', { timeout: 15000 });
+      await openTurn(pg, '[data-a=act-defensor]', 15000);
       await pg.click(`.actionpanel .player.selectable[data-p=${defensor.id}]`); // se protege a sí mismo (oficial)
       await pg.click('[data-a=act-defensor]');
       ok('el Defensor se protege a sí mismo (permitido por las reglas)');
     } else if (stepId === 'zorro') {
       const pg = pageOf(zorro);
-      await pg.waitForSelector('[data-a=act-zorro]', { timeout: 15000 });
+      await openTurn(pg, '[data-a=act-zorro]', 15000);
       await pg.click(`.actionpanel .player.selectable[data-p=${wolf1.id}]`); // trío con lobo seguro
       await pg.click('[data-a=act-zorro]');
-      await pg.waitForSelector('[data-a=act-zorro-seen]', { timeout: 15000 });
+      await openTurn(pg, '[data-a=act-zorro-seen]', 15000);
       const rastro = await pg.locator('.actionpanel:has-text("rastro de")').count();
       check(rastro >= 1, 'el Zorro huele el trío del lobo: hay rastro (conserva el olfato)');
       await pg.click('[data-a=act-zorro-seen]');
     } else if (stepId === 'cuervo') {
       const pg = pageOf(cuervo);
-      await pg.waitForSelector('[data-a=act-cuervo]', { timeout: 15000 });
+      await openTurn(pg, '[data-a=act-cuervo]', 15000);
       await pg.click(`.actionpanel .player.selectable[data-p=${wolf1.id}]`);
       await pg.click('[data-a=act-cuervo]');
     } else if (stepId === 'lobos') {
       const pg = pageOf(wolf1);
-      await pg.waitForSelector('[data-a=act-lobos]', { timeout: 15000 });
+      await openTurn(pg, '[data-a=act-lobos]', 15000);
       await pg.click(`.actionpanel .player.selectable[data-p=${anciano.id}]`);
       await pg.click('[data-a=act-lobos]');
       ok('la manada muerde al Anciano');
@@ -210,7 +224,7 @@ try {
     lastKey = key;
     if (stepId === 'actor') {
       const pg = pageOf(actor);
-      await pg.waitForSelector('[data-a=act-actor-power]', { timeout: 15000 });
+      await openTurn(pg, '[data-a=act-actor-power]', 15000);
       check((await pg.locator('[data-a=act-actor-power][data-p=vidente]').count()) === 0,
         'el papel de vidente ya está descartado: no puede repetirse (regla oficial)');
       await pg.click('[data-a=act-actor-power][data-p=defensor]');
@@ -218,7 +232,7 @@ try {
       await pg.click('[data-a=act-actor-confirm]');
     } else if (stepId === 'defensor') {
       const pg = pageOf(defensor);
-      await pg.waitForSelector('[data-a=act-defensor]', { timeout: 15000 });
+      await openTurn(pg, '[data-a=act-defensor]', 15000);
       check((await pg.locator(`.actionpanel .player.selectable[data-p=${defensor.id}]`).count()) === 0,
         'no puede repetir protegido dos noches seguidas (anoche se protegió él)');
       await pg.click(`.actionpanel .player.selectable[data-p=${domador.id}]`);
@@ -229,21 +243,21 @@ try {
       const candidate = alive.find((c) => c.id !== wolf1.id && c.role !== 'hombre_lobo'
         && ![c, ...aliveNeighbors(st.players, c.id)].some((x) => x.role === 'hombre_lobo'));
       const pg = pageOf(zorro);
-      await pg.waitForSelector('[data-a=act-zorro]', { timeout: 15000 });
+      await openTurn(pg, '[data-a=act-zorro]', 15000);
       await pg.click(`.actionpanel .player.selectable[data-p=${candidate.id}]`);
       await pg.click('[data-a=act-zorro]');
-      await pg.waitForSelector('[data-a=act-zorro-seen]', { timeout: 15000 });
+      await openTurn(pg, '[data-a=act-zorro-seen]', 15000);
       const agotado = await pg.locator('.actionpanel:has-text("olfato se ha agotado")').count();
       check(agotado >= 1, 'trío sin lobos: el Zorro pierde su olfato (regla oficial)');
       await pg.click('[data-a=act-zorro-seen]');
     } else if (stepId === 'cuervo') {
       const pg = pageOf(cuervo);
-      await pg.waitForSelector('[data-a=act-cuervo]', { timeout: 15000 });
+      await openTurn(pg, '[data-a=act-cuervo]', 15000);
       await pg.click(`.actionpanel .player.selectable[data-p=${juez.id}]`);
       await pg.click('[data-a=act-cuervo]');
     } else if (stepId === 'lobos') {
       const pg = pageOf(wolf1);
-      await pg.waitForSelector('[data-a=act-lobos]', { timeout: 15000 });
+      await openTurn(pg, '[data-a=act-lobos]', 15000);
       await pg.click(`.actionpanel .player.selectable[data-p=${zorro.id}]`);
       await pg.click('[data-a=act-lobos]');
     }

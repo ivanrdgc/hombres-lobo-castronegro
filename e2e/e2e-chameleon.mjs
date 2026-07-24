@@ -38,6 +38,43 @@ async function waitState(page, fn, what, timeout = 45000) {
 let NAMES = {};
 const pg = (pid) => pages[(NAMES[pid] || pid).toLowerCase()];
 
+// Postura de MESA (docs/UX.md · B28): el móvil se queda plano y el vecino puede
+// mirar de reojo, así que la carta del Camaleón y la del grupo tienen que ser
+// LA MISMA carta —mismo marco, mismo emoji, mismo rótulo, mismo alto— y la
+// palabra no puede quedarse fija en pantalla.
+async function cardShape(pid) {
+  const p = pg(pid);
+  await p.waitForSelector('[data-a=ch-reveal]', { timeout: 15000 });
+  await p.click('[data-a=ch-reveal]');
+  await p.waitForSelector('.rolecard[data-a=ch-togglecard]', { timeout: 8000 });
+  return p.evaluate(() => {
+    const el = document.querySelector('.rolecard');
+    const cs = getComputedStyle(el);
+    const txt = (sel) => (el.querySelector(sel)?.textContent || '').trim();
+    return {
+      alto: Math.round(el.getBoundingClientRect().height),
+      marco: [cs.borderColor, cs.borderWidth, cs.backgroundImage, cs.backgroundColor, cs.boxShadow].join('|'),
+      emoji: txt('.remoji'), rotulo: txt('.rteam'), texto: txt('.rdesc'), palabra: txt('.rname'),
+    };
+  });
+}
+async function noTellChecks(st) {
+  const otro = st.playerIds.find((pid) => pid !== st.chameleonId);
+  const cam = await cardShape(st.chameleonId);
+  const grp = await cardShape(otro);
+  check(cam.emoji === grp.emoji && cam.rotulo === grp.rotulo && cam.texto === grp.texto,
+    'las dos cartas llevan el mismo emoji, el mismo rótulo y el mismo texto');
+  check(cam.marco === grp.marco, 'ni el color ni el marco delatan al Camaleón');
+  check(Math.abs(cam.alto - grp.alto) <= 2, `las dos cartas miden lo mismo (${cam.alto} vs ${grp.alto} px)`);
+  check(cam.palabra !== grp.palabra && /Camale/i.test(cam.palabra) && grp.palabra.includes(st.grid[st.secret]),
+    'lo único que cambia es la palabra del centro (la secreta / «Camaleón»)');
+  // Y no se queda fija: pasados unos segundos se tapa sola y vuelve el botón 👁.
+  const p = pg(otro);
+  await p.waitForSelector('.rolecard[data-a=ch-togglecard]', { state: 'detached', timeout: 20000 });
+  await p.waitForSelector('[data-a=ch-reveal]', { timeout: 8000 });
+  ok('la palabra secreta se tapa sola: nunca se queda fija en pantalla');
+}
+
 async function revealAll(st) {
   for (const pid of st.playerIds) {
     const p = pg(pid);
@@ -61,6 +98,10 @@ async function cluesAndVote(st, { checks = false } = {}) {
     check(await p.locator('[data-a=ch-turn]').count() === st.playerIds.length, 'la lista de turnos muestra a los 4');
     // La referencia se consulta SIN salir de la pantalla en la que se decide.
     check(await p.locator('[data-a=ch-clue-ref]').count() === 1, 'el turno de pistas lleva su chuleta plegada («qué es una buena pista»)');
+    // En pistas, el punto de entrada a lo secreto es el mismo botón para todos.
+    const otro = st.playerIds.find((pid) => pid !== st.chameleonId);
+    const rotulo = async (pid) => (await pg(pid).locator('[data-a=ch-togglecard]').first().innerText()).trim();
+    check(await rotulo(st.chameleonId) === await rotulo(otro), 'en las pistas, el botón de la carta es idéntico para todos');
     // «↩️ Atrás» deshace un turno adelantado por error.
     await p.click('[data-a=ch-clue-next]');
     await waitState(pages.ana, (s) => s.clueIdx === 1, 'primer turno dado');
@@ -135,6 +176,15 @@ try {
   await ana.click('button[data-a=select-game][data-p=chameleon]');
   await ana.waitForSelector('[data-a=ch-open-help]');
   ok('el catálogo ofrece El Camaleón y su lobby carga');
+  // B28: cómo se sostiene el móvil, dicho ANTES de repartir.
+  check(/plano/i.test(await ana.locator('[data-a=ch-posture]').innerText()),
+    'el lobby avisa de la postura: 🍽️ móvil plano en la mesa');
+  // B29 (el caso que citó Iván): la cabecera ya dice a qué juegas; ninguna
+  // tarjeta de debajo repite el nombre en un título.
+  check(await ana.locator('.card h3', { hasText: 'Camaleón' }).count() === 0,
+    'el nombre del juego no se repite en el título de la tarjeta de debajo');
+  check(await ana.locator('[data-a=open-demo]').count() === 1 && await ana.locator('[data-a=open-start]').count() === 1,
+    'el lobby deja los tres caminos: aprender, consultar y jugar');
   await ana.click('[data-a=ch-open-help]');
   await ana.waitForSelector('text=/Cómo se juega/');
   check(await ana.locator('.modal [data-a=ch-play-howto]').count() >= 4, 'el «cómo se juega» tiene un ▶️ por apartado');
@@ -150,6 +200,7 @@ try {
   check(st.playerIds.length === 4 && st.grid.length === 16, '4 jugadores y rejilla de 16 palabras');
   check(st.playerIds.includes(st.chameleonId), 'hay un Camaleón repartido');
   console.log('  camaleón:', st.chameleonId, '· secreta:', st.grid[st.secret]);
+  await noTellChecks(st);
   await revealAll(st);
   await cluesAndVote(st, { checks: true });
   await voteUiChecks(st);

@@ -36,10 +36,9 @@
 </script>
 
 {#if mine}
-  <div class="narration">💥 Pierdes una influencia {reason}. Elige qué carta descubres (queda fuera de juego).</div>
   <div class="actionpanel">
     {#if pick === null || !picked}
-      <h3 style="margin-top:0">💥 ¿Cuál descubres?</h3>
+      <h3 style="margin-top:0">💥 Pierdes una influencia {reason}: ¿cuál descubres?</h3>
       <p class="hint">La que elijas queda <b>boca arriba para siempre</b>: pierdes su poder y toda la mesa sabrá que la tenías. Te quedará{left === 1 ? '' : 'n'} <b>{left}</b> influencia{left === 1 ? '' : 's'}{left === 1 ? ': la siguiente pérdida te elimina' : ''}.</p>
       {#each options as card (card.i)}
         <button class="loseopt" data-a="coup-lose" data-p={String(card.i)} onclick={() => (pick = card.i)}>
@@ -61,9 +60,9 @@
     <CharRef {game} />
   </div>
 {:else}
-  <div class="narration">💥 <b>{game.names[loser || ''] || '¿?'}</b> tiene que descubrir una influencia {reason}…</div>
   <div class="card">
-    <p class="hint">⏳ Está eligiendo cuál de sus cartas destapa. En cuanto lo haga, quedará boca arriba en el tablero para toda la partida: es información que conviene recordar.</p>
+    <h3 style="margin-top:0">💥 {game.names[loser || ''] || '¿?'} descubre una carta {reason}</h3>
+    <p class="hint">⏳ Está eligiendo cuál destapa. Quedará boca arriba el resto de la partida: es información que conviene recordar.</p>
     <CharRef {game} label="📖 Repasa la corte mientras esperas" />
   </div>
 {/if}

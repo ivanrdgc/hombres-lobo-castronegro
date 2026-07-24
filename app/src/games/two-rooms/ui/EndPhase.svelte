@@ -3,7 +3,7 @@
   // Bombardero junto al Presidente?). Marcador acumulado y revancha.
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
-  import { MIN_PLAYERS, WIN_LABELS, presidentId, bomberId, roomOf } from '../engine';
+  import { MIN_PLAYERS, WIN_LABELS, presidentId, bomberId } from '../engine';
   import type { PlayerDoc } from '../../../core/sync/schema';
   import type { TwoRoomsState } from '../types';
   import RoomsBoard from './RoomsBoard.svelte';
@@ -26,12 +26,14 @@
 <div class="card" style="text-align:center">
   <span class="moon">{icon}</span>
   <h3 style="margin:6px 0">{headline}</h3>
+  <!-- Quién era quién. DÓNDE acabaron lo dice el tablero de abajo: cada dato,
+       en un solo sitio (B29). -->
   {#if pres || bomb}
-    <p class="small-note">Presidente: <b>{nm(pres)}</b> (Sala {pres && game.room[pres] !== undefined ? roomOf(game, pres) + 1 : '?'}). Bombardero: <b>{nm(bomb)}</b> (Sala {bomb && game.room[bomb] !== undefined ? roomOf(game, bomb) + 1 : '?'}).</p>
+    <p class="small-note">🎖️ Presidente: <b>{nm(pres)}</b> · 💣 Bombardero: <b>{nm(bomb)}</b>.</p>
   {/if}
 </div>
 
-<div class="card"><h3>🚪 Cómo quedaron las salas</h3>
+<div class="card"><h3>🚪 Dónde acabó cada uno</h3>
   <RoomsBoard {game} meId={my.id} reveal={true} /></div>
 
 <div class="card">

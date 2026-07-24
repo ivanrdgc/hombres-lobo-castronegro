@@ -1,10 +1,13 @@
 <script lang="ts">
-  // Pantalla de partida de «Good Cop Bad Cop»: tablero + turno + fin.
+  // Pantalla de partida de «Good Cop Bad Cop». Postura de MESA (B28): el móvil
+  // se queda plano y solo lo coges en tu turno, así que ESTA pantalla es
+  // IDÉNTICA en todos los móviles — mismo texto, mismos bloques, mismo alto.
+  // Nada tuyo (cartas, carta de LÍDER, lo investigado, cuántas veces has
+  // mirado) asoma aquí: todo eso vive detrás del gesto 🎴.
   import { app, isMaster, matchOf } from '../../../core/sync/store.svelte';
   import * as A from '../actions';
-  import { nextAlive, turnsUntil } from '../engine';
+  import { nextAlive } from '../engine';
   import { guard } from '../../../core/sync/guard';
-  import { cardLabel } from '../cards';
   import { unlockAudio } from '../../../core/audio/engine';
   import { play } from '../../../core/audio/player';
   import type { GroupDoc, PlayerDoc } from '../../../core/sync/schema';
@@ -20,14 +23,17 @@
   const inGame = $derived(game.playerIds.includes(my.id) && !!matchOf(my.id));
   const myTurn = $derived(game.turn === my.id && game.phase === 'turn' && game.alive[my.id]);
   const needsUnlock = $derived(isMaster() && !app.ui.audioReady && !app.ui.muted);
-  // Investigaciones tuyas sin leer: se muestran PLEGADAS (el móvil acaba sobre
-  // la mesa) y, una vez leídas, siguen consultables en el 🎴.
-  const newPeeks = $derived((game.peeks?.[my.id] || []).filter((p) => !p.ack));
-  let peekOpen = $state(false);
-  // Al que no le toca: cuándo juega y quién va después.
+  // La cola de turnos, PÚBLICA y en el mismo orden para todos: antes esta línea
+  // decía «tú juegas dentro de N turnos», que cambiaba de un móvil a otro.
   const alive = $derived(game.playerIds.filter((p) => game.alive[p]).length);
-  const nextPid = $derived(game.phase === 'turn' && alive > 1 ? nextAlive(game, game.turn) : null);
-  const myWait = $derived(inGame && game.alive[my.id] ? turnsUntil(game, my.id) : -1);
+  const queue = $derived.by(() => {
+    if (game.phase !== 'turn' || alive < 2) return [] as string[];
+    const out: string[] = [];
+    let cur = game.turn;
+    for (let i = 0; i < Math.min(3, alive - 1); i++) { cur = nextAlive(game, cur); out.push(game.names[cur] || '¿?'); }
+    return out;
+  });
+  const queueMore = $derived(alive - 1 > queue.length);
   // El estado PÚBLICO de quien juega: si va armado y a quién apunta.
   const turnArmed = $derived(!!game.armed[game.turn]);
   const turnAim = $derived(game.aimAt[game.turn] && game.alive[game.aimAt[game.turn]!] ? game.aimAt[game.turn] : null);
@@ -59,35 +65,19 @@
 {#if game.phase === 'end'}
   <EndPhase {game} {my} />
 {:else}
-  <div class="card"><PlayersBoard {game} {my} /></div>
-
-  {#if newPeeks.length}
-    <div class="card peekcard">
-      <h3 style="margin:0 0 4px">🔒 Solo para tus ojos</h3>
-      {#if !peekOpen}
-        <p class="small-note" style="margin:0">🔍 Tienes {newPeeks.length === 1 ? 'el resultado de tu investigación' : `${newPeeks.length} resultados de tus investigaciones`}. Nadie más lo ve ni sale en el diario: ábrelo cuando nadie mire tu pantalla.</p>
-        <button class="primary block" style="margin-top:6px" data-a="gc-peek-open" onclick={() => (peekOpen = true)}>👁 Ver a solas</button>
-      {:else}
-        {#each newPeeks as p, i (i)}
-          <p style="margin:0 0 4px;font-size:0.92rem">🔍 {game.names[p.target] || '¿?'}, carta {p.idx + 1}: <b>{cardLabel({ kind: p.kind, role: p.role as never, up: false })}</b></p>
-        {/each}
-        <p class="small-note" style="margin-top:6px">Queda guardado en <b>🎴 Mi carta</b> hasta el final de la partida: no hace falta que lo memorices. Recuerda que cada uno lleva 1 carta del bando contrario, así que una sola no prueba nada.</p>
-        <button class="ghost block" style="margin-top:6px" data-a="gc-peek-ok" onclick={() => { peekOpen = false; guard(A.ackPeeks); }}>✅ Entendido, ocultar</button>
-      {/if}
-    </div>
-  {/if}
-
+  <!-- Lo que hay que hacer AHORA, arriba y sin scroll (B29): en tu turno, el
+       panel de acción; esperando, de quién es el turno y qué se le viene. -->
   {#if myTurn}
     <TurnPanel {game} {my} />
+    <div class="card"><PlayersBoard {game} {my} /></div>
   {:else}
-    <div class="narration">🎬 Turno de <b>{game.names[game.turn] || '¿?'}</b>: elige investigar, armarse, apuntar o disparar…
+    <div class="narration">🎬 Turno de <b>{game.names[game.turn] || '¿?'}</b>: investiga, se arma, apunta o dispara.
       <!-- Su estado público, aquí: es lo que dice si el peligro es inmediato. -->
       {#if turnArmed && turnAim}<br />⚠️ Va armado y apunta a <b>{game.names[turnAim] || '¿?'}</b>: puede disparar en este turno.
       {:else if turnArmed}<br />🔫 Va armado, pero todavía no apunta a nadie.{/if}
-      {#if myWait === 1}<br />Eres el siguiente: ve pensando tu acción.
-      {:else if myWait > 1}<br />Después va {game.names[nextPid!] || '¿?'}. Tú juegas dentro de {myWait} turnos: mientras, pregunta, acusa y negocia.
-      {:else if nextPid}<br />Después va {game.names[nextPid] || '¿?'}.{/if}
+      {#if queue.length}<br />Después: {queue.join(' → ')}{queueMore ? '…' : ''}. Mientras tanto, pregunta, acusa y negocia.{/if}
     </div>
+    <div class="card"><PlayersBoard {game} {my} /></div>
     {#if inGame && game.alive[my.id] && !game.paused}
       <!-- Desatasco: sin esto, un móvil apagado obligaba a cerrar la partida. -->
       <p style="text-align:center;margin:6px 0">
@@ -97,6 +87,8 @@
   {/if}
   {#if inGame && !game.alive[my.id]}<p class="small-note" style="text-align:center">❌ Estás fuera: tus cartas quedaron destapadas y ya no juegas turnos. Sigues mirando (y comentando) hasta el final.</p>{/if}
   {#if !inGame}<p class="small-note" style="text-align:center">👀 Sigues la partida de espectador: ves el tablero y el diario, nunca las cartas ocultas.</p>{/if}
+  <!-- El mismo recordatorio en TODOS los móviles: lo privado no vive aquí. -->
+  <p class="small-note" style="text-align:center">🎴 Tus cartas y lo que has visto están en el botón de abajo, y se tapan solas. Móvil plano en la mesa.</p>
 {/if}
 
 {#if game.log && game.log.length}
@@ -105,10 +97,3 @@
 {/if}
 
 <CardFab modal="gc-mycard" />
-
-<style>
-  /* La tarjeta privada de investigación: marcada, para no confundirla con el
-     tablero público que tiene justo encima. */
-  .peekcard { border-color: var(--accent); box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent); }
-  .peekcard h3 { color: var(--moon); }
-</style>

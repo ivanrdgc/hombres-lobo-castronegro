@@ -55,10 +55,22 @@ async function twoSel(p) {
   const n = await p.locator('.player[data-a=una-sel]').count();
   for (let i = 0; i < Math.min(2, n); i++) await p.locator('.player[data-a=una-sel]').nth(i).click({ timeout: 4000 }).catch(() => {});
 }
+const norm = (s) => (s || '').replace(/\s+/g, ' ').trim();
+// Texto de la tarjeta EN REPOSO (la que se ve sin tocar nada) de un móvil.
+const restCard = async (p) => norm(await p.locator('.actionpanel').first().innerText().catch(() => '?'));
+
+// B28 · postura 🍽️ MESA: de noche NADA aparece solo. Todos los móviles enseñan
+// la misma tarjeta neutra y el panel se abre con «👁 Abrir mi panel» —el mismo
+// botón en todos—: al llamado le da sus opciones y al resto «no es tu turno».
+async function openPanel(p) {
+  if (await vis(p, '[data-a=una-open]:not([disabled])')) { await clk(p, '[data-a=una-open]'); await p.waitForTimeout(120); }
+}
 
 // Acción genérica de un dispositivo para el paso en curso (solo hace algo si su
-// pantalla muestra el panel: los no-actores tienen un panel neutral sin botones).
+// pantalla muestra el panel: los no-actores abren la cortina y leen «no es tu
+// turno», sin botones de acción).
 async function actStep(p, step) {
+  await openPanel(p);
   if (step === 'doble') {
     if (await vis(p, '[data-a=una-doble-copy]')) { await firstSel(p); await clk(p, '[data-a=una-doble-copy]'); await p.waitForTimeout(200); }
     // B25: primero se elige QUÉ se mira (jugador / centro) y luego a quién.
@@ -153,8 +165,18 @@ try {
   check(st.playerIds.length === 4, 'los 4 juegan');
   check(st.center.length === 3, '3 cartas en el centro');
   console.log('  roles:', st.playerIds.map((id) => `${st.names[id]}=${st.originalRole[id]}`).join(', '), '· centro:', st.center.join(','));
+  // B28: la carta NO se pinta sola. Antes de que nadie toque nada, los 4
+  // móviles enseñan EXACTAMENTE la misma tarjeta (ni un rol a la vista).
+  const revealCards = [];
+  for (const pid of st.playerIds) {
+    await pg(pid).waitForSelector('[data-a=una-open-card]', { timeout: 15000 });
+    revealCards.push(await restCard(pg(pid)));
+  }
+  check(new Set(revealCards).size === 1, 'B28 · reparto: los 4 móviles enseñan la MISMA pantalla en reposo');
+  check(!/Lobo|Vidente|Ladrón|Aldeano|Insomne|Doble/.test(revealCards[0]), '…y esa pantalla no nombra ninguna carta');
   for (const pid of st.playerIds) {
     const p = pg(pid);
+    await p.click('[data-a=una-open-card]');
     await p.waitForSelector('[data-a=una-seen]', { timeout: 15000 });
     await p.click('[data-a=una-seen]');
     await p.waitForTimeout(150);
@@ -171,15 +193,26 @@ try {
   // fantasma duran ~100 ms y pueden colarse entre sondeos.
   check(st.steps.includes('doble'), 'la noche incluye el paso de El Doble en el guion');
   const t0 = Date.now();
+  let nightRest = null; // pantallas en reposo de la 1.ª llamada real (B28)
   while (Date.now() - t0 < 120000) {
     st = await hlc(ana);
     if (!st || st.phase !== 'night') break;
     const step = st.steps[st.stepIdx];
     if (step !== 'durmiendo' && step !== 'amanecer') {
+      if (!nightRest) {
+        // Antes de que nadie abra su cortina: ¿se distingue al llamado?
+        nightRest = [];
+        for (const pid of st.playerIds) {
+          await pg(pid).waitForSelector('[data-a=una-open]', { timeout: 10000 }).catch(() => {});
+          nightRest.push(await restCard(pg(pid)));
+        }
+      }
       for (const pid of st.playerIds) await actStep(pg(pid), step);
     }
     await ana.waitForTimeout(300);
   }
+  check(nightRest && new Set(nightRest).size === 1,
+    'B28 · noche: en reposo TODOS los móviles enseñan la misma tarjeta (el llamado no se distingue)');
   const dobleDealt = Object.values(st.originalRole).includes('doble');
   if (dobleDealt) check(!!st.acts.dobleRole, 'El Doble (repartido a un jugador) copió un rol: ' + st.acts.dobleRole);
   else ok('El Doble cayó en el centro: paso fantasma (nadie copia), como debe ser');
@@ -187,6 +220,14 @@ try {
   // ——— Día: UNA persona registra la condena del pueblo (como Los Hombres Lobo) ———
   st = await waitState(ana, (s) => s.phase === 'day', 'amanece (día)');
   ok('amanece y empieza el día');
+  // B28 · el día tampoco puede depender de quién eres ni de lo que viste: la
+  // pantalla del debate y del voto es la misma en los 4 móviles.
+  const dayCards = [];
+  for (const pid of st.playerIds) {
+    await pg(pid).waitForSelector('[data-a=una-vote]', { timeout: 15000 });
+    dayCards.push(await restCard(pg(pid)));
+  }
+  check(new Set(dayCards).size === 1, 'B28 · día: la pantalla del debate y del voto es idéntica para todos');
   // B13: en partida, el detalle de un rol (tira «cartas en juego») NO ofrece ▶️.
   const dp = pg(st.playerIds[0]);
   await dp.waitForSelector('[data-a=una-ingame-role]', { timeout: 15000 });

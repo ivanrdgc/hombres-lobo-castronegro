@@ -2,11 +2,12 @@
   // Tarjeta del rol propio con la información privada extra (port de roleCard()
   // de la v1). El «mini» va oculto por defecto (ui.roleOpen) y se auto-oculta
   // a los 12 s: los móviles quedan boca arriba sobre la mesa.
-  import { app, setFlash } from '../../../core/sync/store.svelte';
+  import { app } from '../../../core/sync/store.svelte';
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
   import { ROLES, TEAMS, isWolfSide } from '../roles';
   import { ROLE_HELP } from '../texts/role-help';
+  import { autoHide } from './autohide.svelte';
   import type { RoleId } from '../roles';
   import type { GroupDoc, PlayerDoc } from '../../../core/sync/schema';
   import type { GameState } from '../types';
@@ -51,23 +52,19 @@
     app.ui.roleOpen = !app.ui.roleOpen;
   }
 
-  // La carta se oculta sola: que no se quede abierta a la vista de nadie.
-  $effect(() => {
-    if (!app.ui.roleOpen) return;
-    // Salvo mientras la Sirvienta decide contrarreloj: no se cierra en plena decisión.
-    if (pendHead?.type === 'sirvienta' && player.role === 'sirvienta' && player.alive && !player.lover) return;
-    const t = setTimeout(() => {
-      app.ui.roleOpen = false;
-    }, 12000);
-    return () => clearTimeout(t);
-  });
+  // La carta se oculta sola a los 12 s sin tocarla: que no se quede abierta a
+  // la vista de la mesa. El plazo es el MISMO para todos —también para la
+  // Sirvienta mientras decide—: una carta que se quedaba abierta más rato que
+  // las demás era, ella sola, el chivato de quién tenía algo que decidir.
+  // Tocar dentro de la carta reinicia la cuenta: nadie se queda a medias.
+  const touch = autoHide(() => !!app.ui.roleOpen, () => (app.ui.roleOpen = false));
 </script>
 
 {#if player.inGame && player.role && r && team}
   {#if mini && !app.ui.roleOpen}
-    <div style="text-align:center;margin:10px 0"><button class="small ghost" data-a="toggle-rolecard" onclick={toggle}>👁 Mostrar mi rol</button></div>
+    <div style="text-align:center;margin:10px 0"><button class="small ghost" data-a="toggle-rolecard" onclick={toggle}>👁 Ver mi carta</button></div>
   {:else}
-    <div class="rolecard" data-a="toggle-rolecard" onclick={toggle} role="button" tabindex="0"
+    <div class="rolecard" data-a="toggle-rolecard" onclick={toggle} onpointerdown={touch} role="button" tabindex="0"
       onkeydown={(e) => { if (e.key === 'Enter') toggle(); }}>
       <span class="remoji">{r.emoji}</span>
       <span class="rname">{r.name}</span>
@@ -135,11 +132,17 @@
       {#if game.phase === 'day' && player.role === 'juez' && player.alive && player.powers?.juez !== false && !game.powersLost}
         <div class="rextra">⚖️ <b>Tu poder secreto</b>: puedes exigir una segunda votación hoy (una vez por partida). Nadie sabrá que fuiste tú.
           <button class="violet block" data-a="juez-arm" style="margin-top:6px"
-            onclick={(e) => { e.stopPropagation(); guard(async () => { await A.armJuez(); app.ui.roleOpen = false; setFlash('⚖️ Hecho: tras el juicio de hoy habrá una segunda votación.'); }); }}>⚖️ Exigir segunda votación tras el juicio</button></div>
+            onclick={(e) => { e.stopPropagation(); guard(A.armJuez); }}>⚖️ Exigir segunda votación tras el juicio</button></div>
+      {:else if game.phase === 'day' && player.role === 'juez' && player.powers?.juez === false && game.juezSecondActive}
+        <!-- La confirmación vive DENTRO de la carta (que se oculta sola): antes
+             era un aviso en la cabecera que se quedaba fijo en su móvil y
+             cantaba a la mesa quién había pedido la segunda votación. -->
+        <div class="rextra">⚖️ Hecho: habrá una <b>segunda votación</b> tras el juicio de hoy. Nadie sabrá que fuiste tú.</div>
       {/if}
       {#if pendHead?.type === 'sirvienta' && player.role === 'sirvienta' && player.alive && !player.lover}
         {@const condemned = app.players.find((p) => p.id === pendHead.targetId)}
         <div class="rextra">🧹 <b>Decide en secreto</b>: el pueblo ha condenado a <b>{condemned?.name || ''}</b>. ¿Sacrificas tu carta para asumir su rol? <Countdown deadline={pendHead.deadline ?? 0} />
+          <span class="small-note">Si la carta se oculta sola, vuelve a abrirla: sigues a tiempo mientras corra la cuenta.</span>
           <div class="btnrow" style="margin-top:6px">
             <button class="violet" data-a="sirvienta-yes" onclick={(e) => { e.stopPropagation(); guard(() => A.resolveSirvienta(true)); }}>🧹 Tomar su rol</button>
             <button class="ghost" data-a="sirvienta-no" onclick={(e) => { e.stopPropagation(); guard(() => A.resolveSirvienta(false)); }}>No intervenir</button></div></div>

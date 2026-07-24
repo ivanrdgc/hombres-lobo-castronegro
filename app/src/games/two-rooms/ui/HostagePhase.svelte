@@ -30,6 +30,20 @@
   let confirmClose = $state(false);
   $effect(() => { if (!canClose) confirmClose = false; });
 
+  // La PAPELETA va cerrada. Aquí se vota de pie y hombro con hombro dentro de
+  // la sala: con la lista desplegada, el vecino al que estás señalando lo lee
+  // de reojo (nombre resaltado, ✔️ y un botón que dice «Votar a Fulano»). Se
+  // abre con un gesto, se tapa con la mano y se cierra sola a los 30 s si te
+  // distraes — la elección no se pierde, vive en la selección de la mesa.
+  let ballot = $state(false);
+  $effect(() => {
+    if (!ballot) return;
+    void pick; // cada toque en la lista reinicia la cuenta: nadie se queda a medias
+    const t = setTimeout(() => (ballot = false), 30000);
+    return () => clearTimeout(t);
+  });
+  $effect(() => { if (iVoted) ballot = false; });
+
   // Vencido el plazo, cualquier dispositivo cierra las dos votaciones.
   $effect(() => {
     const t = setInterval(() => {
@@ -41,26 +55,22 @@
   });
 </script>
 
-<div class="narration">🗳️ Fin de la ronda {game.round}. Cada sala decide, por votación y a ciegas, {hostages === 1 ? 'a quién manda de rehén' : `qué ${hostages} personas manda de rehén`} a la otra sala.</div>
-
-<div class="card">
-  <!-- Solo «decidido»: en la mesa las dos salas eligen sin saber lo de enfrente
-       (los nombres salen juntos, en el intercambio). -->
-  <p class="small-note" style="margin:0">🚪 Sala 1: {votedCount(0)}/{roomMembers(game, 0).length} votos{game.picks[0] ? ' · decidido ✔️' : ''}</p>
-  <p class="small-note" style="margin:4px 0 0">🚪 Sala 2: {votedCount(1)}/{roomMembers(game, 1).length} votos{game.picks[1] ? ' · decidido ✔️' : ''}</p>
-  {#if inGame && pending.length}
-    <p class="small-note" style="margin:6px 0 0">⏳ En tu sala falta por votar: {pending.join(', ')}.</p>
-    <!-- Punto de fuga si el móvil de alguien ya no responde: nunca un «espera y
-         reza» sin salida. -->
-    <p class="small-note" style="margin:4px 0 0">Si a alguien se le ha apagado el móvil, sácalo de la partida desde ⋯ → 🪑 La mesa.</p>
-  {/if}
-</div>
+<!-- Qué toca ahora, arriba y en una frase; el recuento va DEBAJO, que es
+     contexto para esperar, no para decidir (B29). -->
+<div class="narration">🗳️ Se acabó el tiempo. Cada sala elige {hostages === 1 ? 'a quién manda de rehén' : `a las ${hostages} personas que manda de rehenes`} a la otra, y lo hace a ciegas: hasta que no hayan cerrado las dos, no se dice nada.</div>
 
 {#if inGame && game.picks[myRoom] !== null}
   <div class="card"><p class="hint">✅ Tu sala ya ha decidido. {game.picks[other] === null ? 'Falta la otra sala: en cuanto cierre, se anuncia el intercambio.' : 'Preparaos para el intercambio.'}</p></div>
+{:else if inGame && !iVoted && !ballot}
+  <!-- Reposo del voto: idéntico en todos los móviles de la sala. Quien mira de
+       reojo ve que te toca votar, no a quién estás mirando. -->
+  <div class="actionpanel"><h3>🗳️ Te toca votar (Sala {myRoom + 1})</h3>
+    <p class="hint">Tu voto es SECRETO dentro de tu sala. Abre la papeleta, tápala con la mano y ciérrala al confirmar.</p>
+    <button class="primary block" data-a="tr-ballot" onclick={() => (ballot = true)}>🗳️ Abrir mi papeleta</button>
+  </div>
 {:else if inGame && !iVoted}
   <div class="actionpanel"><h3>¿A quién mandáis de tu sala (Sala {myRoom + 1})?</h3>
-    <p class="small-note" style="margin:0 0 6px">Solo puedes votar a alguien de TU sala (tú incluido, si te ofreces).</p>
+    <p class="small-note" style="margin:0 0 6px">🙈 Tapa la pantalla: esta lista delata tu voto. Solo puedes votar a alguien de TU sala (tú incluido, si te ofreces).</p>
     <div class="players">
       {#each mates as pid (pid)}
         <div class="player selectable {pick === pid ? 'selected' : ''}" data-a="tr-hostage" data-p={pid}
@@ -77,12 +87,14 @@
     <button class="primary block" data-a="tr-hostage-confirm" disabled={!pick}
       onclick={() => (pick ? guard(async () => { await A.castHostageVote(pick); clearSel(); }) : undefined)}>🗳️ {pick ? `Votar a ${nm(pick)}` : 'Elige a quién mandar'}</button>
     {#if !pick}<p class="small-note" style="margin:6px 0 0">Toca antes a alguien de la lista.</p>{/if}
+    <!-- Salir sin votar: si alguien se te acerca, tapar la papeleta no puede
+         obligarte a echar el voto antes de tiempo. -->
+    <button class="ghost block" data-a="tr-ballot-hide" onclick={() => (ballot = false)}>🙈 Tapar la papeleta (aún no voto)</button>
 
     <!-- La referencia, DENTRO del panel donde se decide: nadie debería salir de
          esta pantalla para recordar cómo funciona el voto. -->
     <details class="trref">
       <summary data-a="tr-ref">📖 Cómo funciona este voto</summary>
-      <p class="small-note">Cada sala vota por su cuenta y a ciegas: hasta que las DOS no han decidido no se dice a quién manda ninguna.</p>
       <p class="small-note">Cruzan {hostages === 1 ? 'una persona' : `${hostages} personas`} por sala (una de cada cuatro, mínimo una). Empate en cabeza: decide el orden de la mesa.</p>
       <p class="small-note">La votación se cierra sola cuando ha votado TODA tu sala. Si alguien no puede votar, con la mayoría echada aparece «🔒 Cerrar la votación»; y si nadie hace nada, el reloj de arriba la cierra con los votos que haya.</p>
       <p class="small-note">Tras el intercambio no corre el reloj: os colocáis con calma y arrancáis la siguiente ronda con un botón.</p>
@@ -90,9 +102,21 @@
   </div>
 {:else if inGame}
   <div class="card"><p class="hint">✅ Tu voto está echado. {pending.length ? `Falta ${pending.join(', ')}: la votación se cierra cuando haya votado toda tu sala.` : 'Esperando a la otra sala…'}</p></div>
-{:else}
-  <div class="card"><p class="hint">👀 Las salas están decidiendo sus rehenes. No votas: eres espectador.</p></div>
 {/if}
+
+<!-- Contexto de la espera: cuánto lleva votado cada sala. Nunca a QUIÉN vota
+     nadie (las dos salas eligen sin saber lo de enfrente; los nombres salen
+     juntos, en el intercambio). -->
+<div class="card">
+  <p class="small-note" style="margin:0">🚪 Sala 1: {votedCount(0)}/{roomMembers(game, 0).length} votos{game.picks[0] ? ' · decidido ✔️' : ''}</p>
+  <p class="small-note" style="margin:4px 0 0">🚪 Sala 2: {votedCount(1)}/{roomMembers(game, 1).length} votos{game.picks[1] ? ' · decidido ✔️' : ''}</p>
+  {#if inGame && pending.length}
+    <p class="small-note" style="margin:6px 0 0">⏳ En tu sala falta por votar: {pending.join(', ')}.</p>
+    <!-- Punto de fuga si el móvil de alguien ya no responde: nunca un «espera y
+         reza» sin salida. -->
+    <p class="small-note" style="margin:4px 0 0">Si a alguien se le ha apagado el móvil, sácalo de la partida desde ⋯ → 🪑 La mesa.</p>
+  {/if}
+</div>
 
 {#if canClose}
   {#if !confirmClose}

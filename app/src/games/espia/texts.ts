@@ -6,9 +6,11 @@ import { locationById } from './locations';
 
 // ——— Lobby ———
 
+// Dos líneas: de qué va el juego y nada más (los números —jugadores, minutos—
+// están en la ficha de la pantalla, no repetidos aquí).
 export const INTRO_LOBBY = [
-  'Todos sabéis dónde estáis… menos uno. Cada ronda, la mesa entera recibe la misma localización y un papel en ella; el espía solo recibe una cosa: la certeza de que no tiene ni idea.',
-  'A base de preguntas y respuestas, los agentes deben cazar al impostor sin regalar el lugar, y el espía debe deducirlo mientras finge saberlo. De 3 a 8 jugadores y rondas de 5, 8 o 10 minutos —lo elegís al empezar— de interrogatorio, faroles y miradas de reojo.',
+  'Todos sabéis dónde estáis… menos uno. Cada ronda, la mesa entera recibe la misma localización y un papel en ella; el espía solo recibe la certeza de que no tiene ni idea.',
+  'A base de preguntas y respuestas, los agentes tienen que cazarlo sin llegar a nombrar el lugar, y él tiene que deducirlo fingiendo que ya lo sabe.',
 ];
 
 export interface HelpSection {
@@ -22,8 +24,8 @@ export const HOW_TO: HelpSection[] = [
     body: [
       'De 3 a 8 jugadores, en rondas de 5, 8 o 10 minutos (la mesa elige la duración al empezar; la oficial son 8 minutos). Se juegan las rondas que queráis: el marcador es acumulado.',
       'Cada ronda, todos reciben en su móvil la MISMA localización con un papel distinto (médico de a bordo, crupier, becario…). Uno recibe en su lugar la carta de ESPÍA: no sabe dónde está.',
-      'Mira tu carta a solas y confirma; cuando todos han confirmado, cualquiera pone el reloj en marcha. Durante la ronda, el botón flotante 🎴 de la esquina vuelve a enseñarte tu carta y la chuleta de reglas.',
-      'La lista completa de localizaciones es pública: consultadla cuando queráis. El espía la necesita para adivinar; los agentes, para no pasarse de listos con las respuestas.',
+      'Mira tu carta a solas y confirma. El móvil se queda plano sobre la mesa toda la ronda: por eso la carta se cierra sola y todas las pantallas se ven iguales. Para volver a verla, «Mi carta» (o el botón flotante de la esquina).',
+      'La lista completa de localizaciones es pública. Cada cual tiene además su libreta: toca un lugar para tacharlo cuando una respuesta lo descarte. Los tachones son solo de tu móvil, no los ve nadie… y la libreta también se cierra sola.',
     ],
   },
   {

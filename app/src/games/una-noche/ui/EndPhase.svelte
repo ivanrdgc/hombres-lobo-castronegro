@@ -25,14 +25,10 @@
 
 <div class="narration">🌅 Amanece del todo y se destapan las cartas.</div>
 
+<!-- B29: el desenlace es UNA idea (quién gana y por qué), no dos tarjetas. -->
 <div class="card" style="text-align:center">
   {#each winners as w (w)}<h3 style="margin:6px 0">{WIN_LABELS[w]}</h3>{/each}
-</div>
-
-<div class="card">
-  <h3>⚖️ El juicio</h3>
-  <p class="small-note" style="margin-top:2px">{!game.lynched || !game.lynched.length ? 'El pueblo perdonó: no condenó a nadie.' : `El pueblo condenó a ${game.lynched.map(nm).join(', ')}.`}</p>
-  <p class="small-note">{(game.deaths || []).length ? `💀 Cayó: ${(game.deaths || []).map(nm).join(', ')}.` : '🕊️ No cayó nadie.'}</p>
+  <p class="small-note" style="margin-top:8px">{!game.lynched || !game.lynched.length ? '⚖️ El pueblo perdonó: no condenó a nadie.' : `⚖️ El pueblo condenó a ${game.lynched.map(nm).join(', ')}.`} {(game.deaths || []).length ? `💀 Cayó: ${(game.deaths || []).map(nm).join(', ')}.` : '🕊️ No cayó nadie.'}</p>
 </div>
 
 <div class="card">
@@ -57,7 +53,6 @@
       <ul class="histlist">{#each h as line (line)}<li>{line}</li>{/each}</ul>
     </div>
   {/each}
-  <p class="small-note">El orden de la noche fue el de las llamadas; aquí se agrupa por jugador.</p>
 </div>
 
 {#if !againArmed}

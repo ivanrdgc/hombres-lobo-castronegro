@@ -4,6 +4,10 @@
 // hasta hundir → revancha. Verifica la FUGA (el mapa rival no aparece en tu
 // pantalla), el cuaderno de sonar LOCAL y que los dos altavoces del modo «uno
 // por corro» caen en tripulaciones distintas.
+// Y la POSTURA 👥 EQUIPO (B28), que en este juego es media partida: la consola
+// se anuncia como secreta y se puede tapar de un toque, y ningún paso del turno
+// cambia la SILUETA de la pantalla (apuntar no añade una segunda rejilla ni
+// pinta un botón rojo: si el rival lo distingue a dos metros, se acabó la caza).
 import { chromium } from 'playwright';
 const BASE = process.env.BASE; if (!BASE) { console.error('Define BASE=https://tu-sitio.web.app'); process.exit(1); }
 let fail = 0;
@@ -53,8 +57,19 @@ function legal(sub, d) {
 const doMove = async (p, d) => { await p.click(`[data-a=sn-move][data-p="${d}"]`); await p.click('[data-a=sn-go]'); };
 const doSurface = async (p) => { await p.click('[data-a=sn-act][data-p=surface]'); await p.click('[data-a=sn-surface]'); };
 const doDrone = async (p) => { await p.click('[data-a=sn-act][data-p=drone]:not([disabled])'); await p.click('[data-a=sn-drone]'); };
+// Apuntar y deslizarse se hacen sobre el MISMO mapa de siempre (postura equipo):
+// tocar la casilla es el paso 2, y la pantalla no cambia de forma al hacerlo.
+let siluetaChecked = false;
 const doTorpedo = async (p, c) => {
+  const rejillas = await p.locator('.snmap').count();
   await p.click('[data-a=sn-act][data-p=torpedo]:not([disabled])');
+  if (!siluetaChecked) {
+    siluetaChecked = true;
+    check(await p.locator('.snmap').count() === rejillas, 'apuntar NO añade una segunda rejilla: la silueta de la pantalla no cambia');
+    check(await p.locator('[data-a=sn-fire]').isDisabled(), 'sin casilla elegida, «disparar» está pero deshabilitado (mismo botón que las demás acciones)');
+    const cls = (await p.locator('[data-a=sn-fire]').getAttribute('class')) || '';
+    check(!cls.includes('danger'), 'el botón de disparar no se pinta de rojo: a dos metros se leería «van a disparar»');
+  }
   await p.click(`[data-a=sn-cell][data-p="${c.x},${c.y}"]`);
   await p.click('[data-a=sn-fire]');
 };
@@ -76,6 +91,12 @@ try {
   await ana.click('button[data-a=select-game][data-p=sonar]');
   await ana.waitForSelector('[data-a=sn-open-help]');
   ok('el catálogo ofrece Captain Sonar y su lobby carga');
+  // B29 · el lobby tiene un solo trabajo: de qué va + tres caminos. Y B28: dice
+  // cómo se sostiene el móvil ANTES de repartir.
+  check(await ana.locator('.card h3:has-text("Captain Sonar")').count() === 0, 'el lobby no repite el nombre del juego: ya está en la cabecera');
+  const lobbyTxt = await ana.locator('.card').first().innerText();
+  check(/secreto de equipo/.test(lobbyTxt), 'el lobby avisa de la postura del móvil (👥 equipo)');
+  check(await ana.locator('[data-a=open-start], [data-a=open-demo], [data-a=sn-open-help]').count() === 3, 'y ofrece los tres caminos: jugar, aprender y consultar');
   await ana.click('[data-a=sn-open-help]');
   await ana.waitForSelector('text=/Cómo se juega/');
   check(await ana.locator('.modal [data-a=sn-play-howto]').count() >= 4, 'el «cómo se juega» tiene un ▶️ por apartado');
@@ -109,6 +130,14 @@ try {
   check(await pg(blueP).locator('.modal .settingrow').count() >= 5, 'el 🎴 lleva la chuleta de las 5 acciones');
   await pg(blueP).click('.modal [data-a=close-modal]');
   ok('el 🎴 se abre en cualquier momento');
+
+  // ——— POSTURA 👥 EQUIPO: aviso hacia fuera y tapadera ———
+  check(await pg(redP).locator('[data-a=sn-secret]').count() === 1, 'la consola se anuncia como secreta de la tripulación (el rival está en la sala)');
+  await pg(redP).click('[data-a=sn-cover]');
+  check(await pg(redP).locator('.snmap').count() === 0, 'al tapar, el mapa y el cuaderno desaparecen de la pantalla');
+  await pg(redP).waitForSelector('[data-a=sn-uncover]');
+  await pg(redP).click('[data-a=sn-uncover]');
+  check(await pg(redP).locator('.snmap').count() === 2, 'al destapar vuelven las dos rejillas: mapa y cuaderno');
 
   // ——— Panel de decisión (B25): coste, efecto, por qué NO y confirmación ———
   s = await st();
@@ -206,10 +235,15 @@ try {
   if (silDir) {
     const before = { ...ss.subs[silTeam].pos };
     const steps = twoStep ? 2 : 1;
+    // El destino se toca en el MISMO mapa que la puntería y que el mapa normal:
+    // una sola rejilla para todo, siempre en el mismo sitio.
+    const to = { x: before.x + DIRS[silDir][0] * steps, y: before.y + DIRS[silDir][1] * steps };
     s = await act(async (p) => {
+      const rejillas = await p.locator('.snmap').count();
       await p.click('[data-a=sn-act][data-p=silence]:not([disabled])');
-      if (steps === 2) check(await p.locator(`[data-a=sn-silence][data-p="${silDir}2"]`).count() === 1, 'el silencio ofrece mover 2 casillas');
-      await p.click(`[data-a=sn-silence][data-p="${silDir}${steps === 2 ? '2' : ''}"]`);
+      check(await p.locator('.snmap').count() === rejillas, 'el silencio tampoco añade rejillas: se elige sobre el mapa de siempre');
+      check(await p.locator(`[data-a=sn-cell][data-p="${to.x},${to.y}"]`).count() === 1, `el silencio ofrece deslizarse ${steps} casilla(s) tocando el destino`);
+      await p.click(`[data-a=sn-cell][data-p="${to.x},${to.y}"]`);
       check(/Deslizarse/.test(await p.locator('[data-a=sn-hush]').innerText()), 'el silencio se confirma con lo que va a hacer');
       await p.click('[data-a=sn-hush]');
     }, 'silencio resuelto');
@@ -254,11 +288,16 @@ try {
   ok('partida completa de Captain Sonar');
 
   // ——— Revancha: MISMAS tripulaciones (nadie cambia de corro ni de altavoz) ———
-  const teamsAntes = JSON.stringify(s.teams);
+  // Comparar por CONTENIDO, no por JSON: el orden de las claves del mapa no es
+  // estable entre la copia optimista local y la que confirma el servidor
+  // (Firestore devuelve los mapas con las claves ordenadas), y un «blue» antes
+  // que «red» hacía fallar la comprobación con las mismas tripulaciones.
+  const crews = (t) => `red:${[...t.red].sort().join(',')}|blue:${[...t.blue].sort().join(',')}`;
+  const teamsAntes = crews(s.teams);
   const scoresAntes = { ...s.scores };
   await ana.click('[data-a=sn-again]');
   const r = await waitState(ana, (x) => x.phase === 'turn', 'revancha en marcha');
-  check(JSON.stringify(r.teams) === teamsAntes, 'la revancha conserva las tripulaciones');
+  check(crews(r.teams) === teamsAntes, 'la revancha conserva las tripulaciones');
   check(r.subs.red.hp === 3 && r.subs.blue.hp === 3 && r.subs.red.energy === 0, 'submarinos nuevos: 3 de vida y 0 de energía');
   check(r.moves.red.length === 0 && r.moves.blue.length === 0, 'las tiras de rumbos empiezan vacías');
   check(Object.keys(scoresAntes).every((p) => (r.scores[p] || 0) === scoresAntes[p]), 'el marcador se acumula');

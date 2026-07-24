@@ -204,3 +204,86 @@ comprobable pantalla a pantalla:
   ofrecerlo en su menú ⋯.**
 - **`shell/SeatPicker.svelte`** — «¿quién juega?» + orden de mesa, común a las
   17 pantallas de «Empezar partida».
+
+---
+
+## Postura del móvil: mesa · mano · equipo (julio 2026 · B28)
+
+Criterio de Iván, y manda sobre el resto del contrato: **cómo se sostiene el
+móvil en cada juego decide cómo tiene que ser su UI**. Son dos diseños opuestos
+y confundirlos rompe el juego o lo hace incómodo.
+
+### 🍽️ MESA — el móvil se queda plano y desbloqueado sobre la mesa
+El jugador no lo está mirando: habla, discute y solo lo coge cuando le toca. En
+Hombres Lobo pasa de noche **y de día**. Cualquiera puede echar un vistazo a los
+móviles de al lado, así que:
+
+1. **La pantalla EN REPOSO es idéntica en todos los móviles.** Mismo texto,
+   mismo alto, mismos botones, mismos colores. Nada que dependa de tu rol, tu
+   carta, tu bando o tu información puede verse sin un gesto tuyo.
+2. **Prohibidos los chivatos de FORMA**, que se leen de reojo aunque no se lea
+   el texto: un botón que solo tienes tú, un borde o fondo de color por bando,
+   un contador que solo ves tú, un panel más largo, un icono distinto.
+3. **Lo secreto vive tras un gesto explícito** (👁 / 🎴) y **se auto-oculta**
+   (~12 s o al cambiar de fase). Las acciones privadas de día se abren desde la
+   carta, no desde la pantalla principal.
+4. **El punto de entrada para actuar es el mismo para todos**: quien no está
+   llamado, al tocarlo, recibe «no es tu turno» — así tocar no delata.
+5. El diario y la voz nunca dicen quién actuó ni qué vio.
+
+### 🃏 MANO — el móvil se sujeta mirando hacia ti, como una mano de cartas
+Nadie va a dejarlo boca arriba: *es* tu baraja. Aquí esconder estorba.
+
+1. **Tu mano está siempre a la vista, sin gestos**: nada de «👁 Ver mi carta»
+   para lo que necesitas en cada turno.
+2. **Todo lo de decidir cabe en una pantalla**: efectos, costes y lo público de
+   los demás (descartes, monedas, fichas), sin abrir modales ni hacer scroll.
+3. La referencia completa, plegada en el propio panel.
+
+### 👥 EQUIPO — un móvil por persona, pero el secreto es del equipo, que se sienta junto
+Lo tuyo lo pueden ver los tuyos; el problema es el equipo rival. Se diseña como
+**mano** hacia dentro, con un aviso claro de que esa pantalla no la puede ver el
+rival, y sin nada que el rival pueda deducir mirando de lejos.
+
+### Los 17, clasificados
+- **🍽️ Mesa**: Hombres Lobo, Una Noche, El Espía, Insider, El Camaleón,
+  Shadow Hunters, Good Cop Bad Cop, Ávalon, Secret Hitler, Two Rooms
+  (excepto el acto deliberado de enseñar la carta, que es de mano).
+- **🃏 Mano**: Love Letter, Coup, Skull.
+- **👥 Equipo**: Codenames, Decrypto, Wavelength, Captain Sonar.
+
+En los mixtos manda la fase: en Ávalon y Secret Hitler el reposo es de mesa y
+los momentos privados (ver los decretos, investigar) son de mano y breves.
+
+---
+
+## Pasada de claridad: reescribir la pantalla entera (julio 2026 · B29)
+
+Iván: «Aprovecha para repensar toda la UI. Por ejemplo, en la pantalla de intro
+del juego (antes de empezar a jugar) ahora sale el nombre del juego en el header
++ de nuevo justo abajo en la sección introductoria. Aprovecha para reescribir
+TODA la UI para que todo quede mucho más intuitivo y claro».
+
+No es una lista de retoques: es permiso para **rehacer la pantalla** si sale
+mejor. Reglas:
+
+1. **Un dato, un sitio.** Nada se dice dos veces en la misma pantalla. Si la
+   cabecera ya dice a qué juegas, la tarjeta de debajo no lo repite; si el botón
+   dice «Empezar partida», el título no dice otra vez «Empezar partida».
+2. **Jerarquía de tres alturas**: (a) lo que hay que hacer AHORA, arriba, grande
+   y sin scroll; (b) el contexto que necesitas para decidirlo; (c) la referencia
+   y lo accesorio, plegado o al pie.
+3. **Menos tarjetas.** Una tarjeta por IDEA, no por párrafo. Si dos tarjetas
+   seguidas se leen como una sola cosa, son una sola cosa.
+4. **Verbos, no etiquetas.** Los botones dicen la acción y su consecuencia; los
+   títulos dicen qué es esa pantalla en el juego, no cómo se llama en el código.
+5. **Vocabulario estable.** El mismo concepto se llama igual en el catálogo, el
+   lobby, la partida, la ayuda, el tutorial y la voz.
+6. **Fuera el ruido.** Quita el texto que solo explica la app a sí misma
+   («la app custodia las cartas y baraja…») cuando no cambia lo que haces;
+   conserva lo que enseña a jugar o evita un error.
+7. **Cabe en un móvil.** La acción principal se ve sin desplazar. Si no cabe,
+   reordena o pliega, no encojas la letra.
+8. **La primera pantalla de cada juego** (el lobby) tiene un solo trabajo:
+   decir de qué va en dos líneas y dejar tres caminos claros — aprender
+   (tutorial), consultar (cómo se juega) y jugar (empezar).

@@ -416,3 +416,55 @@ Estados: 🔴 abierto · 🟢 arreglado (con commit) · 🟡 re-reportado tras u
 - **2026-07-24 · 🟢 arreglado** (este commit): la mesa (`MesaScreen`), la portada y la pantalla de
   invitación siguen luciendo el nombre del grupo; lobby, «empezar partida» y partida pasan a decir
   el nombre del juego.
+
+## B28 · La postura del móvil (mesa vs. mano) manda sobre la UI de cada juego
+- **2026-07-24 · criterio de Iván.** «Te dije en algún momento que durante el día todos los móviles
+  tienen que verse igual. Eso tiene sentido para los juegos donde se deje en algún momento el móvil
+  desbloqueado encima de la mesa y sin el usuario prestar atención (i.e. en Los Hombres Lobo, de
+  noche todos los móviles están encima de la mesa desbloqueados; si los lobos miran, no pueden ver
+  que la Vidente tenga una pantalla diferente, ya que la delataría… todos la misma pantalla).
+  Incluso en Hombres Lobo lo normal es que la gente siga dejando el móvil plano y desbloqueado
+  durante el día, ya que principalmente estarán hablando y discutiendo entre ellos sin el móvil (por
+  eso las acciones de día también se ocultan en mi carta). Sin embargo, en otros juegos donde la
+  idea es tener una o varias cartas siempre visibles (como si fueran de una baraja), tiene más
+  sentido repensar la UI para que todo quede cómodamente visible. La gente se pondrá el móvil
+  mirando hacia ellos, no encima de la mesa.»
+- **Diagnóstico.** La pasada de UI de B25/B26 optimizó «que se entienda» sin distinguir CÓMO se
+  sostiene el móvil en cada juego, y son dos diseños opuestos: en los juegos de mesa la pantalla en
+  reposo tiene que ser **idéntica en todos los móviles** (cualquier diferencia de forma —un botón
+  que solo tú tienes, un borde de color, una línea de más— es un chivato), y en los de mano hay que
+  quitar gestos y dejarlo todo a la vista.
+- **2026-07-24 · 🟢 aplicado** (este commit): contrato «Postura del móvil» en `docs/UX.md` con los
+  17 juegos clasificados en **mesa / mano / equipo**, un aviso en el catálogo y en el lobby que le
+  dice a la mesa cómo colocar el móvil, y una pasada de UI por juego según su postura.
+
+## B29 · Reescribir toda la UI para que sea más clara
+- **2026-07-24 · petición.** «Aprovecha para repensar toda la UI. Por ejemplo, en la pantalla de
+  intro del juego (antes de empezar a jugar) ahora sale el nombre del juego en el header + de nuevo
+  justo abajo en la sección introductoria. Aprovecha para reescribir TODA la UI para que todo quede
+  mucho más intuitivo y claro.»
+- **Diagnóstico.** El ejemplo lo destapa B27: al poner el juego en la cabecera, la tarjeta de
+  introducción del lobby quedó repitiéndolo. Y es un síntoma: las pantallas habían crecido por
+  acumulación (una tarjeta por párrafo, notas que explican la app a sí misma, el mismo dato en dos
+  sitios) en vez de por diseño.
+- **2026-07-24 · 🟢 aplicado** (este commit): contrato «Pasada de claridad» en `docs/UX.md` — un
+  dato un sitio, jerarquía de tres alturas (acción ahora / contexto / referencia plegada), una
+  tarjeta por idea, verbos en botones y títulos, vocabulario estable, fuera el ruido, la acción
+  principal sin scroll, y el lobby con un solo trabajo: de qué va en dos líneas y tres caminos
+  (aprender, consultar, jugar). Aplicado a los 17 juegos y al shell.
+
+## B30 · Ambientación pobre: la misma noche y el mismo día para los 17 juegos
+- **2026-07-24 · petición.** «También puedes aprovechar para mejorar la ambientación de los juegos.
+  Creo que ahora solo hay viento, grillos y búhos de noche; pájaros de día. Muy básico, si se te
+  ocurren mejores formas de ambientar cada juego, sería genial.»
+- **Diagnóstico.** Solo Hombres Lobo y Una Noche tenían ambiente, y cada narrador lo decidía por su
+  cuenta: con varias partidas por mesa, el que no aplicaba mandaba «silencio» y cortaba al otro.
+- **2026-07-24 · 🟢 arreglado** (este commit): 17 escenas procedurales, una por juego, con ladrillos
+  nuevos (lechos de ruido filtrado, drones, ráfagas con envolvente) y eventos con carácter —
+  aullidos lejanos y campana de pueblo en Castronegro, reloj y megafonía en El Espía, antorchas y
+  campana de castillo en Ávalon, fluorescente y papeleo en Secret Hitler, telegrafía en Decrypto,
+  radio policial en Good Cop, ping de sonar y goteras en Captain Sonar, chimenea y jarras en Skull,
+  arpa de palacio en Love Letter… Y un **director único** (`core/audio/ambience-director`) que mira
+  la partida en contexto: suena solo en el móvil que narra ESA partida, con el ajuste activo, sin
+  pausa y sin partida terminada. Las 17 escenas se pueden auditar una a una en el laboratorio de
+  audio.

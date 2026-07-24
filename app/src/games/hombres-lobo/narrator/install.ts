@@ -7,8 +7,6 @@ import { pauseMs, profileOf } from '../../../core/narrator/pacing';
 import { e2eTestMode } from '../../../core/test-hooks';
 import { lastUtterance, play, stopSpeech } from '../../../core/audio/player';
 import type { Utterance } from '../../../core/audio/player';
-import { ensureAmbience, stopAmbience } from '../../../core/audio/ambience';
-import { getVoiceConfig } from '../../../core/audio/voice-config';
 import { matchView, onChange, state } from '../../../core/sync/store.svelte';
 import * as A from '../actions';
 import { amNarrator, gameIdOf, sceneOf, type Snap } from './scenes';
@@ -110,11 +108,8 @@ export function installNarrator(): void {
     // nunca se reproduce nada en él. La lectura es siempre local, en el
     // dispositivo que la pide, desde el lobby o su modal.)
 
-    // Paisaje sonoro y pantalla encendida, solo en el dispositivo narrador
-    // (en los e2e no arranca: sin audio que interfiera).
-    const wantAmbience = master && !!game && getVoiceConfig().ambience && !state.ui.muted
-      && !game.paused && game.phase !== 'end' && !e2eTestMode();
-    ensureAmbience(!wantAmbience ? null : game!.phase === 'day' ? 'day' : 'night');
+    // El paisaje sonoro lo decide el director central (core/audio/ambience-director):
+    // con varias partidas por mesa, cada narrador tirando por su cuenta se pisaba.
     if (master) requestWakeLock();
 
     // Latido de presencia: los demás dispositivos detectan un narrador caído.
@@ -125,13 +120,7 @@ export function installNarrator(): void {
       clearInterval(heartbeatTimer);
       heartbeatTimer = null;
     }
-    if (!master) stopAmbienceIfNotNarrating(game ? !!game.paused : false);
 
     narrator.tick();
   });
-
-  function stopAmbienceIfNotNarrating(paused: boolean): void {
-    void paused;
-    stopAmbience();
-  }
 }

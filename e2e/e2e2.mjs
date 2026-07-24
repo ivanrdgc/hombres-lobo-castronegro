@@ -55,7 +55,21 @@ const pageOf = (st, pred) => {
   return p ? pages[p.name.toLowerCase()] : null;
 };
 
+// B28 · postura 🍽️ MESA: de noche TODAS las pantallas se ven iguales y el panel
+// de acción solo aparece tras el gesto de su dueño («👁 Abrir mi turno»).
+async function openTurn(pg, sel, timeout = 25000) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < timeout) {
+    if (await pg.locator(sel).count()) return;
+    const gate = pg.locator('[data-a=open-night-turn]');
+    if (await gate.count()) await gate.click().catch(() => {});
+    await pg.waitForTimeout(200);
+  }
+  await pg.waitForSelector(sel, { timeout: 3000 });
+}
+
 async function clickFirstAnd(page, confirmSel, n = 1) {
+  await openTurn(page, confirmSel);
   for (let i = 0; i < n; i++) {
     await page.click(`.actionpanel .player.selectable:not(.selected) >> nth=0`);
     await page.waitForTimeout(200);
@@ -74,6 +88,7 @@ async function driveNightStep(st) {
     case 'enamorados': {
       for (const p of st.players.filter((x) => x.lover && x.alive)) {
         const pg = pages[p.name.toLowerCase()];
+        await openTurn(pg, 'button[data-a=act-lover-ok]', 8000).catch(() => {});
         if (await pg.isVisible('button[data-a=act-lover-ok]')) await pg.click('button[data-a=act-lover-ok]');
       }
       return;
@@ -82,6 +97,7 @@ async function driveNightStep(st) {
     case 'perro_lobo': {
       // Elegir bando marca toda la partida: se elige y se CONFIRMA (dos gestos).
       const pg = pages[alive('perro_lobo').name.toLowerCase()];
+      await openTurn(pg, 'button[data-a=act-perro][data-p=aldeano]');
       await pg.click('button[data-a=act-perro][data-p=aldeano]');
       await pg.waitForSelector('button[data-a=act-perro-confirm]');
       return pg.click('button[data-a=act-perro-confirm]');
@@ -89,6 +105,7 @@ async function driveNightStep(st) {
     case 'dos_hermanas': {
       for (const p of st.players.filter((x) => x.role === 'dos_hermanas' && x.alive)) {
         const pg = pages[p.name.toLowerCase()];
+        await openTurn(pg, 'button[data-a=act-hermana-ok]', 8000).catch(() => {});
         if (await pg.isVisible('button[data-a=act-hermana-ok]')) await pg.click('button[data-a=act-hermana-ok]');
       }
       return;
@@ -107,6 +124,7 @@ async function driveNightStep(st) {
       const pack = st.players.filter((p) => p.alive && (['hombre_lobo', 'lobo_feroz', 'infecto', 'lobo_albino'].includes(p.role) || p.wolfSide === true));
       for (const p of pack) {
         const pg = pages[p.name.toLowerCase()];
+        await openTurn(pg, 'button[data-a=act-lobos-reconocido]', 8000).catch(() => {});
         if (await pg.isVisible('button[data-a=act-lobos-reconocido]')) await pg.click('button[data-a=act-lobos-reconocido]');
       }
       return;
@@ -116,6 +134,7 @@ async function driveNightStep(st) {
       const wolfPage = pages[wolf.name.toLowerCase()];
       // El lobo devora al cazador si vive (para probar su disparo); si no, al primero.
       const cazador = st.players.find((p) => p.alive && p.role === 'cazador');
+      await openTurn(wolfPage, 'button[data-a=act-lobos]');
       if (cazador) {
         await wolfPage.click(`.actionpanel .player.selectable:has-text("${cazador.name}")`);
       } else {
@@ -130,6 +149,7 @@ async function driveNightStep(st) {
     case 'gaitero': {
       const g = alive('gaitero'); if (!g) return;
       const pg = pages[g.name.toLowerCase()];
+      await openTurn(pg, 'button[data-a=act-gaitero]');
       const targets = await pg.locator('.actionpanel .player.selectable').count();
       return clickFirstAnd(pg, 'button[data-a=act-gaitero]', Math.min(2, targets));
     }
@@ -140,7 +160,7 @@ async function driveNightStep(st) {
 async function clickAction(player, selector) {
   if (!player) return;
   const pg = pages[player.name.toLowerCase()];
-  await pg.waitForSelector(selector, { timeout: 10000 });
+  await openTurn(pg, selector, 15000);
   await pg.click(selector);
 }
 
@@ -151,8 +171,11 @@ async function drivePending(st) {
     case 'cazador': {
       const pg = pages[actorP.name.toLowerCase()];
       await pg.waitForSelector('button[data-a=cazador-shoot]');
-      // Ya está muerto: puede espiar el rol de un jugador tocándolo.
-      if (await pg.locator('.player[data-a=dead-peek]').count()) {
+      // Ya está muerto: destapa las cartas (gesto explícito, se vuelve a tapar
+      // solo) y espía el rol de un jugador tocándolo.
+      if (await pg.locator('[data-a=dead-peek-open]').count()) {
+        await pg.click('[data-a=dead-peek-open]');
+        await pg.waitForSelector('.player[data-a=dead-peek]');
         await pg.click('.player[data-a=dead-peek] >> nth=0');
         const revealed = await pg.locator('.player[data-a=dead-peek] small').count();
         check(revealed >= 1, 'el jugador muerto puede revelar roles tocando a la gente');

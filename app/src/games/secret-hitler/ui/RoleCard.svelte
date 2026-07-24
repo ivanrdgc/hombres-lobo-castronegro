@@ -1,42 +1,61 @@
 <script lang="ts">
-  // Carta secreta: bando y el CONOCIMIENTO que la app calcula en oculto (los
-  // fascistas y Hitler; el Hitler ciego con 7+). Mini + auto-oculta.
+  // Tu carta: bando + el CONOCIMIENTO que la app calcula en oculto (los
+  // fascistas se reconocen entre sí y saben quién es Hitler; el Hitler ciego con
+  // 7+ jugadores).
+  //
+  // Postura 🍽️ MESA (B28): esta carta NUNCA se pinta en la pantalla de la fase
+  // —vive dentro de la cortina de privacidad— y aquí se dibuja NEUTRA: mismo
+  // marco, mismos colores y la MISMA ALTURA para liberal, fascista e Hitler.
+  // Antes el borde iba teñido por bando (rojo/azul) y el panel fascista era dos
+  // líneas más largo: de reojo, desde la silla de al lado, eso delataba el bando
+  // sin leer una sola palabra.
   import { ROLE_LABEL, knowledgeOf } from '../roles';
   import type { SHState } from '../types';
 
-  const { game, pid, mini = false }: { game: SHState; pid: string; mini?: boolean } = $props();
+  const { game, pid, note = '' }: { game: SHState; pid: string; note?: string } = $props();
 
   const k = $derived(knowledgeOf(game.roles, game.playerIds, pid));
   const nm = (p: string) => game.names[p] || '¿?';
 
-  let open = $state(false);
-  function toggle() { if (mini) open = !open; }
-  $effect(() => { if (!open) return; const t = setTimeout(() => (open = false), 12000); return () => clearTimeout(t); });
+  // Lo que sabes, SIEMPRE en dos líneas dentro de un bloque de alto mínimo fijo:
+  // que el fascista tenga compañeros y el liberal no, no puede notarse en la
+  // silueta de la tarjeta.
+  const knows = $derived.by((): [string, string] => {
+    const kn = k.knows;
+    if (kn.kind === 'fascist-team') return [
+      `🐷 Tus fascistas: ${kn.fascists.length ? kn.fascists.map(nm).join(', ') : 'ninguno más, vas solo'}.`,
+      `💀 Hitler es ${nm(kn.hitler)}: protegedlo sin cantarlo y coladlo de Canciller con 3 decretos fascistas.`,
+    ];
+    if (kn.kind === 'hitler-knows') return [
+      `🐷 Tu fascista de confianza: ${kn.fascists.map(nm).join(', ')}.`,
+      '💀 Hazte pasar por liberal: si te ejecutan, la República gana.',
+    ];
+    if (kn.kind === 'hitler-blind') return [
+      '🐷 Con 7 o más NO sabes quiénes son tus fascistas; ellos sí te conocen.',
+      '💀 Hazte pasar por liberal: si te ejecutan, la República gana.',
+    ];
+    return [
+      '🕊️ No conoces el bando de nadie: deduce por los votos y los decretos.',
+      '🗳️ Ojo a quién llega a Canciller con 3 decretos fascistas: si es Hitler, se acabó.',
+    ];
+  });
 </script>
 
-{#if mini && !open}
-  <div style="text-align:center;margin:10px 0"><button class="small ghost" data-a="sh-togglecard" onclick={toggle}>👁 Mostrar mi carta</button></div>
-{:else}
-  <div class="rolecard {k.faction}" data-a="sh-togglecard" onclick={toggle} role="button" tabindex="0"
-    onkeydown={(e) => { if (e.key === 'Enter') toggle(); }}>
-    <span class="remoji">{k.role === 'hitler' ? '💀' : k.role === 'fascist' ? '🐷' : '🕊️'}</span>
-    <span class="rname">{ROLE_LABEL[k.role]}</span>
-    <div class="rteam">{k.faction === 'fascist' ? 'Bando fascista' : 'Bando liberal'}</div>
-    {#if k.knows.kind === 'fascist-team'}
-      <div class="rextra">🐷 Compañeros fascistas: {k.knows.fascists.length ? k.knows.fascists.map(nm).join(', ') : '(ninguno más)'}.</div>
-      <div class="rextra">💀 Hitler es: <b>{nm(k.knows.hitler)}</b>. Protegedlo sin cantarlo.</div>
-    {:else if k.knows.kind === 'hitler-knows'}
-      <div class="rextra">💀 Eres Hitler. Tu fascista de confianza: <b>{k.knows.fascists.map(nm).join(', ')}</b>. Hazte pasar por liberal.</div>
-    {:else if k.knows.kind === 'hitler-blind'}
-      <div class="rextra">💀 Eres Hitler. Con 7+ jugadores NO sabes quiénes son tus fascistas: juega como el liberal más ejemplar y sobrevive.</div>
-    {:else}
-      <div class="rextra">🕊️ Eres liberal. No sabes nada de nadie: deduce por los votos y los decretos. Cuidado con quién llega a Canciller.</div>
-    {/if}
-    {#if mini}<p class="small-note" style="margin-top:8px">Se ocultará sola en unos segundos; toca la carta para ocultarla ya.</p>{/if}
+<div class="rolecard" data-a="sh-rolecard">
+  <span class="remoji">{k.role === 'hitler' ? '💀' : k.role === 'fascist' ? '🐷' : '🕊️'}</span>
+  <span class="rname">{ROLE_LABEL[k.role]}</span>
+  <div class="rteam">{k.faction === 'fascist' ? 'Bando fascista' : 'Bando liberal'}</div>
+  <div class="rextra knows">
+    <p>{knows[0]}</p>
+    <p>{knows[1]}</p>
   </div>
-{/if}
+  {#if note}<p class="small-note rnote">{note}</p>{/if}
+</div>
 
 <style>
-  .rolecard.fascist { border-color: #7a3b2b; box-shadow: 0 0 0 1px #7a3b2b inset; }
-  .rolecard.liberal { border-color: #2b6a7a; box-shadow: 0 0 0 1px #2b6a7a inset; }
+  /* Alto mínimo común (y los cuatro textos, de largo parecido): las tres cartas
+     miden lo mismo, que es lo que se lee de lejos. */
+  .knows { min-height: 6.8em; text-align: left; display: flex; flex-direction: column; justify-content: center; gap: 7px; }
+  .knows p { margin: 0; line-height: 1.35; }
+  .rnote { margin-top: 10px; }
 </style>

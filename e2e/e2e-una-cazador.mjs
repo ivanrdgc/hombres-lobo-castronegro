@@ -38,7 +38,13 @@ const pg = (pid) => pages[(hlcNames[pid] || pid).toLowerCase()];
 const vis = async (p, sel) => (await p.locator(sel).count()) > 0;
 const clk = async (p, sel) => { try { await p.locator(sel).first().click({ timeout: 4000 }); } catch { /* desapareció */ } };
 
+// B28 · postura 🍽️ MESA: el panel del paso vive tras «👁 Abrir mi panel».
+async function openPanel(p) {
+  if (await vis(p, '[data-a=una-open]:not([disabled])')) { await clk(p, '[data-a=una-open]'); await p.waitForTimeout(120); }
+}
+
 async function actStep(p, step) {
+  await openPanel(p);
   if (step === 'lobos') {
     if (await vis(p, '[data-a=una-wolf-peek]')) { await clk(p, '[data-a=una-wolf-peek][data-p="0"]'); await p.waitForTimeout(150); }
     if (await vis(p, '[data-a=una-wolf-ok]')) await clk(p, '[data-a=una-wolf-ok]');
@@ -108,6 +114,9 @@ try {
   console.log('  roles:', st.playerIds.map((id) => `${st.names[id]}=${st.originalRole[id]}`).join(', '), '· centro:', st.center.join(','));
   for (const pid of st.playerIds) {
     const p = pg(pid);
+    // B28: la carta se mira tras un gesto del dueño (cortina de privacidad).
+    await p.waitForSelector('[data-a=una-open-card]', { timeout: 15000 });
+    await p.click('[data-a=una-open-card]');
     await p.waitForSelector('[data-a=una-seen]', { timeout: 15000 });
     await p.click('[data-a=una-seen]'); await p.waitForTimeout(120);
   }

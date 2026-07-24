@@ -1,39 +1,89 @@
 <script lang="ts">
-  // Carta PRIVADA: te recuerda si eres el Camaleón o cuál es la palabra secreta.
-  // Mini + auto-oculta, para consultarla con disimulo durante la ronda.
+  // Carta PRIVADA de la ronda. El Camaleón es un juego de MESA (docs/UX.md ·
+  // «Postura del móvil»): el móvil se queda plano y desbloqueado, y el vecino
+  // puede echar un vistazo, así que las dos cartas posibles —la palabra secreta
+  // y «Camaleón»— tienen que ser INDISTINGUIBLES de reojo.
+  //
+  // Antes se distinguían por tres sitios a la vez, sin leer una letra:
+  //   · el MARCO (verde para el Camaleón, azul para el grupo),
+  //   · el EMOJAZO de 3 rem (🦎 frente a 🔑),
+  //   · el ALTO (dos descripciones de largo distinto → dos siluetas distintas).
+  // Ahora es LA MISMA carta para todos: mismo marco, mismo emoji, mismo texto y
+  // el hueco de la palabra con alto fijo (para que «Ola» y «Tienda de campaña»
+  // ocupen igual). Lo único que cambia son las letras del centro… y solo
+  // mientras las pides: la carta se tapa sola, nunca se queda fija.
+  import { e2eTestMode } from '../../../core/test-hooks';
   import { isChameleon, secretWord } from '../engine';
   import type { ChameleonState } from '../types';
 
-  const { game, pid, mini = false }: { game: ChameleonState; pid: string; mini?: boolean } = $props();
+  const { game, pid, mini = false, onhide = null }: {
+    game: ChameleonState;
+    pid: string;
+    /** `true`: empieza tapada, con el botón 👁 (consulta durante la ronda). */
+    mini?: boolean;
+    /** Aviso al padre de que la carta se ha tapado (sola o a la primera). */
+    onhide?: (() => void) | null;
+  } = $props();
+
   const cham = $derived(isChameleon(game, pid));
-  let open = $state(false);
-  function toggle() { if (mini) open = !open; }
-  $effect(() => { if (!open) return; const t = setTimeout(() => (open = false), 12000); return () => clearTimeout(t); });
+  // Misma forma en los dos casos: una palabra entre comillas, con inicial
+  // mayúscula, en el mismo hueco. Ni versales ni etiquetas de más.
+  const word = $derived(cham ? 'Camaleón' : secretWord(game));
+
+  /** Segundos que aguanta destapada antes de taparse sola (los e2e no esperan). */
+  const HIDE_S = e2eTestMode() ? 5 : 12;
+  // `mini` no cambia en toda la vida del componente (las llamadas pasan un
+  // literal): capturar su valor inicial es justo lo que se quiere aquí.
+  // svelte-ignore state_referenced_locally
+  let open = $state(!mini);
+  let left = $state(HIDE_S);
+  function hide() { open = false; onhide?.(); }
+  function toggle() { if (open) hide(); else open = true; }
+  // Auto-ocultado también en el reparto: antes la palabra secreta se quedaba en
+  // pantalla hasta que pulsabas «Lo tengo», que es media fase con el móvil
+  // encendido y boca arriba.
+  $effect(() => {
+    if (!open) return;
+    left = HIDE_S;
+    const t = setInterval(() => { if (--left <= 0) hide(); }, 1000);
+    return () => clearInterval(t);
+  });
 </script>
 
-{#if mini && !open}
-  <div style="text-align:center;margin:10px 0"><button class="small ghost" data-a="ch-togglecard" onclick={toggle}>👁 Ver mi carta en secreto</button></div>
-{:else}
-  <div class="rolecard {cham ? 'cham' : 'town'}" data-a="ch-togglecard" onclick={toggle} role="button" tabindex="0"
-    onkeydown={(e) => { if (e.key === 'Enter') toggle(); }}>
-    {#if cham}
-      <span class="remoji">🦎</span>
-      <div class="rteam" style="margin:0 0 2px">Tu papel en esta ronda</div>
-      <span class="rname">Eres el CAMALEÓN</span>
-      <div class="rdesc" style="margin-top:6px">No conoces la palabra secreta. Escucha las pistas, imita el tono y suelta una palabra que encaje… sin cantarte. Si te pillan, aún puedes ganar adivinándola.</div>
-    {:else}
-      <!-- La etiqueta ANTES de la palabra: leída del revés, «Sombrilla» sola en
-           grande no decía si era tu palabra o la del vecino. -->
-      <span class="remoji">🔑</span>
-      <div class="rteam" style="margin:0 0 2px">Tu palabra secreta es</div>
-      <span class="rname">«{secretWord(game)}»</span>
-      <div class="rdesc" style="margin-top:6px">Búscala en la rejilla. Da una pista que demuestre que la conoces… pero no tanto que el Camaleón la adivine.</div>
-    {/if}
-    {#if mini}<p class="small-note" style="margin-top:8px">🙈 Que nadie te vea la pantalla: se oculta sola en unos segundos, o toca la carta para ocultarla ya.</p>{/if}
+{#if open}
+  <!-- Sin marcas de bando tampoco en el HTML (`data-…`): lo único que distingue
+       una carta de otra es la palabra que se lee dentro. -->
+  <div class="rolecard chcard" data-a="ch-togglecard"
+    onclick={toggle} role="button" tabindex="0"
+    onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') toggle(); }}>
+    <span class="remoji">🎴</span>
+    <div class="rteam" style="margin:0 0 2px">Tu carta de esta ronda</div>
+    <!-- Hueco de alto fijo: la palabra más larga del juego no puede hacer la
+         carta más alta que «Ola», o el alto delataría de quién es. -->
+    <div class="chslot"><span class="rname">«{word}»</span></div>
+    <div class="rdesc">
+      👉 Si es una palabra del tema, es la SECRETA: da una pista que demuestre que la conoces, sin regalarla.
+      🦎 Si pone «Camaleón», eres tú: no la conoces, escucha las pistas e imita el tono.
+    </div>
+    <p class="chhide">🙈 Todos veis esta misma carta: solo cambia esa palabra. Se tapa sola en {left} s (o tócala para taparla ya).</p>
+  </div>
+{:else if mini}
+  <div class="chpeek">
+    <button class="small ghost" data-a="ch-togglecard" onclick={toggle}>👁 Ver mi carta en secreto</button>
   </div>
 {/if}
 
 <style>
-  .rolecard.cham { border-color: #6a8a2b; box-shadow: 0 0 0 1px #6a8a2b inset; }
-  .rolecard.town { border-color: #2b6a7a; box-shadow: 0 0 0 1px #2b6a7a inset; }
+  /* Ni un solo rasgo por bando: el marco, el fondo y el emoji son los de
+     `.rolecard` de la app, iguales para todo el mundo. */
+  .chcard { cursor: pointer; }
+  .chslot {
+    display: flex; align-items: center; justify-content: center;
+    /* Dos líneas de `.rname` (1,3 rem): «Tienda de campaña» mide lo mismo que «Ola». */
+    min-height: 3.4rem;
+    padding: 0 4px; margin-bottom: 2px;
+  }
+  .chslot .rname { line-height: 1.25; text-wrap: balance; }
+  .chhide { color: var(--muted, #a9a6c0); font-size: 0.8rem; margin: 10px 0 0; }
+  .chpeek { text-align: center; margin: 10px 0; }
 </style>

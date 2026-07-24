@@ -1,10 +1,14 @@
 <script lang="ts">
-  // Panel de tu equipo: tus 4 palabras clave numeradas (solo las ve tu equipo) y
-  // la HOJA DE PISTAS de ambos equipos. En el juego físico cada equipo lleva una
-  // hoja de 4 filas —una por palabra— y una columna por transmisión, donde va
-  // apuntando las pistas: eso es lo que de verdad se deduce. Aquí se pinta igual
-  // (fila = número de palabra, columna = ronda), con scroll lateral cuando la
-  // partida se alarga y la primera columna anclada para no perder el número.
+  // El puesto de escucha de tu equipo, al PIE de la pantalla a propósito (B28,
+  // postura 👥 equipo): son las dos cosas que el rival —sentado enfrente— no
+  // puede leer, así que hay que acercarse el móvil para verlas.
+  //  1) Vuestras 4 palabras clave numeradas, grandes: se leen entre varios,
+  //     apiñados alrededor de un móvil, sin gestos ni modales.
+  //  2) La HOJA DE PISTAS de los dos equipos. En el juego físico cada equipo
+  //     lleva una hoja de 4 filas —una por palabra— y una columna por
+  //     transmisión: eso es lo que de verdad se deduce. Aquí igual (fila =
+  //     número de palabra, columna = ronda), con scroll lateral cuando la
+  //     partida se alarga y la primera columna anclada para no perder el número.
   import { TEAM_LABEL, cluesForWord } from '../engine';
   import type { PlayerDoc } from '../../../core/sync/schema';
   import type { DecryptoState } from '../types';
@@ -36,14 +40,14 @@
 </script>
 
 {#if team && !revealed}
-  <div class="card">
-    <h3 style="margin:0 0 6px">🔑 Vuestras palabras ({TEAM_LABEL[team]})</h3>
+  <div class="card" data-a="de-words">
+    <h3 style="margin:0 0 6px">🔑 Vuestras 4 palabras <small>solo el equipo {TEAM_LABEL[team]}</small></h3>
     <div class="dewords">
       {#each game.words[team] as w, i (i)}
-        <div class="deword"><span class="denum">{i + 1}</span><span class="dwtxt">{w}{#if mineCount(i + 1)}<i class="dwc">{mineCount(i + 1)} pista{mineCount(i + 1) > 1 ? 's' : ''} dada{mineCount(i + 1) > 1 ? 's' : ''}</i>{/if}</span></div>
+        <div class="deword"><span class="denum">{i + 1}</span><span class="dwtxt">{w}{#if mineCount(i + 1)}<i class="dwc">{mineCount(i + 1)} pista{mineCount(i + 1) > 1 ? 's' : ''} ya dada{mineCount(i + 1) > 1 ? 's' : ''}</i>{/if}</span></div>
       {/each}
     </div>
-    <p class="small-note" style="margin:6px 0 0">Solo tu equipo ve estas palabras. El número de cada una es lo que se transmite.</p>
+    <p class="small-note" style="margin:8px 0 0">Se transmite el NÚMERO, nunca la palabra.</p>
   </div>
 {/if}
 
@@ -86,11 +90,14 @@
 {/if}
 
 <style>
-  .dewords { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
-  .deword { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border, #333); background: var(--surface, #1c1e28); font-weight: 700; }
+  h3 small { font-size: 0.72rem; font-weight: 600; color: var(--muted, #a9a6c0); white-space: nowrap; }
+  /* Letra grande: estas cuatro palabras se leen entre dos o tres personas
+     apiñadas alrededor de un móvil, y a veces de reojo desde un lado. */
+  .dewords { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 7px; }
+  .deword { display: flex; align-items: center; gap: 9px; padding: 9px 11px; border-radius: 10px; border: 1px solid var(--border, #333); background: var(--surface, #1c1e28); font-size: 1.02rem; font-weight: 700; }
   .deword .dwtxt { flex: 1; min-width: 0; overflow-wrap: break-word; }
   .deword .dwc { display: block; font-size: 0.68rem; font-style: normal; font-weight: 600; opacity: 0.62; }
-  .denum { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; flex: 0 0 auto; border-radius: 50%; background: var(--accent, #c8a24a); color: #000; font-size: 0.8rem; font-weight: 800; }
+  .denum { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; flex: 0 0 auto; border-radius: 50%; background: var(--accent, #c8a24a); color: #000; font-size: 0.82rem; font-weight: 800; }
 
   .dhblock { margin-top: 10px; padding: 8px; border-radius: 12px; border: 1px solid var(--border, #333); background: var(--bg-1, #12141f); }
   .dhblock.mine { border-color: var(--accent, #c8a24a); }

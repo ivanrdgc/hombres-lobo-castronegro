@@ -4,7 +4,6 @@
   import { shadowHGame, clearPista } from '../actions';
   import { guard } from '../../../core/sync/guard';
   import { PISTAS } from '../chars';
-  import { charOf } from '../engine';
   import { unlockAudio } from '../../../core/audio/engine';
   import { play } from '../../../core/audio/player';
   import type { GroupDoc, PlayerDoc } from '../../../core/sync/schema';
@@ -12,17 +11,40 @@
   import CardFab from '../../../shell/CardFab.svelte';
   import GameMenu from './GameMenu.svelte';
   import PlayersBoard from './PlayersBoard.svelte';
+  import SecretPeek from './SecretPeek.svelte';
   import TurnPanel from './TurnPanel.svelte';
   import EndPhase from './EndPhase.svelte';
 
   const { group, my }: { group: GroupDoc; my: PlayerDoc } = $props();
   const game = $derived(shadowHGame(group)!);
+  const nm = (pid: string) => game.names[pid] || '¿?';
   const inGame = $derived(game.playerIds.includes(my.id) && !!matchOf(my.id));
   const myTurn = $derived(game.turn === my.id && game.phase === 'turn' && game.alive[my.id]);
   const needsUnlock = $derived(isMaster() && !app.ui.audioReady && !app.ui.muted);
   // La pista en curso: quien la RECIBE lee el texto completo; quien la dio ve
   // la confirmación (también con el texto: la carta la leen ambos).
   const pistaMine = $derived(game.pista && (game.pista.target === my.id || game.pista.by === my.id) ? game.pista : null);
+  // 🍽️ MESA: el sobre sale en TODAS las pantallas, pero el texto solo se abre
+  // tras un gesto y se vuelve a tapar solo. `denied` es lo que ve quien no es de
+  // los dos al tocarlo: así tocar el sobre tampoco delata (y desaparece solo).
+  let pistaOpen = $state(false);
+  let pistaDenied = $state(false);
+  function openPista() { if (pistaMine) pistaOpen = true; else pistaDenied = true; }
+  // Se cierra al cambiar DE CARTA (no en cada snapshot: el doc de la partida se
+  // reemplaza entero cada vez que alguien actúa, y eso cerraría el texto en las
+  // narices de quien lo está leyendo). El acuse de recibo del otro no cuenta.
+  let pistaSeen = '';
+  $effect(() => {
+    const sig = game.pista ? `${game.pista.by}|${game.pista.idx}` : '';
+    if (sig === pistaSeen) return;
+    pistaSeen = sig;
+    pistaOpen = false; pistaDenied = false;
+  });
+  $effect(() => {
+    if (!pistaOpen && !pistaDenied) return;
+    const t = setTimeout(() => { pistaOpen = false; pistaDenied = false; }, 12000);
+    return () => clearTimeout(t);
+  });
   // Qué acaba de pasarle a quien la recibió, dicho en claro: el `outcome` del
   // motor va en tercera persona y quien la recibe no sabía si era sobre él.
   const pistaEfecto = $derived.by(() => {
@@ -68,25 +90,39 @@
 {#if game.phase === 'end'}
   <EndPhase {game} {my} />
 {:else}
-  <div class="card"><PlayersBoard {game} {my} /></div>
+  <!-- Orden de la pantalla (B29): lo que hay que hacer AHORA arriba (la carta de
+       pista pendiente, luego tu turno o a quién se espera), después tu carta
+       tras el 👁, y solo entonces el contexto público (tablero) y el diario. -->
 
   <!-- La carta de pista sigue a la vista en pausa a propósito: leerla no es
        actuar (y `clearPista` va con allowPaused). Solo se retira cuando la han
-       acusado los DOS, para que quien la da no se la borre a quien la recibe. -->
-  {#if pistaMine}
-    {@const acked = (pistaMine.ack || []).includes(my.id)}
-    {@const otro = pistaMine.by === my.id ? pistaMine.target : pistaMine.by}
-    {@const soyTarget = pistaMine.target === my.id}
+       acusado los DOS, para que quien la da no se la borre a quien la recibe.
+       🍽️ MESA: el sobre se pinta en TODAS las pantallas y con el mismo texto —
+       antes aparecía solo en dos móviles y su sola presencia decía a quién le
+       había tocado. Lo secreto es QUÉ pone, y eso vive tras el 👁. -->
+  {#if game.pista}
+    {@const acked = (game.pista.ack || []).includes(my.id)}
     <div class="card pistacard">
-      <h3 style="margin:0 0 2px">🔮 {soyTarget ? `Pista de ${game.names[pistaMine.by] || '¿?'} para ti` : `Tu pista para ${game.names[pistaMine.target] || '¿?'}`}</h3>
-      <p class="small-note" style="margin:0">🤫 Esta carta solo la leéis dos: {soyTarget ? `${game.names[pistaMine.by] || '¿?'} y tú` : `${game.names[pistaMine.target] || '¿?'} y tú`}.</p>
-      <div class="pistatxt">«{PISTAS[pistaMine.idx].text}»</div>
-      <p style="margin:8px 0 0">{pistaEfecto}</p>
-      <p class="small-note" style="margin:6px 0 0">La mesa solo ha oído el resultado («{pistaMine.outcome}»), nunca la carta: {soyTarget ? `lo que ${game.names[pistaMine.by] || '¿?'} pueda deducir de tu bando lo sabe solo ${game.names[pistaMine.by] || '¿?'}… y ahora decide si lo cuenta o miente.` : `lo que puedas deducir de ${game.names[pistaMine.target] || '¿?'} lo sabes solo tú: cuéntalo, cállalo o miente.`}</p>
-      {#if acked}
-        <p class="small-note" style="margin:8px 0 0">✅ Ya la has leído. Se queda en pantalla hasta que {game.names[otro] || '¿?'} también pulse «Entendido».</p>
-      {:else}
-        <button class="primary block" style="margin-top:10px" data-a="sh-pista-ok" onclick={() => guard(clearPista)}>👍 Entendido, quitar la carta</button>
+      <h3 style="margin:0 0 2px">🔮 Hay una carta de pista sin leer</h3>
+      <p class="small-note" style="margin:0">La leen solo quien la da y quien la recibe; la mesa oye únicamente el resultado. Este sobre sale igual en los {game.playerIds.length} móviles.</p>
+      {#if !pistaOpen}
+        <button class="primary block" style="margin-top:10px" data-a="sh-pista-peek" onclick={openPista}>👁 Abrir la carta (se tapa sola)</button>
+        {#if pistaDenied}
+          <p class="small-note" style="margin:8px 0 0">🤫 Esta no es tuya: la leen quien la da y quien la recibe. Por eso el botón está en todas las pantallas — tocarlo no delata a nadie.</p>
+        {/if}
+      {:else if pistaMine}
+        {@const otro = pistaMine.by === my.id ? pistaMine.target : pistaMine.by}
+        {@const soyTarget = pistaMine.target === my.id}
+        <p class="small-note" style="margin:8px 0 0">🤫 Solo la leéis dos: {nm(otro)} y tú.</p>
+        <div class="pistatxt">«{PISTAS[pistaMine.idx].text}»</div>
+        <p style="margin:8px 0 0">{pistaEfecto}</p>
+        <p class="small-note" style="margin:6px 0 0">La mesa solo ha oído el resultado («{pistaMine.outcome}»), nunca la carta: {soyTarget ? `lo que ${nm(otro)} deduzca de tu bando lo sabe solo ${nm(otro)}… y ahora decide si lo cuenta o miente.` : `lo que deduzcas de ${nm(otro)} lo sabes solo tú: cuéntalo, cállalo o miente.`}</p>
+        {#if acked}
+          <p class="small-note" style="margin:8px 0 0">✅ Ya la has leído: el sobre se retira cuando {nm(otro)} pulse también «Entendido».</p>
+          <button class="ghost block small" style="margin-top:8px" data-a="sh-pista-hide" onclick={() => (pistaOpen = false)}>🙈 Taparla ya</button>
+        {:else}
+          <button class="primary block" style="margin-top:10px" data-a="sh-pista-ok" onclick={() => guard(clearPista)}>👍 Entendido, retirar la carta</button>
+        {/if}
       {/if}</div>
   {/if}
 
@@ -95,20 +131,21 @@
   {#if myTurn && !game.paused}
     <TurnPanel {game} {my} />
   {:else if !myTurn}
-    <!-- Quien no actúa también necesita saber qué pasa, a quién se espera y qué
-         puede ir haciendo: sin esta línea la espera parecía una pantalla muerta. -->
-    <div class="narration">⏳ Le toca a <b>{game.names[game.turn] || '¿?'}</b>: puede dar una pista secreta, atacar con los dados, descansar… o revelarse y usar su poder. Cuando te toque, aquí saldrán tus cuatro acciones.</div>
-    {#if inGame && game.alive[my.id]}
-      {@const c = charOf(game, my.id)}
-      <p class="small-note" style="text-align:center">Tú: {c.emoji} {c.name} · ❤️ {game.hp[my.id]} de {game.maxHp} · {game.revealed[my.id] ? '🎭 identidad pública' : '🤫 identidad oculta'}. Mientras esperas: repasa el tablero o abre «🎴 Mi carta».</p>
-    {/if}
+    <!-- Quien no actúa también necesita saber qué pasa y a quién se espera: sin
+         esta línea la espera parecía una pantalla muerta. -->
+    <div class="narration">⏳ Juega <b>{nm(game.turn)}</b>: dará una pista, atacará, descansará o se revelará. Escucha y sospecha; cuando te toque, tus cuatro acciones saldrán aquí.</div>
   {/if}
-  {#if inGame && !game.alive[my.id]}<p class="small-note" style="text-align:center">☠️ Estás fuera: tu personaje quedó destapado. Mira cómo acaba.</p>{/if}
-  {#if !inGame}<p class="small-note" style="text-align:center">👀 Sigues la partida de espectador (sin ver identidades ocultas).</p>{/if}
+  {#if inGame && !game.alive[my.id]}<p class="small-note" style="text-align:center">☠️ Estás fuera y tu personaje quedó destapado. Mira cómo acaba.</p>{/if}
+  {#if !inGame}<p class="small-note" style="text-align:center">👀 Miras de espectador: no juegas esta partida.</p>{/if}
+
+  <!-- Lo tuyo: mismo botón en todos los móviles, se tapa solo. -->
+  <SecretPeek {game} pid={my.id} />
+
+  <div class="card"><h3 style="margin:0 0 4px">🩸 Cómo va la mesa</h3><PlayersBoard {game} {my} /></div>
 {/if}
 
 {#if game.log && game.log.length}
-  <div class="card"><h3>📜 Diario</h3>
+  <div class="card"><h3>📜 Lo que ha pasado</h3>
     <div class="log" bind:this={logEl}>{#each game.log as l, i (i)}<p>{l.txt}</p>{/each}</div></div>
 {/if}
 

@@ -28,9 +28,9 @@
   const pend = $derived(game.playerIds.filter((pid) => game.votes[pid] === undefined).map(nm));
 </script>
 
-<div class="narration">🗳️ Propuesta para la misión {game.quest}: <b>{game.team.map(nm).join(', ')}</b>. Votad todos: ¿aprobáis este equipo?</div>
-
-<!-- Qué se vota, quién lo propuso y qué hay en juego: antes de los botones. -->
+<!-- Qué se vota, quién lo propuso y qué hay en juego, UNA sola vez (antes lo
+     decían la línea de narración y esta caja, con las mismas palabras). Vive
+     fuera del panel para que siga a la vista de quien ya votó. -->
 <div class="reqbox" data-a="av-vote-what">
   <span class="reqbig">Misión {game.quest} · {size} caballero{size === 1 ? '' : 's'}</span>
   <div class="teamchips">{#each game.team as pid (pid)}<span class="tchip">{nm(pid)}{pid === my.id ? ' (tú)' : ''}</span>{/each}</div>
@@ -39,8 +39,8 @@
 </div>
 
 {#if inGame && !iVoted}
-  <div class="actionpanel"><h3>🗳️ Tu voto (secreto)</h3>
-    <p class="hint">Nadie verá tu voto hasta que hayan votado todos; entonces se destapan A LA VEZ y con nombres.</p>
+  <div class="actionpanel"><h3>🗳️ Vota este equipo</h3>
+    <p class="hint">Tu voto es secreto: nadie lo ve hasta que haya votado la mesa entera, y entonces se destapan A LA VEZ y con nombres.</p>
     <div class="btnrow">
       <button class="primary" data-a="av-vote" data-p="si" onclick={() => guard(() => A.voteTeam(true))}>👍 Aprobar</button>
       <button class="danger" data-a="av-vote" data-p="no" onclick={() => guard(() => A.voteTeam(false))}>👎 Rechazar</button>
@@ -53,7 +53,7 @@
     {#if pend.length}<p class="small-note" data-a="av-vote-pending">⏳ Falta{pend.length === 1 ? '' : 'n'} por votar: <b>{pend.join(', ')}</b>.</p>{/if}
     <p class="small-note">Mientras tanto: fíjate en quién ha tardado y prepara tu argumento; los votos se leen en voz alta cuando se destapen.</p></div>
 {/if}
-{#if inGame}<RoleCard {game} pid={my.id} mini={true} />{/if}
+{#if inGame}<RoleCard {game} pid={my.id} />{/if}
 
 <style>
   .reqbox {

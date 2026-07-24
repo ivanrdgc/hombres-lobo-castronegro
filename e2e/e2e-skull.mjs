@@ -2,7 +2,9 @@
 // pilas ocultas): catálogo → empezar → colocación de salida → apuesta y pujas →
 // revelado (flor a flor) → dos retos → victoria. Cubre los DOS caminos: el reto
 // ganado y el fallado (subida de apuesta, calavera y pérdida de disco).
-// Verifica también la FUGA: solo ves tu propia pila.
+// Verifica también la FUGA (solo ves tu propia pila) y la POSTURA 🃏 mano
+// (B28/B29): tu mano y tu pila en la pantalla principal sin abrir nada, y la
+// decisión de la puja visible sin desplazar en un móvil.
 import { chromium } from 'playwright';
 const BASE = process.env.BASE; if (!BASE) { console.error('Define BASE=https://tu-sitio.web.app'); process.exit(1); }
 let fail = 0;
@@ -11,8 +13,11 @@ const bad = (m) => { fail++; console.log('  ✖', m); };
 const check = (c, m) => (c ? ok(m) : bad(m));
 const browser = await chromium.launch();
 const pages = {};
+// Pantalla de móvil de verdad: la postura 🃏 mano se juega mirando el teléfono,
+// así que lo que no cabe aquí no cabe en la mesa.
+const PHONE = { width: 390, height: 844 };
 async function mk(label) {
-  const ctx = await browser.newContext({ locale: 'es-ES' });
+  const ctx = await browser.newContext({ locale: 'es-ES', viewport: PHONE });
   await ctx.addInitScript(() => { window.__hlcTest = true; });
   const page = await ctx.newPage();
   page.on('pageerror', (e) => bad(`[${label}] ${e.message}`));
@@ -109,16 +114,30 @@ try {
   let s = await waitState(ana, (x) => x.phase === 'setup', 'colocación de salida');
   NAMES = s.names;
   check(s.playerIds.length === 3, '3 jugadores');
+  // La narradora activa la voz de un toque, como en una mesa de verdad: si no,
+  // su pantalla arrastra el aviso de desbloqueo durante toda la partida.
+  await ana.click('[data-a=unlock-voice]').catch(() => {});
 
-  // ——— Fuga: solo ves tu propia pila ———
+  // ——— Fuga y postura: tu mano a la vista, las pilas ajenas tapadas ———
   await placeAllFlowers(s);
   s = await waitState(ana, (x) => x.phase === 'play', 'todos han colocado');
-  const someone = s.playerIds[1];
-  const ownFaces = await pg(someone).evaluate(() =>
-    [...document.querySelectorAll('.skrow')].map((r) => [...r.querySelectorAll('.skdisc')].map((d) => d.textContent.trim())));
-  // La fila propia muestra 🌸/💀; las ajenas, dorsos 🎴. Al menos una fila con dorso.
-  check(ownFaces.some((row) => row.some((c) => c === '🎴')), 'las pilas ajenas se ven tapadas (🎴)');
-  check(ownFaces.some((row) => row.some((c) => c === '🌸' || c === '💀')), 'la pila propia se ve destapada');
+  // Alguien que NO tiene el turno: así sus discos salen bloqueados y con motivo.
+  const someone = s.playerIds.find((p) => p !== s.turn);
+  const rivalFaces = await pg(someone).evaluate(() =>
+    [...document.querySelectorAll('.skrow .skdisc')].map((d) => d.textContent.trim()));
+  check(rivalFaces.length > 0 && rivalFaces.every((c) => c === '🎴'), 'de las pilas ajenas solo se ve el dorso 🎴 y su altura');
+  const mine = await pg(someone).evaluate(() => {
+    const el = document.querySelector('.skmine');
+    return el && {
+      txt: el.innerText,
+      pile: [...el.querySelectorAll('.skdisc')].map((d) => d.textContent.trim()),
+      hand: [...el.querySelectorAll('.skfaces')].map((d) => d.textContent.trim()).join(' '),
+    };
+  });
+  check(!!mine && mine.pile.some((c) => c === '🌸' || c === '💀'), 'tu pila se ve destapada y en orden, sin abrir nada');
+  check(!!mine && /Tu mano/.test(mine.txt) && /Tu pila/.test(mine.txt), 'tu mano y tu pila están en la pantalla de partida (postura 🃏 mano)');
+  check(!!mine && mine.hand.includes('🌸') && mine.hand.includes('💀'), 'la mano enseña las flores y la calavera que te quedan');
+  check(!!mine && /🚫/.test(mine.txt), 'un disco que no puedes poner dice por qué, no se apaga en silencio');
 
   // ——— Turno 1: el inicial gana un reto (apuesta 1, pasan, levanta su flor) ———
   const starter = s.turn;
@@ -164,7 +183,12 @@ try {
   check(/Discos en la mesa/.test(facts) && /Siguen en la subasta/.test(facts) && /Ya han pasado/.test(facts),
     'la puja enseña discos en la mesa (tope), apuesta a batir y quién sigue vivo en la subasta');
   const row0 = await pg(passer).locator('.skrow').first().innerText().catch(() => '');
-  check(/en la mesa/.test(row0) && /✋/.test(row0), 'cada fila del tablero dice la altura de la pila y los discos en mano');
+  check(/en la mesa/.test(row0) && /✋/.test(row0), 'cada ficha de la mesa dice la altura de la pila y los discos en mano');
+  // B28/B29: decidir la puja no obliga a desplazar la pantalla del móvil.
+  await pg(passer).evaluate(() => window.scrollTo(0, 0));
+  const reach = await pg(passer).locator('[data-a=sk-pass-ask]')
+    .evaluate((el) => ({ bottom: el.getBoundingClientRect().bottom, h: window.innerHeight }));
+  check(reach.bottom <= reach.h, `subir o pasar cabe sin desplazar (${Math.round(reach.bottom)}px de ${reach.h})`);
   // Pasar pide un segundo toque y se puede echar atrás: primero lo cancelamos.
   await pg(passer).click('[data-a=sk-pass-ask]');
   await pg(passer).waitForSelector('[data-a=sk-pass-cancel]', { timeout: 8000 });
@@ -188,9 +212,11 @@ try {
   check(s.lastResult?.success === false, 'topar una calavera falla el reto');
   check(s.inv[starter].flowers + s.inv[starter].skulls === 3, 'quien falla pierde un disco (de 4 a 3)');
   check(s.starter === starter, 'tras fallar, empieza la ronda quien perdió el disco');
-  // El 🎴 debe abrirse aunque la pila siga en la mesa con el inventario ya bajado.
+  // El 🎴 ya no hace falta para jugar (la mano vive en la pantalla), pero sigue
+  // siendo la chuleta: debe abrirse aunque la pila siga en la mesa con el
+  // inventario ya bajado.
   await pg(starter).click('[data-a=open-mycard]');
-  await pg(starter).waitForSelector('text=/Tus discos/');
+  await pg(starter).waitForSelector('text=/Reglas de bolsillo/');
   await pg(starter).click('.modal [data-a=close-modal]');
   ok('ronda 2: subida de apuesta, calavera, pérdida de disco y 🎴 sano');
 

@@ -5,6 +5,12 @@
   // confirma con un botón que nombra la consecuencia. Al fondo, plegada, la
   // referencia del mazo: nadie debe salir de la pantalla en la que decide.
   // Lo que se ve NUNCA se promete como definitivo: la noche sigue después.
+  //
+  // Postura 🍽️ MESA (B28): este panel NO se pinta en la pantalla de la fase —eso
+  // delataba de reojo quién estaba actuando—, sino dentro de la cortina de
+  // privacidad que abre el dueño del móvil (NightPhase → PrivacySheet). Por eso
+  // aquí no hay ni un color de bando: todos los botones son iguales, para que ni
+  // un vistazo lateral distinga «rojo = lobo» de «morado = esbirro».
   import { guard } from '../../../core/sync/guard';
   import { selIds, sel1, clearSel } from '../../../shell/selection';
   import { app, state as selState } from '../../../core/sync/store.svelte';
@@ -155,7 +161,7 @@
         'Sí: el Borracho que has copiado cambia ahora.',
       )}
       <p class="ask">Elige una de las tres. Da igual cuál: están boca abajo.</p>
-      <div class="btnrow">{#each CENTER as i (i)}<button class="violet" data-a="una-ddrink" data-p={String(i)} onclick={() => guard(() => A.dobleDrink(i))}>🍺 Coger la {i + 1}</button>{/each}</div>
+      <div class="btnrow">{#each CENTER as i (i)}<button class="primary" data-a="una-ddrink" data-p={String(i)} onclick={() => guard(() => A.dobleDrink(i))}>🍺 Coger la {i + 1}</button>{/each}</div>
     {/if}
   {:else}
     <!-- Cierre del turno del Doble: copie lo que copie (incluidos los roles
@@ -193,10 +199,10 @@
       <!-- Acción PRINCIPAL del lobo solitario: antes eran tres botoncitos
            ghost bajo el botón grande de cerrar y se perdía el vistazo. -->
       <p class="ask">Solo puedes mirar UNA. ¿Cuál?</p>
-      <div class="btnrow">{#each CENTER as i (i)}<button class="danger" data-a="una-wolf-peek" data-p={String(i)} onclick={() => guard(() => A.loneWolfPeek(i))}>👁 Mirar la {i + 1}</button>{/each}</div>
+      <div class="btnrow">{#each CENTER as i (i)}<button class="primary" data-a="una-wolf-peek" data-p={String(i)} onclick={() => guard(() => A.loneWolfPeek(i))}>👁 Mirar la {i + 1}</button>{/each}</div>
     {/if}
   {/if}
-  <button class="{lonePeek ? 'ghost' : 'danger'} block" data-a="una-wolf-ok" onclick={() => guard(A.wolvesSeen)}>🐺 {lonePeek ? 'Cerrar los ojos sin mirar el centro' : soloSeen ? 'Ya lo he visto: cierro los ojos' : 'Reconocido: cierro los ojos'}</button>
+  <button class="{lonePeek ? 'ghost' : 'primary'} block" data-a="una-wolf-ok" onclick={() => guard(A.wolvesSeen)}>🐺 {lonePeek ? 'Cerrar los ojos sin mirar el centro' : soloSeen ? 'Ya lo he visto: cierro los ojos' : 'Reconocido: cierro los ojos'}</button>
 
 {:else if step === 'esbirro'}
   <h3>😈 Tu turno · El Esbirro</h3>
@@ -207,7 +213,7 @@
   {:else}
     <p class="hint">No hay ningún hombre lobo en la mesa: ambas cartas están en el centro. Tú solo defiendes su causa: ganas si cae cualquiera que no seas tú… y si el único condenado eres <b>tú</b>, gana el Pueblo.</p>
   {/if}
-  <button class="violet block" data-a="una-minion-ok" onclick={() => guard(A.minionSeen)}>😈 Entendido, cierro los ojos</button>
+  <button class="primary block" data-a="una-minion-ok" onclick={() => guard(A.minionSeen)}>😈 Entendido, cierro los ojos</button>
 
 {:else if step === 'masones'}
   <h3>🧱 Tu turno · Los Masones</h3>
@@ -300,7 +306,7 @@
     'Sí: tienes que cambiar por una de las tres.',
   )}
   <p class="ask">Elige una. Da igual cuál: están boca abajo.</p>
-  <div class="btnrow">{#each CENTER as i (i)}<button class="violet" data-a="una-drink" data-p={String(i)} onclick={() => guard(() => A.drunkTake(i))}>🍺 Coger la {i + 1}</button>{/each}</div>
+  <div class="btnrow">{#each CENTER as i (i)}<button class="primary" data-a="una-drink" data-p={String(i)} onclick={() => guard(() => A.drunkTake(i))}>🍺 Coger la {i + 1}</button>{/each}</div>
 
 {:else if step === 'insomne'}
   <h3>😴 Tu turno · La Insomne</h3>

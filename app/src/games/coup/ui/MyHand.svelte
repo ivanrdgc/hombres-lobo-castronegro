@@ -1,61 +1,73 @@
 <script lang="ts">
-  // Tus influencias (privadas): qué personajes escondes, qué te deja hacer cada
-  // uno sin mentir y cuántas monedas tienes. Se pliega y despliega con disimulo,
-  // como la carta de rol de los demás juegos.
-  import { CHARACTERS } from '../chars';
+  // 🃏 POSTURA DE MANO (B28): en Coup el móvil se sujeta mirando a ti — tus dos
+  // influencias SON tu mano de cartas y las miras en cada ventana de reacción
+  // para decidir si faroleas o si aguantas un desafío. Por eso están SIEMPRE a
+  // la vista: sin «👁 Ver mis influencias», sin auto-cierre a los 10 s (eso era
+  // diseño de mesa) y ancladas arriba, para leer la ventana de la mesa y tu
+  // mano a la vez sin abrir nada.
+  import { CHARACTERS, charLabel } from '../chars';
   import { influenceCount } from '../engine';
   import type { CoupState } from '../types';
 
-  const { game, pid }: { game: CoupState; pid: string } = $props();
-  let open = $state(false);
-  let openedIn = $state(''); // fase en la que se abrió
+  const { game, pid, pinned = false }: { game: CoupState; pid: string; pinned?: boolean } = $props();
   const cards = $derived(game.hands[pid] || []);
   const hidden = $derived(influenceCount(game, pid));
   const coins = $derived(game.coins[pid] || 0);
-
-  // Un móvil abierto boca arriba enseña tus influencias: se cierra solo a los
-  // 10 s o en cuanto cambia la fase (ya no estabas mirando).
-  $effect(() => {
-    if (!open) return;
-    if (game.phase !== openedIn) { open = false; return; }
-    const t = setTimeout(() => { open = false; }, 10000);
-    return () => clearTimeout(t);
-  });
+  // Lo que puedes declarar SIN mentir: la única cuenta que hay que hacer en
+  // cada ventana, resuelta aquí para no hacerla de memoria.
+  const live = $derived(cards.filter((c) => !c.lost).map((c) => c.char));
 </script>
 
-{#if !open}
-  <div class="peekrow">
-    <span class="purse">🪙 {coins} moneda{coins === 1 ? '' : 's'} · 🂠 {hidden} influencia{hidden === 1 ? '' : 's'}</span>
-    <button class="small ghost" data-a="coup-peek" onclick={() => { openedIn = game.phase; open = true; }}>👁 Ver mis influencias</button>
+<div class="myhand {pinned ? 'pin' : ''}" data-a="coup-myhand">
+  <div class="mhhead">
+    <span>🎴 Tu mano <span class="only">· solo la ves tú</span></span>
+    <span class="purse" data-a="coup-purse">🪙 {coins} · 🂠 {hidden}</span>
   </div>
-{:else}
-  <div class="myhand" data-a="coup-myhand" role="button" tabindex="0"
-    onclick={() => (open = false)} onkeydown={(e) => { if (e.key === 'Enter') open = false; }}>
-    <div class="mhhead">🎴 Tus influencias · 🪙 {coins} monedas</div>
-    <div class="mhcards">
-      {#each cards as card, i (i)}
-        {#if card.lost}
-          <div class="mh lost"><b>{CHARACTERS[card.char].emoji} {CHARACTERS[card.char].name}</b><span>💀 descubierta: la mesa entera la ve y ya no vale</span></div>
-        {:else}
-          <div class="mh"><b>{CHARACTERS[card.char].emoji} {CHARACTERS[card.char].name}</b>
-            <span>{CHARACTERS[card.char].power}</span></div>
-        {/if}
-      {/each}
-    </div>
-    <p class="small-note safe" style="margin:8px 0 0">✅ Estas aguantan un desafío: si las declaras y alguien duda, la enseñas y el que dudó pierde una influencia. Cualquier otro personaje que declares es farol.</p>
-    <p class="small-note" style="margin:4px 0 0">Solo tú ves esto. Toca para ocultar (se cierra sola en 10 s).</p>
+  <div class="mhcards">
+    {#each cards as card, i (i)}
+      <div class="mh {card.lost ? 'lost' : ''}" data-a="coup-card" data-p={card.char}>
+        <b>{CHARACTERS[card.char].emoji} {CHARACTERS[card.char].name}</b>
+        <span>{card.lost ? '💀 descubierta · ya no vale' : CHARACTERS[card.char].brief}</span>
+      </div>
+    {/each}
   </div>
-{/if}
+  {#if live.length}
+    <p class="mhnote">✅ Sin mentir puedes declarar {live.map(charLabel).join(' y ')}. Lo demás es farol.</p>
+  {:else}
+    <p class="mhnote out">💀 Sin influencias: estás fuera de la corte.</p>
+  {/if}
+</div>
 
 <style>
-  .peekrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin: 8px 0; }
-  .purse { font-size: 0.86rem; color: var(--muted); font-variant-numeric: tabular-nums; }
-  .myhand { border: 1px solid var(--accent); border-radius: var(--r-2); padding: 10px 12px; margin: 8px 0; background: var(--card); cursor: pointer; }
-  .mhhead { font-weight: 700; margin-bottom: 8px; color: var(--moon); }
-  .mhcards { display: flex; flex-direction: column; gap: 6px; }
-  .mh { display: flex; flex-direction: column; gap: 1px; padding: 8px 10px; border-radius: var(--r-1); background: var(--card2); }
-  .mh span { font-size: 0.8rem; color: var(--muted); }
-  .safe { color: var(--ok); }
-  .mh.lost { opacity: 0.6; }
+  .myhand {
+    border: 1px solid var(--accent); border-radius: var(--r-2);
+    padding: 8px 10px 9px; margin: 6px 0 8px; background: var(--card);
+  }
+  /* Anclada: la ventana de reacción se lee debajo sin perder la mano de vista.
+     Los márgenes negativos la llevan al borde de #app (padding lateral 14px)
+     para que el contenido no asome por los lados al pasar por detrás. */
+  .pin {
+    position: sticky; top: 0; z-index: 20;
+    margin: 0 -14px 8px; border-radius: 0; border-width: 0 0 1px;
+    background: linear-gradient(180deg, var(--card), color-mix(in srgb, var(--card) 88%, var(--bg-0)));
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+    padding: 7px 14px 8px;
+  }
+  .mhhead {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
+    font-weight: 700; font-size: 0.82rem; color: var(--moon); margin-bottom: 6px;
+  }
+  .only { font-weight: 400; font-size: 0.72rem; color: var(--muted); }
+  .purse { font-variant-numeric: tabular-nums; font-size: 0.9rem; color: var(--text); white-space: nowrap; }
+  .mhcards { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .mh {
+    display: flex; flex-direction: column; gap: 1px; min-width: 0;
+    padding: 6px 8px; border-radius: var(--r-1); background: var(--card2);
+  }
+  .mh b { font-size: 0.9rem; }
+  .mh span { font-size: 0.72rem; color: var(--muted); }
+  .mh.lost { opacity: 0.55; }
   .mh.lost b { text-decoration: line-through; }
+  .mhnote { font-size: 0.73rem; color: var(--ok); margin: 5px 0 0; }
+  .mhnote.out { color: var(--muted); }
 </style>

@@ -2,8 +2,10 @@
 // tiene las cartas): catálogo → empezar → investigar (privado) → saltar el turno
 // de un ausente → armarse → apuntar → disparar (con confirmación) a un no-líder
 // (sigue) → cazar al líder rival (fin) → revancha.
-// Verifica la FUGA: en el tablero TODAS las cartas van tapadas (también las
-// tuyas: el 🎴 es el sitio para verlas) y el peek solo lo ve quien miró.
+// Verifica la POSTURA DE MESA (B28): en el tablero TODAS las cartas van tapadas
+// (también las tuyas), el tablero se dibuja IGUAL en todos los móviles (ni una
+// fila distinta para quien investigó o a quien apuntan), y lo privado —tus
+// cartas y lo que has visto— solo existe tras el gesto 🎴, que se tapa solo.
 import { chromium } from 'playwright';
 const BASE = process.env.BASE; if (!BASE) { console.error('Define BASE=https://tu-sitio.web.app'); process.exit(1); }
 let fail = 0;
@@ -46,12 +48,28 @@ async function turnDo(s, fn) {
   await fn(p, s.turn);
 }
 // Investigar es: elegir acción → elegir a quién → elegir qué carta → CONFIRMAR
-// (nombrando la consecuencia). Se usa mucho como relleno para pasar turnos.
+// (nombrando la consecuencia). El resultado se abre en TU 🎴 —nunca en la
+// pantalla común—, así que hay que cerrarlo. Se usa mucho como relleno.
 async function investigateWith(p, target, cardSel = '[data-a=gc-inv-card]:not([disabled])') {
   await p.click('[data-a=gc-mode-investigate]');
   await p.click(`[data-a=gc-inv-target][data-p="${target}"]`);
   await p.locator(cardSel).first().click();
   await p.click('[data-a=gc-inv-confirm]:not([disabled])');
+  await p.waitForSelector('.modal [data-a=close-modal]', { timeout: 9000 }).catch(() => {});
+  await p.click('.modal [data-a=close-modal]').catch(() => {});
+}
+/** El tablero tal y como lo ve un móvil, sin la marca de identidad «(tú)». */
+const boardOf = async (pid) => (await pg(pid).locator('.gcboard').innerText()).replace(/ \(tú\)/g, '').trim();
+/** ¿Dos móviles pintan el MISMO tablero? (con margen para que llegue el sync). */
+async function sameBoard(a, b) {
+  let x = '', y = '';
+  for (let i = 0; i < 25; i++) {
+    x = await boardOf(a); y = await boardOf(b);
+    if (x === y) return true;
+    await pg(a).waitForTimeout(200);
+  }
+  console.log('    A:', JSON.stringify(x), '\n    B:', JSON.stringify(y));
+  return false;
 }
 
 try {
@@ -95,8 +113,8 @@ try {
   const backs = await pg(someone).locator('.gccard.back').count();
   check(backs === s.playerIds.length * 3, `todas las cartas van tapadas en el tablero, también las tuyas (${backs} dorsos)`);
   await pg(someone).click('[data-a=open-mycard]');
-  await pg(someone).waitForSelector('text=/Tus cartas de integridad/');
-  ok('el 🎴 enseña tus cartas en cualquier momento');
+  await pg(someone).waitForSelector('text=/Lo tuyo, a solas/');
+  check(await pg(someone).locator('.modal [data-a=gc-hide]').count() === 1, 'el 🎴 enseña tus cartas en cualquier momento… y se puede tapar de un toque');
   await pg(someone).click('.modal [data-a=close-modal]');
 
   // ——— La ayuda se puede consultar EN partida (no solo desde el lobby) ———
@@ -118,7 +136,7 @@ try {
   check(/honestos/.test(tally) && /corruptos/.test(tally) && /en pie/.test(tally),
     'el tablero muestra cuántos hay de cada bando y cuántos quedan en pie');
 
-  // ——— Turno 1: investigar (el peek solo lo ve quien miró) ———
+  // ——— Turno 1: investigar (el resultado vive SOLO tras el gesto 🎴) ———
   s = await st();
   const investigator = s.turn;
   const invTarget = s.playerIds.find((p) => p !== investigator);
@@ -127,22 +145,41 @@ try {
     check(await p.locator('[data-a=gc-mode-aim][disabled]').count() === 1, 'sin arma, «apuntar» sale bloqueado');
     check(/Necesitas ir armado/.test(await p.locator('[data-a=gc-mode-aim]').innerText()), 'y el botón bloqueado explica POR QUÉ, en pantalla');
     check(await p.locator('[data-a=gc-ref]').count() === 1, 'la chuleta se consulta desde el propio panel de acción');
-    await investigateWith(p, invTarget, '[data-a=gc-inv-card][data-p="0"]');
+    await p.click('[data-a=gc-mode-investigate]');
+    await p.click(`[data-a=gc-inv-target][data-p="${invTarget}"]`);
+    await p.click('[data-a=gc-inv-card][data-p="0"]');
+    await p.click('[data-a=gc-inv-confirm]:not([disabled])');
   });
   s = await waitState(ana, (x) => (x.peeks[investigator] || []).length > 0, 'peek registrado');
   check(s.peeks[investigator][0].target === invTarget, 'la investigación queda registrada para quien miró');
   check(s.log.some((t) => /investiga la carta 1 de/.test(t)), 'el diario dice QUÉ carta se ha investigado');
-  // La tarjeta sale PLEGADA (el móvil acaba sobre la mesa).
-  check(await pg(investigator).locator('[data-a=gc-peek-open]').count() === 1, 'quien investigó ve su tarjeta privada plegada');
+
+  // El resultado se abre en TU 🎴 (mismo toque, móvil en la mano) y en ningún
+  // sitio más: la pantalla común no lo enseña ni lo insinúa.
+  const invP = pg(investigator);
+  const seenRow = `${NAMES[invTarget]} · carta 1`;
+  await invP.waitForSelector('.modal [data-a=gc-hide]', { timeout: 9000 });
+  check((await invP.locator('.modal').innerText()).includes(seenRow), 'al investigar se abre TU 🎴 con lo que has visto');
+  // …y se tapa (a los 12 s sola, o de un toque): el móvil vuelve a la mesa.
+  await invP.click('.modal [data-a=gc-hide]');
+  await invP.waitForSelector('.modal [data-a=gc-reveal]', { timeout: 5000 });
+  check(!(await invP.locator('.modal').innerText()).includes(seenRow), 'al taparse, ni tus cartas ni lo que has visto quedan a la vista');
+  await invP.click('.modal [data-a=close-modal]');
+
+  // El chivato de forma: la pantalla en reposo es IDÉNTICA en todos los móviles.
   const otherP = s.playerIds.find((p) => p !== investigator);
-  check(await pg(otherP).locator('[data-a=gc-peek-open]').count() === 0, 'nadie más ve el resultado');
-  await pg(investigator).click('[data-a=gc-peek-open]');
-  await pg(investigator).click('[data-a=gc-peek-ok]');
-  // …y queda guardada: antes, si otro investigaba, se perdía para siempre.
-  await pg(investigator).click('[data-a=open-mycard]');
-  await pg(investigator).waitForSelector('text=/Lo que has investigado/');
-  ok('el 🎴 conserva el historial de lo investigado');
-  await pg(investigator).click('.modal [data-a=close-modal]');
+  check(await sameBoard(investigator, otherP), 'el tablero se dibuja igual en todos los móviles: nada delata quién ha investigado');
+  check(await invP.locator('[data-a=gc-reveal]').count() === 0 && await invP.locator('.modal').count() === 0,
+    'en la pantalla común no queda ni rastro de lo privado');
+  // …y queda guardado: antes, si otro investigaba, se perdía para siempre.
+  await invP.click('[data-a=open-mycard]');
+  await invP.waitForSelector('.modal [data-a=gc-hide]', { timeout: 9000 });
+  check((await invP.locator('.modal').innerText()).includes(seenRow), 'el 🎴 conserva el historial de lo que has visto');
+  await invP.click('.modal [data-a=close-modal]');
+  await pg(otherP).click('[data-a=open-mycard]');
+  await pg(otherP).waitForSelector('text=/Lo que has visto/');
+  check(/Nada todavía/.test(await pg(otherP).locator('.modal').innerText()), 'nadie más ve el resultado, ni en su 🎴');
+  await pg(otherP).click('.modal [data-a=close-modal]');
 
   // ——— Desatasco: cualquier otro salta el turno de quien no responde ———
   s = await st();
@@ -194,9 +231,13 @@ try {
     ss = await waitState(ana, (x) => x.aimAt[shooter] === target || x.phase === 'end', 'apuntado');
     if (!aimedChecked && ss.aimAt[shooter] === target && ss.alive[target]) {
       aimedChecked = true;
-      await pg(target).waitForSelector('[data-a=gc-aimed-at-me]', { timeout: 9000 })
-        .then(() => ok('a quien apuntan lo ve avisado en su propia fila'))
-        .catch(() => bad('a quien apuntan lo ve avisado en su propia fila'));
+      const witness = ss.playerIds.find((p) => p !== target && ss.alive[p]);
+      const warned = async (pid) => !!(await pg(pid)
+        .waitForSelector(`[data-a=gc-aimed][data-p="${target}"]`, { timeout: 9000 }).catch(() => null));
+      check(await warned(target), 'quien está en la mira sale avisado en su propia fila');
+      // Y el aviso es PÚBLICO: lo pintan igual todos los móviles, no solo el suyo.
+      check(await warned(witness), 'ese aviso lo ve toda la mesa igual (alimenta la conversación, no delata pantallas)');
+      check(await sameBoard(target, witness), 'con dianas en juego, el tablero sigue siendo idéntico en todos los móviles');
     }
     for (let guard = 0; guard < 12; guard++) {
       ss = await st();

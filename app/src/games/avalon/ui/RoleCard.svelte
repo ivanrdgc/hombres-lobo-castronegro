@@ -1,12 +1,22 @@
 <script lang="ts">
   // Carta secreta de Ávalon: rol, bando y —lo que hace especial a la app— el
   // CONOCIMIENTO que ese rol tendría (compañeros del Mal, la visión de Merlín,
-  // la pareja Merlín/Morgana de Percival…), calculado en oculto por la app. En
-  // modo «mini» va plegada y se auto-oculta: los móviles quedan boca arriba.
+  // la pareja Merlín/Morgana de Percival…), calculado en oculto por la app.
+  //
+  // POSTURA DE MESA (B28): en Ávalon el móvil vive PLANO sobre la mesa y el
+  // vecino puede echarle un vistazo. Por eso la carta:
+  //  1. nunca se pinta sola — siempre tras un gesto (👁 aquí, 🎴 en el modal);
+  //  2. se auto-oculta a los 12 s (y al cambiar de fase: el componente se
+  //     vuelve a montar cerrado);
+  //  3. abierta, ocupa LO MISMO y lleva EL MISMO color para los dos bandos: ni
+  //     el borde rojo/azul de antes ni un panel más largo (el de quien conoce a
+  //     los malvados) pueden delatar desde el otro lado de la mesa;
+  //  4. cerrada, el botón es idéntico en todos los móviles: tocarlo no dice
+  //     nada de ti.
   import { ROLES, knowledgeOf } from '../roles';
   import type { AvalonState } from '../types';
 
-  const { game, pid, mini = false }: { game: AvalonState; pid: string; mini?: boolean } = $props();
+  const { game, pid, startOpen = false }: { game: AvalonState; pid: string; startOpen?: boolean } = $props();
 
   const role = $derived(game.roles[pid]);
   const def = $derived(ROLES[role]);
@@ -14,19 +24,24 @@
   const nm = (p: string) => game.names[p] || '¿?';
   const nameList = (pids: string[]) => pids.map(nm).join(', ');
 
-  let open = $state(false);
-  function toggle() { if (mini) open = !open; }
+  // `startOpen` solo cuando el gesto ya lo hizo el jugador (pulsar «👁 Ver mi
+  // carta» en el reparto, abrir el 🎴): ni así se queda abierta para siempre.
+  let openState: boolean | null = $state(null); // null = lo que diga startOpen
+  const open = $derived(openState === null ? startOpen : openState);
+  function toggle() { openState = !open; }
   $effect(() => {
     if (!open) return;
-    const t = setTimeout(() => (open = false), 12000);
+    const t = setTimeout(() => (openState = false), 12000);
     return () => clearTimeout(t);
   });
 </script>
 
-{#if mini && !open}
-  <div style="text-align:center;margin:10px 0"><button class="small ghost" data-a="av-togglecard" onclick={toggle}>👁 Mostrar mi carta</button></div>
+{#if !open}
+  <div class="peek">
+    <button class="ghost block" data-a="av-togglecard" onclick={toggle}>👁 Ver mi carta (solo tú)</button>
+  </div>
 {:else}
-  <div class="rolecard {k.team}" data-a="av-togglecard" onclick={toggle} role="button" tabindex="0"
+  <div class="rolecard avcard" data-a="av-togglecard" onclick={toggle} role="button" tabindex="0"
     onkeydown={(e) => { if (e.key === 'Enter') toggle(); }}>
     <span class="remoji">{def.emoji}</span>
     <span class="rname">{def.name}</span>
@@ -43,11 +58,22 @@
     {:else}
       <div class="rextra">🤔 No tienes información secreta: deduce por propuestas, votos y sabotajes.</div>
     {/if}
-    {#if mini}<p class="small-note" style="margin-top:8px">Se ocultará sola en unos segundos; toca la carta para ocultarla ya.</p>{/if}
+    <p class="small-note rhide">🙈 Se oculta sola en unos segundos · toca la carta para ocultarla ya</p>
   </div>
 {/if}
 
 <style>
-  .rolecard.evil { border-color: #7a2b2b; box-shadow: 0 0 0 1px #7a2b2b inset; }
-  .rolecard.good { border-color: #2b527a; box-shadow: 0 0 0 1px #2b527a inset; }
+  .peek { margin: 12px 0 0; }
+  /* Sin borde por bando (antes rojo el Mal y azul el Bien): un color se lee de
+     reojo desde el otro lado de la mesa sin ni siquiera enfocar el texto. */
+  /* Alto FIJO (el del texto más largo de la baraja): así todas las cartas miden
+     lo mismo aunque el rol cuente más o menos cosas. */
+  .avcard { display: flex; flex-direction: column; min-height: 420px; }
+  /* Alturas reservadas para el texto MÁS largo de cada bloque: así la carta de
+     Merlín (que lista malvados) y la del leal (que no sabe nada) miden
+     exactamente lo mismo — el «panel más largo» era un chivato de forma. */
+  .avcard .remoji { font-size: 2.4rem; }
+  .avcard .rdesc { min-height: 7em; }
+  .avcard .rextra { min-height: 4.2em; display: flex; align-items: center; justify-content: center; }
+  .avcard .rhide { margin: auto 0 0; padding-top: 10px; opacity: 0.75; }
 </style>

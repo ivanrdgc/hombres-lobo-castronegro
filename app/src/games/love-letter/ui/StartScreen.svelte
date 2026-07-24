@@ -53,12 +53,12 @@
 <div class="card">
   <h3>🎮 ¿Quién juega?</h3>
   <SeatPicker {group} {meId} gameId="love_letter" onState={(s) => (seat = s)} />
-  <p class="small-note">El orden es el de la mesa (marca los turnos). Cada uno empieza con una carta en la mano.</p>
+  <p class="small-note">El orden de la lista es el de los turnos. Cada uno empieza con una carta en la mano, en su propio móvil.</p>
 </div>
 
 <div class="card">
   <h3>🔊 ¿Dónde suena la voz?</h3>
-  <p class="small-note" style="margin-top:6px">La voz solo relata las cartas jugadas y el desenlace (público); nunca tu mano. Puede ponerla alguien que también juega.</p>
+  <p class="small-note" style="margin-top:6px">Canta en alto las cartas jugadas y quién gana; nunca tu mano. Puede ponerla alguien que también juega.</p>
   <div class="btnrow" style="margin-top:6px">
     {#each rows.filter((p) => !matchOf(p.id)) as p (p.id)}
       <button class="pick {narrator === p.id ? 'primary' : 'ghost'}" data-a="pick-narrator" data-p={p.id} style="flex:0 1 auto;min-width:0" onclick={() => (narrPick = p.id)}>
@@ -71,11 +71,11 @@
 
 <div class="card">
   <p class="small-note" style="margin-top:0">💌 Jugarán <b>{n}</b>{n ? ': ' : ''}<span style="opacity:.75">{chosen.map((p) => p.name).join(', ')}</span></p>
-  {#if okStart}<p class="small-note">🏆 Con {n} jugadores gana quien reúna <b>{tokensToWin(n)} favores</b> (uno por ronda ganada). El mazo es siempre el mismo: 16 cartas, 8 tipos.</p>{/if}
+  {#if okStart}<p class="small-note">🏆 Gana quien reúna <b>{tokensToWin(n)} favores</b>, uno por ronda ganada. 🃏 Móvil en la mano y mirando hacia ti: la pantalla será tu carta.</p>{/if}
   {#if n < MIN_PLAYERS}<p class="small-note">⚠️ Love Letter necesita al menos {MIN_PLAYERS} jugadores: marca {MIN_PLAYERS - n} más arriba.</p>{/if}
   {#if n > MAX_PLAYERS}<p class="small-note">⚠️ Máximo {MAX_PLAYERS} jugadores: desmarca {n - MAX_PLAYERS} arriba.</p>{/if}
   <div id="form-error">{#if app.ui.formError}<div class="flash error">{app.ui.formError}</div>{/if}</div>
-  <button class="primary block" disabled={!okStart} data-a="ll-start" onclick={startNow}>💌 ¡Empezar!{okStart ? ` (${n} jugadores)` : ''}</button>
+  <button class="primary block" disabled={!okStart} data-a="ll-start" onclick={startNow}>💌 Repartir cartas y empezar</button>
 </div>
 
 <style>

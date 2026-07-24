@@ -1,13 +1,14 @@
 <script lang="ts">
-  // Fase de adivinar: el equipo (todos menos el Psíquico) mueve UN marcador
-  // compartido y, tras debatir, uno lo fija con doble toque. El Psíquico ya no
-  // interviene. OJO con el objetivo: la diana solo se pinta en el móvil del
-  // Psíquico — el dispositivo que pone la voz sin jugar suele estar en el
-  // centro de la mesa, y cualquiera puede entrar con «👀 Mirar».
+  // Fase de adivinar. Aquí la postura cambia de bando (B28):
+  //  · 👥 EQUIPO: el dial es la MESA. Un solo marcador para todos, que se
+  //    manosea entre varios y se mira desde donde cada uno esté sentado: pista
+  //    en grande, barra alta, pomo gordo y el número del marcador cantado.
+  //  · 🃏 El Psíquico sigue teniendo el secreto en la mano: su dial no pinta la
+  //    diana (solo mientras mantiene pulsado), porque es justo el rato en que
+  //    los demás se mueven, se asoman y él tiene el móvil en la mesa.
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
   import { psychicId } from '../engine';
-  import { spectrumById } from '../spectrums';
   import type { PlayerDoc } from '../../../core/sync/schema';
   import type { WavelengthState } from '../types';
   import Dial from './Dial.svelte';
@@ -18,7 +19,10 @@
   const psychicName = $derived(game.names[psychicId(game)] || '¿?');
   const pickedBy = $derived(game.pickBy ? game.names[game.pickBy] || '' : '');
   const pickedByMe = $derived(game.pickBy === my.id);
-  const spec = $derived(spectrumById(game.spectrumId));
+  // Cuántos móviles MÁS enseñan esta misma marca (el equipo, menos yo).
+  const others = $derived(Math.max(1, game.playerIds.length - 2));
+  const othersTxt = $derived(others === 1 ? 'el otro móvil del equipo lo ve igual'
+    : `los otros ${others} móviles del equipo lo ven igual`);
 
   // La marca vive en el DOC (todos ven la misma). `drag` es solo el valor
   // mientras el dedo va por la barra: se publica al soltar.
@@ -43,21 +47,20 @@
 {#if inTeam}
   <div class="actionpanel"><h3>🎚️ ¿Dónde apuntaba la pista?</h3>
     {#if game.clueText}
-      <p class="clue">💬 La pista de <b>{psychicName}</b>: <b class="big">«{game.clueText}»</b></p>
+      <p class="clue"><b class="big">«{game.clueText}»</b><span class="by">la pista de {psychicName}</span></p>
     {:else}
-      <p class="clue">💬 <b>{psychicName}</b> ya ha dado su pista en voz alta (no la apuntó, y no puede repetirla): recordadla entre todos.</p>
+      <p class="clue"><span class="by">{psychicName} la dijo en voz alta y no la apuntó: recordadla entre todos (no puede repetirla).</span></p>
     {/if}
-    <p class="hint">El dial va de <b>{spec?.left ?? '0'}</b> (0) a <b>{spec?.right ?? '100'}</b> (100). Debatid y arrastrad el pomo: el marcador es el MISMO para todo el equipo, lo mueva quien lo mueva.</p>
 
     <Dial spectrumId={game.spectrumId} selectable={true} value={pos} onpick={(v) => (drag = v)} onpickend={publish} />
 
     <p class="who">
       {#if game.pick === null}
-        ⚪ Nadie lo ha movido todavía.
+        ⚪ Nadie lo ha movido todavía. Arrastrad el pomo entre todos: es el MISMO marcador en todos vuestros móviles.
       {:else if pickedByMe}
-        🟢 Marcador en <b>{game.pick}</b>: lo has puesto <b>tú</b> (todos lo ven ahí).
+        🟢 Marcador en <b>{game.pick}</b>: lo has puesto <b>tú</b> y {othersTxt}.
       {:else}
-        🟢 Marcador en <b>{game.pick}</b>: lo movió <b>{pickedBy || 'el equipo'}</b>.
+        🟢 Marcador en <b>{game.pick}</b>: lo movió <b>{pickedBy || 'el equipo'}</b> y lo veis igual todos.
       {/if}
     </p>
 
@@ -66,12 +69,12 @@
       {armed ? `✅ Sí: fijar en ${game.pick} y puntuar` : `✅ Fijar la marca en ${game.pick ?? '—'}`}
     </button>
     {#if game.pick === null}
-      <p class="small-note" style="margin-top:6px">Arrastra el pomo (o toca en la barra) para poder fijarlo: hasta entonces no hay nada que puntuar.</p>
+      <p class="small-note" style="margin-top:6px">Hasta que no lo mováis no hay nada que fijar.</p>
     {:else if armed}
-      <p class="warn">⚠️ Segundo toque = se acaba la ronda y se revela el objetivo. No se puede deshacer.</p>
+      <p class="warn">⚠️ El segundo toque cierra la ronda y revela el objetivo. No se puede deshacer.</p>
       <button class="ghost block" data-a="wl-guess-cancel" onclick={() => (armedAt = null)}>↩️ No: seguir moviéndolo</button>
     {:else}
-      <p class="small-note" style="margin-top:6px">Pide un segundo toque para confirmar: nadie cierra la ronda por accidente. Lo fija uno por todos, cuando estéis de acuerdo.</p>
+      <p class="small-note" style="margin-top:6px">Pedirá un segundo toque: lo fija uno por todos, cuando estéis de acuerdo.</p>
     {/if}
 
     <!-- La chuleta, aquí mismo: en esta pantalla es donde se decide, y lo que
@@ -84,10 +87,13 @@
     </details>
   </div>
 {:else if iAmPsychic}
-  <div class="narration">🎚️ Ya diste tu pista. El equipo está colocando el marcador… tú, cara de póker: ni una palabra, ni un gesto.</div>
+  <div class="privacy" data-a="wl-private">
+    🙈 <b>Sigues teniendo el objetivo en el móvil</b>, y es cuando más se asoman: pantalla hacia ti hasta que se revele.
+  </div>
+  <div class="narration">🎚️ Ya diste tu pista. El equipo está colocando el marcador… ni una palabra, ni un gesto.</div>
   <div class="card">
     {#if game.clueText}<p class="clue" style="margin-top:0">💬 Tu pista: <b>«{game.clueText}»</b></p>{/if}
-    <Dial spectrumId={game.spectrumId} target={game.target} marker={game.pick} legend="result" />
+    <Dial spectrumId={game.spectrumId} target={game.target} marker={game.pick} legend="result" secret={true} />
     <p class="small-note" style="margin-top:2px">
       {game.pick === null ? 'Aún no han movido nada.' : `Van por ${game.pick}${pickedBy ? ` (lo movió ${pickedBy})` : ''}. Lo fijan ellos: tú ya no tocas el dial.`}
     </p>
@@ -104,11 +110,23 @@
 {/if}
 
 <style>
-  .clue { background: var(--card2); border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; margin: 8px 0; font-size: 0.95rem; }
-  .clue .big { font-size: 1.1rem; color: var(--moon); }
-  .who { font-size: 0.85rem; color: var(--muted); margin: 6px 0 0; }
+  /* La pista es la carta que estaría en el centro de la mesa: se lee entre
+     todos, a veces desde el otro lado. Va sola, grande y sin adornos. */
+  .clue { background: var(--card2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin: 8px 0; font-size: 0.95rem; text-align: center; }
+  .clue .big { display: block; font-size: 1.5rem; line-height: 1.2; color: var(--moon); }
+  .clue .by { display: block; font-size: 0.8rem; color: var(--muted); margin-top: 3px; }
+  .who { font-size: 0.95rem; color: var(--muted); margin: 8px 0 0; }
   .who b { color: var(--text); }
   .warn { font-size: 0.82rem; color: var(--moon); margin: 6px 0 0; }
   .ref { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 8px; }
   .ref summary { cursor: pointer; font-size: 0.88rem; color: var(--accent); }
+  /* Mismo aviso permanente que en la fase de pista (postura de mano). */
+  .privacy {
+    position: sticky; top: 0; z-index: 3;
+    background: color-mix(in srgb, var(--danger) 22%, var(--bg-1));
+    border: 1px solid var(--danger); border-radius: var(--r-1);
+    padding: 10px 12px; margin: 10px 0 0; font-size: 0.88rem; line-height: 1.35;
+    box-shadow: var(--shadow-1);
+  }
+  .privacy b { color: var(--moon); }
 </style>

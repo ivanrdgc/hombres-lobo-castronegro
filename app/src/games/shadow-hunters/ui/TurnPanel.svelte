@@ -1,16 +1,21 @@
 <script lang="ts">
   // Turno: elige UNA acción — pista secreta, atacar (dados), descansar o
   // revelarte y usar tu poder. En pasos y con todo delante (B25/B26):
-  //   0) Tu identidad y TU poder arriba: antes había que recordarlos de memoria.
   //   1) Las cuatro acciones como tarjetas con su efecto Y lo que arriesgan.
   //   2) Elegida una: qué va a pasar, el objetivo (con su vida y lo que se sabe
   //      de él) y un botón final que NOMBRA la consecuencia. Todo reversible.
   //   3) Plegada al fondo, la chuleta de los 8 personajes y las 8 pistas.
+  // 🍽️ MESA (B28): la pasada anterior clavaba TU carta (personaje, bando y
+  // poder) arriba del panel, y el panel se queda abierto sobre la mesa mientras
+  // piensas: era el chivato más caro del juego. Ahora ni el panel ni el botón de
+  // confirmar nombran tu personaje; para consultarlo está el 👁 (SecretPeek),
+  // que se tapa solo. Al revelarte pasa a ser público y ahí sí se escribe.
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
   import { isAlive, charOf } from '../engine';
-  import { CHARS, FACTION_LABEL, FACTION_SHORT, charRefRows, pistaRefRows, factionSummary, powerEffect } from '../chars';
+  import { CHARS, FACTION_SHORT, charRefRows, pistaRefRows, factionSummary } from '../chars';
   import RefRows from '../../../shell/RefRows.svelte';
+  import SecretPeek from './SecretPeek.svelte';
   import type { PlayerDoc } from '../../../core/sync/schema';
   import type { ShadowHState } from '../types';
 
@@ -57,8 +62,10 @@
     },
     {
       id: 'reveal' as Mode, emoji: '🎭', name: 'Revelarte y usar tu poder',
-      ask: c.id === 'fuka' ? '¿A quién curas 3 puntos? (puedes ser tú)' : '¿Sobre quién usas tu poder?',
-      what: `Tu identidad pasa a ser PÚBLICA para siempre: la mesa sabrá que eres ${c.emoji} ${c.name} (${FACTION_LABEL[c.faction]}). En el acto usas TU poder, de un solo uso: ${powerEffect(c)}`,
+      ask: '¿Sobre quién usas tu poder?',
+      // Sin tu nombre de personaje: el panel se queda abierto encima de la mesa.
+      // Al elegir esta acción tienes el 👁 ahí mismo para mirarlo un momento.
+      what: 'Tu identidad pasa a ser PÚBLICA para siempre: la mesa sabrá qué personaje eres y de qué bando. En el acto usas TU poder, de un solo uso (podrás mirarlo antes de confirmar).',
       risk: 'Tu bando sabrá que estás con él… y el contrario, a quién tiene que atacar.',
       off: revealed, why: 'Ya te revelaste: tu poder era de un solo uso y ya está gastado.',
     },
@@ -79,8 +86,10 @@
     if (mode === 'pista') return `🔮 Dar la pista a ${tgt ? nm(tgt) : '…'}`;
     if (mode === 'attack') return `⚔️ Atacar a ${tgt ? nm(tgt) : '…'}`;
     if (mode === 'rest') return '💤 Descansar y recuperar 1 punto de vida';
-    if (!needsTarget) return `🎭 Revelarte como ${c.name} y usar tu poder`;
-    return `🎭 Revelarte como ${c.name} y usar tu poder sobre ${tgt ? (tgt === my.id ? 'ti' : nm(tgt)) : '…'}`;
+    // «Revelarte como Vampiro» en el botón más grande de la pantalla era el
+    // chivato definitivo: la consecuencia se nombra sin decir quién eres.
+    if (!needsTarget) return '🎭 Revelar tu identidad y usar tu poder';
+    return `🎭 Revelar tu identidad y usar tu poder sobre ${tgt ? (tgt === my.id ? 'ti' : nm(tgt)) : '…'}`;
   });
   // Una línea en claro con lo que va a ocurrir al confirmar.
   const preview = $derived.by(() => {
@@ -88,7 +97,7 @@
     if (mode === 'pista' && tgt) return `${nm(tgt)} recibirá una carta que solo leeréis ${nm(tgt)} y tú; la mesa verá si pierde vida, se cura o no le pasa nada.`;
     if (mode === 'attack' && tgt) return `${nm(tgt)} (${pub(tgt)}) recibirá de 0 a 5 de daño… o ninguno si los dados empatan.`;
     if (mode === 'rest') return full ? `Sigues con ${hp} de ${game.maxHp}: gastas el turno sin ganar vida.` : `Subes a ${hp + 1} de ${game.maxHp} puntos de vida.`;
-    if (mode === 'reveal') return `Toda la mesa sabrá que eres ${c.emoji} ${c.name} (${FACTION_LABEL[c.faction]})${needsTarget && t ? `, y tu poder caerá sobre ${t}` : ''}.`;
+    if (mode === 'reveal') return `Toda la mesa verá tu personaje y tu bando, para siempre${needsTarget && t ? `, y tu poder caerá sobre ${t}` : ''}.`;
     return '';
   });
 
@@ -109,21 +118,10 @@
 </script>
 
 <div class="actionpanel">
-  <h3>🎬 Tu turno: eliges UNA acción</h3>
-
-  <!-- Tu carta, siempre delante: el poder propio se olvidaba entre turno y turno. -->
-  <div class="shme">
-    <span class="meemo">{c.emoji}</span>
-    <div class="meinfo">
-      <div class="mename">{c.name} · {FACTION_SHORT[c.faction]}</div>
-      <div class="mesecret">❤️ {hp} de {game.maxHp} · {revealed ? '🎭 identidad pública' : '🤫 identidad oculta'}</div>
-      <div class="medesc">{revealed ? '🎭 Tu poder (ya usado al revelarte)' : '🔒 Tu poder, al revelarte'}: {powerEffect(c)}</div>
-      {#if c.goal}<div class="medesc">🧭 Tu objetivo propio: {c.goal}</div>{/if}
-    </div>
-  </div>
+  <h3>🎬 Te toca: elige UNA acción</h3>
 
   {#if !mode}
-    <p class="hint" style="margin:10px 0 8px">Toca una acción para ver qué hace exactamente; después eliges a quién y lo confirmas.</p>
+    <p class="hint" style="margin:10px 0 8px">Toca una acción para ver qué hace; después eliges a quién y lo confirmas. Tu carta sigue tapada: mírala con 👁 si te hace falta.</p>
     <div class="shacts">
       {#each ACTS as a (a.id)}
         <button class="shact {a.off ? 'off' : ''}" data-a={`sh-mode-${a.id}`} disabled={a.off} onclick={() => (mode = a.id)}>
@@ -140,6 +138,11 @@
       <div class="awhat">{act.what}</div>
       <div class="arisk">⚠️ {act.risk}</div>
     </div>
+    {#if mode === 'reveal'}
+      <!-- El único sitio donde de verdad necesitas tu carta para decidir: aquí,
+           tras un gesto y con auto-tapado, no clavada arriba todo el turno. -->
+      <SecretPeek {game} pid={my.id} compact label="👁 Ver quién eres y qué poder gastarás" />
+    {/if}
     <button class="ghost block small" style="margin:8px 0" data-a="sh-back" onclick={() => (mode = null)}>↩️ Cambiar de acción</button>
 
     {#if needsTarget}
@@ -163,9 +166,13 @@
     {#if !canGo}<p class="small-note" style="margin-top:6px">Elige antes a quién: sin objetivo no se puede confirmar.</p>{/if}
   {/if}
 
+  <!-- Referencia al pie y plegada: nadie debería salir de la pantalla en la que
+       está decidiendo. Aquí vive también «cómo se gana», que antes repetía el
+       tablero (un dato, un sitio). -->
   <details class="shref">
-    <summary data-a="sh-ref">📖 Los 8 personajes y las 8 cartas de pista</summary>
-    <p class="small-note" style="margin:8px 0 0">{factionSummary(game.playerIds.length)} El reparto es público; lo secreto es quién es quién.</p>
+    <summary data-a="sh-ref">📖 Consultar: cómo se gana, los 8 personajes y las 8 pistas</summary>
+    <p class="small-note" style="margin:8px 0 0">🏹 Los Cazadores ganan cuando no queda ninguna 🌑 Sombra en pie; las Sombras, cuando no queda ningún Cazador. Los 🧭 neutrales van a lo suyo.</p>
+    <p class="small-note" style="margin:6px 0 0">{factionSummary(game.playerIds.length)} El reparto es público; lo secreto es quién es quién.</p>
     <RefRows title="🎭 Los 8 personajes posibles" rows={charRefRows()} />
     <RefRows title="🔮 Las 8 cartas de pista" rows={pistaRefRows()} />
     <p class="small-note" style="margin-top:8px">Siempre son estas ocho: cuatro quitan 1 punto de vida y cuatro lo curan, según el bando de quien la recibe.</p>
@@ -173,16 +180,6 @@
 </div>
 
 <style>
-  .shme {
-    display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px;
-    border-radius: var(--r-2); border: 1px solid var(--accent2); background: color-mix(in srgb, var(--accent2) 12%, var(--card2));
-  }
-  .meemo { font-size: 1.8rem; line-height: 1.1; }
-  .meinfo { flex: 1; min-width: 0; }
-  .mename { font-weight: 700; color: var(--moon); font-size: 1rem; }
-  .medesc { font-size: 0.82rem; color: var(--text); margin-top: 4px; }
-  .mesecret { font-size: 0.8rem; color: var(--muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
-
   .shacts { display: flex; flex-direction: column; gap: 8px; }
   .shact {
     display: grid; grid-template-columns: auto 1fr; column-gap: 10px; row-gap: 2px;

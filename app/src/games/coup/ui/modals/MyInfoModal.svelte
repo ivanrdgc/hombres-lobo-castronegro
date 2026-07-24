@@ -1,7 +1,9 @@
 <script lang="ts">
-  // «🎴 Mi carta + referencia» (B19/B21): tus influencias ocultas, tus monedas
-  // y la chuleta completa de personajes y acciones, con las copias que ya están
-  // boca arriba (dato público que decide si un farol cuela). Accesible siempre.
+  // «🎴 Mi carta + referencia» (B19/B21): la REFERENCIA completa del juego —
+  // personajes y acciones con las copias que ya están boca arriba (dato público
+  // que decide si un farol cuela). Tu mano ya no se «consulta» aquí: en Coup
+  // (juego de mano, B28) vive fija en la pantalla de partida; se repite arriba
+  // solo para no tener que cerrar el modal para mirarla.
   import { app, viewGroup, me } from '../../../../core/sync/store.svelte';
   import { coupGame } from '../../actions';
   import { CHARACTERS, CHAR_ORDER, ACTIONS, COPIES, claimLine, blockLine } from '../../chars';
@@ -34,7 +36,6 @@
 </script>
 
 {#if game && my}
-  <h3 style="margin:0 0 4px">🎴 Tus influencias</h3>
   {#if inGame}
     <MyHand {game} pid={my.id} />
   {:else}

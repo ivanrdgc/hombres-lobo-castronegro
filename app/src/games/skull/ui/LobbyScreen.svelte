@@ -1,7 +1,10 @@
 <script lang="ts">
-  // Lobby de Skull: intro con lectura (▶️), «cómo se juega» y tutorial.
+  // Puerta de entrada de Skull: de qué va en dos líneas y tres caminos —
+  // aprender, consultar y jugar—. El nombre del juego lo dice la cabecera; aquí
+  // no se repite.
   import { app, navigate } from '../../../core/sync/store.svelte';
   import { localAudioState, toggleLocalSpeech } from '../../../shell/explain-audio';
+  import { gameMeta, POSTURE_HINT } from '../../registry';
   import { MIN_PLAYERS, MAX_PLAYERS } from '../engine';
   import { INTRO_LOBBY } from '../texts';
   import type { GroupDoc, PlayerDoc } from '../../../core/sync/schema';
@@ -9,6 +12,7 @@
 
   const { group }: { group: GroupDoc; my: PlayerDoc } = $props();
   const introAudio = $derived(localAudioState('sk-intro'));
+  const meta = gameMeta('skull');
 </script>
 
 <div class="topbar">
@@ -18,22 +22,32 @@
 <Flash />
 
 <div class="card">
-  <div style="display:flex;align-items:center;gap:8px">
-    <h3 style="flex:1;margin:0">💀 Skull</h3>
-    {#if introAudio === 'playing'}
-      <button class="small ghost" data-a="sk-play-intro" title="Detener" onclick={() => toggleLocalSpeech('sk-intro', [])}>⏹️</button>
-    {:else if introAudio === 'loading'}
-      <button class="small ghost" aria-label="Preparando la voz" disabled><span class="spinner"></span></button>
-    {:else}
-      <button class="small ghost" data-a="sk-play-intro" title="Escuchar" style="font-size:1.1rem;line-height:1" onclick={() => toggleLocalSpeech('sk-intro', INTRO_LOBBY)}>▶️</button>
-    {/if}
+  <p style="margin:0 0 8px">{INTRO_LOBBY[0]}</p>
+  <details class="skmore">
+    <summary data-a="sk-more-intro">▸ Y cómo se gana</summary>
+    <p class="small-note">{INTRO_LOBBY[1]}</p>
+  </details>
+
+  {#if introAudio === 'playing'}
+    <button class="small ghost" data-a="sk-play-intro" onclick={() => toggleLocalSpeech('sk-intro', [])}>⏹️ Parar la lectura</button>
+  {:else if introAudio === 'loading'}
+    <button class="small ghost" aria-label="Preparando la voz" disabled><span class="spinner"></span></button>
+  {:else}
+    <button class="small ghost" data-a="sk-play-intro" onclick={() => toggleLocalSpeech('sk-intro', INTRO_LOBBY)}>▶️ Escuchar esta intro</button>
+  {/if}
+
+  <p class="small-note" style="margin:12px 0 2px">👥 De {MIN_PLAYERS} a {MAX_PLAYERS} jugadores · ⏱️ {meta.mins[0]}–{meta.mins[1]} min</p>
+  <p class="small-note" style="margin:0 0 12px">{POSTURE_HINT[meta.posture]}</p>
+
+  <div class="btnrow" style="gap:8px">
+    <button data-a="open-demo" style="flex:1" onclick={() => (app.ui.modal = { type: 'sk-demo' })}>🎓 Aprender jugando</button>
+    <button data-a="sk-open-help" style="flex:1" onclick={() => (app.ui.modal = { type: 'sk-help' })}>🎲 Cómo se juega</button>
   </div>
-  {#each INTRO_LOBBY as p, i (i)}<p style="margin:9px 0">{p}</p>{/each}
-  <button class="block" data-a="sk-open-help" onclick={() => (app.ui.modal = { type: 'sk-help' })}>🎲 Cómo se juega</button>
-  <button class="block" data-a="open-demo" onclick={() => (app.ui.modal = { type: 'sk-demo' })}>🎓 Tutorial interactivo (2 min)</button>
+  <button class="primary block" style="margin-top:8px" data-a="open-start" onclick={() => navigate(`/g/${group.id}/skull/empezar`)}>💀 Empezar partida</button>
 </div>
 
-<div class="card">
-  <p class="small-note" style="margin-top:0">De {MIN_PLAYERS} a {MAX_PLAYERS} jugadores. La app custodia las pilas boca abajo (solo ves las tuyas), lleva las apuestas y el marcador; la voz (opcional) relata las jugadas.</p>
-  <button class="primary block" data-a="open-start" onclick={() => navigate(`/g/${group.id}/skull/empezar`)}>💀 Empezar partida</button>
-</div>
+<style>
+  .skmore { margin: 0 0 10px; }
+  .skmore summary { font-size: 0.85rem; color: var(--muted, #999); cursor: pointer; min-height: 30px; display: flex; align-items: center; }
+  .skmore p { margin: 6px 0 0; }
+</style>

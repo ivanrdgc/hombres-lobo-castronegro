@@ -35,7 +35,7 @@
 
 <span class="moon">🎲</span>
 <h1 class="title-hero">Juegos digitales</h1>
-<p class="subtitle">Montad primero vuestra mesa; después elegís a qué jugar</p>
+<p class="subtitle">Una mesa, diecisiete juegos: la montáis una vez y luego elegís a qué jugar</p>
 <Flash />
 <div class="card">
   <h3>🪑 Nueva mesa</h3>
@@ -51,7 +51,7 @@
     {#if app.ui.formError}<div class="flash error">{app.ui.formError}</div>{/if}
   </div>
   <button class="primary block" data-a="create-group" onclick={crear}>🪑 Crear la mesa</button>
-  <p class="small-note">Comparte luego el enlace y cada amigo entra desde su móvil. Los usuarios y el orden de asiento se configuran una vez y sirven para todos los juegos. ¿Te han invitado? Abre directamente el enlace que te hayan pasado.</p>
+  <p class="small-note">Al crearla te damos un enlace para que entren los demás desde su móvil, sin instalar nada. <b>¿Te han invitado?</b> Abre el enlace que te hayan pasado, no crees otra mesa.</p>
   <!-- Sello del build a la vista: si un móvil enseña una fecha vieja, está
        sirviendo caché y cualquier «bug» debe verificarse tras recargar. -->
   <p class="small-note" style="text-align:center;opacity:.55">{__APP_VERSION__}</p>

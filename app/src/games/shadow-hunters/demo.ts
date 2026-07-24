@@ -19,15 +19,16 @@ export const DEMO: DemoScript = {
     {
       icon: '🎴',
       title: 'El reparto: tu personaje secreto',
-      who: { actor: 'TODOS miráis vuestro personaje a la vez (botón 🎴, cuando queráis)', others: 'en el tablero, los demás aparecen como «❓ oculto».' },
+      who: { actor: 'TÚ pulsas «👁 Ver mi personaje» cuando quieras', others: 'en el tablero TODOS salís como «❓ sin destapar», tú incluido.' },
       text: [
         'Te toca 🐺 el Licántropo: eres una SOMBRA. Tu poder (un solo uso, al revelarte): curarte 3 puntos. Tu misión: que caigan los Cazadores… sin que te descubran pronto.',
+        'El móvil se queda PLANO en la mesa: en reposo las cinco pantallas son idénticas, así que nadie deduce nada mirando de reojo. Tu personaje solo sale cuando lo pides y se tapa solo a los pocos segundos.',
       ],
       visual: {
         kind: 'screens',
         panes: [
-          { title: 'TÚ', lines: ['🐺 Licántropo · 🌑 las Sombras', 'Poder al revelarte: te curas 3 puntos.', '🤫 Nadie más lo sabe.'] },
-          { title: 'Lo que ven de ti', lines: ['TÚ · ❓ oculto · ❤️ 8', 'Un nombre, una vida y un misterio.'] },
+          { title: 'TÚ, tras pulsar el ojo', lines: ['🐺 Licántropo · 🌑 las Sombras', 'Poder al revelarte: te curas 3 puntos.', '🙈 Se tapa sola en unos segundos.'] },
+          { title: 'Lo que ven de ti', lines: ['TÚ · ❓ sin destapar · ❤️ 8', 'Un nombre, una vida y un misterio.'] },
         ],
       },
     },
@@ -36,15 +37,16 @@ export const DEMO: DemoScript = {
       title: 'Turno de Bea: pista secreta',
       who: { actor: 'Bea (su turno) elige «🔮 Pista» y te señala a TI', others: 'la mesa VE que te da una pista y el resultado… pero el texto solo lo leéis Bea y tú.' },
       text: [
-        'Tu pantalla dice: «Si eres Sombra, pierdes 1 punto de vida»… y lo pierdes ❤️. Bea ya SABE que eres Sombra (¡lo leyó al darla!). El resto solo ve que perdiste vida: deducen que la carta «te pilló».',
-        'La carta se queda en las dos pantallas hasta que los DOS pulsáis «Entendido»: nadie te la puede cerrar antes de que la leas.',
+        'En los cinco móviles aparece el mismo aviso: «hay una carta de pista sin leer». Abrirla solo podéis Bea y tú, así que el sobre no delata a quién le ha tocado; los demás pueden tocarlo y no verán nada.',
+        'Al abrirla, tu pantalla dice: «Si eres Sombra, pierdes 1 punto de vida»… y lo pierdes ❤️. Bea ya SABE que eres Sombra (¡lo leyó al darla!). El resto solo ve que perdiste vida: deducen que la carta «te pilló».',
+        'El texto se tapa solo a los pocos segundos, y el sobre no se retira hasta que los DOS pulsáis «Entendido»: nadie te lo puede cerrar antes de que lo leas.',
         'Cada turno es UNA acción: 🔮 pista, ⚔️ ataque, 💊 descanso (recuperas 1 punto de vida) o 🎭 revelarte. Al terminarla, el turno pasa al siguiente jugador VIVO en el orden de la mesa.',
       ],
       visual: {
         kind: 'screens',
         panes: [
-          { title: 'TÚ (recibes la pista)', lines: ['🔮 «Si eres Sombra, pierdes 1 punto de vida.»', 'Resultado público: pierdes 1 ❤️.'], buttons: [{ label: 'Entendido', kind: 'ghost' }] },
-          { title: 'Carlos (mira la mesa)', lines: ['📜 «Bea entrega una pista a ti… y pierdes 1 punto de vida.»', 'Hmm. ¿Qué ponía esa carta?'] },
+          { title: 'TÚ (abres el sobre)', lines: ['🔮 «Si eres Sombra, pierdes 1 punto de vida.»', 'Resultado público: pierdes 1 ❤️.'], buttons: [{ label: 'Entendido', kind: 'ghost' }] },
+          { title: 'Carlos (toca el sobre)', lines: ['🤫 «Esta no es tuya».', '📜 «Bea entrega una pista a ti… y pierdes 1 punto de vida.»'] },
         ],
       },
     },
@@ -88,7 +90,7 @@ export const DEMO: DemoScript = {
       who: { actor: 'La app comprueba la victoria tras cada acción', others: 'al caer el último Cazador (o la última Sombra), destapa a todos.' },
       text: [
         'Cae el último Cazador: ¡ganáis las Sombras (tú y Emma)! Los neutrales ganan aparte: 🧸 Allie si acaba VIVA, 💰 Bob si remató a alguien. Pueden ganar a la vez que un bando.',
-        'Deduce con las pistas, miente con soltura y guarda tu poder para el momento justo. En el botón 🎴 tienes siempre la chuleta de los ocho personajes. 🌘',
+        'Deduce con las pistas, miente con soltura y guarda tu poder para el momento justo. La chuleta de los ocho personajes la tienes siempre en el botón de tu carta, abajo a la derecha.',
       ],
       visual: { kind: 'log', lines: ['☠️ David cae: era ⚡ Franklin (🏹 los Cazadores).', '🏆 Ganan 🌑 las Sombras. No queda ningún Cazador en pie.', '🧸 Bea estaba viva y era Allie: también gana.'] },
     },

@@ -1,7 +1,8 @@
 <script lang="ts">
-  // Reparto de Coup: cada cual mira sus DOS influencias y confirma. Cuando todos
+  // Reparto de Coup: cada cual ve sus DOS influencias y confirma. Juego de MANO
+  // (B28): las cartas salen directas, sin «👁 Ver mis influencias» —el móvil ya
+  // está mirando hacia ti y no se va a soltar en toda la partida—. Cuando todos
   // han confirmado, cualquiera arranca (empieza el jugador que marca la app).
-  import { app } from '../../../core/sync/store.svelte';
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
   import { CHARACTERS } from '../chars';
@@ -15,27 +16,23 @@
   const myCards = $derived(game.hands[my.id] || []);
 </script>
 
-<div class="narration">🃏 Coup. Cada uno esconde dos influencias. Mira tus cartas sin que nadie vea tu pantalla: son tu vida en la corte.</div>
+<div class="narration">🃏 Se reparte la corte de Castronegro. Sujeta el móvil mirando a ti: nadie más debe ver tu pantalla en toda la partida.</div>
 
 {#if inGame && !game.seen[my.id]}
-  {#if app.ui.revealOpen}
-    <div class="card">
-      <h3 style="margin-top:0">🎴 Tus dos influencias</h3>
-      {#each myCards as card, i (i)}
-        <div class="revcard"><b>{CHARACTERS[card.char].emoji} {CHARACTERS[card.char].name}</b><span>{CHARACTERS[card.char].power}</span></div>
-      {/each}
-      <button class="primary block" data-a="coup-seen" onclick={() => guard(async () => { await A.confirmSeen(); app.ui.revealOpen = false; })}>✅ Lo tengo</button>
-    </div>
-  {:else}
-    <div class="card"><p class="small-note">🎴 Tus cartas están listas. Míralas a solas y confirma.</p>
-      <button class="primary block" data-a="coup-reveal" onclick={() => (app.ui.revealOpen = true)}>👁 Ver mis influencias</button></div>
-  {/if}
+  <div class="card" data-a="coup-deal">
+    <h3 style="margin-top:0">🎴 Tu mano: dos influencias</h3>
+    {#each myCards as card, i (i)}
+      <div class="revcard"><b>{CHARACTERS[card.char].emoji} {CHARACTERS[card.char].name}</b><span>{CHARACTERS[card.char].power}</span></div>
+    {/each}
+    <p class="small-note">Se quedan a la vista el resto de la partida: no tendrás que pedirlas cada vez.</p>
+    <button class="primary block" data-a="coup-seen" onclick={() => guard(A.confirmSeen)}>✅ Lo tengo</button>
+  </div>
 {:else if pend.length}
-  <div class="waitlist">Esperando a que confirmen: {pend.join(', ')}</div>
+  <div class="waitlist">⏳ Falta por confirmar: {pend.join(', ')}</div>
 {:else}
-  <div class="card"><h3>▶️ Todos listos</h3>
-    <p class="small-note">Empieza <b>{starterName}</b>. A partir de ahí, por turnos alrededor de la mesa.</p>
-    <button class="primary block" data-a="coup-begin" onclick={() => guard(A.beginPlay)}>▶️ Empezar</button></div>
+  <div class="card"><h3 style="margin-top:0">▶️ Todos han visto su mano</h3>
+    <p class="small-note" style="margin-top:0">Abre <b>{starterName}</b> y después se juega por turnos, en el orden de la mesa.</p>
+    <button class="primary block" data-a="coup-begin" onclick={() => guard(A.beginPlay)}>▶️ Empezar la partida</button></div>
 {/if}
 
 <style>

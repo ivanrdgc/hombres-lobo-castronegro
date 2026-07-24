@@ -1,7 +1,10 @@
 <script lang="ts">
-  // Pantalla de partida de Coup: enruta por fase. Tablero público siempre a la
-  // vista; tu mano privada, peekable. Los dispositivos fuera de la partida ven
-  // el tablero de espectador (sin cartas ocultas de nadie).
+  // Pantalla de partida de Coup: enruta por fase. Es un juego de MANO (B28), así
+  // que el orden lo manda tu baraja: tus dos influencias ancladas arriba (sin
+  // gestos), debajo la mesa en público (monedas, influencias que le quedan a
+  // cada uno y las ya descubiertas) y después el panel donde se decide — todo
+  // en la misma pantalla. Los dispositivos fuera de la partida ven el tablero de
+  // espectador completo (sin cartas ocultas de nadie).
   import { app, isMaster, matchOf } from '../../../core/sync/store.svelte';
   import { guard } from '../../../core/sync/guard';
   import { coupGame, passAbsent } from '../actions';
@@ -99,8 +102,8 @@
   </div>
   <Board {game} meId={my.id} />
 {:else}
-  <Board {game} meId={my.id} />
-  {#if alive}<MyHand {game} pid={my.id} />{/if}
+  {#if alive}<MyHand {game} pid={my.id} pinned />{/if}
+  <Board {game} meId={my.id} hideMe={alive} />
   {#if game.phase === 'turn'}
     <TurnPhase {game} {my} />
   {:else if game.phase === 'challengeAction' || game.phase === 'block' || game.phase === 'challengeBlock'}

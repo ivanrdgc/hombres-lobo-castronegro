@@ -2,7 +2,9 @@
   // Resultado de la transmisión: se destapa el código real, pista a pista, y se
   // ve dónde falló cada equipo (cifra a cifra, no solo «4-2-1 ≠ 2-4-1»).
   // Cualquiera pasa al siguiente medio-turno (o al desenlace, si las fichas ya
-  // deciden).
+  // deciden). El código ya es público; las palabras NO: solo las ve el equipo
+  // que acaba de transmitir, y por eso van dentro de las filas (nunca en un
+  // titular que se lea desde el otro lado de la mesa).
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
   import { other, pendingWin, teamOf, TEAM_LABEL, TOKENS_TO_WIN } from '../engine';
@@ -31,15 +33,15 @@
     {/each}
 
     <div class="rvres" class:bad={!okCode}>
-      <b>🔓 {TEAM_LABEL[game.active]} descifraba su código:</b>
+      <b>🔓 {TEAM_LABEL[game.active]} descifraba:</b>
       {#if okCode}acertó ({game.decode?.join('-')}). Sin fichas.
-      {:else}dijo <b>{game.decode?.join('-') || '—'}</b> y era {game.code.join('-')}: <b>+1 ❌ error</b> ({game.tokens[game.active].errors} de {TOKENS_TO_WIN}; con {TOKENS_TO_WIN} pierde).{/if}
+      {:else}dijo <b>{game.decode?.join('-') || '—'}</b>: <b>+1 ❌ error</b> ({game.tokens[game.active].errors} de {TOKENS_TO_WIN}).{/if}
     </div>
     <div class="rvres" class:good={okInter}>
       <b>🕵️ {TEAM_LABEL[other(game.active)]} interceptaba:</b>
       {#if !game.intercept}en la primera transmisión de cada equipo todavía no se puede interceptar.
-      {:else if okInter}¡acertó ({game.intercept.join('-')})! <b>+1 🕵️ intercepción</b> ({game.tokens[other(game.active)].intercepts} de {TOKENS_TO_WIN}; con {TOKENS_TO_WIN} gana).
-      {:else}apostó <b>{game.intercept.join('-')}</b> y no era: sin fichas (fallar interceptando no cuesta nada).{/if}
+      {:else if okInter}¡acertó ({game.intercept.join('-')})! <b>+1 🕵️ intercepción</b> ({game.tokens[other(game.active)].intercepts} de {TOKENS_TO_WIN}).
+      {:else}apostó <b>{game.intercept.join('-')}</b> y no era: sin fichas (fallar interceptando sale gratis).{/if}
     </div>
   </div>
 {/if}

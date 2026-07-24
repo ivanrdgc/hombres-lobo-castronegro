@@ -15,10 +15,11 @@
   const mmss = (ms: number) => { const s = Math.ceil(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
   // El mismo reloj mide dos cosas distintas (la ronda y el voto de rehén): sin
   // rótulo, ver la cuenta atrás en la pantalla del voto asustaba sin explicar
-  // qué pasa al llegar a cero.
+  // qué pasa al llegar a cero. Qué ronda es lo dice la cabecera (B29): aquí
+  // solo se dice qué pasa cuando llegue a cero.
   const label = $derived(game.phase === 'hostages'
-    ? 'para votar · al llegar a cero, cada sala manda a los más votados'
-    : `de la ronda ${game.round} · al llegar a cero se vota el rehén`);
+    ? 'al llegar a cero, cada sala manda a los más votados'
+    : 'al llegar a cero se vota el rehén');
 </script>
 
 {#if remaining !== null}

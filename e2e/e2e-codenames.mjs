@@ -2,7 +2,9 @@
 // doc tiene el mapa secreto): catálogo → empezar → pista validada → el agente
 // selecciona y CONFIRMA casillas → transeúnte, casilla regalada al rival y
 // ASESINO → revancha. Verifica además la FUGA (el agente NO ve el mapa; el Jefe
-// sí), la escotilla anti-atasco del Jefe y qué dice la voz.
+// sí), la POSTURA del móvil (B28: el mapa del Jefe nace tapado, se abre de un
+// toque, se puede volver a tapar y el aviso de pantalla secreta no se va), la
+// escotilla anti-atasco del Jefe y qué dice la voz.
 import { chromium } from 'playwright';
 const BASE = process.env.BASE; if (!BASE) { console.error('Define BASE=https://tu-sitio.web.app'); process.exit(1); }
 let fail = 0;
@@ -60,6 +62,15 @@ const clueBad = (page, re) => page.waitForFunction((src) => {
   return !!el && new RegExp(src).test(el.textContent || '');
 }, re.source, { timeout: 10000 });
 
+// El mapa del Jefe es MANO (B28): nace TAPADO —en el reparto los móviles suelen
+// estar boca arriba— y un toque lo abre para el resto de la partida.
+async function openMap(spy) {
+  const p = pg(spy);
+  await p.waitForSelector('[data-a=cn-map-open], .cnboard.priv', { timeout: 20000 });
+  const cover = p.locator('[data-a=cn-map-open]');
+  if (await cover.count()) await cover.click();
+  await p.waitForSelector('.cnboard.priv .cncell.spy', { timeout: 15000 });
+}
 // La pista tiene que ser UNA palabra y no estar en el tablero: «enigma» no es
 // ninguna de las 25 (el banco son sustantivos concretos).
 async function giveClue(spy, num, word = 'enigma') {
@@ -92,6 +103,11 @@ try {
   await ana.click('button[data-a=select-game][data-p=codenames]');
   await ana.waitForSelector('[data-a=cn-open-help]');
   ok('el catálogo ofrece Codenames y su lobby carga');
+  // Lobby (B29): un solo trabajo —de qué va, y tres caminos— y el aviso de
+  // POSTURA antes de repartir nada.
+  check(await ana.locator('[data-a=cn-posture]').count() === 1, 'el lobby dice cómo se sostiene el móvil (postura de equipo)');
+  check(await ana.locator('[data-a=open-demo]').count() === 1 && await ana.locator('[data-a=open-start]').count() === 1,
+    'el lobby deja los tres caminos: aprender, consultar y empezar');
   await ana.click('[data-a=cn-open-help]');
   await ana.waitForSelector('text=/Cómo se juega/');
   check(await ana.locator('.modal [data-a=cn-play-howto]').count() >= 4, 'el «cómo se juega» tiene un ▶️ por apartado');
@@ -99,6 +115,7 @@ try {
 
   await ana.click('[data-a=open-start]');
   await ana.waitForSelector('[data-a=cn-start]:not([disabled])', { timeout: 15000 });
+  check(await ana.locator('[data-a=cn-start-warn]').count() === 1, 'antes de repartir se avisa de que los Jefes reciben un mapa secreto');
   await ana.click('[data-a=cn-start]');
 
   let s = await waitState(ana, (x) => x.phase === 'clue', 'primera pista');
@@ -111,11 +128,27 @@ try {
   const teamA = s.turn;
   const spyA = s.spymaster[teamA];
   const agentA = agentOf(s, teamA);
+  // Las dos posturas (B28), cada una con su pantalla: el Jefe estrena su mapa
+  // TAPADO —en el reparto los móviles suelen estar boca arriba— con el aviso
+  // fijo de que no lo puede ver nadie; el agente estrena el tablero público,
+  // que no tiene nada que tapar.
+  await pg(spyA).waitForSelector('[data-a=cn-shield]', { timeout: 20000 });
+  await pg(agentA).waitForSelector('.cnboard.pub', { timeout: 20000 });
   check(await pg(spyA).locator('[data-a=cn-clue-give]').count() === 1, `solo el Jefe (${NAMES[spyA]}) da la pista`);
   check(await pg(agentA).locator('[data-a=cn-clue-give]').count() === 0, 'un agente no puede dar la pista');
+  check(await spyColoredCells(pg(spyA)) === 0, 'el mapa del Jefe nace TAPADO: al repartir no lo ve nadie');
+  ok('el Jefe lleva un aviso permanente de pantalla secreta');
+  check(await pg(agentA).locator('[data-a=cn-shield]').count() === 0 && await pg(agentA).locator('[data-a=cn-map-open]').count() === 0,
+    'el agente no tiene mapa que tapar: su tablero es público');
+  await openMap(spyA);
   check(await spyColoredCells(pg(spyA)) > 0, 'el Jefe SÍ ve el mapa (casillas coloreadas sin destapar)');
   check(await spyColoredCells(pg(agentA)) === 0, 'el agente NO ve el mapa (ninguna casilla coloreada sin destapar)');
   check(await pg(spyA).locator('.cncell.spy .cntag').count() === 25, 'el mapa del Jefe marca cada casilla con su emoji');
+  // Y puede volver a taparlo para soltar el móvil.
+  await pg(spyA).click('[data-a=cn-map-hide]');
+  await pg(spyA).waitForSelector('[data-a=cn-map-open]', { timeout: 10000 });
+  check(await spyColoredCells(pg(spyA)) === 0, '«🙈 Taparlo» esconde el mapa cuando el Jefe suelta el móvil');
+  await openMap(spyA);
 
   // ——— La voz arranca diciendo quién empieza (línea 0 del diario) ———
   check(await waitSaid(/Comienza Codenames/, 1), 'la voz locuta el arranque (qué equipo empieza)');
@@ -163,7 +196,9 @@ try {
   // ——— Recarga del altavoz: retoma por la última línea, no relee el diario ———
   const lines = (await st()).log.length;
   await ana.reload();
-  await ana.waitForSelector('.cncell', { timeout: 20000 });
+  // Si Ana es Jefa, tras recargar su mapa vuelve a estar tapado (a propósito):
+  // vale cualquiera de las dos pantallas para dar la partida por cargada.
+  await ana.waitForSelector('.cncell, [data-a=cn-map-open]', { timeout: 20000 });
   await ana.waitForTimeout(1500);
   const reread = await ana.evaluate(() => (window.__hlcNarration || []).length);
   check(reread <= 1, `tras recargar, el altavoz no relee las ${lines} líneas del diario (dijo ${reread})`);
@@ -188,8 +223,15 @@ try {
   // ——— Casilla regalada al rival ———
   const spyB = s.spymaster[teamB];
   const agentB = agentOf(s, teamB);
+  await openMap(spyB);
+  await pg(agentB).waitForSelector('.cnboard.pub', { timeout: 20000 });
+  check(await spyColoredCells(pg(agentB)) === 0, 'el agente del otro equipo tampoco ve el mapa de SU Jefe');
   await giveClue(spyB, 9);
   await waitState(ana, (x) => x.phase === 'guess' && x.turn === teamB, 'el equipo B puede tocar');
+  // La pista es pública y se lee grande en TODAS las pantallas (postura de mesa).
+  await pg(agentB).waitForSelector('[data-a=cn-clue-band]', { timeout: 15000 });
+  check(await pg(spyA).locator('[data-a=cn-clue-band]').count() === 1,
+    'la pista se ve en grande en todas las pantallas, también en las del rival');
   s = await st();
   const gift = s.map.findIndex((c, i) => c === teamA && !s.revealed[i]);
   const beforeA = s.remaining[teamA];
@@ -217,6 +259,9 @@ try {
   check(s.revealed.every((r) => !r), 'la revancha empieza con el tablero sin destapar');
   check(s.playerIds.every((pid) => (s.scores[pid] || 0) === (scoresBefore[pid] || 0)), 'la revancha conserva el marcador');
   check(s.log.some((t) => /Nueva partida/.test(t)), 'el diario anuncia la revancha');
+  // Mapa nuevo = mismo cuidado que la primera vez: vuelve a nacer tapado.
+  const covered = await pg(s.spymaster[s.turn]).waitForSelector('[data-a=cn-map-open]', { timeout: 15000 }).catch(() => null);
+  check(!!covered, 'la revancha vuelve a tapar el mapa del Jefe');
   ok('revancha de Codenames');
 
   // Limpieza.

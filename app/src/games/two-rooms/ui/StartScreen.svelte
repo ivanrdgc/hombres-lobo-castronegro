@@ -1,6 +1,8 @@
 <script lang="ts">
-  // «Empezar partida» de Two Rooms: quién juega (SeatPicker del shell) y qué
-  // dispositivo pone la voz. La app reparte bandos, roles y las dos salas.
+  // «Empezar partida» de Two Rooms: dos decisiones y nada más — quién juega y
+  // qué dispositivo pone la voz en cada sala. Cada tarjeta es UNA decisión, con
+  // su consecuencia escrita debajo (cuántas rondas salen, qué sala se queda sin
+  // voz); el resumen de quién juega no se repite: lo lleva el propio SeatPicker.
   import { app, matchOf, me, navigate } from '../../../core/sync/store.svelte';
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
@@ -73,19 +75,24 @@
 
 <div class="topbar">
   <button class="small ghost" data-a="back-lobby-game" aria-label="Volver" title="Volver" style="font-size:1.25rem;line-height:1;padding:6px 12px" onclick={() => navigate(`/g/${group.id}/two_rooms`)}>←</button>
-  <h2>💣 Two Rooms: empezar</h2>
+  <h2>💣 Empezar: Two Rooms</h2>
 </div>
 <Flash />
 
 <div class="card">
   <h3>🎮 ¿Quién juega?</h3>
   <SeatPicker {group} {meId} gameId="two_rooms" onState={(s) => (seat = s)} />
-  <p class="small-note">La app repartirá bandos, roles (Presidente y Bombardero) y las dos salas al azar.</p>
+  {#if tooFew}<p class="small-note">⚠️ Hacen falta al menos {MIN_PLAYERS} jugadores.</p>{/if}
+  {#if tooMany}<p class="small-note">⚠️ Máximo {MAX_PLAYERS}: deja fuera a {chosen.length - MAX_PLAYERS}.</p>{/if}
+  {#if !tooFew && !tooMany}
+    <!-- La consecuencia de a cuánta gente has marcado, ahí mismo. -->
+    <p class="small-note">⏱️ Saldrán <b>{rounds} rondas</b> de {mins} minutos, y cada sala mandará <b>{hostages === 1 ? 'un rehén' : `${hostages} rehenes`}</b> por ronda. Bandos, roles y salas los reparte la app al azar.</p>
+  {/if}
 </div>
 
 <div class="card">
-  <h3>🔊 ¿Cómo suena la voz?</h3>
-  <p class="small-note" style="margin-top:6px">Las dos salas están separadas, así que un solo altavoz solo llega a una. Elige según los dispositivos que tengáis (el temporizador siempre sale en la pantalla de cada móvil).</p>
+  <h3>🔊 ¿Qué dispositivo habla en cada sala?</h3>
+  <p class="small-note" style="margin-top:6px">Las dos salas están separadas: un solo altavoz llega solo a una. (El temporizador sale siempre en la pantalla de todos.)</p>
   <div class="btnrow" style="margin-top:6px">
     <button class="small {voiceMode === 'single' ? 'primary' : 'ghost'}" data-a="tr-voice-mode" data-p="single" onclick={() => (voiceMode = 'single')}>🔊 Un narrador</button>
     <button class="small {voiceMode === 'perRoom' ? 'primary' : 'ghost'}" data-a="tr-voice-mode" data-p="perRoom" onclick={() => (voiceMode = 'perRoom')}>🔊🔊 Uno por sala</button>
@@ -93,10 +100,10 @@
   </div>
 
   {#if voiceMode === 'all'}
-    <p class="small-note">📣 Sonarán TODOS los móviles de los jugadores: cada sala se oye sola, sin dispositivos de más. Puede quedar algo «a coro».</p>
+    <p class="small-note">📣 Cada sala se oye sola, sin dispositivos de más. Puede quedar algo «a coro».</p>
   {:else}
     <div style="margin-top:10px">
-      <p class="small-note" style="margin:0 0 4px"><b>🔊 {voiceMode === 'perRoom' ? 'Voz de la Sala 1' : '¿Qué dispositivo narra?'}</b></p>
+      <p class="small-note" style="margin:0 0 4px"><b>{voiceMode === 'perRoom' ? '🔊 Voz de la Sala 1' : '🔊 Narrador'}</b></p>
       <div class="btnrow">
         {#each speakerCands as p (p.id)}
           <button class="small {narrator === p.id ? 'primary' : 'ghost'}" data-a="pick-narrator" data-p={p.id} style="flex:0 1 auto;min-width:0" onclick={() => (narrPick = p.id)}>
@@ -117,31 +124,30 @@
           </button>
         {/each}
       </div>
-      <p class="small-note">Poned un dispositivo en cada sala; ambos narran lo mismo. Lo ideal es que NO jueguen (una tele, una tablet vieja): así se quedan clavados en su sala. Si el altavoz es un jugador y cruza como rehén, la app pasa la voz de esa sala a otro móvil de los que se quedan.</p>
     </div>
   {/if}
 
+  <!-- El resultado de lo elegido, en una línea; el consejo largo, plegado. -->
+  {#if voiceMode === 'perRoom'}
+    <p class="small-note">{#if speaker1P}✅ Sala 1: <b>{narratorP?.name || '¿?'}</b> · Sala 2: <b>{speaker1P.name}</b>. Pantalla encendida y volumen alto.{:else}⚠️ Falta la voz de la Sala 2: sin ella, esa sala se queda muda.{/if}</p>
+  {:else if voiceMode === 'single' && narratorP}
+    <p class="small-note">⚠️ Solo hablará en la sala de <b>{narratorP.name}</b>{seat.chosen.includes(narratorP.id) ? ' (que además juega)' : ''}: la otra se queda muda y sigue el reloj en pantalla.</p>
+  {/if}
   {#if displaced && voiceMode !== 'all'}
     <p class="small-note">💤 <b>{displaced.name}</b> ponía la voz la última vez, pero su dispositivo está inactivo: la voz pasa a este. Si vuelve, tócalo arriba.</p>
   {/if}
-  {#if voiceMode === 'perRoom'}
-    <p class="small-note">🔊 Sala 1: <b>{narratorP?.name || '¿?'}</b>{#if speaker1P} · Sala 2: <b>{speaker1P.name}</b>{:else} · <span style="opacity:.8">falta elegir la voz de la Sala 2 (si no, esa sala se queda sin audio)</span>{/if}. Pantalla encendida y volumen alto.</p>
-  {:else if voiceMode === 'single' && narratorP}
-    <p class="small-note">🔊 <b>{narratorP.name}</b> pone la voz{seat.chosen.includes(narratorP.id) ? ' y también juega' : ' (no juega: tele o altavoz)'}. ⚠️ Solo llegará a su sala: la otra se queda MUDA y sigue el temporizador en pantalla (y sin nadie que mantenga la pantalla encendida).</p>
-  {/if}
+  <details class="trref">
+    <summary data-a="tr-ref-voice">📖 Cuál elegir</summary>
+    <p class="small-note">Lo ideal es un dispositivo que NO juegue en cada sala (una tele, una tablet vieja): se quedan clavados donde están. Si el altavoz es un jugador y cruza como rehén, la app pasa la voz de esa sala a otro móvil de los que se quedan.</p>
+  </details>
 </div>
 
-<div class="card">
-  <p class="small-note" style="margin-top:0">
-    💣 Jugarán <b>{chosen.length}</b>{chosen.length ? ': ' : ''}<span style="opacity:.75">{chosen.map((p) => p.name).join(', ')}</span>
-  </p>
-  {#if tooFew}<p class="small-note">⚠️ Two Rooms necesita al menos {MIN_PLAYERS} jugadores.</p>{/if}
-  {#if tooMany}<p class="small-note">⚠️ Máximo {MAX_PLAYERS} jugadores: deja fuera a {chosen.length - MAX_PLAYERS}.</p>{/if}
-  {#if !tooFew && !tooMany}
-    <p class="small-note">⏱️ Con {chosen.length} jugadores se juegan <b>{rounds} rondas</b> de {mins} minutos, y cada sala manda <b>{hostages === 1 ? 'un rehén' : `${hostages} rehenes`}</b> por ronda.</p>
-  {/if}
-  <div id="form-error">
-    {#if app.ui.formError}<div class="flash error">{app.ui.formError}</div>{/if}
-  </div>
-  <button class="primary block" disabled={tooFew || tooMany} data-a="tr-start" onclick={startNow}>💣 ¡Empezar!</button>
+<div id="form-error">
+  {#if app.ui.formError}<div class="flash error">{app.ui.formError}</div>{/if}
 </div>
+<button class="primary block" disabled={tooFew || tooMany} data-a="tr-start" onclick={startNow}>💣 Repartir y empezar ({chosen.length} jugadores)</button>
+
+<style>
+  .trref { margin-top: 12px; border-top: 1px solid var(--line, #2a2f45); padding-top: 8px; }
+  .trref summary { cursor: pointer; font-size: 0.88rem; color: var(--accent, #d8a24a); }
+</style>

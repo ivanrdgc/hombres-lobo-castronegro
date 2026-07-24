@@ -8,8 +8,6 @@ import { pauseMs, profileOf } from '../../../core/narrator/pacing';
 import { e2eTestMode } from '../../../core/test-hooks';
 import { play, stopSpeech } from '../../../core/audio/player';
 import type { Utterance } from '../../../core/audio/player';
-import { ensureAmbience, stopAmbience } from '../../../core/audio/ambience';
-import { getVoiceConfig } from '../../../core/audio/voice-config';
 import { matchView, onChange, state } from '../../../core/sync/store.svelte';
 import type { GroupDoc, PlayerDoc, Session } from '../../../core/sync/schema';
 import { unaNocheGame } from '../actions';
@@ -235,15 +233,11 @@ export function installUnaNocheNarrator(): void {
   let wasNarrator = false;
   onChange(() => {
     const s = snapshot();
-    const game = unaNocheGame(s.group);
     const master = amNarrator(s);
     if (master && !wasNarrator) narrator.respawn({ resetLedger: true });
     wasNarrator = master;
-    const wantAmbience = master && !!game && getVoiceConfig().ambience && !state.ui.muted
-      && !game.paused && game.phase !== 'end' && game.phase !== 'reveal' && !e2eTestMode();
-    ensureAmbience(!wantAmbience ? null : game!.phase === 'day' ? 'day' : 'night');
+    // El ambiente lo decide el director central (core/audio/ambience-director).
     if (master) requestWakeLock();
-    if (!master) stopAmbience();
     narrator.tick();
   });
 }

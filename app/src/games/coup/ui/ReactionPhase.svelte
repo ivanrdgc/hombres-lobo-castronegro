@@ -16,6 +16,12 @@
   const { game, my }: { game: CoupState; my: PlayerDoc } = $props();
   const nm = (pid: string | null | undefined) => (pid && game.names[pid]) || '¿?';
 
+  // Tu mano está anclada arriba (juego de MANO, B28), pero la cuenta que de
+  // verdad importa aquí —«¿este bloqueo lo puedo declarar sin mentir?»— se
+  // resuelve en el propio botón: nada de comparar de memoria contra la mano.
+  const myChars = $derived((game.hands[my.id] || []).filter((c) => !c.lost).map((c) => c.char));
+  const haveIt = (c: Character) => myChars.includes(c);
+
   const mine = $derived(allowedReactions(game, my.id));
   const iReacted = $derived(game.reactions[my.id] !== undefined);
   const canReact = $derived(mine.challenge || mine.block);
@@ -28,22 +34,6 @@
   const iAmTarget = $derived(!!p && p.target === my.id);
   const blockPhase = $derived(game.phase === 'block');
   const challengingBlock = $derived(game.phase === 'challengeBlock' && !!game.block);
-
-  const prompt = $derived.by(() => {
-    if (challengingBlock && game.block) {
-      const what = p?.type === 'ayuda' ? 'la ayuda exterior' : p?.type === 'asesinar' ? 'el asesinato' : 'el robo';
-      return `🛡️ ${nm(game.block.by)} bloquea ${what} diciendo ser ${charName(game.block.claim)}.`;
-    }
-    if (!p) return '';
-    const tgt = p.target ? ` a ${nm(p.target)}` : '';
-    if (game.phase === 'challengeAction') {
-      return `${ACTIONS[p.type].emoji} ${nm(p.actor)} declara ${ACTIONS[p.type].name}${tgt} diciendo ser ${charName(p.claim!)}.`;
-    }
-    // block: sin desafío a la acción
-    if (p.type === 'ayuda') return `🤝 ${nm(p.actor)} pide ayuda exterior (+2).`;
-    if (p.type === 'asesinar') return `🗡️ ${nm(p.actor)} intenta asesinar${tgt}.`;
-    return `⚓ ${nm(p.actor)} intenta robar${tgt}.`;
-  });
 
   // Qué pasa si esta ventana se cierra sin que nadie mueva un dedo.
   const outcome = $derived.by(() => {
@@ -106,8 +96,9 @@
   function doBlock(claim: Character) { guard(() => A.block(claim)); }
 </script>
 
-<div class="narration">{prompt}</div>
-
+<!-- Una sola voz para la jugada en el aire: el recuadro «qué está pasando» lo
+     cuenta entero (quién declara qué, qué se le puede desafiar y qué ocurre si
+     nadie lo impide), así que arriba no se repite en cursiva. -->
 <div class="card recap">
   <h3 style="margin-top:0">❗ Qué está pasando</h3>
   {#if challengingBlock && game.block}
@@ -138,7 +129,7 @@
       {/if}
       {#each mine.blockClaims as claim (claim)}
         <button class="block" data-a="coup-block-pick" data-p={claim} onclick={() => (armed = claim)}>🛡️ Bloquear · digo ser {charLabel(claim)}</button>
-        <p class="orisk">{blockRisk}</p>
+        <p class="orisk"><b class={haveIt(claim) ? 'tru' : 'blf'}>{haveIt(claim) ? 'La tienes en la mano: no es farol.' : 'No la tienes: sería farol.'}</b> {blockRisk}</p>
       {/each}
       <button class="ghost block" data-a="coup-pass" onclick={() => guard(A.pass)}>{passLabel}</button>
       <p class="orisk">{passRisk}</p>
@@ -152,6 +143,7 @@
     {:else}
       {@const claim = armed}
       <h3 style="margin-top:0">🛡️ Vas a bloquear como {charLabel(claim)}</h3>
+      <p class="orisk big"><b class={haveIt(claim) ? 'tru' : 'blf'}>{haveIt(claim) ? '✅ La tienes: si te desafían, la enseñas y el que dudó pierde una influencia.' : '🎲 Es farol: si te desafían, pierdes una influencia.'}</b></p>
       <p class="orisk big">{blockRisk} Si el bloqueo aguanta, la jugada de {nm(p?.actor)} se anula{p?.type === 'asesinar' ? ' (pero las 3 monedas que pagó no vuelven)' : ''}.</p>
       <button class="ghost block small" data-a="coup-react-back" onclick={() => (armed = null)}>↩️ Mejor no, volver</button>
       <button class="block" data-a="coup-block" data-p={claim} onclick={() => doBlock(claim)}>🛡️ Declarar {charLabel(claim)} y cortar la jugada</button>
@@ -177,4 +169,6 @@
   .rline.mine { color: var(--moon); }
   .orisk { font-size: 0.8rem; color: var(--muted); margin: 4px 2px 2px; }
   .orisk.big { font-size: 0.88rem; color: var(--text); }
+  .tru { color: var(--ok); }
+  .blf { color: var(--moon); }
 </style>

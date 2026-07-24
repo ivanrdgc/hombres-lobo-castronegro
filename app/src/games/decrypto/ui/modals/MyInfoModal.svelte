@@ -32,7 +32,7 @@
             <div class="mword"><span class="mnum">{i + 1}</span><span>{w}</span></div>
           {/each}
         </div>
-        <p class="small-note" style="margin:8px 0 0">Solo tu equipo las ve. Lo que se transmite es su NÚMERO.</p>
+        <p class="small-note" style="margin:8px 0 0">Se transmite el NÚMERO, nunca la palabra. Pantalla hacia los tuyos: el rival está enfrente.</p>
       </div></div>
   {:else}
     <p class="small-note">👀 Miras de espectador: sin palabras propias.</p>

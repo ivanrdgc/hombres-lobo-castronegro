@@ -42,7 +42,7 @@
     },
     {
       emoji: '🏰', name: 'El Bien no puede sabotear',
-      desc: 'A los leales la app ni siquiera les enseña el botón rojo: si una misión fracasa, el traidor iba dentro. Seguro.',
+      desc: 'Los dos botones salen iguales en todos los móviles (si no, se sabría tu bando de reojo), pero si eres leal y tocas el rojo, la app te lo impide. Por eso, si una misión fracasa, el traidor iba dentro. Seguro.',
     },
     {
       emoji: '🗳️', name: 'Los votos son públicos',
@@ -62,7 +62,10 @@
 {#if game && my}
   <h3 style="margin:0 0 4px">🎴 Tu carta</h3>
   {#if inGame}
-    <RoleCard {game} pid={my.id} />
+    <!-- Abrir el 🎴 YA es el gesto, así que la carta entra desplegada… pero se
+         auto-oculta como en cualquier otra pantalla: el modal se queda abierto
+         mientras se consulta la chuleta y el móvil vuelve a la mesa. -->
+    <RoleCard {game} pid={my.id} startOpen={true} />
   {:else}
     <p class="small-note">👀 Miras de espectador: sin carta propia.</p>
   {/if}

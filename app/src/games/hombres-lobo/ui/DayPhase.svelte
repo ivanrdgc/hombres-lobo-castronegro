@@ -39,26 +39,26 @@
   });
 </script>
 
-<div class="narration">☀️ {narr(((game.lastDawn || {}).deaths || []).length ? 'dia_debate' : 'dia_debate_tranquilo', `${game.seed}:d${game.dayNum}:${game.votesLeft}`)}</div>
-{#if dawn}
-  <!-- Lo que TODA la mesa acaba de oír, en pantalla: nadie tiene que recordarlo
-       ni bajar hasta la crónica. -->
-  <div class="card"><h3>🌅 Amanece el día {game.dayNum}</h3>
+<!-- El parte del amanecer y la voz que lo cuenta son UNA sola cosa: una tarjeta,
+     no dos bloques seguidos diciendo lo mismo con distinta letra. -->
+<div class="card"><h3>☀️ Día {game.dayNum} en Castronegro</h3>
+  <p class="daynarr">{narr(((game.lastDawn || {}).deaths || []).length ? 'dia_debate' : 'dia_debate_tranquilo', `${game.seed}:d${game.dayNum}:${game.votesLeft}`)}</p>
+  {#if dawn}
     {#if dawn.deaths.length}
       <p class="dawndead">💀 {dawn.deaths.map((d) => d.name + (d.role ? ` — ${d.role}` : '')).join(' · ')}</p>
       {#if !dawn.deaths.some((d) => d.role)}<p class="small-note">Sus cartas se quedan boca abajo: nadie sabrá qué eran.</p>{/if}
     {:else}
-      <p class="dawndead">🌤️ Esta noche no ha muerto nadie en Castronegro.</p>
+      <p class="dawndead">🌤️ Esta noche no ha muerto nadie.</p>
     {/if}
     {#if dawn.oso}<p class="small-note">🐻 {dawn.oso}</p>{/if}
     {#if dawn.cuervo}<p class="small-note">🐦‍⬛ {dawn.cuervo}</p>{/if}
     {#if dawn.gitana}<p class="small-note">🔯 {dawn.gitana}</p>{/if}
-    <p class="small-note">🏘️ Quedan <b>{alive.length}</b> vivos de {players.length}.</p>
-  </div>
-{/if}
+  {/if}
+  <p class="small-note">🏘️ Quedan <b>{alive.length}</b> vivos de {players.length}.</p>
+</div>
 {#if mutedTontos.length}<div class="flash">🤪 {mutedTontos.map((p) => p.name).join(' y ')} {mutedTontos.length > 1 ? 'ya no votan' : 'ya no vota'} (Tonto del Pueblo al descubierto), aunque sigue{mutedTontos.length > 1 ? 'n' : ''} deliberando con el pueblo.</div>{/if}
 <!-- Las acciones secretas de día (Juez, Sirvienta) viven DENTRO de la carta
-     (👁 Mostrar mi rol): con los móviles desbloqueados sobre la mesa, todas
+     (👁 Ver mi carta): con los móviles desbloqueados sobre la mesa, todas
      las pantallas deben verse iguales. -->
 <RoleCard player={my} {group} mini={true} />
 {#if head}
@@ -72,7 +72,7 @@
   <div class="card"><h3>🌆 El día ha terminado</h3>
     <p class="small-note">Comentad la jugada con calma. Cuando estéis listos, que alguien mande al pueblo a dormir.</p>
     {#if my.alive}<button class="primary block" data-a="begin-night" onclick={() => guard(A.startNextNight)}>🌙 Empezar la noche</button>
-    {:else}<p class="small-note">💀 Tú ya no puedes: lo hará cualquiera de los {alive.length} vivos ({alive.map((p) => p.name).join(', ')}). Mientras, puedes cotillear los roles tocando a la gente en la lista de abajo.</p>{/if}</div>
+    {:else}<p class="small-note">💀 Tú ya no puedes: lo hará cualquiera de los {alive.length} vivos ({alive.map((p) => p.name).join(', ')}). Mientras, puedes destapar cartas desde la lista de abajo.</p>{/if}</div>
 {/if}
 {#if !actingHere}
   <PlayersGrid {players} title="🏘️ El pueblo" showAlguacil={game.alguacilId || null} {marked} viewer={my} />
@@ -80,4 +80,7 @@
 
 <style>
   .dawndead { font-size: 0.98rem; line-height: 1.45; color: var(--moon); }
+  /* La voz del amanecer, dentro de la tarjeta del día (antes iba en un bloque
+     `.narration` aparte que repetía el mismo momento dos veces). */
+  .daynarr { margin: 2px 0 10px; font-size: 0.94rem; line-height: 1.5; opacity: 0.9; font-style: italic; }
 </style>

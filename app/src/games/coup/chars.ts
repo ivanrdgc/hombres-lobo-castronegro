@@ -8,14 +8,16 @@ export interface CharInfo {
   name: string;
   /** Qué permite hacer (acción) o impedir (bloqueo). */
   power: string;
+  /** El mismo poder en una línea, para la mano SIEMPRE visible (B28 · 🃏 mano). */
+  brief: string;
 }
 
 export const CHARACTERS: Record<Character, CharInfo> = {
-  duque: { id: 'duque', emoji: '🎩', name: 'Duque', power: 'Cobra Impuestos (+3). Bloquea la Ayuda exterior.' },
-  asesino: { id: 'asesino', emoji: '🗡️', name: 'Asesino', power: 'Asesina (paga 3): la víctima pierde una influencia.' },
-  capitan: { id: 'capitan', emoji: '⚓', name: 'Capitán', power: 'Roba 2 monedas. Bloquea el robo.' },
-  embajador: { id: 'embajador', emoji: '🎭', name: 'Embajador', power: 'Intercambia cartas con la corte. Bloquea el robo.' },
-  condesa: { id: 'condesa', emoji: '👑', name: 'Condesa', power: 'Bloquea el asesinato.' },
+  duque: { id: 'duque', emoji: '🎩', name: 'Duque', power: 'Cobra Impuestos (+3). Bloquea la Ayuda exterior.', brief: '🎬 Impuestos +3 · 🛡️ para la ayuda' },
+  asesino: { id: 'asesino', emoji: '🗡️', name: 'Asesino', power: 'Asesina (paga 3): la víctima pierde una influencia.', brief: '🎬 Asesina pagando 3' },
+  capitan: { id: 'capitan', emoji: '⚓', name: 'Capitán', power: 'Roba 2 monedas. Bloquea el robo.', brief: '🎬 Roba 2 · 🛡️ para el robo' },
+  embajador: { id: 'embajador', emoji: '🎭', name: 'Embajador', power: 'Intercambia cartas con la corte. Bloquea el robo.', brief: '🎬 Intercambia · 🛡️ para el robo' },
+  condesa: { id: 'condesa', emoji: '👑', name: 'Condesa', power: 'Bloquea el asesinato.', brief: '🛡️ Para el asesinato' },
 };
 
 export const CHAR_ORDER: Character[] = ['duque', 'asesino', 'capitan', 'embajador', 'condesa'];

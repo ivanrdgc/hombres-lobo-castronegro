@@ -1,11 +1,11 @@
 <script lang="ts">
-  // Fase de pista: el Jefe del equipo de turno introduce palabra + número; el
-  // resto espera. La pista se valida ANTES de enviarla (es irreversible): una
-  // sola palabra y que no esté en el tablero. El tablero se ve arriba (los
-  // Jefes, con el mapa).
+  // Panel de la fase de pista: el Jefe del equipo de turno escribe palabra +
+  // número; el resto espera. La pista se valida ANTES de enviarla (es
+  // irreversible): una sola palabra y que no esté en el tablero.
+  // El mapa va arriba, en su tarjeta; aquí solo está lo que hay que HACER.
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
-  import { clueProblem, teamMembers } from '../engine';
+  import { clueProblem, teamMembers, TEAM_LABEL } from '../engine';
   import BoardRef from './BoardRef.svelte';
   import type { PlayerDoc } from '../../../core/sync/schema';
   import type { CodenamesState } from '../types';
@@ -19,7 +19,6 @@
   const agents = $derived(teamMembers(game, game.turn)
     .filter((pid) => pid !== game.spymaster[game.turn])
     .map((pid) => game.names[pid] || '¿?'));
-  const mine = $derived(game.remaining[game.turn]);
   let word = $state('');
   // `num` es el número de la pista; `inf` la marca como ∞ (ilimitada).
   let num = $state(1);
@@ -29,9 +28,8 @@
 </script>
 
 {#if iAmSpy}
-  <div class="actionpanel"><h3>💬 Tu pista (Jefe {game.turn === 'red' ? '🔴' : '🔵'})</h3>
-    <p class="hint">Una palabra que relacione tus casillas y un número (cuántas). Dila también en voz alta. Te quedan <b>{mine}</b> por destapar y {agents.length === 1 ? 'toca' : 'tocan'} <b>{agents.join(', ') || 'tu equipo'}</b>.</p>
-    <p class="hint">El <b>0</b> avisa de que ninguna es tuya y el <b>∞</b> deja seguir con las que quedaron pendientes: los dos dejan tocar sin límite.</p>
+  <div class="actionpanel"><h3>💬 Da tu pista</h3>
+    <p class="hint">Una palabra que conecte casillas tuyas y cuántas son. <b>Dila también en voz alta</b>: tocan {agents.join(', ') || 'tus agentes'}.</p>
     <input id="cn-clue-word" class="block" data-a="cn-clue-word" bind:value={word} maxlength="24" placeholder="Palabra de la pista (p. ej. «fuego»)" autocomplete="off" />
     <div class="btnrow" style="margin-top:8px;flex-wrap:wrap">
       {#each [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] as k (k)}
@@ -43,11 +41,14 @@
          puede enviar (y la pista es irreversible: mejor pararla aquí). -->
     {#if problem}<p class="small-note" data-a="cn-clue-bad" style={word ? 'color:var(--danger)' : ''}>{word ? '⚠️' : '✍️'} {problem}</p>{/if}
     <button class="primary block" style="margin-top:8px" data-a="cn-clue-give" disabled={!!problem} onclick={() => guard(() => A.giveClue(word, num, inf))}>💬 Dar la pista{word ? ` «${word}»` : ''} · {label}</button>
+    <p class="small-note">Con <b>0</b> («ninguna es mía») y con <b>∞</b> («seguid con las pendientes») pueden tocar sin límite.</p>
     <BoardRef {game} />
   </div>
 {:else}
-  <div class="actionpanel"><h3>💬 Turno del equipo {game.turn === 'red' ? '🔴 rojo' : '🔵 azul'}</h3>
-    <p class="hint">Esperáis a <b>{spyName}</b>, que está escribiendo su pista. Mientras, mirad el tablero de arriba y pensad qué palabras podrían ser vuestras: la pista es pública y la oiréis todos.</p>
+  <!-- Pantalla de espera: la misma para los suyos, para el rival y para los
+       espectadores. Nada de lo que hay aquí sale del mapa. -->
+  <div class="actionpanel"><h3>⏳ {spyName} escribe su pista</h3>
+    <p class="hint">La pista es pública y la oiréis todos. Mientras, mirad el tablero y pensad qué palabras podrían caer del equipo {TEAM_LABEL[game.turn]}.</p>
     {#if stalled}
       <p class="small-note">⏭️ ¿{spyName} no puede seguir (sin batería, se ha ido)? En el menú <b>⋯</b> tenéis «Saltar el turno de {spyName}».</p>
     {/if}

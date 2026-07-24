@@ -1,9 +1,11 @@
 <script lang="ts">
-  // «🎴 Mi carta + referencia» (B19/B21): tu mano actual y las 8 cartas del
-  // mazo con copias, valores y efectos. Accesible en cualquier fase.
+  // El 🎴 de Love Letter es la REFERENCIA del mazo. Tu mano ya está siempre en la
+  // pantalla de partida (B28 · postura de mano), así que aquí no hace falta
+  // volver a destaparla: lo que se viene a consultar es qué hace cada carta,
+  // cuántas hay y cuántas siguen sin salir. Se abre en cualquier fase.
   import { app, viewGroup, me } from '../../../../core/sync/store.svelte';
   import { loveLetterGame, outCounts } from '../../actions';
-  import { CARD_INFO, VALUE } from '../../cards';
+  import { CARD_INFO, VALUE, copiesNote } from '../../cards';
   import type { Card } from '../../cards';
   import RefRows from '../../../../shell/RefRows.svelte';
 
@@ -16,35 +18,27 @@
   // juego, así que la app lo lleva por ti.
   const out = $derived(game ? outCounts(game) : null);
   const rows = $derived((Object.keys(CARD_INFO) as Card[]).map((c) => ({
-    emoji: CARD_INFO[c].emoji, name: CARD_INFO[c].name,
-    note: `valor ${VALUE[c]} · ya han salido ${out ? out[c] : 0} de ${CARD_INFO[c].count}`,
+    emoji: CARD_INFO[c].emoji, name: `${CARD_INFO[c].name} (${VALUE[c]})`,
+    note: out ? copiesNote(c, out[c]) : `${CARD_INFO[c].count} en el mazo`,
     desc: CARD_INFO[c].short,
   })));
 </script>
 
 {#if game}
-  <h3 style="margin:0 0 4px">🎴 Tu mano</h3>
+  <h3 style="margin:0 0 6px">🎴 El mazo, carta a carta</h3>
+  <p class="lead" data-a="ll-out-counts">🃏 Quedan <b>{game.deck.length}</b> por robar y 1 apartada que nadie verá{game.asideUp.length ? `, y estas están fuera de la ronda boca arriba: ${game.asideUp.map((c) => CARD_INFO[c].name).join(', ')}` : ''}. Gana la ronda quien quede en pie o tenga la carta más alta al agotarse el mazo.</p>
   {#if inGame && hand.length}
-    {#each hand as c, i (i)}
-      <div class="rolecard" style="margin:6px 0"><span class="remoji">{CARD_INFO[c].emoji}</span>
-        <span class="rname">{CARD_INFO[c].name} ({VALUE[c]})</span>
-        <div class="rdesc">{CARD_INFO[c].short}</div></div>
-    {/each}
+    <p class="lead">🖐 En tu mano: <b>{hand.map((c) => `${CARD_INFO[c].emoji} ${CARD_INFO[c].name} (${VALUE[c]})`).join(' y ')}</b> — la tienes siempre a la vista en la pantalla de partida.</p>
   {:else if inGame}
-    <p class="small-note">❌ Estás fuera de ESTA ronda (tus cartas ya se descartaron). Vuelves en la siguiente.</p>
-  {:else}
-    <p class="small-note">👀 Miras de espectador: sin carta propia.</p>
+    <p class="lead">❌ Estás fuera de ESTA ronda: en la siguiente se reparte otra vez y vuelves a jugar.</p>
   {/if}
-  <p class="small-note">🃏 Quedan <b>{game.deck.length}</b> cartas en el mazo · una apartada boca abajo{game.asideUp.length ? ` · boca arriba: ${game.asideUp.map((c) => CARD_INFO[c].name).join(', ')}` : ''}.</p>
-  {#if out}
-    <p class="small-note" data-a="ll-out-counts">🔢 Ya han salido: {(Object.keys(CARD_INFO) as Card[]).map((c) => `${CARD_INFO[c].emoji} ${out[c]}/${CARD_INFO[c].count}`).join(' · ')}.</p>
-  {/if}
-  <div class="refwrap"><RefRows title="🃏 Las 8 cartas del mazo (16 en total)" {rows} /></div>
+  <div class="refwrap"><RefRows title="🃏 Las 8 cartas (16 en total)" {rows} /></div>
 {/if}
 <button class="primary block" style="margin-top:14px" data-a="close-modal" onclick={() => (app.ui.modal = null)}>Cerrar</button>
 
 <style>
   /* Nada esencial por debajo de 0,8 rem (B26·9): el efecto de cada carta es lo
      más leído de este modal. */
-  .refwrap :global(.sdesc) { font-size: 0.8rem; }
+  .lead { font-size: 0.88rem; color: var(--muted); margin: 8px 0; line-height: 1.45; }
+  .refwrap :global(.sdesc) { font-size: 0.85rem; }
 </style>

@@ -1,6 +1,10 @@
 <script lang="ts">
+  // Primera pantalla del juego: UN solo trabajo (B29) — decir de qué va en dos
+  // líneas y dejar tres caminos claros: aprender, consultar y jugar. El nombre
+  // del juego ya está en la cabecera, así que aquí no se repite.
   import { app, navigate } from '../../../core/sync/store.svelte';
   import { localAudioState, toggleLocalSpeech } from '../../../shell/explain-audio';
+  import { gameMeta, POSTURE_HINT } from '../../registry';
   import { MIN_PLAYERS, MAX_PLAYERS, BEST_PLAYERS } from '../engine';
   import { INTRO_LOBBY } from '../texts';
   import type { GroupDoc, PlayerDoc } from '../../../core/sync/schema';
@@ -8,6 +12,7 @@
 
   const { group }: { group: GroupDoc; my: PlayerDoc } = $props();
   const introAudio = $derived(localAudioState('sn-intro'));
+  const meta = gameMeta('sonar');
 </script>
 
 <div class="topbar">
@@ -17,8 +22,8 @@
 <Flash />
 
 <div class="card">
-  <div style="display:flex;align-items:center;gap:8px">
-    <h3 style="flex:1;margin:0">⚓ Captain Sonar</h3>
+  <div class="snintro">
+    <p class="small-note" style="margin:0">👥 {MIN_PLAYERS}-{MAX_PLAYERS} jugadores (mejor de {BEST_PLAYERS}) · ⏱️ {meta.mins[0]}-{meta.mins[1]} min · dos tripulaciones</p>
     {#if introAudio === 'playing'}
       <button class="small ghost" data-a="sn-play-intro" title="Detener" onclick={() => toggleLocalSpeech('sn-intro', [])}>⏹️</button>
     {:else if introAudio === 'loading'}
@@ -28,11 +33,18 @@
     {/if}
   </div>
   {#each INTRO_LOBBY as p, i (i)}<p style="margin:9px 0">{p}</p>{/each}
-  <button class="block" data-a="sn-open-help" onclick={() => (app.ui.modal = { type: 'sn-help' })}>🎲 Cómo se juega</button>
-  <button class="block" data-a="open-demo" onclick={() => (app.ui.modal = { type: 'sn-demo' })}>🎓 Tutorial interactivo (2 min)</button>
+  <p class="snposture">{POSTURE_HINT[meta.posture]}</p>
+  <p class="small-note" style="margin:6px 0 0">Sentaos en dos corros, uno por tripulación, lo más lejos que dé la sala: se habla en voz baja y la app canta en alto lo que oyen los dos.</p>
+
+  <button class="primary block" style="margin-top:14px" data-a="open-start" onclick={() => navigate(`/g/${group.id}/sonar/empezar`)}>⚓ Empezar partida</button>
+  <div class="btnrow">
+    <button data-a="open-demo" onclick={() => (app.ui.modal = { type: 'sn-demo' })}>🎓 Tutorial (2 min)</button>
+    <button data-a="sn-open-help" onclick={() => (app.ui.modal = { type: 'sn-help' })}>📖 Cómo se juega</button>
+  </div>
 </div>
 
-<div class="card">
-  <p class="small-note" style="margin-top:0">De {MIN_PLAYERS} a {MAX_PLAYERS} jugadores en dos tripulaciones, pero <b>lo ideal es de {BEST_PLAYERS}</b>: con 2 sale un duelo de dos solitarios, sin nadie con quien deliberar. Mejor con las tripulaciones en corros separados; la voz puede sonar en un narrador, un altavoz por equipo o todos los móviles.</p>
-  <button class="primary block" data-a="open-start" onclick={() => navigate(`/g/${group.id}/sonar/empezar`)}>⚓ Empezar partida</button>
-</div>
+<style>
+  .snintro { display: flex; align-items: center; gap: 8px; }
+  .snintro p { flex: 1; }
+  .snposture { margin-top: 12px; padding: 9px 11px; border-radius: var(--r-2); border: 1px dashed var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--bg-1)); font-size: 0.82rem; color: var(--moon); line-height: 1.45; }
+</style>

@@ -55,7 +55,7 @@ try {
       const choice = page.locator('[data-a=demo-choice]').first();
       if (!asked && await choice.count()) {
         await choice.click();
-        await page.waitForSelector('text=/✅|💡/', { timeout: 4000 });
+        await page.waitForSelector('[data-a=demo-reply]', { timeout: 4000 });
         asked = true;
       }
       const next = page.locator('[data-a=demo-next]');

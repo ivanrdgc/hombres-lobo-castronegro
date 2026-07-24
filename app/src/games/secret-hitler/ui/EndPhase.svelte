@@ -1,5 +1,6 @@
 <script lang="ts">
-  // Final: se destapan todos los bandos, el ganador y el porqué.
+  // Final: se destapan todos los bandos, el ganador y el porqué. El marcador de
+  // decretos ya está en el tablero, justo encima: aquí no se repite.
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
   import { ROLE_LABEL, factionOf } from '../roles';
@@ -17,7 +18,6 @@
 <div class="card" style="text-align:center">
   <h3 style="margin:6px 0">{game.winner ? WIN_LABELS[game.winner] : ''}</h3>
   {#if game.winReason}<p class="small-note">{game.winReason}</p>{/if}
-  <p class="small-note" style="font-weight:700">🕊️ {game.liberalPolicies} decretos liberales · 🐷 {game.fascistPolicies} fascistas</p>
 </div>
 
 <div class="card">
@@ -30,7 +30,8 @@
       </div>
     </div>
   {/each}
+  <p class="small-note">💀 = ejecutado durante la partida.</p>
 </div>
 
-<button class="primary block" data-a="sh-again" onclick={() => guard(A.playAgain)}>🔁 Otra partida (mismos jugadores)</button>
+<button class="primary block" data-a="sh-again" onclick={() => guard(A.playAgain)}>🔁 Repartir otra vez (mismos jugadores)</button>
 <button class="ghost block" data-a="sh-back-lobby" onclick={() => guard(() => A.endSecretHitler())}>🏁 Terminar y volver al lobby</button>

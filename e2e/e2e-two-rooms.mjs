@@ -45,10 +45,13 @@ const sig = (s) => `${s.phase}|${s.round}|${s.logLen}|${Object.keys(s.hVotes).le
 const roleId = (s, role) => s.playerIds.find((pid) => s.roles[pid] === role);
 
 // Un voto por la UI real (toda la sala vota al primero de su sala: determinista).
+// La papeleta va CERRADA (el voto es secreto también dentro de la sala): hay que
+// abrirla antes de que aparezca la lista de vecinos.
 async function castVote(s, voter) {
   const target = membersOf(s, s.room[voter])[0];
   const before = sig(s);
   const page = pg(voter);
+  await page.click('[data-a=tr-ballot]', { timeout: 15000 });
   await page.click(`.player[data-a=tr-hostage][data-p="${target}"]`, { timeout: 15000 });
   await page.click('[data-a=tr-hostage-confirm]:not([disabled])');
   await waitState(pages.ana, (x) => sig(x) !== before, 'voto de rehén registrado');
@@ -84,6 +87,12 @@ try {
   await ana.click('button[data-a=select-game][data-p=two_rooms]');
   await ana.waitForSelector('[data-a=tr-open-help]');
   ok('el catálogo ofrece Two Rooms y su lobby carga');
+  // El lobby dice cómo se sostiene el móvil antes de repartir (B28) y deja los
+  // tres caminos a la vista: tutorial, cómo se juega y empezar (B29).
+  check(await ana.locator('[data-a=tr-posture]').count() === 1, 'el lobby avisa de la postura del móvil');
+  check(await ana.locator('[data-a=open-demo]').count() === 1 && await ana.locator('[data-a=open-start]').count() === 1,
+    'el lobby ofrece tutorial, cómo se juega y empezar');
+  check(await ana.locator('h2', { hasText: 'Two Rooms' }).count() === 1, 'el nombre del juego sale una sola vez (cabecera)');
   await ana.click('[data-a=tr-open-help]');
   await ana.waitForSelector('text=/Cómo se juega/');
   check(await ana.locator('.modal [data-a=tr-play-howto]').count() >= 5, 'el «cómo se juega» tiene un ▶️ por apartado');
@@ -117,12 +126,17 @@ try {
     await p.click('[data-a=tr-reveal]');
     await p.waitForSelector('[data-a=tr-seen]');
     if (pid === s.playerIds[0]) {
-      // «Enseñar solo el color»: la jugada del Presidente (bando sin rol).
+      // La pantalla de ENSEÑAR (B28): ocupa el móvil entero para ponérselo
+      // delante a otra persona, y tiene las dos caras del juego real.
       await p.click('[data-a=tr-color-only]');
       await p.waitForSelector('[data-a=tr-color]', { timeout: 5000 });
-      check(await p.locator('[data-a=tr-card]').count() === 0, 'el modo «solo el color» esconde el rol');
-      await p.click('[data-a=tr-color-back]');
+      check(await p.locator('[data-a=tr-card]').count() === 0, 'enseñando «solo el color» no queda nada más en pantalla (ni el rol)');
+      await p.click('[data-a=tr-show-full]');
+      await p.waitForSelector('[data-a=tr-show-card]', { timeout: 5000 });
+      check(await p.locator('[data-a=tr-color]').count() === 0, 'desde el color se pasa a la carta entera');
+      await p.click('[data-a=tr-show-close]');
       await p.waitForSelector('[data-a=tr-card]', { timeout: 5000 });
+      ok('la carta se guarda a mano: enseñar no se corta solo');
     }
     await p.click('[data-a=tr-seen]');
     await p.waitForTimeout(80);
@@ -143,12 +157,24 @@ try {
   // ——— Tres rondas ———
   for (let r = 1; r <= 3; r++) {
     await waitState(ana, (x) => x.phase === 'discuss' && x.round === r, `ronda ${r} en marcha`, 30000);
+    if (r === 1) {
+      // Pantalla EN REPOSO de la ronda (B28): mientras se negocia de pie, el
+      // móvil queda plano y todos tienen que enseñar lo MISMO.
+      const p0 = pg(s.playerIds[0]);
+      check(await p0.locator('[data-a=tr-card]').count() === 0, 'en reposo la carta va guardada: ningún color de bando a la vista');
+      check(await p0.locator('[data-a=tr-peek]').count() === 1 && await p0.locator('[data-a=tr-show-open]').count() === 1,
+        'en reposo todos tienen los mismos dos botones: ver mi carta y enseñarla');
+    }
     s = await waitState(ana, (x) => x.phase === 'hostages' && x.round === r, `fin del tiempo de la ronda ${r}`, 30000);
     check(true, `ronda ${r}: el reloj llega a cero y toca mandar rehenes`);
     if (r === 1) {
       // Salida 1: con la MAYORÍA votada se puede cerrar sin esperar al que falta
       // (antes, un móvil muerto dejaba la partida colgada para siempre).
       const room0 = membersOf(s, 0);
+      const first = pg(room0[0]);
+      await first.waitForSelector('[data-a=tr-ballot]', { timeout: 10000 });
+      check(await first.locator('.player[data-a=tr-hostage]').count() === 0,
+        'el voto de rehén va tapado: la papeleta no se abre sola (el vecino no lee a quién votas)');
       await castVote(s, room0[0]);
       await castVote(await st(), room0[1]);
       const closer = pg(room0[0]);

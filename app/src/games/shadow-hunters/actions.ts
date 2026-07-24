@@ -74,7 +74,7 @@ export async function startShadowH(playerIds: string[], narratorId: string | nul
     // Segunda línea: quién abre. Sin ella la mesa oía la intro y nadie sabía
     // por quién empezar (el motor ya canta el turno tras cada acción).
     log: [
-      { txt: '🌘 Comienza Shadow Hunters. Cazadores, Sombras y neutrales con identidad SECRETA: mira tu personaje en el móvil. En tu turno: pista, ataque, descanso… o revélate y usa tu poder.' },
+      { txt: '🌘 Comienza Shadow Hunters. Cazadores, Sombras y neutrales con identidad SECRETA: dejad el móvil plano en la mesa y mirad vuestro personaje con el botón del ojo cuando queráis. En tu turno: pista, ataque, descanso… o revélate y usa tu poder.' },
       { txt: `🎬 Turno de ${names[first]}.` },
     ],
   };

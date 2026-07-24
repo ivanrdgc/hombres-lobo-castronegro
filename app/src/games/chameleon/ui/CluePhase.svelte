@@ -34,12 +34,15 @@
 {:else if myTurn}
   <div class="narration">🗣️ <b>¡Te toca a ti!</b> Di EN VOZ ALTA una sola palabra: ni tan obvia que regale la secreta, ni tan vaga que parezcas el Camaleón.</div>
 {:else}
-  <div class="narration">🗣️ Le toca a <b>{nm(cur)}</b>{#if next}&nbsp;· después <b>{nm(next)}</b>{/if}. Una palabra en voz alta, por turnos.</div>
+  <div class="narration">🗣️ Habla <b>{nm(cur)}</b>: una palabra en voz alta.</div>
 {/if}
 
+<!-- B29 · un dato, un sitio: de quién es el turno se decía cuatro veces (banda,
+     título, línea personal y botón). Ahora la banda lo dice una vez y esta
+     tarjeta es solo el ORDEN y lo que se espera de mí. -->
 <div class="card">
-  <h3 style="margin-bottom:2px">🔁 Turno de las pistas · {given}/{game.playerIds.length}</h3>
-  <p class="small-note" style="margin:0">Por este orden, una palabra cada uno. ✅ ya ha hablado · 🗣️ habla ahora.</p>
+  <h3 style="margin-bottom:2px">🔁 Pistas dichas: {given} de {game.playerIds.length}</h3>
+  <p class="small-note" style="margin:0">✅ ya ha hablado · 🗣️ habla ahora</p>
   <div class="chorder">
     {#each order as pid, i (pid)}
       <span class="chturn {i < given ? 'done' : ''} {i === given ? 'now' : ''}" data-a="ch-turn" data-p={pid}>
@@ -49,22 +52,19 @@
   </div>
 
   {#if !inGame}
-    <p class="small-note" style="margin-top:0">👀 Miras de espectador: la mesa va cantando sus pistas por turnos. Ahora habla {nm(cur)}.</p>
+    <p class="small-note" style="margin-top:0">👀 Miras de espectador: la mesa canta sus pistas por turnos.</p>
   {:else if allDone}
-    <!-- Qué se espera de MÍ ahora mismo, antes de tocar nada. -->
-    <p class="small-note" style="margin-top:0">Hablad entre vosotros: ¿qué pista sonaba a copiada? El botón abre la votación para toda la mesa.</p>
-    <button class="primary block" data-a="ch-start-vote" onclick={() => guard(A.startVote)}>👉 A votar</button>
+    <button class="primary block" data-a="ch-start-vote" onclick={() => guard(A.startVote)}>👉 Abrir la votación</button>
   {:else if myTurn}
     <p class="small-note" style="margin-top:0">{#if next}Dila en voz alta primero; el botón solo pasa el turno a <b>{nm(next)}</b>.{:else}Dila en voz alta primero: eres el último y con tu pista se cierra la vuelta.{/if}</p>
     <button class="primary block" data-a="ch-clue-next" onclick={() => guard(() => A.stepClue(1))}>✅ Ya he dicho mi pista</button>
   {:else}
     <p class="small-note" style="margin-top:0">
       {#if beforeMe > 0}
-        Escucha y ve pensando la tuya: hablas el <b>{myIdx + 1}.º</b>, después de <b>{nm(prevOfMe)}</b>{queue}.
+        Ve pensando la tuya: hablas el <b>{myIdx + 1}.º</b>, después de <b>{nm(prevOfMe)}</b>{queue}.
       {:else}
         Ya has dicho la tuya. Escucha al resto: la del Camaleón sonará vaga o demasiado parecida a una anterior.
       {/if}
-      Cualquiera puede pasar el turno cuando {nm(cur)} acabe.
     </p>
     <button class="block" data-a="ch-clue-next" onclick={() => guard(() => A.stepClue(1))}>⏭️ {nm(cur)} ya ha dicho la suya</button>
   {/if}
@@ -104,7 +104,8 @@
   /* Ya no se atenúa a media luz: el orden completo tiene que leerse de un vistazo. */
   .chturn.done { color: var(--muted, #a9a6c0); text-decoration: line-through; }
   .chturn.now { border-color: var(--accent, #f2b552); box-shadow: 0 0 0 1px var(--accent, #f2b552) inset; }
-  .chnum { font-size: 0.72rem; opacity: 0.6; font-weight: 700; }
+  /* El orden es información pública: el ordinal también se lee (era 0,6). */
+  .chnum { font-size: 0.76rem; opacity: 0.82; font-weight: 700; }
   .chyou { font-size: 0.72rem; font-weight: 700; color: var(--accent, #f2b552); }
   .chref { margin-top: 10px; border-top: 1px solid var(--border, #2c3047); padding-top: 8px; }
   .chref summary { cursor: pointer; font-size: 0.84rem; color: var(--accent, #f2b552); padding: 4px 0; }

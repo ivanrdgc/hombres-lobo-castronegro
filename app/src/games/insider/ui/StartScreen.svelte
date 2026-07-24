@@ -64,15 +64,30 @@
 </div>
 <Flash />
 
+<!-- Dos tarjetas y el botón: (1) quién se sienta, (2) cómo será la ronda. El
+     recuento de elegidos vive PEGADO a la lista donde se arregla, no en una
+     tarjeta suelta al final. -->
 <div class="card">
-  <h3>🎮 ¿Quién juega?</h3>
+  <h3>👥 ¿Quién juega?</h3>
   <SeatPicker {group} {meId} gameId="insider" onState={(s) => (seat = s)} />
-  <p class="small-note">El primero de la lista será el Maestro de la primera ronda (el papel rota cada ronda).</p>
+  <p class="small-note" data-a="ins-chosen">
+    Jugarán <b>{chosen.length}</b>{chosen.length ? ': ' : ''}<span style="opacity:.75">{chosen.map((p) => p.name).join(', ')}</span>
+  </p>
+  {#if tooFew}<p class="small-note">⚠️ Faltan jugadores: Insider necesita {MIN_PLAYERS} como mínimo.</p>{/if}
+  {#if tooMany}<p class="small-note">⚠️ Sois demasiados: deja fuera a {chosen.length - MAX_PLAYERS} (máximo {MAX_PLAYERS}). Quien quede fuera puede mirar de espectador.</p>{/if}
+  <p class="small-note">El primero de la lista es el Maestro de la primera ronda; el papel rota en cada ronda.</p>
 </div>
 
 <div class="card">
-  <h3>🔊 ¿Dónde suena la voz?</h3>
-  <p class="small-note" style="margin-top:6px">La app anuncia al Maestro, avisa del tiempo y remata el desenlace. La palabra secreta NUNCA se dice en voz alta. Todos juegan, también quien pone la voz.</p>
+  <h3>⚙️ Cómo será la ronda</h3>
+  <p class="small-note" style="margin:0">⏱ <b>Tiempo para adivinar la palabra</b></p>
+  <div class="btnrow" style="margin-top:6px">
+    {#each INSIDER_DURATIONS_MIN as m (m)}
+      <button class="small {minutes === m ? 'primary' : 'ghost'}" data-a="ins-duration" data-p={String(m)}
+        onclick={() => guard(() => G.setSettings({ insiderMin: m }))}>{m} min{m === 5 ? ' (oficial)' : ''}</button>
+    {/each}
+  </div>
+  <p class="small-note" style="margin-top:14px">🔊 <b>Qué móvil pone la voz</b> — anuncia al Maestro, avisa del tiempo y remata el desenlace. Nunca dice la palabra.</p>
   <div class="btnrow" style="margin-top:6px">
     {#each rows.filter((p) => !matchOf(p.id)) as p (p.id)}
       <button class="small {narrator === p.id ? 'primary' : 'ghost'}" data-a="pick-narrator" data-p={p.id} style="flex:0 1 auto;min-width:0" onclick={() => (narrPick = p.id)}>
@@ -83,27 +98,11 @@
   {#if displaced}
     <p class="small-note">💤 <b>{displaced.name}</b> ponía la voz la última vez, pero su dispositivo está inactivo: la voz pasa a este. Si vuelve, tócalo arriba.</p>
   {/if}
-  {#if narratorP}<p class="small-note">🔊 <b>{narratorP.name}</b> pone la voz{seat.chosen.includes(narratorP.id) ? ' y también juega' : ' (no juega: tele o altavoz)'}. Pantalla encendida y volumen alto.</p>{/if}
+  {#if narratorP}<p class="small-note">Sonará en el móvil de <b>{narratorP.name}</b>{seat.chosen.includes(narratorP.id) ? ' (que además juega)' : ' (no juega: tele o altavoz)'}: pantalla encendida y volumen alto.</p>{/if}
 </div>
 
-<div class="card">
-  <h3>⏱ Duración del interrogatorio</h3>
-  <div class="btnrow" style="margin-top:6px">
-    {#each INSIDER_DURATIONS_MIN as m (m)}
-      <button class="small {minutes === m ? 'primary' : 'ghost'}" data-a="ins-duration" data-p={String(m)}
-        onclick={() => guard(() => G.setSettings({ insiderMin: m }))}>{m} min{m === 5 ? ' (oficial)' : ''}</button>
-    {/each}
-  </div>
+<div id="form-error">
+  {#if app.ui.formError}<div class="flash error">{app.ui.formError}</div>{/if}
 </div>
-
-<div class="card">
-  <p class="small-note" style="margin-top:0">
-    🤫 Jugarán <b>{chosen.length}</b>{chosen.length ? ': ' : ''}<span style="opacity:.75">{chosen.map((p) => p.name).join(', ')}</span>
-  </p>
-  {#if tooFew}<p class="small-note">⚠️ Insider necesita al menos {MIN_PLAYERS} jugadores.</p>{/if}
-  {#if tooMany}<p class="small-note">⚠️ Máximo {MAX_PLAYERS} jugadores: deja fuera a {chosen.length - MAX_PLAYERS}. Los demás pueden mirar de espectadores.</p>{/if}
-  <div id="form-error">
-    {#if app.ui.formError}<div class="flash error">{app.ui.formError}</div>{/if}
-  </div>
-  <button class="primary block" disabled={tooFew || tooMany} data-a="ins-start" onclick={startNow}>🤫 ¡Empezar!</button>
-</div>
+<button class="primary block" disabled={tooFew || tooMany} data-a="ins-start" onclick={startNow}>🤫 Repartir cartas y empezar</button>
+<p class="small-note" style="text-align:center">Cada móvil recibirá su carta en secreto; el reloj no arranca hasta que todos confirméis.</p>

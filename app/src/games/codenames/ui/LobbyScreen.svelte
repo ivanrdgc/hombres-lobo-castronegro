@@ -1,7 +1,11 @@
 <script lang="ts">
-  // Lobby de Codenames: intro con lectura (▶️), «cómo se juega» y tutorial.
+  // Lobby de Codenames. Un solo trabajo (B29): decir de qué va en dos líneas y
+  // dejar tres caminos —aprender, consultar, jugar—. La cabecera ya dice a qué
+  // juegas, así que aquí no se repite el nombre; y como la postura del móvil es
+  // media regla de este juego, se avisa ANTES de repartir.
   import { app, navigate } from '../../../core/sync/store.svelte';
   import { localAudioState, toggleLocalSpeech } from '../../../shell/explain-audio';
+  import { gameMeta, POSTURE_HINT } from '../../registry';
   import { MIN_PLAYERS, MAX_PLAYERS } from '../engine';
   import { INTRO_LOBBY } from '../texts';
   import type { GroupDoc, PlayerDoc } from '../../../core/sync/schema';
@@ -9,6 +13,7 @@
 
   const { group }: { group: GroupDoc; my: PlayerDoc } = $props();
   const introAudio = $derived(localAudioState('cn-intro'));
+  const meta = gameMeta('codenames');
 </script>
 
 <div class="topbar">
@@ -18,22 +23,27 @@
 <Flash />
 
 <div class="card">
-  <div style="display:flex;align-items:center;gap:8px">
-    <h3 style="flex:1;margin:0">🕵️ Codenames</h3>
+  <p class="chips" style="margin:0 0 8px">
+    <span class="chip">👥 {MIN_PLAYERS}–{MAX_PLAYERS} en dos equipos</span>
+    <span class="chip">⏱️ {meta.mins[0]}–{meta.mins[1]} min</span>
+  </p>
+  <div style="display:flex;align-items:flex-start;gap:8px">
+    <div style="flex:1;min-width:0">
+      {#each INTRO_LOBBY as p, i (i)}<p style="margin:0 0 9px">{p}</p>{/each}
+    </div>
     {#if introAudio === 'playing'}
       <button class="small ghost" data-a="cn-play-intro" title="Detener" onclick={() => toggleLocalSpeech('cn-intro', [])}>⏹️</button>
     {:else if introAudio === 'loading'}
       <button class="small ghost" aria-label="Preparando la voz" disabled><span class="spinner"></span></button>
     {:else}
-      <button class="small ghost" data-a="cn-play-intro" title="Escuchar" style="font-size:1.1rem;line-height:1" onclick={() => toggleLocalSpeech('cn-intro', INTRO_LOBBY)}>▶️</button>
+      <button class="small ghost" data-a="cn-play-intro" aria-label="Escuchar la explicación" title="Escuchar" style="font-size:1.1rem;line-height:1" onclick={() => toggleLocalSpeech('cn-intro', INTRO_LOBBY)}>▶️</button>
     {/if}
   </div>
-  {#each INTRO_LOBBY as p, i (i)}<p style="margin:9px 0">{p}</p>{/each}
-  <button class="block" data-a="cn-open-help" onclick={() => (app.ui.modal = { type: 'cn-help' })}>🎲 Cómo se juega</button>
-  <button class="block" data-a="open-demo" onclick={() => (app.ui.modal = { type: 'cn-demo' })}>🎓 Tutorial interactivo (2 min)</button>
-</div>
 
-<div class="card">
-  <p class="small-note" style="margin-top:0">De {MIN_PLAYERS} a {MAX_PLAYERS} jugadores, en dos equipos. La app custodia el mapa secreto (solo lo ven los Jefes), reparte los equipos y lleva el marcador; la voz (opcional) relata turnos y pistas.</p>
+  <p class="small-note" data-a="cn-posture" style="margin-top:0">{POSTURE_HINT[meta.posture]}</p>
+  <p class="small-note" style="margin-top:4px">Aquí con un matiz: el mapa del Jefe no lo ve <b>nadie</b>, tampoco sus propios agentes. Él sujeta el móvil como una mano de cartas; los demás pueden dejar el suyo en medio de la mesa.</p>
+
+  <button class="block" data-a="open-demo" onclick={() => (app.ui.modal = { type: 'cn-demo' })}>🎓 Aprender jugando (tutorial de 2 min)</button>
+  <button class="block" data-a="cn-open-help" onclick={() => (app.ui.modal = { type: 'cn-help' })}>🎲 Consultar las reglas</button>
   <button class="primary block" data-a="open-start" onclick={() => navigate(`/g/${group.id}/codenames/empezar`)}>🕵️ Empezar partida</button>
 </div>

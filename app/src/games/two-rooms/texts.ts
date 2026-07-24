@@ -44,7 +44,7 @@ export const HOW_TO: HelpSection[] = [
     items: [
       'Hasta 10 jugadores se juegan tres rondas cada vez más cortas: 3, 2 y 1 minuto. De 11 en adelante son cinco rondas (5, 4, 3, 2 y 1 minuto), para que dé tiempo a que la gente circule entre salas.',
       'El temporizador corre en la pantalla de TODOS los móviles; la voz suena según el modo elegido al empezar (un narrador, uno por sala o todos los móviles).',
-      'Durante la ronda, dentro de tu sala, hablas y puedes ENSEÑAR tu carta a quien quieras, cara a cara: abres tu carta en el móvil y le enseñas la pantalla, tapando el resto. La app no arbitra eso; es cosa vuestra.',
+      'Durante la ronda, dentro de tu sala, hablas y puedes ENSEÑAR tu carta a quien quieras, cara a cara: con «Enseñársela a alguien» tu carta llena toda la pantalla, en grande, y le pones el móvil delante. No se apaga sola: la guardas tú al acabar. La app no arbitra eso; es cosa vuestra.',
       'Puedes enseñar la carta ENTERA (bando y rol) o solo el bando, con «🎨 Enseñar solo el color»: es la jugada de siempre del Presidente, que quiere aliados azules sin destaparse del todo.',
       'El objetivo de hablar es averiguar quién es de fiar: los azules quieren localizar al Presidente para protegerlo; los rojos, colar al Bombardero donde esté el Presidente.',
     ],
@@ -52,7 +52,7 @@ export const HOW_TO: HelpSection[] = [
   {
     heading: '🔄 El voto de rehén',
     items: [
-      'Al agotarse el reloj, cada sala vota en su móvil a quién manda de rehén: tocas a alguien de TU sala y pulsas «🗳️ Votar». Puedes votarte a ti mismo (ofrecerte de rehén). El voto es secreto: en pantalla solo se ve cuántos han votado y a quién se espera.',
+      'Al agotarse el reloj, cada sala vota en su móvil a quién manda de rehén. La papeleta va cerrada: pulsas «Abrir mi papeleta», tapas la pantalla con la mano, tocas a alguien de TU sala y confirmas. Puedes votarte a ti mismo (ofrecerte de rehén). El voto es secreto también dentro de tu sala: fuera de tu papeleta solo se ve cuántos han votado y a quién se espera.',
       'Cuánta gente cruza depende del tamaño de la sala: uno de cada cuatro, y nunca menos de uno. Con seis jugadores cruza uno por sala; con veinte, tres.',
       'La votación se cierra cuando ha votado TODA la sala. Si alguien no puede votar (móvil muerto, se ha ido al baño), en cuanto haya votado la mayoría aparece «🔒 Cerrar la votación»; y si nadie hace nada, un minuto de reloj la cierra sola con los votos que haya. Empate en cabeza: decide el orden de la mesa.',
       'Hasta que las DOS salas no han decidido, no se dice a quién manda ninguna: se elige a ciegas. Entonces se anuncia el intercambio y los rehenes cruzan.',

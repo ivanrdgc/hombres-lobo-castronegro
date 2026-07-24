@@ -17,6 +17,20 @@ const bad = (m) => { fail++; console.log('  ✖', m); };
 const check = (c, m) => (c ? ok(m) : bad(m));
 const browser = await chromium.launch();
 const pages = {};
+
+// B28 · postura 🍽️ MESA: de noche TODAS las pantallas se ven iguales y el panel
+// de acción solo aparece tras el gesto de su dueño («👁 Abrir mi turno»).
+async function openTurn(pg, sel, timeout = 25000) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < timeout) {
+    if (await pg.locator(sel).count()) return;
+    const gate = pg.locator('[data-a=open-night-turn]');
+    if (await gate.count()) await gate.click().catch(() => {});
+    await pg.waitForTimeout(200);
+  }
+  await pg.waitForSelector(sel, { timeout: 3000 });
+}
+
 async function mk(label) {
   const ctx = await browser.newContext({ locale: 'es-ES' });
   await ctx.addInitScript(() => { window.__hlcTest = true; }); // e2e veloz: sin audio, colchones mínimos
@@ -124,17 +138,17 @@ try {
       lastKey = key;
       if (stepId === 'lobos') {
         const pg = pageOf(lobo);
-        await pg.waitForSelector('[data-a=act-lobos]', { timeout: 15000 });
+        await openTurn(pg, '[data-a=act-lobos]', 15000);
         await pg.click(`.actionpanel .player.selectable[data-p=${victim.id}]`);
         await pg.click('[data-a=act-lobos]');
       } else if (stepId === 'gitana') {
         const pg = pageOf(gitana);
         if (nightNo === 1) {
-          await pg.waitForSelector('#gitana-q', { timeout: 15000 });
+          await openTurn(pg, '#gitana-q', 15000);
           await pg.fill('#gitana-q', PREGUNTA);
           await pg.click('[data-a=act-gitana-custom]');
         } else {
-          await pg.waitForSelector('[data-a=act-gitana-skip]', { timeout: 15000 });
+          await openTurn(pg, '[data-a=act-gitana-skip]', 15000);
           await pg.click('[data-a=act-gitana-skip]');
         }
       }

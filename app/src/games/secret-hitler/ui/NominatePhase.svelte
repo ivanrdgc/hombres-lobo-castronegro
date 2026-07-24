@@ -10,7 +10,7 @@
   import type { PlayerDoc } from '../../../core/sync/schema';
   import type { SHState } from '../types';
   import ShGrid from './ShGrid.svelte';
-  import RoleCard from './RoleCard.svelte';
+  import MyCard from './MyCard.svelte';
 
   const { game, my }: { game: SHState; my: PlayerDoc } = $props();
   const pres = $derived(presidentId(game));
@@ -39,32 +39,28 @@
 </script>
 
 {#if amPres}
-  <div class="actionpanel"><h3>🤝 Nomina Canciller</h3>
-    <p class="hint">Presides tú. Elige un Canciller: la mesa votará ese gobierno (🪙 tú + 🎩 quien elijas). Si sale Ja, legisláis los dos en secreto; si sale Nein, el gobierno cae y la presidencia pasa al siguiente.</p>
+  <div class="actionpanel"><h3>🤝 Elige tu Canciller</h3>
+    <p class="hint">Presides tú. La mesa votará el gobierno 🪙 tú + 🎩 quien elijas: con mayoría de Ja legisláis los dos en secreto; si cae, presidirá el siguiente.</p>
     {#if game.fascistPolicies >= 3}
-      <p class="danger-note" data-a="sh-nom-warn">⚠️ Ya hay {game.fascistPolicies} decretos fascistas: si a quien nombres resulta ser Hitler y la mesa vota Ja, los fascistas GANAN en el acto.</p>
-    {/if}
-    {#if fallen >= 1}
-      <p class="small-note">🗳️ Van <b>{fallen}/3</b> gobiernos caídos: {fallen === 2 ? 'si este también cae, el país entra en caos y se promulga un decreto a ciegas.' : 'al tercero, el país entra en caos.'}</p>
+      <p class="danger-note" data-a="sh-nom-warn">⚠️ Con {game.fascistPolicies} decretos fascistas, si nombras a Hitler y sale Ja, los fascistas GANAN en el acto.</p>
     {/if}
     <ShGrid {players} {selKey} exclude={excluded} presidentId={pres} lastPresidentId={game.lastPresident} lastChancellorId={game.lastChancellor} {why} />
     {#if pick}
       <div class="plan" data-a="sh-nom-plan">
         <p><b>▶️ Vas a proponer:</b> 🪙 {nm(pres)} + 🎩 {nm(pick)}.</p>
-        <p class="small-note" style="margin-top:4px">Lo votará toda la mesa. Con mayoría de Ja gobernáis los dos; con empate o mayoría de Nein cae ({fallen + 1}/3 hacia el caos) y presidirá el siguiente.</p>
+        <p class="small-note" style="margin-top:4px">Si cae, van {fallen + 1}/3 gobiernos caídos{fallen >= 2 ? ' y el país entra en CAOS: decreto a ciegas del mazo' : ''}.</p>
       </div>
       <button class="ghost block small" style="margin:8px 0" data-a="sh-nom-back" onclick={() => clearSel()}>↩️ Cambiar de candidato</button>
     {/if}
-    <button class="primary block" data-a="sh-nominate" disabled={!pick} onclick={() => (pick ? guard(async () => { await A.nominateChancellor(pick); clearSel(); }) : undefined)}>🤝 {pick ? `Proponer gobierno con ${nm(pick)}` : 'Elige Canciller'}</button>
-    {#if !pick}<p class="small-note">Toca antes a uno de los candidatos con ✅ (los demás explican por qué no pueden).</p>{/if}
+    <button class="primary block" data-a="sh-nominate" disabled={!pick} onclick={() => (pick ? guard(async () => { await A.nominateChancellor(pick); clearSel(); }) : undefined)}>🤝 {pick ? `Proponer gobierno con ${nm(pick)}` : 'Toca antes a un candidato ✅'}</button>
   </div>
 {:else}
   <div class="card"><h3>🪙 Preside {nm(pres)}</h3>
     <p class="hint">Está eligiendo Canciller en su móvil. Cuando lo proponga, votaréis todos ese gobierno.</p>
-    <p class="small-note">Mientras tanto: repasa el tablero (quién votó qué la última vez) y, si te hace falta, mira tu carta abajo.</p>
+    <p class="small-note">Mientras: repasa arriba quién votó qué la última vez.</p>
   </div>
 {/if}
-{#if inGame}<RoleCard {game} pid={my.id} mini={true} />{/if}
+{#if inGame}<MyCard {game} pid={my.id} />{/if}
 
 <style>
   .plan {

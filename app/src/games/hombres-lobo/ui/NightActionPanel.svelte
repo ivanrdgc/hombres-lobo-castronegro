@@ -206,7 +206,7 @@
       <button class="primary block" data-a="act-lover-ok" onclick={() => guard(A.confirmLover)}>❤️ Entendido</button>
       <p class="small-note">Al confirmar, cierra los ojos: la noche sigue.</p>
     {:else}
-      <p class="hint">✅ Confirmado.{#if my.keyword} Tu palabra clave{my.kwRenewedNight === game.night ? ' (renovada)' : ''}: <b>«{my.keyword}»</b>. La tienes siempre en tu carta (👁 Mostrar mi rol).{/if}</p>
+      <p class="hint">✅ Confirmado.{#if my.keyword} Tu palabra clave{my.kwRenewedNight === game.night ? ' (renovada)' : ''}: <b>«{my.keyword}»</b>. La tienes siempre en tu carta (👁 Ver mi carta).{/if}</p>
     {/if}
   </div>
 {:else if stepId === 'nino_salvaje'}
@@ -342,7 +342,7 @@
           <div class="rteam">es {rr?.emoji || ''} {rr?.name || ''}</div>{/if}
       </div>
       <button class="primary block" data-a="act-vidente-seen" onclick={() => guard(A.actVidenteSeen)}>✔️ Lo he visto</button>
-      <p class="small-note">Queda anotado en tu carta (👁 Mostrar mi rol): no hace falta que lo memorices.</p>
+      <p class="small-note">Queda anotado en tu carta (👁 Ver mi carta): no hace falta que lo memorices.</p>
     </div>
   {:else if game.powersLost}
     <div class="actionpanel"><h3>🔮 La Vidente</h3>
@@ -445,7 +445,7 @@
       {/if}
       <button class="violet block" data-a="act-infectado-ok" onclick={() => guard(A.confirmInfectado)}>🧛 Entendido</button>
     {:else}
-      <p class="hint">✅ Confirmado. Desde la próxima noche despiertas y cazas con la manada.{#if my.keyword} Tu palabra clave{my.kwRenewedNight === game.night ? ' (renovada)' : ''}: <b>«{my.keyword}»</b>. La tienes siempre en tu carta (👁 Mostrar mi rol).{/if}</p>
+      <p class="hint">✅ Confirmado. Desde la próxima noche despiertas y cazas con la manada.{#if my.keyword} Tu palabra clave{my.kwRenewedNight === game.night ? ' (renovada)' : ''}: <b>«{my.keyword}»</b>. La tienes siempre en tu carta (👁 Ver mi carta).{/if}</p>
     {/if}
   </div>
 {:else if stepId === 'lobo_feroz'}
@@ -550,7 +550,7 @@
       {/if}
       <button class="primary block" data-a="act-encantado-ok" onclick={() => guard(A.confirmEncantado)}>🎶 Entendido</button>
     {:else}
-      <p class="hint">✅ Confirmado.{#if my.keyword} Tu palabra clave{my.kwRenewedNight === game.night ? ' (renovada)' : ''}: <b>«{my.keyword}»</b>. La tienes siempre en tu carta (👁 Mostrar mi rol).{/if}</p>
+      <p class="hint">✅ Confirmado.{#if my.keyword} Tu palabra clave{my.kwRenewedNight === game.night ? ' (renovada)' : ''}: <b>«{my.keyword}»</b>. La tienes siempre en tu carta (👁 Ver mi carta).{/if}</p>
     {/if}
   </div>
 {:else if stepId === 'gitana'}

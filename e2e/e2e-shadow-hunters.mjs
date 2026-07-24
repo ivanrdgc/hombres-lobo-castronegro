@@ -1,7 +1,11 @@
 // E2E de «Shadow Hunters»: 4 jugadores (Ana narra y juega). God-view (el doc
 // tiene las identidades): catálogo → empezar → pista secreta (solo la leen
 // quien la da y quien la recibe) → revelarse con poder → ataques a dados hasta
-// el final. Verifica la FUGA: identidades ocultas para el resto; 🎴 siempre.
+// el final. Verifica la FUGA con el criterio de POSTURA 🍽️ MESA (B28): con el
+// móvil plano sobre la mesa, en reposo las cuatro pantallas son IDÉNTICAS —
+// ni el tablero, ni el panel de turno, ni el 🎴 llevan tu personaje escrito, y
+// el sobre de la pista sale en todas para que su presencia no delate a quién le
+// tocó. Lo tuyo vive tras el 👁 y se vuelve a tapar.
 import { chromium } from 'playwright';
 const BASE = process.env.BASE; if (!BASE) { console.error('Define BASE=https://tu-sitio.web.app'); process.exit(1); }
 let fail = 0;
@@ -37,12 +41,18 @@ const st = () => hlc(pages.ana);
 // Facciones espejo del motor (chars.ts) para dirigir la partida en god-view.
 const FACTION = { georg: 'hunter', franklin: 'hunter', fuka: 'hunter', vampiro: 'shadow', licantropo: 'shadow', valquiria: 'shadow', allie: 'neutral', bob: 'neutral' };
 const POWER_TARGET = { georg: true, franklin: true, fuka: true, vampiro: true, licantropo: false, valquiria: false, allie: false, bob: true };
-// Trozo del poder de cada personaje: el panel de turno debe enseñarlo (antes
-// había que recordar de memoria qué hacía tu propio personaje).
+// Trozo del poder de cada personaje: tiene que estar SIEMPRE a un gesto (👁),
+// nunca clavado en pantalla (el móvil se queda plano sobre la mesa).
 const POWER_HINT = {
   georg: '2 de daño', franklin: 'un dado de daño', fuka: 'curas 3 puntos', vampiro: 'robas 2 puntos',
   licantropo: 'te curas 3 puntos', valquiria: 'TODOS los demás vivos', allie: 'te curas del todo', bob: '2 de daño',
 };
+const CHAR_NAME = {
+  georg: 'Georg', franklin: 'Franklin', fuka: 'Fuka', vampiro: 'Vampiro',
+  licantropo: 'Licántropo', valquiria: 'Valquiria', allie: 'Allie', bob: 'Bob',
+};
+// Abrir el sobre de la pista en la pantalla de ese jugador (si está cerrado).
+const openPista = (pid) => pg(pid).click('[data-a=sh-pista-peek]').catch(() => {});
 
 try {
   const GROUP = 'SH ' + Date.now().toString(36).slice(-5);
@@ -79,18 +89,36 @@ try {
   check(Object.values(s.hp).every((h) => h === 8), 'todos con 8 puntos de vida');
   check(s.log.some((t) => /^🎬 Turno de /.test(t)), 'el diario dice de quién es el turno desde la primera línea');
 
-  // ——— FUGA: identidades ajenas ocultas; 🎴 muestra la tuya en cualquier momento ———
+  // ——— 🍽️ MESA: en reposo, las cuatro pantallas son IDÉNTICAS ———
   const someone = s.playerIds.find((p) => p !== s.turn);
   const hidden = await pg(someone).locator('.shid.back').count();
-  check(hidden === 3, `las identidades ajenas van ocultas (${hidden} de 3)`);
-  check(await pg(someone).locator('.shid.priv').count() === 1, 'la tuya se ve solo en tu tablero (privada)');
+  check(hidden === 4, `el tablero sale igual en todos los móviles: 4 «sin destapar» (${hidden})`);
+  check(await pg(someone).locator('.shid.priv').count() === 0, 'tu propia fila tampoco te destapa (antes llevaba pastilla de color: se leía de reojo)');
+  const restTxt = await pg(someone).innerText('body');
+  check(!restTxt.includes(CHAR_NAME[s.chars[someone]]) && !restTxt.includes(POWER_HINT[s.chars[someone]]),
+    'en reposo ninguna pantalla lleva escrito tu personaje ni tu poder');
+  check(await pg(someone).locator('[data-a=sh-peek]').count() === 1, 'y el 👁 para mirarlo es el mismo botón en todas');
+
+  // El gesto: sale tu carta… y se tapa al tocarla (y sola a los 12 s).
+  await pg(someone).click('[data-a=sh-peek]');
+  const secret = await pg(someone).innerText('[data-a=sh-secret]');
+  check(secret.includes(CHAR_NAME[s.chars[someone]]) && secret.includes(POWER_HINT[s.chars[someone]]),
+    'tras el gesto 👁 ves tu personaje Y tu poder');
+  await pg(someone).click('[data-a=sh-secret]');
+  await pg(someone).waitForSelector('[data-a=sh-secret]', { state: 'detached', timeout: 8000 });
+  ok('tocando la carta se vuelve a tapar');
+
+  // El 🎴 sigue siendo el sitio de la chuleta… pero tampoco destapa de entrada.
   await pg(someone).click('[data-a=open-mycard]');
   await pg(someone).waitForSelector('text=/Tu personaje/');
+  check(await pg(someone).locator('.modal [data-a=sh-secret]').count() === 0, 'el 🎴 tampoco enseña tu carta de entrada: hay que pedirla');
   check(await pg(someone).locator('.modal .settingrow').count() >= 16, 'el 🎴 lleva la chuleta de los 8 personajes Y las 8 cartas de pista');
   const cardTxt = await pg(someone).locator('.modal').innerText();
   check(/Sois 4:[\s\S]*Cazadores[\s\S]*Sombras/.test(cardTxt), 'el 🎴 dice el reparto REAL de esta partida (4 → 2 y 2)');
+  await pg(someone).click('.modal [data-a=sh-peek]');
+  check((await pg(someone).innerText('.modal [data-a=sh-secret]')).includes(CHAR_NAME[s.chars[someone]]),
+    'y tras el 👁 enseña tu personaje también desde el 🎴');
   await pg(someone).click('.modal [data-a=close-modal]');
-  ok('el 🎴 enseña tu personaje en cualquier momento');
   check(/Sois 4:/.test(await pg(someone).innerText('body')), 'el reparto también se ve bajo el tablero');
 
   // ——— El panel de turno DICE lo que hace cada acción (B25/B26) ———
@@ -101,7 +129,8 @@ try {
   check(/dado de 6 y otro de 4/.test(panel0) && /DIFERENCIA/.test(panel0), 'el panel explica los dados del ataque sin tener que recordarlos');
   check(/1 de cada 6/.test(panel0), 'y dice lo que se arriesga (el fallo por empate)');
   check(/8 cartas/.test(panel0) && /EN SECRETO/.test(panel0), 'la pista explica que la carta se enseña en secreto');
-  check(/Tu poder/.test(panel0) && panel0.includes(POWER_HINT[s.chars[actor0]]), 'tu propio poder está a la vista en el panel (ya no se recuerda de memoria)');
+  check(!panel0.includes(CHAR_NAME[s.chars[actor0]]) && !panel0.includes(POWER_HINT[s.chars[actor0]]),
+    'el panel de turno NO lleva tu carta escrita: se queda abierto sobre la mesa mientras piensas');
   check(await pg(actor0).locator('[data-a=sh-ref]').count() === 1, 'la referencia de personajes y pistas se consulta desde el propio panel');
   check(await pg(actor0).locator('[data-a=sh-do]').count() === 0, 'sin acción elegida no hay botón de confirmar');
 
@@ -119,24 +148,35 @@ try {
   await pg(giver).click('[data-a=sh-do]');
   s = await waitState(ana, (x) => !!x.pista, 'pista registrada');
   check(s.pista.by === giver && s.pista.target === receiver, 'la pista queda registrada (quién la dio y a quién)');
-  await pg(receiver).waitForSelector('[data-a=sh-pista-ok]', { timeout: 15000 });
-  check(await pg(receiver).locator('text=/Si eres|Si NO eres/').count() >= 1, 'quien la recibe LEE el texto de la carta');
-  const pistaTxt = await pg(receiver).innerText('.pistacard');
-  check(/solo la leéis dos/.test(pistaTxt), 'la carta dice en pantalla que solo la leéis vosotros dos');
-  check(/pierdes 1 punto|te curas 1 punto|No te afecta|dejado a 0/.test(pistaTxt), 'y dice qué efecto acaba de aplicarse (en segunda persona)');
-  check(await pg(giver).locator('[data-a=sh-pista-ok]').count() === 1, 'quien la dio también la lee');
   const third = s.playerIds.find((p) => p !== giver && p !== receiver);
-  check(await pg(third).locator('[data-a=sh-pista-ok]').count() === 0, 'nadie más ve el texto de la pista');
+
+  // El sobre sale en las CUATRO pantallas: si apareciera solo en dos, su mera
+  // presencia diría a quién le ha tocado (y el móvil está plano sobre la mesa).
+  for (const p of [receiver, giver, third]) await pg(p).waitForSelector('[data-a=sh-pista-peek]', { timeout: 15000 });
+  ok('el sobre de la pista sale igual en todas las pantallas');
+  check(!/Si eres|Si NO eres/.test(await pg(receiver).innerText('.pistacard')), 'y cerrado no enseña el texto a nadie, ni a quien la recibe');
+  await openPista(third);
+  const thirdTxt = await pg(third).innerText('.pistacard');
+  check(/no es tuya/.test(thirdTxt) && await pg(third).locator('[data-a=sh-pista-ok]').count() === 0,
+    'quien no es de los dos toca el sobre y no ve nada: tocar tampoco delata');
+  await openPista(receiver);
+  const pistaTxt = await pg(receiver).innerText('.pistacard');
+  check(/Si eres|Si NO eres/.test(pistaTxt), 'quien la recibe LEE el texto tras abrirla');
+  check(/solo la leéis dos/i.test(pistaTxt), 'la carta dice en pantalla que solo la leéis vosotros dos');
+  check(/pierdes 1 punto|te curas 1 punto|No te afecta|dejado a 0/.test(pistaTxt), 'y dice qué efecto acaba de aplicarse (en segunda persona)');
+  await openPista(giver);
+  check(await pg(giver).locator('[data-a=sh-pista-ok]').count() === 1, 'quien la dio también la lee');
   check(s.log.some((t) => /entrega una pista/.test(t)), 'la mesa solo oye el resultado');
   // El que la DA pulsa primero (es el jugador activo: siempre iba por delante):
   // la carta debe seguir en la pantalla del que la recibe hasta que él la lea.
   await pg(giver).click('[data-a=sh-pista-ok]');
   s = await waitState(ana, (x) => !!x.pista && (x.pista.ack || []).includes(giver), 'acuse de recibo del que la dio');
   check(!!s.pista, 'la pista NO se borra cuando solo la ha cerrado quien la dio');
+  await openPista(receiver);
   check(await pg(receiver).locator('[data-a=sh-pista-ok]').count() === 1, 'quien la recibe sigue teniendo su «Entendido» (y el texto)');
-  check(await pg(receiver).locator('text=/Si eres|Si NO eres/').count() >= 1, 'y sigue LEYENDO el texto de la carta');
+  check(/Si eres|Si NO eres/.test(await pg(receiver).innerText('.pistacard')), 'y sigue LEYENDO el texto de la carta');
   await pg(giver).waitForSelector('[data-a=sh-pista-ok]', { state: 'detached', timeout: 10000 });
-  ok('quien ya la leyó deja de ver el botón (la carta sigue en su pantalla)');
+  ok('quien ya la leyó deja de ver el botón (el sobre sigue en su pantalla)');
   await pg(receiver).click('[data-a=sh-pista-ok]');
   await waitState(ana, (x) => !x.pista, 'la pista se retira cuando la han leído los dos');
   ok('la pista solo desaparece cuando la han acusado ambos');
@@ -147,11 +187,19 @@ try {
   const rchar = s.chars[revealer];
   await pg(revealer).waitForSelector('[data-a=sh-mode-reveal]:not([disabled])', { timeout: 15000 });
   await pg(revealer).click('[data-a=sh-mode-reveal]');
+  // Es la única decisión que pide tu carta: el 👁 está DENTRO del paso, y ni el
+  // paso ni el botón final nombran tu personaje mientras no lo pidas.
+  check(await pg(revealer).locator('.actionpanel [data-a=sh-peek]').count() === 1, 'el paso de revelarte trae su propio 👁 para repasar tu poder');
+  const revealStep = await pg(revealer).innerText('.actionpanel');
+  check(!revealStep.includes(CHAR_NAME[rchar]) && !revealStep.includes(POWER_HINT[rchar]), 'y sin tocarlo, el paso no dice quién eres');
+  await pg(revealer).click('.actionpanel [data-a=sh-peek]');
+  check((await pg(revealer).innerText('.actionpanel [data-a=sh-secret]')).includes(POWER_HINT[rchar]), 'al tocarlo sí ves el poder que vas a gastar');
   if (POWER_TARGET[rchar]) {
     const tgt = s.playerIds.find((p) => p !== revealer && s.alive[p]);
     await pg(revealer).click(`[data-a=sh-reveal-target][data-p="${tgt}"]`);
   }
   check(/Al confirmar/.test(await pg(revealer).innerText('.actionpanel')), 'antes de confirmar se lee en claro lo que va a pasar');
+  check(!(await pg(revealer).innerText('[data-a=sh-do]')).includes(CHAR_NAME[rchar]), 'el botón de confirmar nombra la consecuencia, no tu personaje');
   await pg(revealer).click('[data-a=sh-do]');
   s = await waitState(ana, (x) => x.revealed[revealer] || x.phase === 'end', 'revelado');
   check(s.revealed[revealer], 'el personaje queda revelado');
@@ -165,15 +213,21 @@ try {
     const boardTxt = await pg(other).innerText('.shboard');
     check(/❤️ \d+ de 8/.test(boardTxt), 'el tablero lleva la vida de cada uno sobre el total');
     check(/Destapados/.test(await pg(other).innerText('body')), 'y bajo el tablero, cuántos van destapados de cada bando');
+    // Al revelarte tu carta ya es pública: a partir de ahí tu pantalla SÍ la
+    // enseña sin gestos, y esa diferencia la explica el tablero de todos.
+    check((await pg(revealer).innerText('[data-a=sh-secret]')).includes(CHAR_NAME[rchar]),
+      'quien se ha revelado lleva ya su carta a la vista, sin tener que pedirla');
   }
 
   // ——— Ataques dirigidos (god-view) hasta el final: caza de Sombras ———
   for (let guard = 0; guard < 200; guard++) {
     s = await st();
     if (s.phase === 'end') break;
-    if (s.pista) { // hace falta el acuse de LOS DOS para que se retire
-      await pg(s.pista.target).click('[data-a=sh-pista-ok]').catch(() => {});
-      await pg(s.pista.by).click('[data-a=sh-pista-ok]').catch(() => {});
+    if (s.pista) { // abrir el sobre y acusar recibo: hacen falta LOS DOS
+      for (const p of [s.pista.target, s.pista.by]) {
+        await openPista(p);
+        await pg(p).click('[data-a=sh-pista-ok]').catch(() => {});
+      }
     }
     const actor = s.turn;
     const shadows = s.playerIds.filter((p) => s.alive[p] && FACTION[s.chars[p]] === 'shadow' && p !== actor);

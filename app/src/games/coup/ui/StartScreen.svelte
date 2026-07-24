@@ -1,6 +1,8 @@
 <script lang="ts">
-  // «Empezar partida» de Coup: quién juega y en qué orden (SeatPicker del shell)
-  // y qué dispositivo pone la voz. Sin más ajustes: la app baraja y reparte.
+  // «Empezar partida» de Coup: dos decisiones y un botón — quién juega y en qué
+  // orden (SeatPicker del shell) y qué dispositivo pone la voz. Sin más ajustes.
+  // B29: la lista de elegidos no se repite abajo (ya está en el selector); solo
+  // el recuento, los avisos y el botón que reparte.
   import { app, matchOf, me, navigate } from '../../../core/sync/store.svelte';
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
@@ -57,19 +59,19 @@
 
 <div class="topbar">
   <button class="small ghost" data-a="back-lobby-game" aria-label="Volver" title="Volver" style="font-size:1.25rem;line-height:1;padding:6px 12px" onclick={() => navigate(`/g/${group.id}/coup`)}>←</button>
-  <h2>🃏 Coup: empezar</h2>
+  <h2>🃏 Empezar partida</h2>
 </div>
 <Flash />
 
 <div class="card">
   <h3>🎮 ¿Quién juega?</h3>
+  <p class="small-note" style="margin-top:0">Toca para incluir o dejar fuera. El orden de la lista es el orden de los turnos.</p>
   <SeatPicker {group} {meId} gameId="coup" onState={(s) => (seat = s)} />
-  <p class="small-note">El orden de la lista es el orden de los turnos alrededor de la mesa.</p>
 </div>
 
 <div class="card">
   <h3>🔊 ¿Dónde suena la voz?</h3>
-  <p class="small-note" style="margin-top:6px">La app relata cada jugada, desafío y bloqueo en voz alta. Nunca dice las cartas ocultas. Todos juegan, también quien pone la voz.</p>
+  <p class="small-note" style="margin-top:6px">Relata en alto cada jugada, desafío y bloqueo; las cartas ocultas no las dice jamás. Quien pone la voz también juega.</p>
   <div class="btnrow" style="margin-top:6px">
     {#each rows.filter((p) => !matchOf(p.id)) as p (p.id)}
       <button class="small {narrator === p.id ? 'primary' : 'ghost'}" data-a="pick-narrator" data-p={p.id} style="flex:0 1 auto;min-width:0" onclick={() => (narrPick = p.id)}>
@@ -84,13 +86,10 @@
 </div>
 
 <div class="card">
-  <p class="small-note" style="margin-top:0">
-    🃏 Jugarán <b>{chosen.length}</b>{chosen.length ? ': ' : ''}<span style="opacity:.75">{chosen.map((p) => p.name).join(', ')}</span>
-  </p>
-  {#if tooFew}<p class="small-note">⚠️ Coup necesita al menos {MIN_PLAYERS} jugadores.</p>{/if}
-  {#if tooMany}<p class="small-note">⚠️ Máximo {MAX_PLAYERS} jugadores: deja fuera a {chosen.length - MAX_PLAYERS}. Los demás pueden mirar de espectadores.</p>{/if}
+  {#if tooFew}<p class="small-note" style="margin-top:0">⚠️ Coup necesita al menos {MIN_PLAYERS} jugadores.</p>{/if}
+  {#if tooMany}<p class="small-note" style="margin-top:0">⚠️ Máximo {MAX_PLAYERS} jugadores: deja fuera a {chosen.length - MAX_PLAYERS}. Los demás pueden mirar de espectadores.</p>{/if}
   <div id="form-error">
     {#if app.ui.formError}<div class="flash error">{app.ui.formError}</div>{/if}
   </div>
-  <button class="primary block" disabled={tooFew || tooMany} data-a="coup-start" onclick={startNow}>🃏 ¡Empezar!</button>
+  <button class="primary block" style="margin-top:0" disabled={tooFew || tooMany} data-a="coup-start" onclick={startNow}>🎴 Repartir y empezar · {chosen.length} jugador{chosen.length === 1 ? '' : 'es'}</button>
 </div>

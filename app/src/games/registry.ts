@@ -62,28 +62,40 @@ export interface GameMeta {
   vibe: string;
   /** Entrada suave para una mesa que no ha jugado a nada de esto. */
   easy?: boolean;
+  /** Cómo se sostiene el móvil (B28) — decide el diseño de sus pantallas:
+   *  `mesa` plano y desbloqueado (todas las pantallas iguales, lo secreto tras
+   *  un gesto), `mano` mirando a ti (tu baraja siempre a la vista) y `equipo`
+   *  como mano pero compartido con los tuyos y oculto al rival. */
+  posture: 'mesa' | 'mano' | 'equipo';
 }
 
+/** Cómo colocar el móvil, para decírselo a la mesa antes de repartir. */
+export const POSTURE_HINT: Record<GameMeta['posture'], string> = {
+  mesa: '🍽️ Móvil plano en la mesa: todas las pantallas se ven iguales, y lo tuyo solo aparece cuando lo pides.',
+  mano: '🃏 Móvil en la mano, mirando a ti: la pantalla es tu mano de cartas, no la enseñes.',
+  equipo: '👥 Móvil a la vista de los tuyos y tapado al equipo rival: lo que sale en pantalla es secreto de equipo.',
+};
+
 export const GAME_META: Record<string, GameMeta> = {
-  hombres_lobo: { mins: [30, 60], vibe: 'Roles ocultos, noche narrada' },
-  una_noche: { mins: [5, 10], vibe: 'Una sola noche, muy rápido', easy: true },
-  avalon: { mins: [25, 45], vibe: 'Misiones y traición' },
-  secret_hitler: { mins: [30, 60], vibe: 'Política y sospecha' },
-  chameleon: { mins: [10, 20], vibe: 'Una palabra, un impostor', easy: true },
-  insider: { mins: [10, 15], vibe: 'Contrarreloj, traidor cooperativo', easy: true },
-  coup: { mins: [15, 30], vibe: 'Farol y desafíos' },
-  two_rooms: { mins: [15, 25], vibe: 'Dos salas, dos bandos' },
-  codenames: { mins: [15, 30], vibe: 'Palabras por equipos', easy: true },
-  decrypto: { mins: [30, 45], vibe: 'Pistas cifradas por equipos' },
-  good_cop: { mins: [15, 25], vibe: 'Comisaría podrida, dos líderes' },
-  shadow_hunters: { mins: [30, 45], vibe: 'Tres facciones y dados' },
-  sonar: { mins: [20, 40], vibe: 'Submarinos a ciegas' },
-  wavelength: { mins: [15, 30], vibe: 'Intuición en equipo', easy: true },
-  skull: { mins: [15, 25], vibe: 'Farol puro, reglas mínimas', easy: true },
-  love_letter: { mins: [15, 25], vibe: 'Cartas, deducción, rondas cortas', easy: true },
-  espia: { mins: [10, 20], vibe: 'Un lugar, un intruso', easy: true },
+  hombres_lobo: { mins: [30, 60], vibe: 'Roles ocultos, noche narrada', posture: 'mesa' },
+  una_noche: { mins: [5, 10], vibe: 'Una sola noche, muy rápido', easy: true, posture: 'mesa' },
+  avalon: { mins: [25, 45], vibe: 'Misiones y traición', posture: 'mesa' },
+  secret_hitler: { mins: [30, 60], vibe: 'Política y sospecha', posture: 'mesa' },
+  chameleon: { mins: [10, 20], vibe: 'Una palabra, un impostor', easy: true, posture: 'mesa' },
+  insider: { mins: [10, 15], vibe: 'Contrarreloj, traidor cooperativo', easy: true, posture: 'mesa' },
+  coup: { mins: [15, 30], vibe: 'Farol y desafíos', posture: 'mano' },
+  two_rooms: { mins: [15, 25], vibe: 'Dos salas, dos bandos', posture: 'mesa' },
+  codenames: { mins: [15, 30], vibe: 'Palabras por equipos', easy: true, posture: 'equipo' },
+  decrypto: { mins: [30, 45], vibe: 'Pistas cifradas por equipos', posture: 'equipo' },
+  good_cop: { mins: [15, 25], vibe: 'Comisaría podrida, dos líderes', posture: 'mesa' },
+  shadow_hunters: { mins: [30, 45], vibe: 'Tres facciones y dados', posture: 'mesa' },
+  sonar: { mins: [20, 40], vibe: 'Submarinos a ciegas', posture: 'equipo' },
+  wavelength: { mins: [15, 30], vibe: 'Intuición en equipo', easy: true, posture: 'equipo' },
+  skull: { mins: [15, 25], vibe: 'Farol puro, reglas mínimas', easy: true, posture: 'mano' },
+  love_letter: { mins: [15, 25], vibe: 'Cartas, deducción, rondas cortas', easy: true, posture: 'mano' },
+  espia: { mins: [10, 20], vibe: 'Un lugar, un intruso', easy: true, posture: 'mesa' },
 };
 
 export function gameMeta(id: string): GameMeta {
-  return GAME_META[id] ?? { mins: [15, 30], vibe: '' };
+  return GAME_META[id] ?? { mins: [15, 30], vibe: '', posture: 'mesa' };
 }

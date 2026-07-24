@@ -1,6 +1,7 @@
 <script lang="ts">
-  // «Empezar partida» de Codenames: quién juega (SeatPicker) y qué dispositivo
-  // pone la voz. La app reparte equipos y designa un Jefe por equipo.
+  // «Empezar partida» de Codenames: quién juega, qué dispositivo pone la voz y
+  // el botón que reparte. Dos decisiones, dos tarjetas, y el aviso que hay que
+  // dar ANTES de repartir: los dos Jefes recibirán un mapa secreto en su móvil.
   import { app, matchOf, me, navigate } from '../../../core/sync/store.svelte';
   import { guard } from '../../../core/sync/guard';
   import { isActiveDevice } from '../../../core/sync/presence';
@@ -53,12 +54,17 @@
 <div class="card">
   <h3>🎮 ¿Quién juega?</h3>
   <SeatPicker {group} {meId} gameId="codenames" onState={(s) => (seat = s)} />
-  <p class="small-note">La app repartirá dos equipos (rojo y azul) al azar y designará un Jefe de espías en cada uno.</p>
+  {#if n < MIN_PLAYERS}
+    <p class="small-note">⚠️ Sois {n}: hacen falta {MIN_PLAYERS} para dos equipos con Jefe y agente.</p>
+  {:else if n > MAX_PLAYERS}
+    <p class="small-note">⚠️ Sois {n}: como mucho juegan {MAX_PLAYERS}.</p>
+  {:else}
+    <p class="small-note">Jugáis <b>{n}</b>: al repartir se sortean dos equipos y un Jefe de espías en cada uno.</p>
+  {/if}
 </div>
 
 <div class="card">
-  <h3>🔊 ¿Dónde suena la voz?</h3>
-  <p class="small-note" style="margin-top:6px">La voz solo anuncia turnos, pistas (públicas) y el desenlace; nunca el mapa oculto. Puede ponerla alguien que también juega.</p>
+  <h3>🔊 ¿Quién pone la voz?</h3>
   <div class="btnrow" style="margin-top:6px">
     {#each rows.filter((p) => !matchOf(p.id)) as p (p.id)}
       <button class="small {narrator === p.id ? 'primary' : 'ghost'}" data-a="pick-narrator" data-p={p.id} style="flex:0 1 auto;min-width:0" onclick={() => (narrPick = p.id)}>
@@ -66,13 +72,9 @@
       </button>
     {/each}
   </div>
-  {#if narratorP}<p class="small-note">🔊 <b>{narratorP.name}</b> pone la voz{seat.chosen.includes(narratorP.id) ? ' y también juega' : ' (no juega)'}.</p>{/if}
+  {#if narratorP}<p class="small-note">Sonará en el móvil de <b>{narratorP.name}</b>{seat.chosen.includes(narratorP.id) ? ', que también juega' : ' (no juega)'}. Canta turnos, pistas y el desenlace; el mapa no lo dice nunca.</p>{/if}
 </div>
 
-<div class="card">
-  <p class="small-note" style="margin-top:0">🕵️ Jugarán <b>{n}</b>{n ? ': ' : ''}<span style="opacity:.75">{chosen.map((p) => p.name).join(', ')}</span></p>
-  {#if n < MIN_PLAYERS}<p class="small-note">⚠️ Codenames necesita al menos {MIN_PLAYERS} jugadores (dos por equipo).</p>{/if}
-  {#if n > MAX_PLAYERS}<p class="small-note">⚠️ Máximo {MAX_PLAYERS} jugadores.</p>{/if}
-  <div id="form-error">{#if app.ui.formError}<div class="flash error">{app.ui.formError}</div>{/if}</div>
-  <button class="primary block" disabled={!okStart} data-a="cn-start" onclick={startNow}>🕵️ ¡Empezar!</button>
-</div>
+<p class="small-note" data-a="cn-start-warn">🔒 Al repartir, cada Jefe recibirá un <b>mapa secreto</b> en su móvil: sentaos de forma que nadie pueda mirárselo por encima del hombro, ni los de su propio equipo.</p>
+<div id="form-error">{#if app.ui.formError}<div class="flash error">{app.ui.formError}</div>{/if}</div>
+<button class="primary block" disabled={!okStart} data-a="cn-start" onclick={startNow}>🕵️ Repartir equipos y empezar</button>
