@@ -9,6 +9,7 @@ import GuessModal from './ui/modals/GuessModal.svelte';
 import LeaveModal from './ui/modals/LeaveModal.svelte';
 import EndConfirmModal from './ui/modals/EndConfirmModal.svelte';
 import DemoModal from './ui/modals/DemoModal.svelte';
+import MyInfoModal from './ui/modals/MyInfoModal.svelte';
 
 export const espia: GameDefinition = {
   id: 'espia',
@@ -21,6 +22,7 @@ export const espia: GameDefinition = {
   Start: StartScreen,
   Screen: GameScreen,
   modals: {
+    'espia-mycard': MyInfoModal,
     'espia-demo': DemoModal,
     'espia-help': HelpModal,
     'espia-lugares': LugaresModal,

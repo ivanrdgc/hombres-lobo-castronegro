@@ -118,8 +118,15 @@ try {
     s = await waitState(ana, (x) => x.phase === 'hostages' && x.round === r, `fin del tiempo de la ronda ${r}`, 30000);
     check(true, `ronda ${r}: el reloj llega a cero y toca mandar rehenes`);
     await voteHostages();
-    if (r < 3) s = await waitState(ana, (x) => x.round === r + 1 && x.phase === 'discuss', `intercambio de la ronda ${r}`, 30000);
-    else s = await waitState(ana, (x) => x.phase === 'end', 'la partida termina', 30000);
+    if (r < 3) {
+      // B22: tras el intercambio hay COLOCACIÓN sin reloj; se confirma con botón.
+      s = await waitState(ana, (x) => x.round === r + 1 && x.phase === 'move', `colocación tras la ronda ${r}`, 30000);
+      check(s.log.some((t) => /Colocaos/.test(t)), 'la voz pide colocarse (sin reloj)');
+      await pg(s.playerIds[0]).click('[data-a=tr-begin]');
+      s = await waitState(ana, (x) => x.round === r + 1 && x.phase === 'discuss', `arranca la ronda ${r + 1}`, 30000);
+    } else {
+      s = await waitState(ana, (x) => x.phase === 'end', 'la partida termina', 30000);
+    }
     check(s.log.filter((t) => /Intercambio/.test(t)).length === r, `se han hecho ${r} intercambio(s)`);
   }
 

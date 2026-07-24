@@ -3,12 +3,15 @@
   // visible durante la partida. Los dispositivos fuera de la partida ven las
   // salas de espectador (sin cartas ocultas de nadie).
   import { app, matchOf } from '../../../core/sync/store.svelte';
+  import { guard } from '../../../core/sync/guard';
+  import * as A from '../actions';
   import { twoRoomsGame } from '../actions';
   import { narrates } from '../engine';
   import { unlockAudio } from '../../../core/audio/engine';
   import { play } from '../../../core/audio/player';
   import type { GroupDoc, PlayerDoc } from '../../../core/sync/schema';
   import Flash from '../../../shell/Flash.svelte';
+  import CardFab from '../../../shell/CardFab.svelte';
   import GameMenu from './GameMenu.svelte';
   import RoomsBoard from './RoomsBoard.svelte';
   import RevealPhase from './RevealPhase.svelte';
@@ -57,6 +60,12 @@
     <DiscussPhase {game} {my} />
   {:else if game.phase === 'hostages'}
     <HostagePhase {game} {my} />
+  {:else if game.phase === 'move'}
+    <div class="narration">🚶 Los rehenes cruzan de sala (mirad el tablero de arriba). Sin prisa: el reloj no corre.</div>
+    {#if inGame}
+      <div class="card"><p class="hint">Cuando todos estéis cada uno en vuestra sala, que cualquiera arranque la ronda.</p>
+        <button class="primary block" data-a="tr-begin" onclick={() => guard(A.beginRound)}>▶️ Empezar la ronda {game.round}</button></div>
+    {/if}
   {/if}
   {#if !inGame}<p class="small-note" style="text-align:center">👀 Sigues la partida de espectador.</p>{/if}
 {/if}
@@ -65,3 +74,5 @@
   <div class="card"><h3>📜 Diario</h3>
     <div class="log" bind:this={logEl}>{#each game.log as l, i (i)}<p>{l.txt}</p>{/each}</div></div>
 {/if}
+
+<CardFab modal="tr-mycard" />

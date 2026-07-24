@@ -11,6 +11,7 @@ import RoleDetailModal from './ui/modals/RoleDetailModal.svelte';
 import LeaveModal from './ui/modals/LeaveModal.svelte';
 import EndConfirmModal from './ui/modals/EndConfirmModal.svelte';
 import DemoModal from './ui/modals/DemoModal.svelte';
+import MyInfoModal from './ui/modals/MyInfoModal.svelte';
 
 export const unaNoche: GameDefinition = {
   id: 'una_noche',
@@ -23,6 +24,7 @@ export const unaNoche: GameDefinition = {
   Start: StartScreen,
   Screen: GameScreen,
   modals: {
+    'una-mycard': MyInfoModal,
     'una-demo': DemoModal,
     'una-help': HelpModal,
     'una-deck': DeckModal,

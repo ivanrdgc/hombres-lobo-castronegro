@@ -107,16 +107,22 @@ export async function confirmSeen(): Promise<void> {
   });
 }
 
-/** Todos han visto su carta: arranca la ronda 1 (cualquier jugador). */
+/** Arranca el reloj de la ronda: desde el reparto (todos han visto su carta) o
+ *  desde la COLOCACIÓN tras un intercambio (cuando todos están en su sala).
+ *  Cualquier jugador. */
 export async function beginRound(): Promise<void> {
   const me = myPid();
   await tx((game) => {
-    if (game.phase !== 'reveal' || !game.playerIds.includes(me)) return null;
-    if (!game.playerIds.every((pid) => game.seen[pid])) return null;
+    if (!game.playerIds.includes(me)) return null;
+    if (game.phase === 'reveal') {
+      if (!game.playerIds.every((pid) => game.seen[pid])) return null;
+    } else if (game.phase !== 'move') {
+      return null;
+    }
     game.phase = 'discuss';
     game.durationMs = minutesForRound(game.round, game.totalRounds) * perMinMs();
     game.deadline = Date.now() + game.durationMs;
-    game.log.push({ txt: `⏱️ Ronda ${game.round} de ${game.totalRounds}: ${minutesForRound(game.round, game.totalRounds)} min. Hablad, enseñad cartas y decidid a quién mandaréis de rehén.` });
+    game.log.push({ txt: `⏱️ Ronda ${game.round} de ${game.totalRounds}: ${minutesForRound(game.round, game.totalRounds)} minutos. Hablad, enseñad cartas y decidid a quién mandaréis de rehén.` });
     return game;
   });
 }
@@ -169,13 +175,14 @@ function doSwap(game: TwoRoomsState): TwoRoomsState {
   game.swaps.push({ round: game.round, from0: a, from1: b });
   game.log.push({ txt: `🔄 Intercambio: ${nameOf(game, a)} pasa a la Sala 2 y ${nameOf(game, b)} a la Sala 1.` });
   if (game.round < game.totalRounds) {
+    // Colocación SIN reloj (B22): los rehenes cruzan de sala con calma y,
+    // cuando todos están en su sitio, cualquiera arranca la ronda con el botón.
     game.round += 1;
-    game.phase = 'discuss';
+    game.phase = 'move';
     game.hVotes = {};
     game.pick = [null, null];
-    game.durationMs = minutesForRound(game.round, game.totalRounds) * perMinMs();
-    game.deadline = Date.now() + game.durationMs;
-    game.log.push({ txt: `⏱️ Ronda ${game.round} de ${game.totalRounds}: ${minutesForRound(game.round, game.totalRounds)} min.` });
+    game.deadline = null;
+    game.log.push({ txt: `🚶 Colocaos: los rehenes cruzan de sala. Cuando estéis cada uno en la vuestra, pulsad empezar la ronda ${game.round}.` });
     return game;
   }
   return finish(game);

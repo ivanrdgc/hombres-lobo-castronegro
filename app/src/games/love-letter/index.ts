@@ -8,6 +8,7 @@ import HelpModal from './ui/modals/HelpModal.svelte';
 import DemoModal from './ui/modals/DemoModal.svelte';
 import LeaveModal from './ui/modals/LeaveModal.svelte';
 import EndConfirmModal from './ui/modals/EndConfirmModal.svelte';
+import MyInfoModal from './ui/modals/MyInfoModal.svelte';
 
 export const loveLetter: GameDefinition = {
   id: 'love_letter',
@@ -20,6 +21,7 @@ export const loveLetter: GameDefinition = {
   Start: StartScreen,
   Screen: GameScreen,
   modals: {
+    'll-mycard': MyInfoModal,
     'll-help': HelpModal,
     'll-demo': DemoModal,
     'll-leave': LeaveModal,

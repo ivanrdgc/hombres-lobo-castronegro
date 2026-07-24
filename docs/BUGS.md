@@ -244,3 +244,39 @@ Estados: 🔴 abierto · 🟢 arreglado (con commit) · 🟡 re-reportado tras u
   scroll en cada fase) y, al cambiar a cualquiera que NO sea la mesa, hace `scrollTo(0,0)`. La mesa
   sigue restaurando su propio scroll (B17). E2E: e2e-navegacion comprueba que ir a «empezar»
   arranca arriba y que volver a la mesa conserva la posición.
+
+## B19 · La carta propia no es accesible en todas las fases
+- **2026-07-24 · reporte.** «En todos los juegos hay que poder seguir accediendo a la carta en todo
+  momento, incluso en la primera fase donde el resto todavía no la ha visto, o en medio de una
+  votación. En muchos momentos no se puede acceder a la carta inicial.»
+- **2026-07-24 · 🟢 arreglado**: botón flotante «🎴» compartido (shell/CardFab) presente en TODAS
+  las pantallas de partida de TODOS los juegos, en cualquier fase; abre un modal con tu carta
+  privada + la referencia completa del juego (B21). data-a="open-mycard" uniforme.
+
+## B20 · Audios que se leen mal (emojis en medio, abreviaturas)
+- **2026-07-24 · reporte.** «Revisa bien todos los audios. Hay varias cosas que se leen mal, sobre
+  todo abreviaciones o imágenes.»
+- **Diagnóstico.** Los narradores de diario (Coup, Two Rooms, Codenames, Skull, Love Letter,
+  Decrypto) limpiaban solo el emoji INICIAL de cada línea (`speakable`), pero muchas líneas llevan
+  emojis en medio («… 🐷 2 · 🕊️ 3») que la síntesis lee como su nombre. Y abreviaturas tipo
+  «3 min», «p. ej.», «+2», «1/5» o «4-2-1» se leen literalmente.
+- **2026-07-24 · 🟢 arreglado**: `cleanForSpeech` (core/util/speech) ahora normaliza para voz:
+  quita TODOS los emojis, expande abreviaturas (min→minutos, p. ej.→por ejemplo, nº→número),
+  «+N»→«más N», «a/b»→«a de b» y «4-2-1»→«4, 2, 1» (solo entre dígitos). Todos los narradores de
+  diario pasan por ella (antes solo las ayudas). El toSpeech del corpus/explicación de Hombres
+  Lobo NO se toca (contrato golden de la v1).
+
+## B21 · Referencia del juego siempre visible (mazo/roles y sus efectos)
+- **2026-07-24 · reporte.** «Las cartas totales del mazo deben ser visibles y se debe poder
+  consultar lo que hace cada una … en todo momento control de conocer su carta y las otras
+  disponibles en la mesa, viendo lo que hace cada una y sus efectos.» (Probado en Love Letter.)
+- **2026-07-24 · 🟢 arreglado**: el modal del botón «🎴» incluye SIEMPRE la referencia completa del
+  juego: en Love Letter las 8 cartas con sus copias, valores y efectos; en Coup los 5 personajes y
+  acciones; en cada juego su mazo/roles/valores. Uniforme en los 14 juegos.
+
+## B22 · Two Rooms: el reloj de la ronda siguiente arrancaba sin dejar colocarse
+- **2026-07-24 · reporte.** «Una vez hecha la votación empieza el contador inmediatamente. Estaría
+  bien dar tiempo a que los jugadores se coloquen y que confirmen con un botón.»
+- **2026-07-24 · 🟢 arreglado**: tras el intercambio de rehenes la partida entra en una fase de
+  COLOCACIÓN (`move`) sin reloj: los rehenes cruzan de sala con calma y, cuando todos están,
+  cualquiera pulsa «▶️ Empezar la ronda N» (igual que al arrancar la ronda 1). La voz lo anuncia.

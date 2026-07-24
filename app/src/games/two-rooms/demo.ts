@@ -59,8 +59,8 @@ export const DEMO: DemoScript = {
       title: 'Fin del reloj: el voto de rehén',
       who: { actor: 'CADA SALA vota en su móvil a quién manda de rehén (tocas a alguien de TU sala y pulsas «🗳️ Votar»)', others: 'el voto es secreto: en pantalla solo se ve cuántos han votado.' },
       text: [
-        'En la Sala 1 os ponéis de acuerdo… o no: puedes votarte a ti mismo para ofrecerte. El más votado de cada sala CRUZA a la otra (empate → decide el orden de la mesa).',
-        'Tras el intercambio arranca la ronda 2 (2 min) y luego la 3 (1 min): cada vez hay menos tiempo para recolocar al Presidente y al Bombardero.',
+        'En la Sala 1 os ponéis de acuerdo… o no: puedes votarte a ti mismo para ofrecerte. El más votado de cada sala CRUZA a la otra (empate: decide el orden de la mesa).',
+        'Tras el intercambio el reloj NO corre: los rehenes se colocan con calma y, cuando todos están en su sala, cualquiera pulsa «▶️ Empezar la ronda 2» (2 minutos; la ronda 3 dura 1).',
       ],
       visual: {
         kind: 'screens',

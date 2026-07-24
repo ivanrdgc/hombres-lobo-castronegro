@@ -8,6 +8,7 @@
   import { play } from '../../../core/audio/player';
   import type { GroupDoc, PlayerDoc } from '../../../core/sync/schema';
   import Flash from '../../../shell/Flash.svelte';
+  import CardFab from '../../../shell/CardFab.svelte';
   import GameMenu from './GameMenu.svelte';
   import RevealPhase from './RevealPhase.svelte';
   import PlayPhase from './PlayPhase.svelte';
@@ -76,3 +77,5 @@
       {#each game.log as l, i (i)}<p>{l.txt}</p>{/each}
     </div></div>
 {/if}
+
+<CardFab modal="espia-mycard" />

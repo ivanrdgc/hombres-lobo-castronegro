@@ -49,7 +49,8 @@ export const HOW_TO: HelpSection[] = [
     heading: '🔄 El voto de rehén',
     items: [
       'Al agotarse el reloj, cada sala vota en su móvil a quién manda de rehén: tocas a alguien de TU sala y pulsas «🗳️ Votar». Puedes votarte a ti mismo (ofrecerte de rehén). El voto es secreto: en pantalla solo se ve cuántos han votado.',
-      'Cuando toda la sala ha votado, la app anuncia a su más votado (si hay empate en cabeza, decide el orden de la mesa). Decididas las DOS salas, los dos rehenes se intercambian de sala y empieza la siguiente ronda.',
+      'Cuando toda la sala ha votado, la app anuncia a su más votado (si hay empate en cabeza, decide el orden de la mesa). Decididas las DOS salas, los dos rehenes se intercambian de sala.',
+      'Tras el intercambio NO corre el reloj: os colocáis con calma y, cuando todos estáis en vuestra sala, cualquiera pulsa «▶️ Empezar la ronda» para arrancar la siguiente.',
       'Así, ronda a ronda, la gente (y con ella el Presidente y el Bombardero, sin que se sepa) va cambiando de sala. En la última ronda es cuando de verdad importa dónde acaba cada uno.',
     ],
   },

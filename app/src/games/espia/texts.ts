@@ -94,12 +94,9 @@ export function allEspiaStaticPieces(): string[] {
 
 // ——— Líneas dinámicas (síntesis en vivo, con precalentamiento) ———
 
-/** La voz no lleva emojis: se limpian antes de sintetizar. */
+/** La voz no lleva emojis ni abreviaturas: limpieza compartida (B20). */
 export function cleanSpeech(t: string): string {
-  return t
-    .replace(/[\u{1F000}-\u{1FAFF}]|[\u{2600}-\u{27BF}]|\u{FE0F}|\u{200D}/gu, '')
-    .replace(/\s+/g, ' ')
-    .trim();
+  return cleanForSpeech(t);
 }
 
 export function startAskLine(name: string): string {

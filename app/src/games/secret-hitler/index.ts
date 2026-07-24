@@ -10,6 +10,7 @@ import RoleDetailModal from './ui/modals/RoleDetailModal.svelte';
 import LeaveModal from './ui/modals/LeaveModal.svelte';
 import EndConfirmModal from './ui/modals/EndConfirmModal.svelte';
 import DemoModal from './ui/modals/DemoModal.svelte';
+import MyInfoModal from './ui/modals/MyInfoModal.svelte';
 
 export const secretHitler: GameDefinition = {
   id: 'secret_hitler',
@@ -22,6 +23,7 @@ export const secretHitler: GameDefinition = {
   Start: StartScreen,
   Screen: GameScreen,
   modals: {
+    'sh-mycard': MyInfoModal,
     'sh-demo': DemoModal,
     'sh-help': HelpModal,
     'sh-role-detail': RoleDetailModal,

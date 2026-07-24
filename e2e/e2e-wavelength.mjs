@@ -69,6 +69,14 @@ try {
   check(s.playerIds.length === 3, '3 jugadores en la partida');
   const firstPsychic = psychicOf(s);
 
+  // B19/B21: el botón flotante 🎴 abre «mi carta + referencia» en CUALQUIER fase.
+  await ana.click('[data-a=open-mycard]');
+  await ana.waitForSelector('text=/Tu papel en esta ronda/');
+  check(await ana.locator('text=/Puntos por cercanía/').count() >= 1, 'el 🎴 muestra tu papel y la chuleta del juego');
+  await ana.click('.modal [data-a=close-modal]');
+  await ana.waitForSelector('[data-a=open-mycard]');
+  ok('el 🎴 se abre y se cierra en mitad de la fase de pista');
+
   for (let r = 1; r <= 2; r++) {
     s = await waitState(ana, (x) => x.phase === 'clue' && x.round === r, `ronda ${r} en fase de pista`);
     const psychic = psychicOf(s);

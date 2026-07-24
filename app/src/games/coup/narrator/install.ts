@@ -7,6 +7,7 @@
 import { createNarrator, type SceneCtx, type SceneDef } from '../../../core/narrator/sequencer';
 import { pauseMs, profileOf } from '../../../core/narrator/pacing';
 import { e2eTestMode } from '../../../core/test-hooks';
+import { cleanForSpeech } from '../../../core/util/speech';
 import { play, stopSpeech } from '../../../core/audio/player';
 import type { Utterance } from '../../../core/audio/player';
 import { matchView, onChange, state } from '../../../core/sync/store.svelte';
@@ -26,7 +27,7 @@ const clip = (text: string): { kind: 'clip'; text: string } => ({ kind: 'clip', 
 const utt = (id: string, text: string): Utterance => ({ id, segments: [clip(text)], display: text });
 
 // Deja el texto apto para la voz: quita el emoji/símbolo del principio.
-const speakable = (txt: string): string => txt.replace(/^[^\p{L}\d«"¡¿]+/u, '').trim();
+const speakable = cleanForSpeech; // limpieza COMPLETA para la voz (emojis en medio, abreviaturas)
 
 function snapshot(): Snap {
   const g = state.group;

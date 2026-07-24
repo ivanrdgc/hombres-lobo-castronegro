@@ -7,6 +7,7 @@
   import { play } from '../../../core/audio/player';
   import type { GroupDoc, PlayerDoc } from '../../../core/sync/schema';
   import Flash from '../../../shell/Flash.svelte';
+  import CardFab from '../../../shell/CardFab.svelte';
   import GameMenu from './GameMenu.svelte';
   import Board from './Board.svelte';
   import RevealPhase from './RevealPhase.svelte';
@@ -67,3 +68,5 @@
   <div class="card"><h3>📜 Crónica</h3>
     <div class="log" bind:this={logEl}>{#each game.log as l, i (i)}<p>{l.txt}</p>{/each}</div></div>
 {/if}
+
+<CardFab modal="sh-mycard" />

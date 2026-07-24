@@ -9,6 +9,7 @@ import HelpModal from './ui/modals/HelpModal.svelte';
 import DemoModal from './ui/modals/DemoModal.svelte';
 import LeaveModal from './ui/modals/LeaveModal.svelte';
 import EndConfirmModal from './ui/modals/EndConfirmModal.svelte';
+import MyInfoModal from './ui/modals/MyInfoModal.svelte';
 
 export const codenames: GameDefinition = {
   id: 'codenames',
@@ -21,6 +22,7 @@ export const codenames: GameDefinition = {
   Start: StartScreen,
   Screen: GameScreen,
   modals: {
+    'cn-mycard': MyInfoModal,
     'cn-help': HelpModal,
     'cn-demo': DemoModal,
     'cn-leave': LeaveModal,

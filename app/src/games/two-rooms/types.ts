@@ -13,6 +13,7 @@ export type Phase =
   | 'reveal' // cada cual mira su carta (bando + rol) y en qué sala empieza
   | 'discuss' // ronda en marcha: contrarreloj para hablar y enseñar cartas
   | 'hostages' // acabado el tiempo, cada sala vota a quién manda de rehén
+  | 'move' // los rehenes cruzan de sala; sin reloj hasta que alguien confirme
   | 'end';
 
 export interface TwoRoomsState {

@@ -5,6 +5,7 @@
 import { createNarrator, type SceneCtx, type SceneDef } from '../../../core/narrator/sequencer';
 import { pauseMs, profileOf } from '../../../core/narrator/pacing';
 import { e2eTestMode } from '../../../core/test-hooks';
+import { cleanForSpeech } from '../../../core/util/speech';
 import { play, stopSpeech } from '../../../core/audio/player';
 import type { Utterance } from '../../../core/audio/player';
 import { matchView, onChange, state } from '../../../core/sync/store.svelte';
@@ -18,7 +19,7 @@ type Ctx = SceneCtx<Snap>;
 
 const clip = (text: string): { kind: 'clip'; text: string } => ({ kind: 'clip', text });
 const utt = (id: string, text: string): Utterance => ({ id, segments: [clip(text)], display: text });
-const speakable = (txt: string): string => txt.replace(/^[^\p{L}\d«"¡¿]+/u, '').trim();
+const speakable = cleanForSpeech; // limpieza COMPLETA para la voz (emojis en medio, abreviaturas)
 
 function snapshot(): Snap {
   const g = state.group;

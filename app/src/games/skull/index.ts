@@ -9,6 +9,7 @@ import HelpModal from './ui/modals/HelpModal.svelte';
 import DemoModal from './ui/modals/DemoModal.svelte';
 import LeaveModal from './ui/modals/LeaveModal.svelte';
 import EndConfirmModal from './ui/modals/EndConfirmModal.svelte';
+import MyInfoModal from './ui/modals/MyInfoModal.svelte';
 
 export const skull: GameDefinition = {
   id: 'skull',
@@ -21,6 +22,7 @@ export const skull: GameDefinition = {
   Start: StartScreen,
   Screen: GameScreen,
   modals: {
+    'sk-mycard': MyInfoModal,
     'sk-help': HelpModal,
     'sk-demo': DemoModal,
     'sk-leave': LeaveModal,
