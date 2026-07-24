@@ -1,3 +1,9 @@
+<script module lang="ts">
+  // El scroll de la mesa se conserva al entrar en un juego y volver: MesaScreen
+  // se desmonta al navegar al lobby, pero esta variable de módulo sobrevive.
+  let savedScroll = 0;
+</script>
+
 <script lang="ts">
   // La mesa: SOLO personas (quién está, invitar, expulsar), las partidas en
   // curso (varias a la vez: mirar, sacar a alguien o terminarlas) y el
@@ -14,6 +20,25 @@
   import Flash from './Flash.svelte';
 
   const { group }: { group: GroupDoc; my: PlayerDoc } = $props();
+
+  // Al montar, recupera la posición de scroll que tenía la mesa; mientras tanto
+  // la mantiene al día. La restauración se reintenta unos frames porque el
+  // catálogo tarda en alcanzar su alto (si no, el scroll se recorta a 0); el
+  // listener no guarda durante ese rato para no pisar el objetivo.
+  $effect(() => {
+    const target = savedScroll;
+    let restoring = true;
+    let tries = 0;
+    const restore = () => {
+      window.scrollTo(0, target);
+      if (Math.abs(window.scrollY - target) > 2 && tries++ < 12) requestAnimationFrame(restore);
+      else restoring = false;
+    };
+    requestAnimationFrame(restore);
+    const onScroll = () => { if (!restoring) savedScroll = window.scrollY; };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  });
 
   const shareUrl = $derived(location.origin + '/g/' + group.id);
   let copied = $state(false);

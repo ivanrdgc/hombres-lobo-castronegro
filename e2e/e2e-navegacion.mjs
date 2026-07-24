@@ -46,6 +46,26 @@ ok('y vuelve al catálogo libremente');
 await coco.reload();
 await coco.waitForSelector('text=¿A qué jugamos?', { timeout: 30000 });
 if (!(await has(coco, '[data-a=open-roles]'))) ok('recargar en la mesa deja a Coco en la mesa'); else bad('la recarga movió a Coco de pantalla');
+
+// 2b. La mesa CONSERVA su scroll al entrar en un juego y volver (viewport de
+//     móvil para asegurar que hay contenido que desplazar).
+await coco.setViewportSize({ width: 390, height: 680 });
+await coco.waitForSelector('text=¿A qué jugamos?');
+await coco.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+await coco.waitForTimeout(120);
+const scrollBefore = await coco.evaluate(() => window.scrollY);
+if (scrollBefore > 50) {
+  await coco.click('button[data-a=select-game]');
+  await coco.waitForSelector('[data-a=open-roles]');
+  await coco.click('button[data-a=change-game]');
+  await coco.waitForSelector('text=¿A qué jugamos?');
+  await coco.waitForTimeout(250);
+  const scrollAfter = await coco.evaluate(() => window.scrollY);
+  if (Math.abs(scrollAfter - scrollBefore) < 40) ok(`la mesa conserva el scroll al volver del juego (${scrollBefore}→${scrollAfter})`);
+  else bad(`la mesa perdió el scroll al volver: ${scrollBefore}→${scrollAfter}`);
+} else {
+  ok('(la mesa no tenía scroll suficiente para la prueba; omitida)');
+}
 // Ana no se ha movido de su lobby mientras Coco navegaba.
 if (await has(ana, '[data-a=open-roles]')) ok('nadie arrastra a Ana fuera de su lobby'); else bad('Ana fue arrastrada fuera del lobby');
 // La pantalla «Empezar partida» también es URL propia y recargable.
