@@ -100,10 +100,11 @@ describe('toques', () => {
     expect(g.scores['p-a']).toBe(1);
     expect(g.scores['p-b']).toBe(1);
   });
-  it('pasar cierra el turno', () => {
+  it('pasar exige al menos un toque (regla oficial) y luego cierra el turno', () => {
     const g = mk();
     giveClue(g, 'p-a', 'x', 2);
-    reveal(g, 'p-b', 0); // una acertada primero (para poder pasar con sentido)
+    expect(pass(g, 'p-b')).toBe(false); // sin tocar aún: no se puede pasar
+    reveal(g, 'p-b', 0); // una acertada primero
     expect(pass(g, 'p-b')).toBe(true);
     expect(g.turn).toBe('blue');
   });

@@ -161,10 +161,14 @@ export function reveal(game: CodenamesState, pid: string, cell: number): boolean
   return true;
 }
 
-/** El equipo de turno decide no arriesgar más y pasa. */
+/** ¿Puede el equipo de turno pasar ya? Regla oficial: al menos UN toque antes. */
+export function canPass(game: CodenamesState): boolean {
+  return game.phase === 'guess' && !!game.clue && game.guessesLeft < game.clue.num + 1;
+}
+
+/** El equipo de turno decide no arriesgar más y pasa (tras al menos un toque). */
 export function pass(game: CodenamesState, pid: string): boolean {
-  if (!canGuess(game, pid)) return false;
-  if (game.clue && game.guessesLeft > (game.clue.num + 1)) return false; // sanidad
+  if (!canGuess(game, pid) || !canPass(game)) return false;
   log(game, `🤐 El equipo ${game.turn === 'red' ? 'rojo' : 'azul'} pasa.`);
   endTurn(game);
   return true;

@@ -38,7 +38,8 @@ export const HOW_TO: HelpSection[] = [
     heading: '👉 Los agentes tocan',
     items: [
       'Los agentes de ese equipo debaten y van tocando palabras del tablero, una a una. Cada palabra revela su color: si es de vuestro equipo, ¡seguid!; podéis tocar hasta el número de la pista MÁS una.',
-      'Si tocáis una neutral, el turno pasa al rival. Si tocáis una del rival, se la regaláis y el turno pasa. Y si tocáis al ASESINO, perdéis la partida al instante. Podéis pulsar «pasar» para no arriesgar más.',
+      'Si tocáis una neutral (un «transeúnte» ⬜), el turno pasa al rival. Si tocáis una del rival, se la regaláis y el turno pasa. Y si tocáis al ASESINO 💀, perdéis la partida al instante.',
+      'Debéis tocar al menos UNA palabra por turno (regla oficial); a partir de ahí, «🤐 Pasar el turno» cuando no queráis arriesgar más.',
     ],
   },
   {

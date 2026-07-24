@@ -94,6 +94,8 @@ try {
   await giveClue(spyA, 9);
   s = await waitState(ana, (x) => x.phase === 'guess' && x.turn === teamA, 'el equipo A puede tocar');
   check(s.clue?.num === 9 && s.guessesLeft === 10, 'la pista fija número + 1 intentos');
+  // Regla oficial: no se puede pasar sin haber tocado al menos una vez.
+  check(await pg(agentA).locator('[data-a=cn-pass][disabled]').count() === 1, 'antes del primer toque, «Pasar» está deshabilitado');
   const ownA = s.map.findIndex((c, i) => c === teamA && !s.revealed[i]);
   await touch(agentA, ownA);
   s = await waitState(ana, (x) => x.revealed[ownA], 'se destapa la casilla propia');

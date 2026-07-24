@@ -76,6 +76,9 @@ try {
     check(await pg(psychic).locator('[data-a=wl-clue-done]').count() === 1, `ronda ${r}: solo el Psíquico (${NAMES[psychic]}) da la pista`);
     const other = s.playerIds.find((pid) => pid !== psychic);
     check(await pg(other).locator('[data-a=wl-clue-done]').count() === 0, 'el resto no puede dar la pista');
+    // FUGA: la diana (bandas .zone del dial) solo se pinta en el móvil del Psíquico.
+    check(await pg(psychic).locator('.zone').count() > 0, 'el Psíquico SÍ ve la diana en su dial');
+    check(await pg(other).locator('.zone').count() === 0, 'el equipo NO ve la diana (objetivo secreto)');
     await pg(psychic).click('[data-a=wl-clue-done]');
     s = await waitState(ana, (x) => x.phase === 'guess' && x.round === r, `ronda ${r} en fase de adivinar`);
     // El equipo (un no-Psíquico) fija la marca; el Psíquico no puede.

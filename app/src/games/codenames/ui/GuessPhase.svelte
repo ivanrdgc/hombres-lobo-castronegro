@@ -3,12 +3,13 @@
   // (arriba) o pasan. El Jefe y el rival solo miran.
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
-  import { canGuess } from '../engine';
+  import { canGuess, canPass } from '../engine';
   import type { PlayerDoc } from '../../../core/sync/schema';
   import type { CodenamesState } from '../types';
 
   const { game, my }: { game: CodenamesState; my: PlayerDoc } = $props();
   const iGuess = $derived(canGuess(game, my.id));
+  const mayPass = $derived(canPass(game));
   const clue = $derived(game.clue);
 </script>
 
@@ -17,8 +18,8 @@
 </div>
 
 {#if iGuess}
-  <div class="card"><p class="hint">👉 Toca en el tablero de arriba las palabras que creas de tu equipo. Cuando no quieras arriesgar más, pasa.</p>
-    <button class="ghost block" data-a="cn-pass" onclick={() => guard(A.passTurn)}>🤐 Pasar el turno</button></div>
+  <div class="card"><p class="hint">👉 Toca en el tablero de arriba las palabras que creas de tu equipo. {mayPass ? 'Cuando no quieras arriesgar más, pasa.' : 'Debéis tocar al menos UNA antes de poder pasar.'}</p>
+    <button class="ghost block" data-a="cn-pass" disabled={!mayPass} onclick={() => guard(A.passTurn)}>🤐 Pasar el turno</button></div>
 {:else}
   <div class="card"><p class="hint">👀 El equipo {game.turn === 'red' ? 'rojo' : 'azul'} está tocando…</p></div>
 {/if}

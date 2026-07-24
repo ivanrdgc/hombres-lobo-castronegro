@@ -53,8 +53,8 @@ export const DEMO: DemoScript = {
       icon: '👉',
       title: 'Tocar y arriesgar',
       text: [
-        'Cada palabra que tocáis revela su color: si es vuestra, seguid; si es neutral, fin del turno; si es del rival, se la regaláis; si es el ASESINO, perdéis.',
-        'Cuando no queráis arriesgar más, pulsad «🤐 Pasar el turno». La app lleva la cuenta de las casillas que os quedan.',
+        'Cada palabra que tocáis revela su color: si es vuestra, seguid; si es neutral (transeúnte ⬜), fin del turno; si es del rival, se la regaláis; si es el ASESINO 💀, perdéis.',
+        'Hay que tocar al menos UNA por turno (regla oficial); después podéis pulsar «🤐 Pasar el turno» para no arriesgar más. La app lleva la cuenta de las casillas que os quedan.',
       ],
       visual: { kind: 'buttons', buttons: [{ label: '🤐 Pasar el turno', kind: 'ghost' }], caption: 'Mejor pasar a tiempo que topar con el asesino.' },
     },
