@@ -23,6 +23,15 @@
   const meId = $derived(me()?.id);
 
   let seat = $state<{ order: string[]; chosen: string[] }>({ order: [], chosen: [] });
+
+  // Los opcionales del Mal compiten por las mismas sillas: con pocos jugadores
+  // los últimos se caen del reparto (mismo orden que dealRoles) y hay que
+  // decirlo ANTES de empezar, no cuando Merlín eche en falta a Mordred.
+  const wontFit = $derived.by(() => {
+    if (n < MIN_PLAYERS) return [] as RoleId[];
+    const slots = evilCountFor(n) - 1; // el Asesino siempre entra
+    return (['morgana', 'mordred', 'oberon'] as RoleId[]).filter((r) => enabled.includes(r)).slice(slots);
+  });
   const byId = (id: string) => app.players.find((p) => p.id === id);
   const rows = $derived(seat.order.map(byId).filter((p): p is PlayerDoc => !!p));
   const chosen = $derived(seat.chosen.map(byId).filter((p): p is PlayerDoc => !!p));
@@ -81,6 +90,9 @@
     {#each OPTIONAL_ROLES.filter((r) => enabled.includes(r)) as r (r)}<span class="chip">{ROLES[r].emoji} {ROLES[r].name}</span>{/each}
   </div>
   <p class="small-note">El resto se rellena con Leales y Esbirros. {n >= MIN_PLAYERS ? `Con ${n} jugadores: ${evilCountFor(n)} del Mal y ${n - evilCountFor(n)} del Bien.` : ''} <button class="small ghost" data-a="av-edit-roles" onclick={() => navigate(`/g/${group.id}/avalon`)}>Editar roles</button></p>
+  {#if wontFit.length}
+    <p class="small-note" data-a="av-roles-dropped">⚠️ Con {n} jugadores solo caben {evilCountFor(n) - 1} especiales del Mal además del Asesino: <b>{wontFit.map((r) => ROLES[r].name).join(' y ')}</b> se {wontFit.length > 1 ? 'quedan' : 'queda'} fuera de esta partida.</p>
+  {/if}
 </div>
 
 <div class="card">

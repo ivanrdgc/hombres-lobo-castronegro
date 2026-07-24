@@ -36,6 +36,7 @@ async function waitState(page, fn, what, timeout = 45000) {
   throw new Error('timeout esperando: ' + what);
 }
 let NAMES = {};
+let sawTargetStats = false, sawActionInfo = false, sawPlanStep = false, sawRecap = false;
 const pg = (pid) => pages[(NAMES[pid] || pid).toLowerCase()];
 const st = () => hlc(pages.ana);
 const alive = (s, pid) => (s.hands[pid] || []).some((c) => !c.lost);
@@ -59,6 +60,18 @@ async function clickWait(page, selector, before) {
   await waitState(pages.ana, (s) => sig(s) !== before, 'cambio tras ' + selector);
 }
 
+// Desafiar y bloquear comprometen una influencia: van en DOS gestos (elegir →
+// confirmar un botón que nombra la consecuencia). «Pasar», que es lo seguro,
+// sigue siendo un solo toque.
+async function doChallengeUI(page, before) {
+  await page.click('[data-a=coup-challenge-pick]', { timeout: 15000 });
+  await clickWait(page, '[data-a=coup-challenge]', before);
+}
+async function doBlockUI(page, claim, before) {
+  await page.click(`[data-a=coup-block-pick][data-p=${claim}]`, { timeout: 15000 });
+  await clickWait(page, `[data-a=coup-block][data-p=${claim}]`, before);
+}
+
 // Pasa (deja pasar) a los reactores elegibles hasta que la ventana avanza.
 async function passWindow(windows) {
   for (let i = 0; i < 16; i++) {
@@ -66,7 +79,14 @@ async function passWindow(windows) {
     if (!windows.includes(s.phase)) return;
     const elig = eligibleReactors(s).filter((pid) => s.reactions[pid] === undefined);
     if (!elig.length) return;
-    await clickWait(pg(elig[0]), '[data-a=coup-pass]', sig(s));
+    const page = pg(elig[0]);
+    if (!sawRecap) { // la ventana resume qué ha pasado y qué ocurre si nadie lo impide
+      await page.waitForSelector('text=/Qué está pasando/', { timeout: 15000 });
+      check(await page.locator('text=/Si nadie lo impide/').count() >= 1, 'la ventana de reacción dice qué pasa si nadie lo impide');
+      check(await page.locator('text=/Falta por contestar|Todos han contestado/').count() >= 1, 'y quién falta por contestar');
+      sawRecap = true;
+    }
+    await clickWait(page, '[data-a=coup-pass]', sig(s));
   }
 }
 
@@ -74,7 +94,9 @@ async function resolveLose() {
   const s = await st();
   const loser = s.losing[0]?.pid; if (!loser) return;
   const idx = (s.hands[loser] || []).findIndex((c) => !c.lost);
-  await clickWait(pg(loser), `[data-a=coup-lose][data-p="${idx}"]`, sig(s));
+  const page = pg(loser);
+  await page.click(`[data-a=coup-lose][data-p="${idx}"]`, { timeout: 15000 });
+  await clickWait(page, '[data-a=coup-lose-confirm]', sig(s));
 }
 
 async function resolveExchange() {
@@ -87,8 +109,25 @@ async function resolveExchange() {
 async function forceAction(s, type, target) {
   const actor = s.playerIds[s.turnIdx];
   const page = pg(actor);
+  if (!sawActionInfo) { // cada jugada lleva su efecto, qué personaje dices tener y quién la bloquea
+    const card = await page.locator(`[data-a=coup-action][data-p=${type}]`).innerText({ timeout: 15000 });
+    check(/Dices ser|No dices tener/.test(card), 'cada jugada dice qué personaje declaras (lo desafiable)');
+    check(/bloquear/.test(card), 'y quién puede bloquearla');
+    sawActionInfo = true;
+  }
   await page.click(`[data-a=coup-action][data-p=${type}]`, { timeout: 15000 });
-  if (target) await page.click(`[data-a=coup-target][data-p="${target}"]`);
+  if (!sawPlanStep) { // elegir QUÉ y elegir A QUIÉN son dos pasos, con vuelta atrás
+    check(await page.locator('[data-a=coup-back]').count() === 1, 'elegida la jugada, se puede volver con «↩️ Cambiar de jugada»');
+    sawPlanStep = true;
+  }
+  if (target) {
+    if (!sawTargetStats) { // cada fila lleva las monedas y las influencias de la víctima
+      const row = await page.locator(`[data-a=coup-target][data-p="${target}"]`).innerText();
+      check(/🪙\s*\d+\s*·\s*🂠\s*\d+/.test(row), 'el selector de víctima muestra 🪙 monedas y 🂠 influencias');
+      sawTargetStats = true;
+    }
+    await page.click(`[data-a=coup-target][data-p="${target}"]`);
+  }
   await clickWait(page, '[data-a=coup-do]:not([disabled])', sig(s));
 }
 
@@ -139,6 +178,7 @@ try {
 
   // ——— Motor de partida: cobertura guiada + asesinatos hasta un ganador ———
   let didChallenge = false, didExchange = false, didAyuda = false, sawBlock = false;
+  let didChallengeBlock = false, blockToChallenge = false, didForcedCoup = false, richId = null;
   let challengeIsNext = false, totalBeforeChallenge = 0;
 
   for (let step = 0; step < 400; step++) {
@@ -158,6 +198,29 @@ try {
       } else if (!didAyuda) {
         await forceAction(s, 'ayuda', null);
         didAyuda = true;
+      } else if (!didChallengeBlock) {
+        // 2ª ayuda: su bloqueo se declarará en FAROL y alguien lo desafiará.
+        blockToChallenge = true;
+        await forceAction(s, 'ayuda', null);
+      } else if (!didForcedCoup) {
+        // Etapa «rico»: uno acumula impuestos hasta 10 monedas (donde la app
+        // OBLIGA al golpe); los demás cogen renta, que es inmediata.
+        if (!richId || !alive(s, richId)) {
+          richId = s.playerIds.filter((pid) => alive(s, pid)).sort((a, b) => influence(s, b) - influence(s, a))[0];
+        }
+        if (coins < 10) {
+          await forceAction(s, actor === richId ? 'impuestos' : 'renta', null);
+        } else {
+          const rp = pg(actor);
+          check(await rp.locator('[data-a=coup-action]').count() === 1
+            && await rp.locator('[data-a=coup-action][data-p=golpe]').count() === 1,
+          'con 10+ monedas la app solo ofrece el Golpe de Estado');
+          check(await rp.locator('text=/obligado a dar un golpe/').count() >= 1, 'y avisa de que es obligatorio');
+          const victims = s.playerIds.filter((pid) => pid !== actor && alive(s, pid))
+            .sort((a, b) => influence(s, b) - influence(s, a));
+          await forceAction(s, 'golpe', victims[0]);
+          didForcedCoup = true;
+        }
       } else if (coins >= 3) {
         // Asesina al rival con menos influencia (para ir cerrando la partida).
         const victims = s.playerIds.filter((pid) => pid !== actor && alive(s, pid))
@@ -169,7 +232,7 @@ try {
     } else if (s.phase === 'challengeAction') {
       if (challengeIsNext) {
         const challenger = eligibleReactors(s)[0];
-        await clickWait(pg(challenger), '[data-a=coup-challenge]', sig(s));
+        await doChallengeUI(pg(challenger), sig(s));
         didChallenge = true; challengeIsNext = false;
       } else {
         await passWindow(['challengeAction']);
@@ -177,15 +240,26 @@ try {
     } else if (s.phase === 'block') {
       // Solo intentamos bloquear la AYUDA (con un tenedor de Duque, si lo hay).
       const p = s.pending;
-      if (p && p.type === 'ayuda' && !sawBlock) {
-        const duke = eligibleReactors(s).find((pid) => s.hands[pid].some((c) => !c.lost && c.char === 'duque'));
+      const elig = eligibleReactors(s).filter((pid) => s.reactions[pid] === undefined);
+      const hasDuke = (pid) => s.hands[pid].some((c) => !c.lost && c.char === 'duque');
+      if (p && p.type === 'ayuda' && blockToChallenge) {
+        // Bloqueo de farol (a poder ser, sin Duque): el desafío lo cazará.
+        await doBlockUI(pg(elig.find((pid) => !hasDuke(pid)) || elig[0]), 'duque', sig(s));
+      } else if (p && p.type === 'ayuda' && !sawBlock) {
+        const duke = elig.find(hasDuke);
         if (duke) {
-          await clickWait(pg(duke), '[data-a=coup-block][data-p=duque]', sig(s));
+          await doBlockUI(pg(duke), 'duque', sig(s));
           sawBlock = true;
         } else { await passWindow(['block']); }
       } else { await passWindow(['block']); }
     } else if (s.phase === 'challengeBlock') {
-      await passWindow(['challengeBlock']); // aceptamos el bloqueo
+      if (blockToChallenge) {
+        const challenger = eligibleReactors(s).filter((pid) => s.reactions[pid] === undefined)[0];
+        await doChallengeUI(pg(challenger), sig(s));
+        didChallengeBlock = true; blockToChallenge = false;
+      } else {
+        await passWindow(['challengeBlock']); // aceptamos el bloqueo
+      }
     } else if (s.phase === 'loseInfluence') {
       await resolveLose();
     } else if (s.phase === 'exchangeReturn') {
@@ -199,15 +273,28 @@ try {
   check(influence(s, s.winner) > 0 && s.playerIds.filter((pid) => alive(s, pid)).length === 1, 'el ganador es el único con influencia');
   check(s.scores[s.winner] === 1, 'el ganador suma 1 punto');
   check(didChallenge && s.log.some((t) => /desafía/.test(t)), 'se ejecutó un desafío a través de la UI');
+  check(didChallengeBlock && s.log.some((t) => /desafía el bloqueo/.test(t)), 'se desafió un BLOQUEO a través de la UI');
+  check(didForcedCoup && s.log.some((t) => /da un golpe de Estado a /.test(t)), 'se llegó a las 10 monedas y al golpe obligatorio');
   check(s.log.some((t) => /cobra impuestos/.test(t)), 'se cobraron impuestos (Duque)');
   check(s.log.some((t) => /intercambi|devuelve/.test(t)), 'hubo un intercambio del Embajador');
   check(s.log.some((t) => /asesin/i.test(t)), 'hubo al menos un asesinato');
   check(s.log.some((t) => /gana el golpe de Estado/.test(t)), 'la voz anuncia al ganador');
   await ana.waitForSelector('text=/Marcador/');
+  check(await ana.locator('[data-a=coup-seat] .back').count() === 0, 'al terminar se destapan todas las influencias');
   ok('partida completa de Coup de principio a fin');
+
+  // ——— Revancha: reparto nuevo y diario limpio (no arrastra la partida anterior) ———
+  const lastLine = s.log[s.log.length - 1];
+  await ana.click('[data-a=coup-again]');
+  s = await waitState(ana, (x) => x.phase === 'reveal', 'la revancha reparte de nuevo');
+  check(s.logLen === 1 && !s.log.includes(lastLine), 'la revancha arranca con el diario limpio');
+  check(s.playerIds.every((pid) => s.coins[pid] === 2 && s.hands[pid].every((c) => !c.lost)), 'la revancha reparte 2 monedas y 2 influencias nuevas');
+  check(Object.values(s.scores).some((n) => n === 1), 'el marcador se conserva entre partidas');
+  ok('revancha limpia');
 
   // Limpieza.
   await ana.click('[data-a=game-menu]');
+  check(await ana.locator('[data-a=table-open]').count() === 1, 'el menú ⋯ ofrece «🪑 La mesa»');
   await ana.click('[data-a=coup-end-open]');
   await ana.waitForSelector('[data-a=coup-end-confirm]');
   await ana.click('[data-a=coup-end-confirm]');

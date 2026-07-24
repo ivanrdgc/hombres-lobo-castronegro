@@ -3,7 +3,8 @@ import {
   dealGame, givePista, attack, rest, revealSelf, checkWin, isAlive, aliveIds, nextAlive,
   factionOf, MIN_PLAYERS, MAX_HP,
 } from './engine';
-import { CHARS, factionCounts, PISTAS, pistaApplies } from './chars';
+import { CHARS, factionCounts, factionSummary, PISTAS, pistaApplies } from './chars';
+import type { PistaDef } from './chars';
 import type { ShadowHState } from './types';
 
 const IDS = ['p-a', 'p-b', 'p-c', 'p-d'];
@@ -17,11 +18,21 @@ function base(over: Partial<ShadowHState> = {}): ShadowHState {
     maxHp: MAX_HP,
     alive: Object.fromEntries(IDS.map((id) => [id, true])),
     revealed: Object.fromEntries(IDS.map((id) => [id, false])),
-    powerUsed: Object.fromEntries(IDS.map((id) => [id, false])),
     turn: 'p-a', pista: null, killsBy: {},
     winner: null, winners: [], winReason: null, scores: {}, log: [],
     ...over,
   };
+}
+
+/** La carta de pista se roba por semilla: busca una que cumpla lo pedido para
+ *  no depender del orden interno del mazo. */
+function seedFor(pred: (p: PistaDef) => boolean): number {
+  for (let s = 1; s < 2000; s++) {
+    const g = base({ seed: s });
+    givePista(g, 'p-a', 'p-c');
+    if (g.pista && pred(PISTAS[g.pista.idx])) return s;
+  }
+  throw new Error('ninguna semilla da esa carta de pista');
 }
 
 describe('reparto', () => {
@@ -35,6 +46,11 @@ describe('reparto', () => {
       expect(new Set(Object.values(d.chars)).size).toBe(n);
     }
   });
+  it('el resumen público del reparto cuadra con la tabla', () => {
+    expect(factionSummary(4)).toBe('Sois 4: 2 🏹 Cazadores, 2 🌑 Sombras y ningún neutral.');
+    expect(factionSummary(5)).toBe('Sois 5: 2 🏹 Cazadores, 2 🌑 Sombras y 1 🧭 neutral.');
+    expect(factionSummary(8)).toBe('Sois 8: 3 🏹 Cazadores, 3 🌑 Sombras y 2 🧭 neutrales.');
+  });
 });
 
 describe('acciones del turno', () => {
@@ -42,12 +58,19 @@ describe('acciones del turno', () => {
     const g = base();
     expect(attack(g, 'p-a', 'p-c')).toBe(true);
     expect(g.turn).toBe('p-b');
-    const said = g.log[g.log.length - 1].txt;
-    expect(said).toMatch(/dados \d y \d/);
+    // La última línea es ya el cartel de turno; el ataque es la anterior.
+    const said = g.log.find((l) => l.txt.includes('ataca a'))!.txt;
+    expect(said).toMatch(/saca \d y \d/);
     // El daño registrado en el log cuadra con la vida perdida.
-    const m = said.match(/→ (\d) de daño/);
+    const m = said.match(/le hace (\d) de daño/);
     const lost = MAX_HP - g.hp['p-c'];
     expect(lost).toBe(m ? Number(m[1]) : 0);
+  });
+  it('cada acción deja en el diario a quién le toca (la mesa lo oye)', () => {
+    const g = base();
+    expect(rest(g, 'p-a')).toBe(true);
+    expect(g.log[g.log.length - 1].txt).toBe('🎬 Turno de P-B.');
+    expect(g.turn).toBe('p-b');
   });
   it('no puedes atacarte a ti mismo ni actuar fuera de turno', () => {
     const g = base();
@@ -71,10 +94,36 @@ describe('acciones del turno', () => {
     expect(g.pista).not.toBeNull();
     expect(g.pista!.by).toBe('p-a');
     expect(g.pista!.target).toBe('p-c');
+    expect(g.pista!.ack).toEqual([]); // nadie ha acusado recibo todavía
     const p = PISTAS[g.pista!.idx];
     const applies = pistaApplies(p, factionOf(g, 'p-c'));
     if (!applies) expect(g.pista!.outcome).toBe('no le afecta');
     else expect(g.hp['p-c']).toBe(MAX_HP + (p.effect === 'heal1' ? 0 : -1)); // heal1 con vida llena no sube
+  });
+  it('una cura que no sube la vida se canta «no le afecta» (no delata la carta)', () => {
+    const seed = seedFor((p) => p.effect === 'heal1' && pistaApplies(p, 'shadow'));
+    const lleno = base({ seed });
+    expect(givePista(lleno, 'p-a', 'p-c')).toBe(true); // p-c es Sombra y está a tope
+    expect(lleno.hp['p-c']).toBe(MAX_HP);
+    expect(lleno.pista!.outcome).toBe('no le afecta');
+    expect(lleno.log.some((l) => /se cura/.test(l.txt))).toBe(false);
+    const herido = base({ seed });
+    herido.hp['p-c'] = 4;
+    expect(givePista(herido, 'p-a', 'p-c')).toBe(true);
+    expect(herido.hp['p-c']).toBe(5);
+    expect(herido.pista!.outcome).toBe('se cura 1 punto de vida');
+  });
+  it('una pista que remata cuenta como golpe de gracia de quien la dio', () => {
+    const seed = seedFor((p) => p.effect === 'damage1' && pistaApplies(p, 'shadow'));
+    const g = base({ seed, chars: { 'p-a': 'bob', 'p-b': 'georg', 'p-c': 'vampiro', 'p-d': 'licantropo' } });
+    g.hp['p-c'] = 1;
+    expect(givePista(g, 'p-a', 'p-c')).toBe(true);
+    expect(isAlive(g, 'p-c')).toBe(false);
+    expect(g.killsBy['p-a']).toBe(1); // Bob cumple su objetivo también con pistas
+    // El diario nombra a la víctima («…y C pierde 1») y la muerte va detrás.
+    const pistaLine = g.log.findIndex((l) => /entrega una pista/.test(l.txt));
+    expect(g.log[pistaLine].txt).toMatch(/y P-C pierde 1 punto de vida/);
+    expect(g.log[pistaLine + 1].txt).toMatch(/^☠️/);
   });
 });
 
@@ -83,7 +132,6 @@ describe('revelarse y poderes', () => {
     const g = base();
     expect(revealSelf(g, 'p-a', 'p-c')).toBe(true);
     expect(g.revealed['p-a']).toBe(true);
-    expect(g.powerUsed['p-a']).toBe(true);
     expect(g.hp['p-c']).toBe(MAX_HP - 2);
     // No puedes revelarte dos veces.
     g.turn = 'p-a';
@@ -116,6 +164,14 @@ describe('revelarse y poderes', () => {
     expect(revealSelf(g, 'p-c', 'p-a')).toBe(true);
     expect(g.hp['p-a']).toBe(MAX_HP - 2);
     expect(g.hp['p-c']).toBe(7);
+  });
+  it('el Vampiro solo se cura lo que ha robado de verdad', () => {
+    const g = base({ turn: 'p-c' });
+    g.hp['p-c'] = 4;
+    g.hp['p-a'] = 1; // solo hay 1 punto que robar
+    expect(revealSelf(g, 'p-c', 'p-a')).toBe(true);
+    expect(g.hp['p-a']).toBe(0);
+    expect(g.hp['p-c']).toBe(5);
   });
 });
 
@@ -154,7 +210,6 @@ describe('muerte y victoria', () => {
       hp: { 'p-a': 10, 'p-b': 10, 'p-c': 1, 'p-d': 1, 'p-e': 10, 'p-f': 10 },
       alive: { 'p-a': true, 'p-b': true, 'p-c': true, 'p-d': true, 'p-e': true, 'p-f': true },
       revealed: { 'p-a': false, 'p-b': false, 'p-c': false, 'p-d': false, 'p-e': false, 'p-f': false },
-      powerUsed: { 'p-a': false, 'p-b': false, 'p-c': false, 'p-d': false, 'p-e': false, 'p-f': false },
       names: { 'p-a': 'A', 'p-b': 'B', 'p-c': 'C', 'p-d': 'D', 'p-e': 'E', 'p-f': 'F' },
       turn: 'p-f',
     });
@@ -166,6 +221,22 @@ describe('muerte y victoria', () => {
     expect(revealSelf(g, 'p-a', 'p-d')).toBe(true);
     expect(g.winner).toBe('hunter');
     expect(g.winners.sort()).toEqual(['p-a', 'p-b', 'p-e', 'p-f']);
+  });
+  it('si caen a la vez el último Cazador y la última Sombra, es empate', () => {
+    const ids = ['p-a', 'p-b', 'p-c', 'p-d', 'p-e'];
+    const g = base({
+      playerIds: ids,
+      chars: { 'p-a': 'georg', 'p-b': 'franklin', 'p-c': 'vampiro', 'p-d': 'licantropo', 'p-e': 'allie' },
+      names: Object.fromEntries(ids.map((id) => [id, id.toUpperCase()])),
+      hp: { 'p-a': 0, 'p-b': 0, 'p-c': 0, 'p-d': 0, 'p-e': MAX_HP },
+      alive: { 'p-a': false, 'p-b': false, 'p-c': false, 'p-d': false, 'p-e': true },
+      revealed: Object.fromEntries(ids.map((id) => [id, false])),
+    });
+    expect(checkWin(g)).toBe(true);
+    expect(g.winner).toBeNull(); // ni Cazadores ni Sombras: nadie gana por bando
+    expect(g.winners).toEqual(['p-e']); // Allie sigue viva y cumple su objetivo
+    expect(g.phase).toBe('end');
+    expect(g.log[g.log.length - 1].txt).toMatch(/Empate/);
   });
   it('nextAlive salta a los muertos y checkWin no dispara con ambas facciones vivas', () => {
     const g = base({ alive: { 'p-a': true, 'p-b': false, 'p-c': true, 'p-d': true } });

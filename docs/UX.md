@@ -144,3 +144,63 @@ mesa, identidad/reconexión, presencia, voz/audio, modales genéricos.
 - S6 role-help + tira de roles + palabra clave destacada.
 - S7 GameDefinition y movimiento de ficheros.
 - S8 e2e completos + deploy a producción.
+
+---
+
+## Panel de decisión (julio 2026 · B25/B26)
+
+Iván, jugando a Love Letter: «no veo todas las cartas disponibles y lo que hacen…
+solo veo el nombre y me deja elegir un jugador… es muy difícil de jugar y
+recordar», y después: «en general las UIs son bastante poco intuitivas, se puede
+revisar e intentar mejorar en todos los juegos y en toda la app».
+
+Contrato que sale de ahí. Vale para **los 17 juegos y el shell**, y es
+comprobable pantalla a pantalla:
+
+1. **El botón dice lo que hace.** Ninguna opción se ofrece solo con su nombre.
+   Cada carta, acción, rol o poder lleva **su efecto en una línea** (y su coste,
+   si lo tiene) allí donde se elige. «👑 Rey (6)» no basta; «👑 Rey · 6 —
+   intercambias tu mano con la de quien elijas · 1 en el mazo» sí.
+2. **Elegir QUÉ y elegir A QUIÉN son dos pasos.** Al tocar la opción se marca y
+   aparece en claro lo que va a pasar («👀 Sacerdote: verás en secreto la mano de
+   quien elijas»), y solo entonces la lista de objetivos válidos. Siempre con
+   **↩️ cambiar** para volver. Si la opción no lleva objetivo, se dice («no elige
+   objetivo: solo se descarta») y se confirma con un botón.
+3. **Nada irreversible de un solo toque.** Lo que puede acabar la ronda o la
+   partida, gastar tu turno o destapar información pide un segundo gesto, y el
+   botón final **nombra la consecuencia** («💥 Disparar a Carlos»).
+4. **La referencia se consulta desde donde se decide.** Un desplegable «📖 …»
+   plegado dentro del propio panel de acción, con el mazo/roles/costes y lo que
+   ya ha salido. El botón flotante 🎴 (B19/B21) sigue, pero deja de ser el único
+   camino: nadie debe salir de la pantalla en la que está decidiendo.
+5. **Siempre se sabe de quién es el turno y qué se espera de MÍ.** Cabecera con
+   el turno; y para quien no actúa, una línea que diga qué está pasando, a quién
+   se espera (por nombre) y qué puede ir haciendo mientras.
+6. **Lo deshabilitado explica por qué.** Nunca un botón gris mudo ni un `title=`
+   (invisible en móvil): al lado, en pequeño, el motivo («con el Rey en la mano,
+   la Condesa es obligatoria», «te faltan 2 ⚡»).
+7. **Lo público, en pantalla.** Los números que en la mesa real están a la vista
+   —copias del mazo, cuántos hay de cada bando, monedas, energía, descartes,
+   rondas restantes— no se memorizan: se ven.
+8. **Prohibido el estado sin salida.** Toda pantalla ofrece algo que hacer,
+   aunque sea «esperando a Bea y Carlos» con nombres y, si procede, la forma de
+   desatascar.
+9. **Móvil primero.** Objetivo de toque ≥ 44 px, nada esencial por debajo de
+   0,8 rem, sin texto partido a mitad de palabra y sin información escondida en
+   atributos que solo se ven con ratón.
+
+### Piezas compartidas que da el shell (para la pasada de UI)
+
+- **`shell/CardFab.svelte`** — pastilla flotante rotulada «🎴 Mi carta / y las
+  reglas» en todas las pantallas de partida (`data-a="open-mycard"`). Abre el
+  `MyInfoModal` del juego.
+- **`shell/RefRows.svelte`** — filas «emoji · nombre · nota · efecto» para la
+  referencia del mazo/roles. Úsalo tanto en el modal 🎴 como plegado dentro del
+  panel de acción (punto 4 del contrato).
+- **`shell/modals/TableModal.svelte`** (`app.ui.modal = { type: 'table' }`) —
+  «🪑 La mesa» desde DENTRO de una partida: lista de dispositivos con 💤 y
+  acceso al menú de cada uno («⛔ Sacarlo de la partida»). Es el rescate cuando
+  un móvil se queda sin batería y la fase espera por él. **Cada juego debe
+  ofrecerlo en su menú ⋯.**
+- **`shell/SeatPicker.svelte`** — «¿quién juega?» + orden de mesa, común a las
+  17 pantallas de «Empezar partida».

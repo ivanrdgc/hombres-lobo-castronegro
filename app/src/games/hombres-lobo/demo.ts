@@ -12,7 +12,7 @@ export const DEMO: DemoScript = {
       title: 'La partida de ejemplo',
       text: [
         'Jugáis TÚ, Bea, Carlos, David, Eva y Fran. Entre vosotros se esconden hombres lobo: de noche devoran a alguien; de día fingen ser aldeanos.',
-        'La APP es el narrador: reparte los roles, dirige la noche con la voz, anuncia los amaneceres y registra el voto. El pueblo gana si caza a todos los lobos; los lobos, si igualan en número a los vivos.',
+        'La APP es el narrador: reparte los roles, dirige la noche con la voz, anuncia los amaneceres y registra el voto. El pueblo gana si caza a todos los lobos; los lobos, si llegan a igualar en número a los demás vivos.',
       ],
     },
     {
@@ -21,6 +21,7 @@ export const DEMO: DemoScript = {
       who: { actor: 'TODOS miráis vuestra carta a la vez, cada uno en su móvil', others: 'nadie enseña la pantalla: la carta se muestra un instante y se oculta sola.' },
       text: [
         'A ti te toca la 🔮 Vidente. A Bea (aunque tú no lo sabes) le ha tocado 🐺 Hombre Lobo. La voz llama a cada rol por su NOMBRE («Vidente, abre los ojos…»), con una excepción que verás en el paso 5.',
+        '¿Se te olvida tu carta? Puedes volver a verla cuando quieras: el botón redondo 🎴 de abajo a la derecha, o «👁 Mostrar mi rol» en tu pantalla. Ahí viven también tu palabra clave y las acciones secretas de día (las del Juez y la Sirvienta). Se oculta sola a los pocos segundos.',
       ],
       visual: {
         kind: 'screens',
@@ -92,9 +93,10 @@ export const DEMO: DemoScript = {
     {
       icon: '🔊',
       title: 'Y vuelta a la noche',
-      who: { actor: 'Cualquier vivo pulsa «🌙 Empezar la noche» y el ciclo se repite', others: 'la voz manda: pausa, repetir o repasar roles desde el menú ⋯ si hace falta.' },
+      who: { actor: 'Cualquier vivo pulsa «🌙 Empezar la noche» y el ciclo se repite', others: 'la voz manda: pausa, repetir o repasar roles desde el menú de tres puntos si hace falta.' },
       text: [
         'Noche → amanecer → día → hoguera… hasta que un bando gana. Hay decenas de roles opcionales (Bruja, Cazador, Cupido…): toca sus fichas en el lobby para el detalle.',
+        'Y no todo es pueblo contra lobos: algunos roles juegan para sí mismos y ganan en solitario — el Gaitero si encanta a todo el pueblo, el Ángel si lo matan enseguida, el Sectario si cae la otra mitad de la mesa, el Lobo Albino si queda el último… y una pareja de enamorados de bandos distintos, si quedan los dos últimos.',
         'Consejo de mesa: volumen alto, pantalla encendida y silencio ceremonial de noche. Castronegro os espera. 🌕',
       ],
     },

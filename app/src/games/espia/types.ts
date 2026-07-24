@@ -21,7 +21,8 @@ export type EspiaOutcomeType =
   | 'spy_guessed' // el espía se revela y acierta el lugar (+4)
   | 'spy_wrong' // el espía se revela y falla → ganan los agentes
   | 'spy_survived' // se acabó el tiempo sin condena → gana el espía (+2)
-  | 'spy_left'; // el espía abandonó la ronda → ganan los agentes
+  | 'spy_left' // el espía abandonó la ronda → ganan los agentes
+  | 'round_void'; // la mesa se quedó sin quórum → ronda anulada, sin puntos
 
 export interface EspiaOutcome {
   type: EspiaOutcomeType;
@@ -71,4 +72,8 @@ export interface EspiaState {
   history: EspiaRoundNote[];
   outcome: EspiaOutcome | null;
   log: { txt: string }[];
+  /** Pausa de mesa (⋯ → ⏸️): congela el reloj y calla al narrador. */
+  paused?: { by: string; name?: string; at: number } | null;
+  /** Señal de flanco de «🔁 Repetir» (el narrador re-locuta la escena). */
+  repeatNonce?: number;
 }

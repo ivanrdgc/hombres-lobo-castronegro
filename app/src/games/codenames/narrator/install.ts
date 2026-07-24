@@ -40,21 +40,34 @@ function amSpeaker(s: Snap): boolean {
 
 const gm = (ctx: Ctx): CodenamesState => codenamesGame(ctx.state().group)!;
 
+// Clave de hito de una línea del diario. Acaba en «:» a propósito: así
+// clearPrefix('…:log:1:') borra ESA línea y no la 10, la 11…
+const logKey = (g: CodenamesState, i: number): string => `N${g.startedAt}:log:${i}:`;
+const introKey = (g: CodenamesState): string => `N${g.startedAt}:intro`;
+
 function sceneOf(s: Snap): SceneDef<Snap> | null {
   if (!amSpeaker(s)) return null;
   const g = codenamesGame(s.group)!;
   if (g.paused) return { key: `N${g.startedAt}:paused:${g.paused.at}`, hardEntry: true, run: pausedScene };
-  return { key: `N${g.startedAt}:log${g.log.length}`, run: logScene };
+  // El nonce de «🔁 Repetir» va en la CLAVE: sin él la escena no cambiaba y el
+  // botón no hacía nada. Al re-entrar, logScene olvida el hito de la última
+  // línea (la pista, que es justo lo que la mesa pide repetir).
+  return { key: `N${g.startedAt}:log${g.log.length}:r${g.repeatNonce || 0}`, run: logScene };
 }
 
 async function pausedScene(ctx: Ctx): Promise<void> { await ctx.waitFor(() => false); }
 
 async function logScene(ctx: Ctx): Promise<void> {
   const g = gm(ctx);
-  await ctx.sayOnce(`N${g.startedAt}:intro`, () => utt('cn-intro', CN_INTRO));
-  for (let i = 1; i < g.log.length; i++) {
+  // Solo se re-entra aquí al llegar una línea nueva (su hito aún no existe), al
+  // pulsar «🔁 Repetir» o al respawnear: en todos los casos la última línea es
+  // la que hay que decir (o volver a decir).
+  ctx.ledger.clearPrefix(logKey(g, g.log.length - 1));
+  await ctx.sayOnce(introKey(g), () => utt('cn-intro', CN_INTRO));
+  // Desde la línea 0: ahí es donde se dice qué equipo empieza y qué Jefe abre.
+  for (let i = 0; i < g.log.length; i++) {
     const txt = speakable(g.log[i].txt);
-    if (txt) await ctx.sayOnce(`N${g.startedAt}:log${i}`, () => utt(`cn-log-${i}`, txt));
+    if (txt) await ctx.sayOnce(logKey(g, i), () => utt(`cn-log-${i}`, txt));
   }
 }
 
@@ -83,7 +96,22 @@ export function installCodenamesNarrator(): void {
   onChange(() => {
     const s = snapshot();
     const speaker = amSpeaker(s);
-    if (speaker && !wasSpeaker) narrator.respawn({ resetLedger: true });
+    if (speaker && !wasSpeaker) {
+      // Relevo o RECARGA del altavoz (Safari descarta pestañas de fondo): sin
+      // esto se releía el diario entero, 20-40 líneas con todas las
+      // revelaciones. Se dan por dichas las líneas viejas y se arranca por la
+      // última, que es la que la mesa necesita oír ahora.
+      const g = codenamesGame(s.group);
+      // resetFor fija la partida del ledger ANTES de marcar: si no, el tick de
+      // respawn la vería nueva y borraría justo lo que acabamos de marcar.
+      narrator.ledger.resetFor(g?.startedAt ?? null);
+      narrator.ledger.forceReset();
+      if (g && g.log.length > 1) {
+        narrator.ledger.mark(introKey(g));
+        for (let i = 0; i < g.log.length - 1; i++) narrator.ledger.mark(logKey(g, i));
+      }
+      narrator.respawn();
+    }
     wasSpeaker = speaker;
     if (speaker) requestWakeLock();
     narrator.tick();

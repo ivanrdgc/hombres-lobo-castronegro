@@ -11,8 +11,9 @@ import {
 } from '../../core/sync/group-actions';
 import type { GroupDoc, MatchDoc } from '../../core/sync/schema';
 import {
-  MIN_PLAYERS, MAX_PLAYERS, dealRound, tallyVotes, allVoted, playersOf, roleOf,
+  MIN_PLAYERS, MAX_PLAYERS, dealRound, tallyVotes, allVoted, canForceTally, playersOf, roleOf,
 } from './engine';
+import { WORDS } from './words';
 import type { InsiderState } from './types';
 
 export function insiderGame(g: GroupDoc | null): InsiderState | null {
@@ -96,11 +97,13 @@ export async function confirmSeen(): Promise<void> {
   });
 }
 
-/** Todos han visto su carta: el Maestro pone el reloj en marcha. */
+/** Todos han visto su carta: se pone el reloj en marcha. Lo normal es que lo
+ *  pulse el Maestro, pero vale CUALQUIER jugador de la ronda: si su móvil muere,
+ *  el reparto se quedaba bloqueado sin botón en ninguna pantalla. */
 export async function beginQuestions(): Promise<void> {
   const me = myPid();
   await tx((game) => {
-    if (game.phase !== 'reveal' || me !== game.masterId) return null;
+    if (game.phase !== 'reveal' || !game.playerIds.includes(me)) return null;
     if (!game.playerIds.every((pid) => game.seen[pid])) return null;
     game.phase = 'question';
     game.deadline = Date.now() + game.durationMs;
@@ -142,12 +145,32 @@ export async function castVote(target: string): Promise<void> {
     if (!game.playerIds.includes(target) || target === me || target === game.masterId) return null;
     game.votes = { ...game.votes, [me]: target };
     if (!allVoted(game)) return game;
-    const { accusedId } = tallyVotes(game);
-    game.accusedId = accusedId;
-    if (accusedId) game.log.push({ txt: `🗳️ La mesa señala a ${nameOf(game, accusedId)}.` });
-    else game.log.push({ txt: '🗳️ Voto dividido: nadie es señalado con claridad.' });
-    return finish(game, accusedId && accusedId === game.insiderId ? 'group' : 'insider');
+    return closeVote(game);
   });
+}
+
+/** Salida de emergencia: se cierra el recuento con los votos que haya (quién
+ *  puede hacerlo lo decide `canForceTally`). */
+export async function forceTally(): Promise<void> {
+  const me = myPid();
+  await tx((game) => {
+    if (!canForceTally(game, me)) return null;
+    return closeVote(game, me);
+  });
+}
+
+// Recuento de la caza y cierre de la ronda (lo llaman el último voto y el
+// recuento forzado; `forcedBy` deja constancia en el diario de quién lo cerró).
+function closeVote(game: InsiderState, forcedBy?: string): InsiderState {
+  if (forcedBy) {
+    const missing = game.playerIds.filter((pid) => game.votes[pid] === undefined).length;
+    game.log.push({ txt: `⏭️ ${nameOf(game, forcedBy)} cierra el recuento sin esperar a ${missing === 1 ? 'un voto' : `${missing} votos`}.` });
+  }
+  const { accusedId } = tallyVotes(game);
+  game.accusedId = accusedId;
+  if (accusedId) game.log.push({ txt: `🗳️ La mesa señala a ${nameOf(game, accusedId)}.` });
+  else game.log.push({ txt: '🗳️ Voto dividido: nadie es señalado con claridad.' });
+  return finish(game, accusedId && accusedId === game.insiderId ? 'group' : 'insider');
 }
 
 // Cierra la ronda: fija el desenlace y reparte puntos.
@@ -189,7 +212,9 @@ export async function nextRound(): Promise<void> {
     game.votes = {};
     game.accusedId = null;
     game.outcome = null;
-    game.usedWords = game.usedWords.length >= 40 ? [deal.word] : [...game.usedWords, deal.word];
+    // El mazo se recicla al agotarse DE VERDAD (antes cortaba en 40 con 56+
+    // palabras: repetía sin necesidad pese a prometer lo contrario en la ayuda).
+    game.usedWords = game.usedWords.length >= WORDS.length ? [deal.word] : [...game.usedWords, deal.word];
     game.log.push({ txt: `🤫 Ronda ${round}: nueva palabra. El Maestro es ${nameOf(game, deal.masterId)}.` });
     return game;
   });
@@ -232,4 +257,4 @@ registerMatchTools('insider', {
   leaveEndsMatch: true,
 });
 
-export { playersOf, roleOf };
+export { playersOf, roleOf, canForceTally };

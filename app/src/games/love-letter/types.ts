@@ -32,10 +32,16 @@ export interface LoveLetterState {
   protected: Record<string, boolean>;
   turn: string;
   starter: string;
-  /** Resultado del Sacerdote: qué vio `by` (SOLO lo ve `by`). Efímero. */
-  peek: { by: string; target: string; card: Card } | null;
-  /** Resumen de la última ronda (para la fase roundEnd). */
-  roundResult: { winner: string; reason: string } | null;
+  /** Vistazos privados PENDIENTES, uno por espectador: `peeks[pid]` es lo que
+   *  SOLO `pid` puede ver (el Sacerdote que espió, o los dos duelistas del
+   *  Barón, que en la mesa real se enseñan la mano entre ellos). Caduca al
+   *  pulsar «Entendido», al acabar la ronda o al terminar el PRIMER turno
+   *  propio que lo estrena (`fresh`): así sigue a la vista mientras decides tu
+   *  jugada, y no se pierde porque otro juegue deprisa. */
+  peeks: Record<string, { target: string; card: Card; via: 'priest' | 'baron'; fresh?: boolean }>;
+  /** Resumen de la última ronda (para la fase roundEnd). `reveal` es el destape
+   *  de manos cuando la ronda muere por mazo agotado (la mesa lo comprueba). */
+  roundResult: { winner: string; reason: string; reveal?: { pid: string; card: Card }[] } | null;
   /** Favores (rondas ganadas) por jugador. */
   tokens: Record<string, number>;
   /** Favores necesarios para ganar la partida (según nº de jugadores). */

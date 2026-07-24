@@ -3,10 +3,13 @@
   // vista; tu mano privada, peekable. Los dispositivos fuera de la partida ven
   // el tablero de espectador (sin cartas ocultas de nadie).
   import { app, isMaster, matchOf } from '../../../core/sync/store.svelte';
-  import { coupGame } from '../actions';
-  import { isAlive } from '../engine';
+  import { guard } from '../../../core/sync/guard';
+  import { coupGame, passAbsent } from '../actions';
+  import { isAlive, pendingReactors } from '../engine';
   import { unlockAudio } from '../../../core/audio/engine';
   import { play } from '../../../core/audio/player';
+  import { pauseMs, profileOf } from '../../../core/narrator/pacing';
+  import { e2eTestMode } from '../../../core/test-hooks';
   import type { GroupDoc, PlayerDoc } from '../../../core/sync/schema';
   import Flash from '../../../shell/Flash.svelte';
   import CardFab from '../../../shell/CardFab.svelte';
@@ -26,6 +29,31 @@
   const alive = $derived(inGame && isAlive(game, my.id));
   const needsUnlock = $derived(isMaster() && !app.ui.audioReady && !app.ui.muted);
   const turnName = $derived(game.names[game.playerIds[game.turnIdx]] || '¿?');
+  const nm = (pid: string) => game.names[pid] || '¿?';
+
+  // La chip decía «Turno de X» aunque la mesa te estuviera esperando a TI.
+  const pending = $derived(pendingReactors(game));
+  const chip = $derived.by(() => {
+    if (pending.includes(my.id)) return '⏳ Esperan tu reacción';
+    if (pending.length > 2) return `⏳ Faltan ${pending.length} por reaccionar`;
+    if (pending.length) return `⏳ Esperando a: ${pending.map(nm).join(', ')}`;
+    return `Turno de ${turnName}`;
+  });
+
+  // Ventana atascada (alguien se fue al baño): tras ~2 avisos del narrador, el
+  // dispositivo de la voz puede pasar por los que no contestan.
+  const stallMs = $derived(e2eTestMode() ? 4000 : 2 * pauseMs('nagInterval', profileOf(group.settings?.pacing)) + 5000);
+  const windowKey = $derived(`${game.phase}:${game.log.length}`);
+  let waited = $state(0);
+  $effect(() => {
+    void windowKey; // ventana nueva → el reloj vuelve a cero
+    waited = 0;
+    if (!isMaster()) return; // el reloj solo lo necesita el dispositivo de la voz
+    const t = setInterval(() => { waited += 1000; }, 1000);
+    return () => clearInterval(t);
+  });
+  const absent = $derived(pending.filter((pid) => pid !== my.id));
+  const canNudge = $derived(isMaster() && !game.paused && absent.length > 0 && waited >= stallMs);
 
   function unlockVoice() {
     unlockAudio();
@@ -38,7 +66,7 @@
 
 <div class="topbar">
   <h2>🃏 {group.name}</h2>
-  {#if game.phase !== 'end' && game.phase !== 'reveal'}<span class="chip">Turno de {turnName}</span>{/if}
+  {#if game.phase !== 'end' && game.phase !== 'reveal'}<span class="chip">{chip}</span>{/if}
   <GameMenu {game} {my} />
 </div>
 <Flash />
@@ -50,6 +78,13 @@
 {#if game.paused}
   <div class="card" style="text-align:center"><span class="moon">⏸️</span><h3>Partida en pausa</h3>
     <p class="small-note">La ha pausado {game.paused.name || 'alguien'}.</p></div>
+{/if}
+{#if canNudge}
+  <div class="card" data-a="coup-stall">
+    <h3 style="margin-top:0">⏳ La ventana no avanza</h3>
+    <p class="small-note">Sin reaccionar: <b>{absent.map(nm).join(', ')}</b>. Si no están, pasa por ellos.</p>
+    <button class="ghost block" data-a="coup-pass-absent" onclick={() => guard(passAbsent)}>⏭️ Pasar por quienes faltan</button>
+  </div>
 {/if}
 
 {#if game.phase === 'reveal'}

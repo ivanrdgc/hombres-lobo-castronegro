@@ -13,7 +13,8 @@ import { shGame } from '../actions';
 import { presidentId } from '../engine';
 import type { SHState } from '../types';
 import {
-  SH_INTRO, LISTOS, presidentLine, nominationLine, enactedLine, powerLine, endLine,
+  SH_INTRO, LISTOS, presidentLine, nominationLine, electionResultLine, enactedLine, powerLine,
+  executedLine, endLine, CHAOS_LINE, LEG_PRESIDENT_LINE, LEG_CHANCELLOR_LINE, VETO_DECISION_LINE,
 } from '../texts';
 
 interface Snap { group: GroupDoc | null; players: PlayerDoc[]; session: Session | null }
@@ -53,6 +54,11 @@ function sceneOf(s: Snap): SceneDef<Snap> | null {
     case 'reveal': return { key: `${SH}:reveal:r${rf}`, run: revealScene };
     case 'nominate': return { key: `${SH}:nom:${roundKey(g)}:r${rf}`, run: nominateScene };
     case 'election': return { key: `${SH}:elec:${roundKey(g)}:${g.nominatedChancellor}:r${rf}`, run: electionScene };
+    // La ronda legislativa estaba muda: sin voz, quien tiene que mirar el móvil
+    // no se entera y la mesa se queda esperando.
+    case 'legislativePresident': return { key: `${SH}:legp:${roundKey(g)}:${g.nominatedChancellor}:r${rf}`, run: legislativePresidentScene };
+    case 'legislativeChancellor': return { key: `${SH}:legc:${roundKey(g)}:${g.nominatedChancellor}:r${rf}`, run: legislativeChancellorScene };
+    case 'vetoDecision': return { key: `${SH}:veto:${roundKey(g)}:${g.nominatedChancellor}:r${rf}`, run: vetoScene };
     case 'power': return { key: `${SH}:power:${g.fascistPolicies}:${g.power?.type}:r${rf}`, run: powerScene };
     case 'end': return { key: `${SH}:end`, run: endScene };
     default: return null;
@@ -71,6 +77,23 @@ async function revealScene(ctx: Ctx): Promise<void> {
   if (gm(ctx).phase === 'reveal') await ctx.sayOnce(`SH${g.startedAt}:listos`, () => utt('sh-listos', LISTOS));
 }
 
+// Anuncia el resultado de la votación (aprobado/rechazado). Era la escena que
+// faltaba: sin ella la mesa no oía nunca si su gobierno salió.
+async function announceElection(ctx: Ctx): Promise<void> {
+  const g = gm(ctx);
+  const el = g.lastElection;
+  if (!el) return;
+  await ctx.sayOnce(`SH${g.startedAt}:elecres:${el.no ?? 0}:${el.president}:${el.chancellor}`, () =>
+    utt('sh-elecres', electionResultLine(el.passed, el.ja.length, el.nein.length)));
+}
+
+// El caos se anuncia una vez por caos, justo antes del decreto que salió a ciegas.
+async function announceChaos(ctx: Ctx): Promise<void> {
+  const g = gm(ctx);
+  if (!g.chaosCount) return;
+  await ctx.sayOnce(`SH${g.startedAt}:chaos:${g.chaosCount}`, () => utt('sh-chaos', CHAOS_LINE));
+}
+
 // Anuncia el decreto recién promulgado (si lo hubo) antes de abrir la ronda.
 async function announceEnacted(ctx: Ctx): Promise<void> {
   const g = gm(ctx);
@@ -79,17 +102,48 @@ async function announceEnacted(ctx: Ctx): Promise<void> {
     utt('sh-enact', enactedLine(g.lastEnacted!, g.liberalPolicies, g.fascistPolicies)));
 }
 
+// Quién ha caído: el poder solo decía «alguien va a caer».
+async function announceExecuted(ctx: Ctx): Promise<void> {
+  const g = gm(ctx);
+  if (!g.lastExecuted) return;
+  await ctx.sayOnce(`SH${g.startedAt}:exec:${g.lastExecuted}`, () =>
+    utt('sh-exec', executedLine(nm(g, g.lastExecuted))));
+}
+
 async function nominateScene(ctx: Ctx): Promise<void> {
+  await announceElection(ctx);
+  await announceChaos(ctx);
   await announceEnacted(ctx);
+  await announceExecuted(ctx);
   const g = gm(ctx);
   await ctx.sayOnce(`SH${g.startedAt}:nom:${roundKey(g)}`, () => utt('sh-pres', presidentLine(nm(g, presidentId(g)))));
 }
 
 async function electionScene(ctx: Ctx): Promise<void> {
+  await announceElection(ctx); // por si la ronda anterior se cortó antes de decirlo
   const g = gm(ctx);
   if (!g.nominatedChancellor) return;
   await ctx.sayOnce(`SH${g.startedAt}:elec:${roundKey(g)}:${g.nominatedChancellor}`, () =>
     utt('sh-nom', nominationLine(nm(g, presidentId(g)), nm(g, g.nominatedChancellor))));
+}
+
+async function legislativePresidentScene(ctx: Ctx): Promise<void> {
+  await announceElection(ctx);
+  const g = gm(ctx);
+  await ctx.sayOnce(`SH${g.startedAt}:legp:${roundKey(g)}:${g.nominatedChancellor}`, () =>
+    utt('sh-legp', LEG_PRESIDENT_LINE));
+}
+
+async function legislativeChancellorScene(ctx: Ctx): Promise<void> {
+  const g = gm(ctx);
+  await ctx.sayOnce(`SH${g.startedAt}:legc:${roundKey(g)}:${g.nominatedChancellor}`, () =>
+    utt('sh-legc', LEG_CHANCELLOR_LINE));
+}
+
+async function vetoScene(ctx: Ctx): Promise<void> {
+  const g = gm(ctx);
+  await ctx.sayOnce(`SH${g.startedAt}:veto:${roundKey(g)}:${g.nominatedChancellor}`, () =>
+    utt('sh-veto', VETO_DECISION_LINE));
 }
 
 async function powerScene(ctx: Ctx): Promise<void> {

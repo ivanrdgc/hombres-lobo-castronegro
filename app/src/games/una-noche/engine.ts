@@ -71,15 +71,17 @@ const withNightRole = (game: GameState, role: RoleId, players: Player[]): Player
  */
 export function stepActors(step: StepId, game: GameState, players: Player[]): string[] | null {
   const acts = game.acts || {};
+  // Escape del narrador: si SALTÓ este paso (alguien no actuaba y la noche se
+  // colgaba), ya no espera a nadie —se cierra como un paso fantasma más—.
+  if (game.steps?.[game.stepIdx] === step && (game.skippedSteps || []).includes(game.stepIdx)) return null;
   switch (step) {
     case 'doble': {
       const d = dobleId(game, players);
       if (!d) return null;
-      if (!acts.dobleRole) return [d]; // aún no ha copiado
-      // Copió un rol instantáneo (vidente/ladrón/alborotadora/borracho): sigue
-      // actuando hasta completarlo. Los de grupo/al final los hará en su paso.
-      const instant = ['vidente', 'ladron', 'alborotadora', 'borracho'].includes(acts.dobleRole);
-      return instant && !acts.dobleActionDone ? [d] : null;
+      // Sigue siendo el actor hasta que CIERRA su turno (dobleConfirm): así ve
+      // qué copió —y el resultado de la acción copiada— antes de que el panel
+      // desaparezca. Los roles de grupo/al final los hará luego, en su paso.
+      return acts.dobleActionDone ? null : [d];
     }
     case 'lobos': {
       const wolves = withNightRole(game, 'lobo', players);

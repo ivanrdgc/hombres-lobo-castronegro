@@ -25,7 +25,9 @@ export const EXPLANATIONS: Record<string, Explanation> = {
       'La voz irá nombrando a cada rol; solo quien sea llamado abre los ojos, hace su acción en la pantalla y vuelve a cerrarlos. En cuanto actúas, tu pantalla se oculta sola y todas se ven iguales: quien mire tu móvil no sabrá quién eres.',
       'Si junto a tu carta aparece una <b>palabra clave</b>, memorízala: si la voz la pronuncia de noche, la llamada va por ti. Abre los ojos con disimulo y mira tu pantalla.',
       'Al <b>amanecer</b> se anuncia quién no ha sobrevivido a la noche. De día todo es de viva voz: se debate, se acusa y el pueblo <b>vota</b> a quién llevar a la hoguera. Cualquiera anota el resultado en la app, y la primera decisión es la que cuenta.',
-      'Gana el <b>pueblo</b> si acaba con todos los hombres lobo; ganan los <b>lobos</b> si llegan a igualar en número a los vivos. Y recuerda: de noche, silencio absoluto y ojos bien cerrados, que la app ya disimula por vosotros, llamando incluso a los que ya no están.',
+      'El juicio también puede acabar sin hoguera: se puede registrar que <b>el pueblo perdona</b> o que <b>hubo empate</b>. Quien cae pasa a mirar en silencio: los muertos siguen la partida, ven lo que ocurre… pero ni hablan ni votan.',
+      'Los votos <b>los contáis vosotros</b>, a mano y en voz alta: la app no cuenta manos alzadas, solo anota el resultado. Si hay Alguacil, su voz vale por dos; si el Cuervo ha señalado a alguien, ese carga con dos votos en contra. Hacedlo en la mesa antes de tocar la pantalla.',
+      'Gana el <b>pueblo</b> si acaba con todos los hombres lobo; ganan los <b>lobos</b> si llegan a igualar en número a los demás vivos. Además, algunos roles juegan solo para sí mismos y ganan aparte. Y recuerda: de noche, silencio absoluto y ojos bien cerrados, que la app ya disimula por vosotros, llamando incluso a los que ya no están.',
     ],
   },
 };

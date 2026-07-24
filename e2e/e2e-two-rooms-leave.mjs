@@ -24,8 +24,8 @@ const hlc = (page) => page.evaluate(() => {
   return !g ? null : {
     phase: g.phase, round: g.round, playerIds: g.playerIds, names: g.names,
     teams: g.teams, roles: g.roles, room: g.room, seen: g.seen,
-    hVotes: g.hVotes || {}, pick: g.pick, winner: g.winner, scores: g.scores,
-    log: (g.log || []).map((l) => l.txt),
+    hVotes: g.hVotes || {}, picks: g.picks || {}, winner: g.winner, winReason: g.winReason,
+    scores: g.scores, log: (g.log || []).map((l) => l.txt),
   };
 });
 async function waitState(page, fn, what, timeout = 45000) {
@@ -111,6 +111,9 @@ try {
   check(s.winner === 'red', 'gana el ROJO en el acto (rendición del azul)');
   check(s.playerIds.filter((pid) => s.teams[pid] === 'red').every((pid) => s.scores[pid] === 1), 'el bando rojo puntúa');
   check(s.log.some((t) => /PRESIDENTE/.test(t) && /abandona/.test(t)), 'el diario explica la rendición');
+  // El cartel final no puede cantar un «¡BOOM!» que no ha ocurrido.
+  check(/abandonó/.test(s.winReason || '') && !/BOOM/.test(s.winReason || ''), 'el cartel final cuenta la rendición, no un BOOM inventado');
+  check(await watcher2.locator('h3', { hasText: 'abandonó' }).count() > 0, 'la pantalla del final enseña ese motivo');
 
   // ——— Revancha con 6 y disolución por debajo del mínimo ———
   const inGamePage = () => pg(s.playerIds[0]);

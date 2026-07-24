@@ -51,17 +51,34 @@ function amSpeaker(s: Snap): boolean {
 
 const gm = (ctx: Ctx): TwoRoomsState => twoRoomsGame(ctx.state().group)!;
 
+/**
+ * Desde qué línea del diario relata ESTE dispositivo. Al tomar la voz a mitad de
+ * partida (el altavoz de una sala cruzó como rehén, o el máster se fue) el
+ * ledger se reinicia; sin este tope, el relevo leería la crónica entera.
+ */
+let logFrom = 1;
+
 function sceneOf(s: Snap): SceneDef<Snap> | null {
   if (!amSpeaker(s)) return null;
   const game = twoRoomsGame(s.group)!;
-  if (game.phase === 'reveal') return { key: `T${game.startedAt}:reveal`, run: revealScene };
-  if (game.phase === 'discuss') return { key: `T${game.startedAt}:log${game.log.length}:d${game.round}`, run: discussScene };
-  return { key: `T${game.startedAt}:log${game.log.length}`, run: logScene };
+  const T = `T${game.startedAt}`;
+  // En pausa, silencio duro hasta que se reanude (como en los demás juegos).
+  if (game.paused) return { key: `${T}:paused:${game.paused.at}`, hardEntry: true, run: pausedScene };
+  const rf = game.repeatNonce || 0; // «🔁 Repetir» re-arranca la escena
+  // El reparto también se re-arranca con cada línea nueva (un abandono re-reparte).
+  if (game.phase === 'reveal') return { key: `${T}:reveal:log${game.log.length}:r${rf}`, run: revealScene };
+  if (game.phase === 'discuss') return { key: `${T}:log${game.log.length}:d${game.round}:r${rf}`, run: discussScene };
+  if (game.phase === 'hostages') return { key: `${T}:log${game.log.length}:h${game.round}:r${rf}`, run: hostagesScene };
+  return { key: `${T}:log${game.log.length}:r${rf}`, run: logScene };
 }
+
+async function pausedScene(ctx: Ctx): Promise<void> { await ctx.waitFor(() => false); }
 
 async function revealScene(ctx: Ctx): Promise<void> {
   const g = gm(ctx);
-  if (g.round === 1 && !g.swaps.length) await ctx.sayOnce(`T${g.startedAt}:intro`, () => utt('tr-intro', TWOROOMS_INTRO));
+  const rf = g.repeatNonce || 0;
+  if (g.round === 1 && !g.swaps.length) await ctx.sayOnce(`T${g.startedAt}:intro:r${rf}`, () => utt('tr-intro', TWOROOMS_INTRO));
+  await logScene(ctx);
   await ctx.waitFor((s) => {
     const game = twoRoomsGame(s.group);
     return !!game && (game.phase !== 'reveal' || game.playerIds.every((pid) => game.seen[pid]));
@@ -70,9 +87,14 @@ async function revealScene(ctx: Ctx): Promise<void> {
 
 async function logScene(ctx: Ctx): Promise<void> {
   const g = gm(ctx);
-  for (let i = 1; i < g.log.length; i++) {
+  const rf = g.repeatNonce || 0;
+  for (let i = Math.max(1, logFrom); i < g.log.length; i++) {
     const txt = speakable(g.log[i].txt);
-    if (txt) await ctx.sayOnce(`T${g.startedAt}:log${i}`, () => utt(`tr-log-${i}`, txt));
+    // El nonce de «🔁 Repetir» va SOLO en la clave de la última línea: si fuera
+    // en todas, repetir soltaría el diario entero de golpe.
+    const last = i === g.log.length - 1;
+    const key = `T${g.startedAt}:log${i}${last && rf ? `:r${rf}` : ''}`;
+    if (txt) await ctx.sayOnce(key, () => utt(`tr-log-${i}`, txt));
   }
 }
 
@@ -85,6 +107,17 @@ async function discussScene(ctx: Ctx): Promise<void> {
   await ctx.sleep(Math.max(0, g.deadline - Date.now()) + 300);
   const gg = gm(ctx);
   if (gg.phase === 'discuss' && !gg.paused) await A.timeUp().catch(() => { /* otro se adelantó */ });
+}
+
+async function hostagesScene(ctx: Ctx): Promise<void> {
+  // Igual que la ronda, pero con el plazo del voto: si alguien no vota, el reloj
+  // cierra la votación y la partida sigue.
+  await logScene(ctx);
+  const g = gm(ctx);
+  if (g.phase !== 'hostages' || g.deadline === null || g.paused) return;
+  await ctx.sleep(Math.max(0, g.deadline - Date.now()) + 300);
+  const gg = gm(ctx);
+  if (gg.phase === 'hostages' && !gg.paused) await A.hostagesTimeUp().catch(() => { /* otro se adelantó */ });
 }
 
 // ——— Instalación ———
@@ -115,7 +148,12 @@ export function installTwoRoomsNarrator(): void {
   onChange(() => {
     const s = snapshot();
     const speaker = amSpeaker(s);
-    if (speaker && !wasSpeaker) narrator.respawn({ resetLedger: true });
+    if (speaker && !wasSpeaker) {
+      // Relevo de voz: se arranca desde la última línea del diario (lo que pasa
+      // AHORA), nunca desde el principio.
+      logFrom = Math.max(1, (twoRoomsGame(s.group)?.log.length ?? 1) - 1);
+      narrator.respawn({ resetLedger: true });
+    }
     wasSpeaker = speaker;
     if (speaker) requestWakeLock();
     narrator.tick();

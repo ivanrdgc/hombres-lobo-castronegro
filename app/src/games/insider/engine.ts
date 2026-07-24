@@ -42,21 +42,23 @@ export interface DealResult {
 
 /** Reparte una ronda: el Maestro ROTA por rondas (índice (ronda-1) % n); el
  *  Insider es cualquiera menos el Maestro; la palabra no se repite hasta
- *  agotarse; quien pregunta primero sale al azar. */
+ *  agotarse; quien pregunta primero sale al azar ENTRE LOS NO-MAESTROS. */
 export function dealRound(playerIds: string[], round: number, usedWords: string[], seed: number): DealResult {
   const rnd = mulberry32(seed);
   const n = playerIds.length;
   const masterIdx = ((round - 1) % n + n) % n;
   const masterId = playerIds[masterIdx];
-  const others = playerIds.filter((_, i) => i !== masterIdx);
-  const insiderId = others[Math.floor(rnd() * others.length)];
+  const otherIdxs = playerIds.map((_, i) => i).filter((i) => i !== masterIdx);
+  const insiderId = playerIds[otherIdxs[Math.floor(rnd() * otherIdxs.length)]];
   let pool = WORDS.filter((w) => !usedWords.includes(w));
   if (!pool.length) {
     const last = usedWords[usedWords.length - 1];
     pool = WORDS.filter((w) => w !== last); // agotadas: se rebaraja (sin repetir la última)
   }
   const word = pool[Math.floor(rnd() * pool.length)];
-  const starterIdx = Math.floor(rnd() * n);
+  // El Maestro NO pregunta, solo responde: sortearlo entre todos hacía que 1 de
+  // cada n rondas la app pidiera «empieza preguntando <el propio Maestro>».
+  const starterIdx = otherIdxs[Math.floor(rnd() * otherIdxs.length)];
   return { word, masterId, insiderId, starterIdx };
 }
 
@@ -89,6 +91,16 @@ export function tallyVotes(game: InsiderState): VoteTally {
 /** ¿Han votado ya todos los jugadores (incluido el Maestro)? */
 export function allVoted(game: InsiderState): boolean {
   return game.playerIds.every((pid) => game.votes[pid] !== undefined);
+}
+
+/** ¿Puede `pid` cerrar el recuento a la fuerza? El Maestro (autoridad neutral de
+ *  la ronda) y, si es SU móvil el que ha muerto, cualquiera que ya haya votado.
+ *  Sin esta salida, un solo voto que no llega dejaba la ronda colgada para
+ *  siempre: la única escapatoria era Terminar, que borra el marcador. */
+export function canForceTally(game: InsiderState, pid: string): boolean {
+  if (game.phase !== 'vote' || !game.playerIds.includes(pid) || allVoted(game)) return false;
+  if (pid === game.masterId) return true;
+  return game.votes[pid] !== undefined && game.votes[game.masterId] === undefined;
 }
 
 export const WIN_LABELS: Record<'group' | 'insider' | 'timeout', string> = {

@@ -14,7 +14,8 @@
     { emoji: '🕊️', name: 'Presidente', note: 'azul', desc: 'El azul gana si acaba la partida en una sala SIN el Bombardero. Enséñate con cuidado: los rojos te buscan.' },
     { emoji: '💣', name: 'Bombardero', note: 'rojo', desc: 'El rojo gana si acaba en la MISMA sala que el Presidente: ¡BOOM!' },
     { emoji: '🎴', name: 'Cartas normales', desc: 'Azules protegen al Presidente; rojos maniobran para juntar al Bombardero con él. Enseñar tu carta (en privado) es tu herramienta.' },
-    { emoji: '🔄', name: 'Rehenes', desc: 'Al final de cada ronda, cada sala vota a quién manda a la otra; tras el intercambio os colocáis SIN reloj y confirmáis con el botón.' },
+    { emoji: '👀', name: 'Enseñar la carta', note: 'cara a cara', desc: 'Abres tu carta aquí y le enseñas la pantalla a quien tú decidas, tapando el resto. Con «Enseñar solo el color» se ve el bando y NO el rol.' },
+    { emoji: '🔄', name: 'Rehenes', desc: 'Al final de cada ronda, cada sala vota a quién manda a la otra (uno de cada cuatro, mínimo uno); tras el intercambio os colocáis SIN reloj y confirmáis con el botón.' },
   ];
 </script>
 

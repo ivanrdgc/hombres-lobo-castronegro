@@ -98,7 +98,10 @@ try {
     const tomaba = st.centerCards[0];
     const rp = pageOf(ladron);
     await rp.waitForSelector('[data-a=act-ladron-take]', { timeout: 15000 });
+    // Cambiar de carta es irreversible: se elige la carta y se CONFIRMA.
     await rp.click('[data-a=act-ladron-take][data-p="0"]');
+    await rp.waitForSelector('[data-a=act-ladron-confirm]', { timeout: 15000 });
+    await rp.click('[data-a=act-ladron-confirm]');
     st = await waitState(ana, (s) => s.players.find((p) => p.id === ladron.id)?.role === tomaba, 'el Ladrón cambia de rol');
     check(st.centerCards[0] === 'ladron', 'su carta de Ladrón se queda en el centro');
     ok(`el Ladrón ahora es ${tomaba}`);

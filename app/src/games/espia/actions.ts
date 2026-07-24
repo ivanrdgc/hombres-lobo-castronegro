@@ -11,7 +11,7 @@ import {
 import type { GroupDoc, MatchDoc } from '../../core/sync/schema';
 import {
   ESPIA_MIN_PLAYERS, ESPIA_MAX_PLAYERS, applyDelta, dealRound, resolveConviction, resolveGuess,
-  resolveSpyLeft, resolveTimeout, tallyVote, timeupOrder,
+  resolveSpyLeft, resolveTimeout, resolveVoid, tallyVote, timeupOrder,
 } from './engine';
 import { LOCATIONS, locationById } from './locations';
 import type { EspiaOutcome, EspiaState } from './types';
@@ -32,7 +32,9 @@ type EspiaTxFn = (game: EspiaState, m: MatchDoc) => EspiaState | EspiaTxExtra | 
 
 // Transacción sobre el doc de la partida: lee, aplica fn sobre una copia y
 // escribe. fn devuelve null para abortar sin cambios (otro se adelantó).
-async function espiaTx(fn: EspiaTxFn, mid?: string): Promise<void> {
+// Con la partida en pausa nadie mueve ficha (salvo las acciones de la propia
+// pausa, que pasan `allowPaused`).
+async function espiaTx(fn: EspiaTxFn, mid?: string, opts: { allowPaused?: boolean } = {}): Promise<void> {
   const slug = mySlug();
   const id = mid ?? ctxMatchId('espia');
   if (!id) return;
@@ -42,6 +44,7 @@ async function espiaTx(fn: EspiaTxFn, mid?: string): Promise<void> {
     const m = { id: snap.id, ...snap.data() } as MatchDoc;
     const game = m.game as unknown as EspiaState | null;
     if (!game || !game.espia) return;
+    if (game.paused && !opts.allowPaused) return;
     const copy = JSON.parse(JSON.stringify(game)) as EspiaState;
     const res = fn(copy, m);
     if (!res) return;
@@ -76,6 +79,7 @@ export async function startEspia(playerIds: string[], speakerId: string | null, 
     seen: {}, durationMs: Math.max(1, durationMin) * (e2eTestMode() ? 4000 : 60000), deadline: null,
     voteSeq: 0, accusedUsed: {}, vote: null, timeupTurn: null,
     usedLocations: [deal.locationId], scores: {}, history: [], outcome: null,
+    paused: null, repeatNonce: 0,
     log: [{ txt: `🕵️ Ronda 1: identidades repartidas (${playerIds.length} agentes… o casi).` }],
   };
   await txWithRetry(async (tx) => {
@@ -165,6 +169,37 @@ export async function timeupPass(): Promise<void> {
   });
 }
 
+/** Desatasco: la mesa salta el turno de quien no responde (móvil muerto, se
+ *  fue al baño…). Lo pide cualquier OTRO jugador de la ronda; sin esto, la
+ *  única salida era borrar la partida. */
+export async function timeupSkip(): Promise<void> {
+  const me = myPid();
+  await espiaTx((game) => {
+    if (game.phase !== 'timeup' || game.vote || game.timeupTurn === null) return null;
+    if (!game.playerIds.includes(me)) return null;
+    const holder = timeupOrder(game)[game.timeupTurn];
+    if (!holder || holder === me) return null; // el suyo lo pasa él con «🤐 Paso»
+    game.log.push({ txt: `⏭️ La mesa salta el turno de ${nameOf(game, holder)} (no responde).` });
+    return advanceTimeupTurn(game);
+  });
+}
+
+/** Retirar la acusación propia: si alguien no vota, la mesa se quedaba
+ *  colgada para siempre. La acusación sigue GASTADA (si se devolviera, parar
+ *  el reloj para leer caras y retirar saldría gratis). */
+export async function cancelAccusation(): Promise<void> {
+  const me = myPid();
+  await espiaTx((game) => {
+    const vote = game.vote;
+    if (!vote || game.phase === 'end' || vote.accuserId !== me) return null;
+    game.vote = null;
+    game.log.push({ txt: `↩️ ${nameOf(game, me)} retira su acusación contra ${nameOf(game, vote.accusedId)}.` });
+    if (vote.fromTimeup) return advanceTimeupTurn(game); // era su turno: pasa
+    game.deadline = Date.now() + vote.frozenMs; // el reloj se reanuda donde estaba
+    return game;
+  });
+}
+
 // Turno siguiente tras un pase o una votación fallida; si se acaban, el espía gana.
 function advanceTimeupTurn(game: EspiaState): EspiaState {
   const order = timeupOrder(game);
@@ -198,11 +233,13 @@ export async function voteAccusation(agree: boolean): Promise<void> {
   });
 }
 
-/** El espía se revela y adivina la localización (nunca durante una votación). */
+/** El espía se revela y adivina la localización: mientras corre el reloj Y
+ *  también en la tanda de acusaciones (nunca durante una votación). Su jugada
+ *  no caduca con el reloj: es lo que prometen su carta y la chuleta. */
 export async function spyGuess(guessId: string): Promise<void> {
   const me = myPid();
   await espiaTx((game) => {
-    if (game.phase !== 'play' || game.vote || me !== game.spyId) return null;
+    if ((game.phase !== 'play' && game.phase !== 'timeup') || game.vote || me !== game.spyId) return null;
     if (!locationById(guessId)) return null;
     return finishRound(game, resolveGuess(game, guessId));
   });
@@ -239,6 +276,12 @@ function finishRound(game: EspiaState, outcome: EspiaOutcome): EspiaState {
 export async function nextRound(): Promise<void> {
   await espiaTx((game) => {
     if (game.phase !== 'end') return null;
+    // Sin quórum no se reparte: con 2 la ronda sale degenerada (el «espía» y un
+    // agente) y nadie tendría a quién acusar. La UI ya lo avisa; esto cubre la
+    // carrera de dos dedos a la vez.
+    if (game.playerIds.length < ESPIA_MIN_PLAYERS) {
+      throw new Error(`Faltan jugadores: El Espía necesita ${ESPIA_MIN_PLAYERS} para otra ronda.`);
+    }
     const round = game.round + 1;
     const deal = dealRound(game.playerIds, round, game.usedLocations, Date.now());
     game.round = round;
@@ -262,6 +305,71 @@ export async function nextRound(): Promise<void> {
   });
 }
 
+/** Incorporar gente ENTRE rondas (llega alguien, o el altavoz se anima a
+ *  jugar). Solo en `end`: a mitad de ronda no hay carta que darle. */
+export async function addPlayers(pids: string[]): Promise<void> {
+  const slug = mySlug();
+  const id = ctxMatchId('espia');
+  if (!id || !pids.length) return;
+  await txWithRetry(async (tx) => {
+    const snap = await tx.get(mref(slug, id));
+    if (!snap.exists()) return;
+    const m = { id: snap.id, ...snap.data() } as MatchDoc;
+    const game = m.game as unknown as EspiaState | null;
+    if (!game || !game.espia || game.phase !== 'end' || game.paused) return;
+    const members = m.members || [];
+    const adds = pids.filter((pid) => !game.playerIds.includes(pid));
+    if (!adds.length) return;
+    if (game.playerIds.length + adds.length > ESPIA_MAX_PLAYERS) {
+      throw new Error(`El Espía admite ${ESPIA_MAX_PLAYERS} jugadores como mucho (7 papeles + el espía).`);
+    }
+    // Nadie puede estar en dos partidas a la vez (lectura ANTES de escribir).
+    const outsiders = adds.filter((pid) => !members.includes(pid));
+    if (outsiders.length) await assertFree(tx, slug, outsiders, id);
+    const copy = JSON.parse(JSON.stringify(game)) as EspiaState;
+    for (const pid of adds) {
+      copy.names[pid] = state.players.find((p) => p.id === pid)?.name || copy.names[pid] || pid;
+    }
+    copy.playerIds = [...copy.playerIds, ...adds];
+    copy.log.push({ txt: `🪑 Se sienta${adds.length > 1 ? 'n' : ''} a la mesa: ${adds.map((pid) => copy.names[pid]).join(', ')}. Entra${adds.length > 1 ? 'n' : ''} en la próxima ronda.` });
+    tx.update(mref(slug, id), {
+      game: sanitize(copy),
+      members: sanitize([...new Set([...members, ...adds])]),
+    });
+  });
+}
+
+// ——— Pausa y repetición (⋯) ———
+
+/** Congela la ronda: el reloj deja de correr y el narrador calla. */
+export async function pauseGame(): Promise<void> {
+  await espiaTx((game) => {
+    if (game.phase === 'end' || game.paused) return null;
+    const who = state.players.find((p) => p.id === myPid());
+    game.paused = { by: myPid(), name: who?.name || 'alguien', at: Date.now() };
+    return game;
+  }, undefined, { allowPaused: true });
+}
+
+export async function resumeGame(): Promise<void> {
+  await espiaTx((game) => {
+    if (!game.paused) return null;
+    // El interrogatorio no pierde ni un segundo: el reloj se desplaza lo que
+    // duró la pausa.
+    if (game.deadline !== null) game.deadline += Math.max(0, Date.now() - game.paused.at);
+    game.paused = null;
+    return game;
+  }, undefined, { allowPaused: true });
+}
+
+/** «🔁 Repetir»: señal de flanco para que el narrador re-locute la escena. */
+export async function requestRepeat(): Promise<void> {
+  await espiaTx((game) => {
+    game.repeatNonce = (game.repeatNonce || 0) + 1;
+    return game;
+  }, undefined, { allowPaused: true });
+}
+
 /** Terminar el juego: sus miembros quedan libres y vuelven al lobby de El Espía. */
 export async function endEspia(mid?: string): Promise<void> {
   const id = mid ?? ctxMatchId('espia');
@@ -276,7 +384,9 @@ registerMatchTools('espia', {
 });
 
 /** Dejar la ronda en curso (salida administrativa, sin puntos de última hora).
- *  Con targetPid, saca a OTRO desde la mesa; quien sale queda libre. */
+ *  Con targetPid, saca a OTRO desde la mesa; quien sale queda libre.
+ *  Funciona también en pausa: si no, alguien que abandona la mesa se quedaría
+ *  de fantasma en la ronda hasta que a alguien se le ocurriera reanudar. */
 export async function leaveRound(targetPid?: string, mid?: string): Promise<void> {
   const me = targetPid || myPid();
   await espiaTx((game, m) => {
@@ -315,18 +425,8 @@ export async function leaveRound(targetPid?: string, mid?: string): Promise<void
     delete game.seen[me];
     game.log.push({ txt: `🚪 ${nameOf(game, me)} deja la ronda.` });
     if (game.playerIds.length < ESPIA_MIN_PLAYERS) {
-      // Sin quórum: la ronda se disuelve sin puntos.
-      game.phase = 'end';
-      game.vote = null;
-      game.deadline = null;
-      game.timeupTurn = null;
-      game.outcome = {
-        type: 'spy_survived', spyId: game.spyId, locationId: game.locationId, delta: {},
-        txt: `🚪 Quedan menos de ${ESPIA_MIN_PLAYERS}: la ronda se disuelve sin puntos. El espía era ${nameOf(game, game.spyId)} y el lugar, ${locationById(game.locationId)?.name || game.locationId}.`,
-      };
-      game.history.push({ round: game.round, locationId: game.locationId, spyId: game.spyId, txt: game.outcome.txt });
-      game.log.push({ txt: game.outcome.txt });
-      return out(game);
+      // Sin quórum: ronda ANULADA (ni puntos ni victoria de nadie; ver R4).
+      return out(finishRound(game, resolveVoid(game)));
     }
     if (game.phase === 'reveal') {
       // Aún sin empezar: se reparte de nuevo entre los que quedan y todos
@@ -346,10 +446,12 @@ export async function leaveRound(targetPid?: string, mid?: string): Promise<void
     if (game.vote) {
       const v = game.vote;
       if (v.accuserId === me || v.accusedId === me) {
-        // La acusación pierde una de sus partes: cae y el juego sigue.
+        // La acusación pierde una de sus partes: cae y el juego sigue. En
+        // pausa el reloj cuenta desde el instante congelado (al reanudar se
+        // desplaza), no desde ahora.
         game.vote = null;
         if (v.fromTimeup) return out(advanceTimeupTurn(game));
-        game.deadline = Date.now() + v.frozenMs;
+        game.deadline = (game.paused ? game.paused.at : Date.now()) + v.frozenMs;
         return out(game);
       }
       delete v.votes[me];
@@ -374,5 +476,5 @@ export async function leaveRound(targetPid?: string, mid?: string): Promise<void
       }
     }
     return out(game);
-  }, mid);
+  }, mid, { allowPaused: true });
 }

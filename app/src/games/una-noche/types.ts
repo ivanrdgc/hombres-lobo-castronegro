@@ -102,6 +102,9 @@ export interface GameState {
   names: Record<string, string>;
   steps: StepId[];
   stepIdx: number;
+  /** Pasos (por índice) que el narrador ha SALTADO a mano porque nadie actuaba:
+   *  a partir de ahí ese paso no espera a nadie y la noche puede seguir. */
+  skippedSteps?: number[];
   acts: Acts;
   /** Carta repartida a cada jugador (lo que ve al empezar y qué HACE de noche). */
   originalRole: Record<string, RoleId>;
@@ -126,7 +129,8 @@ export interface GameState {
   winner?: WinnerId | null;
   /** Todos los bandos ganadores (Una Noche admite varios: p. ej. Curtidor + Pueblo). */
   winners?: WinnerId[];
-  /** Temporizador opcional de debate (ms epoch); null = sin límite. */
+  /** Fin del tiempo de debate (ms epoch); null = sin límite. En Una Noche el
+   *  límite (unos minutos) es parte de la regla: al agotarse, se vota. */
   discussionEndsAt?: number | null;
   paused?: { by: string; name?: string; at: number } | null;
   repeatNonce?: number;

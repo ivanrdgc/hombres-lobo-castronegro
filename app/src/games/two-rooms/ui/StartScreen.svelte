@@ -4,7 +4,7 @@
   import { app, matchOf, me, navigate } from '../../../core/sync/store.svelte';
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
-  import { MIN_PLAYERS, MAX_PLAYERS } from '../engine';
+  import { MIN_PLAYERS, MAX_PLAYERS, roundsFor, minutesForRound } from '../engine';
   import { isActiveDevice } from '../../../core/sync/presence';
   import { defaultNarrator } from '../../../shell/ui-helpers';
   import { unlockAudio } from '../../../core/audio/engine';
@@ -40,10 +40,16 @@
 
   const tooFew = $derived(chosen.length < MIN_PLAYERS);
   const tooMany = $derived(chosen.length > MAX_PLAYERS);
+  // Rondas y rehenes escalan con la mesa: conviene verlo ANTES de empezar.
+  const rounds = $derived(roundsFor(chosen.length));
+  const mins = $derived(Array.from({ length: rounds }, (_, i) => minutesForRound(i + 1, rounds)).join(', '));
+  const hostages = $derived(Math.max(1, Math.ceil(Math.floor(chosen.length / 2) / 4)));
 
   // Modo de voz: un narrador (single), uno por sala (perRoom) o todos los
   // móviles (all). El altavoz de la Sala 1 es `narrator` (el masterId).
-  let voiceMode = $state<'single' | 'perRoom' | 'all'>('single');
+  // Por defecto UNO POR SALA: con `single` la Sala 2 se queda sin voz y sin
+  // wakeLock (pantallas apagándose), que es justo lo que no queremos.
+  let voiceMode = $state<'single' | 'perRoom' | 'all'>('perRoom');
   const speakerCands = $derived(rows.filter((p) => !matchOf(p.id)));
   let spk1Pick = $state<string | null>(null);
   const speaker1 = $derived.by(() => {
@@ -111,7 +117,7 @@
           </button>
         {/each}
       </div>
-      <p class="small-note">Poned un dispositivo en cada sala (mejor si NO juegan: un altavoz que sea jugador se llevaría la voz al cambiar de sala). Ambos narran lo mismo.</p>
+      <p class="small-note">Poned un dispositivo en cada sala; ambos narran lo mismo. Lo ideal es que NO jueguen (una tele, una tablet vieja): así se quedan clavados en su sala. Si el altavoz es un jugador y cruza como rehén, la app pasa la voz de esa sala a otro móvil de los que se quedan.</p>
     </div>
   {/if}
 
@@ -121,7 +127,7 @@
   {#if voiceMode === 'perRoom'}
     <p class="small-note">🔊 Sala 1: <b>{narratorP?.name || '¿?'}</b>{#if speaker1P} · Sala 2: <b>{speaker1P.name}</b>{:else} · <span style="opacity:.8">falta elegir la voz de la Sala 2 (si no, esa sala se queda sin audio)</span>{/if}. Pantalla encendida y volumen alto.</p>
   {:else if voiceMode === 'single' && narratorP}
-    <p class="small-note">🔊 <b>{narratorP.name}</b> pone la voz{seat.chosen.includes(narratorP.id) ? ' y también juega' : ' (no juega: tele o altavoz)'}. Solo llegará a su sala; la otra seguirá el temporizador en pantalla.</p>
+    <p class="small-note">🔊 <b>{narratorP.name}</b> pone la voz{seat.chosen.includes(narratorP.id) ? ' y también juega' : ' (no juega: tele o altavoz)'}. ⚠️ Solo llegará a su sala: la otra se queda MUDA y sigue el temporizador en pantalla (y sin nadie que mantenga la pantalla encendida).</p>
   {/if}
 </div>
 
@@ -131,6 +137,9 @@
   </p>
   {#if tooFew}<p class="small-note">⚠️ Two Rooms necesita al menos {MIN_PLAYERS} jugadores.</p>{/if}
   {#if tooMany}<p class="small-note">⚠️ Máximo {MAX_PLAYERS} jugadores: deja fuera a {chosen.length - MAX_PLAYERS}.</p>{/if}
+  {#if !tooFew && !tooMany}
+    <p class="small-note">⏱️ Con {chosen.length} jugadores se juegan <b>{rounds} rondas</b> de {mins} minutos, y cada sala manda <b>{hostages === 1 ? 'un rehén' : `${hostages} rehenes`}</b> por ronda.</p>
+  {/if}
   <div id="form-error">
     {#if app.ui.formError}<div class="flash error">{app.ui.formError}</div>{/if}
   </div>

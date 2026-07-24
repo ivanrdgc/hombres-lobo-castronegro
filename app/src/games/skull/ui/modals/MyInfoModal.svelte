@@ -14,8 +14,9 @@
   const rows = [
     { emoji: '🌸', name: 'Flor', note: '3 por jugador', desc: 'Segura de levantar: suma para la apuesta.' },
     { emoji: '💀', name: 'Calavera', note: '1 por jugador', desc: 'Si el que revela la destapa, falla y pierde un disco AL AZAR. Ponértela a ti mismo es un arma de doble filo: tú la levantas primero.' },
-    { emoji: '🗣️', name: 'La apuesta', desc: '«Levantaré N flores seguidas sin topar calavera» (máx.: discos en mesa). Los demás suben o pasan; el que puja más alto revela.' },
-    { emoji: '🎲', name: 'El revelado', desc: 'Primero TODA tu pila; luego el disco de arriba de las pilas que elijas. Logradas las N flores: un reto ⭐. Dos ⭐ (o quedar el último con discos) ganan la partida.' },
+    { emoji: '🗣️', name: 'La apuesta', desc: '«Levantaré tantas flores seguidas sin topar calavera» (máx.: discos en mesa). Los demás suben o pasan; pasar es definitivo y el que puja más alto revela.' },
+    { emoji: '🎲', name: 'El revelado', desc: 'Primero tu propia pila, de arriba abajo y hasta agotarla; solo entonces el disco de arriba de las pilas que elijas. Logradas las flores apostadas: un reto ⭐. Dos ⭐ (o quedar el último con discos) ganan la partida.' },
+    { emoji: '🔄', name: 'Fin de ronda', desc: 'Cada uno recoge TODA su pila: solo se pierde el disco descartado al fallar. Empieza la ronda quien ganó el reto o, si falló, quien perdió el disco.' },
   ];
 </script>
 

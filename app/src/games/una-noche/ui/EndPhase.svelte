@@ -18,6 +18,9 @@
   const dead = $derived(new Set(game.deaths || []));
   const rn = (r: RoleId) => `${ROLES[r].emoji} ${ROLES[r].name}`;
   const nm = (pid: string) => game.names[pid] || '¿?';
+  // La revancha re-reparte al instante PARA TODOS y borra esta revelación
+  // mientras el resto la lee: se confirma antes de barrer la mesa.
+  let againArmed = $state(false);
 </script>
 
 <div class="narration">🌅 Amanece del todo y se destapan las cartas.</div>
@@ -57,7 +60,15 @@
   <p class="small-note">El orden de la noche fue el de las llamadas; aquí se agrupa por jugador.</p>
 </div>
 
-<button class="primary block" data-a="una-again" onclick={() => guard(A.playAgain)}>🔁 Otra partida (mismos jugadores)</button>
+{#if !againArmed}
+  <button class="primary block" data-a="una-again" onclick={() => (againArmed = true)}>🔁 Otra partida (mismos jugadores)</button>
+{:else}
+  <div class="card">
+    <p class="hint">⚠️ Esto reparte de nuevo <b>para toda la mesa</b> y borra esta revelación. ¿Han terminado todos de leerla?</p>
+    <button class="primary block" data-a="una-again-ok" onclick={() => guard(A.playAgain)}>🔁 Sí, repartid otra vez</button>
+    <button class="ghost block" data-a="una-again-no" onclick={() => (againArmed = false)}>↩️ Aún no</button>
+  </div>
+{/if}
 <button class="ghost block" data-a="una-back-lobby" onclick={() => guard(() => A.endUnaNoche())}>🏁 Terminar y volver al lobby</button>
 
 <style>

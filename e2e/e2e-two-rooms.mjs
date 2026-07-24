@@ -4,6 +4,8 @@
 // rondas contrarreloj → voto de rehén de cada sala e intercambio → desenlace
 // (¿acabó el Bombardero junto al Presidente?). La secrecía es solo de UI: el
 // doc tiene bandos y roles, así que el test (god-view) valida el dictamen final.
+// Cubre además las dos salidas del voto de rehén (que antes podía colgarse):
+// «🔒 Cerrar la votación» con la mayoría votada, y el plazo que cierra solo.
 import { chromium } from 'playwright';
 const BASE = process.env.BASE; if (!BASE) { console.error('Define BASE=https://tu-sitio.web.app'); process.exit(1); }
 let fail = 0;
@@ -24,8 +26,9 @@ const hlc = (page) => page.evaluate(() => {
   return !g ? null : {
     phase: g.phase, round: g.round, totalRounds: g.totalRounds, playerIds: g.playerIds,
     names: g.names, teams: g.teams, roles: g.roles, room: g.room, seen: g.seen,
-    hVotes: g.hVotes || {}, pick: g.pick, winner: g.winner, scores: g.scores,
-    logLen: (g.log || []).length, log: (g.log || []).map((l) => l.txt),
+    hVotes: g.hVotes || {}, picks: g.picks || {}, swaps: g.swaps || [],
+    winner: g.winner, winReason: g.winReason,
+    scores: g.scores, logLen: (g.log || []).length, log: (g.log || []).map((l) => l.txt),
   };
 });
 async function waitState(page, fn, what, timeout = 45000) {
@@ -41,19 +44,26 @@ const membersOf = (s, r) => s.playerIds.filter((pid) => s.room[pid] === r);
 const sig = (s) => `${s.phase}|${s.round}|${s.logLen}|${Object.keys(s.hVotes).length}`;
 const roleId = (s, role) => s.playerIds.find((pid) => s.roles[pid] === role);
 
-async function voteHostages() {
+// Un voto por la UI real (toda la sala vota al primero de su sala: determinista).
+async function castVote(s, voter) {
+  const target = membersOf(s, s.room[voter])[0];
+  const before = sig(s);
+  const page = pg(voter);
+  await page.click(`.player[data-a=tr-hostage][data-p="${target}"]`, { timeout: 15000 });
+  await page.click('[data-a=tr-hostage-confirm]:not([disabled])');
+  await waitState(pages.ana, (x) => sig(x) !== before, 'voto de rehén registrado');
+}
+
+const decided = (s, r) => Array.isArray(s.picks[r]); // esa sala ya cerró su votación
+
+async function voteHostages(only = null) {
   for (let i = 0; i < 16; i++) {
     const s = await st();
     if (s.phase !== 'hostages') return;
-    const pending = s.playerIds.filter((pid) => s.hVotes[pid] === undefined);
+    const pending = s.playerIds.filter((pid) => s.hVotes[pid] === undefined
+      && (only === null || s.room[pid] === only) && !decided(s, s.room[pid]));
     if (!pending.length) return;
-    const voter = pending[0];
-    const target = membersOf(s, s.room[voter])[0]; // toda la sala vota al primero (determinista)
-    const before = sig(s);
-    const page = pg(voter);
-    await page.click(`.player[data-a=tr-hostage][data-p="${target}"]`, { timeout: 15000 });
-    await page.click('[data-a=tr-hostage-confirm]:not([disabled])');
-    await waitState(pages.ana, (x) => sig(x) !== before, 'voto de rehén registrado');
+    await castVote(s, pending[0]);
   }
 }
 
@@ -98,6 +108,7 @@ try {
   check(!!roleId(s, 'president') && s.teams[roleId(s, 'president')] === 'blue', 'hay un Presidente azul');
   check(!!roleId(s, 'bomber') && s.teams[roleId(s, 'bomber')] === 'red', 'hay un Bombardero rojo');
   check(membersOf(s, 0).length === 3 && membersOf(s, 1).length === 3, 'las dos salas tienen 3 cada una');
+  check(s.totalRounds === 3, 'con 6 jugadores se juegan 3 rondas (con 11+ serían 5)');
   console.log('  presidente:', roleId(s, 'president'), '· bombardero:', roleId(s, 'bomber'));
 
   for (const pid of s.playerIds) {
@@ -105,10 +116,27 @@ try {
     await p.waitForSelector('[data-a=tr-reveal]', { timeout: 15000 });
     await p.click('[data-a=tr-reveal]');
     await p.waitForSelector('[data-a=tr-seen]');
+    if (pid === s.playerIds[0]) {
+      // «Enseñar solo el color»: la jugada del Presidente (bando sin rol).
+      await p.click('[data-a=tr-color-only]');
+      await p.waitForSelector('[data-a=tr-color]', { timeout: 5000 });
+      check(await p.locator('[data-a=tr-card]').count() === 0, 'el modo «solo el color» esconde el rol');
+      await p.click('[data-a=tr-color-back]');
+      await p.waitForSelector('[data-a=tr-card]', { timeout: 5000 });
+    }
     await p.click('[data-a=tr-seen]');
     await p.waitForTimeout(80);
   }
   await waitState(ana, (x) => x.playerIds.every((pid) => x.seen[pid]), 'todos ven su carta');
+  // El tablero de salas se ve YA en el reparto: es cuando hace falta para colocarse.
+  check(await ana.locator('.room').count() === 2, 'el reparto enseña el tablero de las dos salas');
+  // «🪑 La mesa» desde el menú ⋯: el rescate de un móvil colgado sin salir de la partida.
+  await ana.click('[data-a=game-menu]');
+  await ana.waitForSelector('[data-a=table-open]', { timeout: 5000 });
+  await ana.click('[data-a=table-open]');
+  await ana.waitForSelector('[data-a=table-player]', { timeout: 5000 });
+  ok('el menú ⋯ ofrece «🪑 La mesa» dentro de la partida');
+  await ana.click('.modal button[data-a=close-modal]');
   await pg(s.playerIds[0]).click('[data-a=tr-begin]');
   ok('reparto confirmado');
 
@@ -117,11 +145,40 @@ try {
     await waitState(ana, (x) => x.phase === 'discuss' && x.round === r, `ronda ${r} en marcha`, 30000);
     s = await waitState(ana, (x) => x.phase === 'hostages' && x.round === r, `fin del tiempo de la ronda ${r}`, 30000);
     check(true, `ronda ${r}: el reloj llega a cero y toca mandar rehenes`);
-    await voteHostages();
+    if (r === 1) {
+      // Salida 1: con la MAYORÍA votada se puede cerrar sin esperar al que falta
+      // (antes, un móvil muerto dejaba la partida colgada para siempre).
+      const room0 = membersOf(s, 0);
+      await castVote(s, room0[0]);
+      await castVote(await st(), room0[1]);
+      const closer = pg(room0[0]);
+      await closer.waitForSelector('[data-a=tr-close-vote]', { timeout: 10000 });
+      await closer.click('[data-a=tr-close-vote]');
+      // Cerrar deja a alguien sin voto: pide un segundo gesto que nombra a quién.
+      await closer.waitForSelector('[data-a=tr-close-vote-confirm]', { timeout: 10000 });
+      check(await closer.locator('[data-a=tr-close-vote-cancel]').count() > 0, 'cerrar la votación se puede cancelar');
+      await closer.click('[data-a=tr-close-vote-confirm]');
+      s = await waitState(ana, (x) => decided(x, 0), 'la sala 1 cierra su votación con la mayoría');
+      check(s.hVotes[room0[2]] === undefined, 'se cerró sin el voto del que faltaba');
+      check(!s.log.some((t) => /La sala \d manda de rehén a/.test(t)), 'no se revela a quién manda una sala antes de que decidan las dos');
+      await voteHostages(1); // la otra sala vota normal
+    } else if (r === 2) {
+      // Salida 2: nadie vota y el PLAZO cierra las dos salas solo.
+      s = await waitState(ana, (x) => x.phase !== 'hostages' || x.round !== 2, 'el plazo del voto cierra la votación solo', 30000);
+      check(s.log.some((t) => /Se acaba el tiempo de votar/.test(t)), 'el diario explica el cierre por reloj');
+    } else {
+      await voteHostages();
+    }
     if (r < 3) {
       // B22: tras el intercambio hay COLOCACIÓN sin reloj; se confirma con botón.
       s = await waitState(ana, (x) => x.round === r + 1 && x.phase === 'move', `colocación tras la ronda ${r}`, 30000);
       check(s.log.some((t) => /Colocaos/.test(t)), 'la voz pide colocarse (sin reloj)');
+      if (r === 1) {
+        // Al rehén se le avisa EN SU PANTALLA de que le toca levantarse.
+        const crosser = s.swaps[s.swaps.length - 1].from0[0];
+        await pg(crosser).waitForSelector('[data-a=tr-cross]', { timeout: 10000 });
+        ok('el rehén ve un aviso personal de que le toca cruzar');
+      }
       await pg(s.playerIds[0]).click('[data-a=tr-begin]');
       s = await waitState(ana, (x) => x.round === r + 1 && x.phase === 'discuss', `arranca la ronda ${r + 1}`, 30000);
     } else {
@@ -136,6 +193,7 @@ try {
   const bomb = roleId(s, 'bomber');
   const expected = s.room[pres] === s.room[bomb] ? 'red' : 'blue';
   check(s.winner === expected, `el dictamen es correcto: ${expected === 'red' ? 'mismo cuarto → BOOM (rojo)' : 'cuartos distintos → azul'}`);
+  check((s.winReason || '').includes(expected === 'red' ? 'BOOM' : 'sobrevive'), 'el cartel final explica POR QUÉ se ganó');
   check(s.playerIds.filter((pid) => s.teams[pid] === s.winner).every((pid) => s.scores[pid] === 1), 'todo el bando ganador suma 1 punto');
   check(s.log.some((t) => /El Presidente era/.test(t)), 'la voz destapa Presidente y Bombardero y anuncia el ganador');
   await ana.waitForSelector('text=/Marcador/');

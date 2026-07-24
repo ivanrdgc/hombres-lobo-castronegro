@@ -9,7 +9,7 @@
   import { play } from '../../../core/audio/player';
   import type { GroupDoc, PlayerDoc } from '../../../core/sync/schema';
   import * as A from '../actions';
-  import { MIN_PLAYERS, MAX_PLAYERS } from '../engine';
+  import { MIN_PLAYERS, MAX_PLAYERS, goalOptions } from '../engine';
   import Flash from '../../../shell/Flash.svelte';
   import SeatPicker from '../../../shell/SeatPicker.svelte';
 
@@ -33,6 +33,13 @@
   const narratorP = $derived(app.players.find((p) => p.id === narrator));
   const okStart = $derived(n >= MIN_PLAYERS && n <= MAX_PLAYERS);
 
+  // Meta: sin ella la partida no terminaba nunca y «Terminar» borraba el
+  // marcador sin resumen. Índice 0 = una vuelta a la mesa (lo que espera todo
+  // el mundo: que cada uno haya sido Psíquico una vez).
+  let goalIdx = $state(0);
+  const goals = $derived(goalOptions(Math.max(n, MIN_PLAYERS)));
+  const goal = $derived(goals[Math.min(goalIdx, goals.length - 1)] ?? null);
+
   function startNow() {
     const pids = chosen.map((p) => p.id);
     if (narrator === meId) {
@@ -40,7 +47,7 @@
       play({ id: 'unlock', segments: [{ kind: 'clip', text: 'Sintonizad.' }] }).catch(() => {});
       app.ui.voiceUnlocked = true;
     }
-    guard(() => A.startWavelength(pids, narrator));
+    guard(() => A.startWavelength(pids, narrator, goal));
   }
 </script>
 
@@ -67,6 +74,18 @@
     {/each}
   </div>
   {#if narratorP}<p class="small-note">🔊 <b>{narratorP.name}</b> pone la voz{seat.chosen.includes(narratorP.id) ? ' y también juega' : ' (no juega)'}.</p>{/if}
+</div>
+
+<div class="card">
+  <h3>🏁 ¿Hasta cuándo jugáis?</h3>
+  <p class="small-note" style="margin-top:6px">Al cumplirse la meta sale el resumen final con el total del equipo. Podéis seguir jugando rondas de propina igualmente.</p>
+  <div class="btnrow" style="margin-top:6px">
+    {#each goals as g, i (i)}
+      <button class="small {goalIdx === i ? 'primary' : 'ghost'}" data-a="wl-goal" data-p={String(i)} style="flex:0 1 auto;min-width:0" onclick={() => (goalIdx = i)}>
+        {g ? g.label : '♾️ Sin meta (las que queráis)'}
+      </button>
+    {/each}
+  </div>
 </div>
 
 <div class="card">

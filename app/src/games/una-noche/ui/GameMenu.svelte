@@ -31,6 +31,8 @@
           <button role="menuitem" data-a="una-pause" onclick={() => { guard(A.pauseGame); close(); }}>⏸️ Pausar</button>
         {/if}
       {/if}
+      <!-- Rescate cuando un móvil se queda sin batería y la fase lo espera (B26). -->
+      <button role="menuitem" data-a="una-table-open" onclick={() => { app.ui.modal = { type: 'table' }; close(); }}>🪑 La mesa</button>
       {#if spectator}
         <button role="menuitem" data-a="back-to-mesa" onclick={() => { close(); navigate(`/g/${slug}`); }}>← Volver a la mesa</button>
       {/if}

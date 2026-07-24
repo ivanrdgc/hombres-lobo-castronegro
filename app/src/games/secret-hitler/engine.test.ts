@@ -12,6 +12,7 @@ import type { RoleId } from './roles';
 import {
   presidentId, nextAliveIdx, advancePresidency, eligibleChancellors, tallyElection,
   refillIfNeeded, drawTop, enactPolicy, checkPolicyWin, hitlerChancellorWin, pendingActors, aliveIds,
+  applyChaos, applyVetoAccept, applyVetoRefuse, canVeto,
 } from './engine';
 import type { SHState } from './types';
 
@@ -21,11 +22,11 @@ const mkGame = (over: Partial<SHState> = {}): SHState => ({
   secretHitler: true, phase: 'nominate', startedAt: 1, seed: 1,
   playerIds: [], names: {}, roles: {}, alive: {}, seen: {},
   presidentIdx: 0, specialPresident: null, nominatedChancellor: null,
-  lastPresident: null, lastChancellor: null, votes: {}, lastElection: null,
+  lastPresident: null, lastChancellor: null, votes: {}, lastElection: null, elections: 0,
   electionTracker: 0, liberalPolicies: 0, fascistPolicies: 0,
   draw: [], discard: [], presidentDraw: null, chancellorDraw: null,
   vetoUnlocked: false, vetoRequested: false, lastEnacted: null, power: null,
-  peek: null, investigateResult: null, investigated: [], reshuffles: 0,
+  peek: null, investigateResult: null, investigated: [], chaosCount: 0, lastExecuted: null, reshuffles: 0,
   winner: null, winReason: null, log: [], ...over,
 });
 const allAlive = (pids: string[]) => Object.fromEntries(pids.map((p) => [p, true]));
@@ -176,6 +177,107 @@ test('factionOf: Hitler cuenta como fascista', () => {
   assert.equal(factionOf('hitler'), 'fascist');
   assert.equal(factionOf('fascist'), 'fascist');
   assert.equal(factionOf('liberal'), 'liberal');
+});
+
+// ——— Caos (3 gobiernos caídos) ———
+
+const chaosGame = (over: Partial<SHState> = {}): SHState => {
+  const pids = ['p0', 'p1', 'p2', 'p3', 'p4'];
+  return mkGame({
+    playerIds: pids, alive: allAlive(pids), presidentIdx: 0,
+    lastPresident: 'p4', lastChancellor: 'p3', nominatedChancellor: 'p3',
+    electionTracker: 3, draw: ['fascist', 'liberal', 'liberal', 'fascist'], ...over,
+  });
+};
+
+test('applyChaos: promulga a ciegas el decreto de arriba, sin poder y borrando los límites de mandato', () => {
+  const g = chaosGame({ fascistPolicies: 2 }); // con 5 jugadores, el 3.º fascista daría «mirar»
+  const out = applyChaos(g);
+  assert.equal(out.policy, 'fascist', 'sale la carta de arriba del mazo');
+  assert.equal(g.fascistPolicies, 3, 'el decreto sube al marcador');
+  assert.equal(g.power, null, 'el caos NO dispara el poder presidencial');
+  assert.equal(g.electionTracker, 0, 'la cuenta de gobiernos caídos se reinicia');
+  assert.equal(g.lastPresident, null, 'se borran los límites de mandato');
+  assert.equal(g.lastChancellor, null);
+  assert.equal(g.nominatedChancellor, null);
+  assert.equal(g.chaosCount, 1, 'se cuenta el caos (la voz lo anuncia una vez)');
+  assert.equal(g.phase, 'nominate');
+  assert.equal(g.presidentIdx, 1, 'la presidencia pasa al siguiente vivo');
+  assert.equal(g.draw.length, 3, 'la carta sale del mazo');
+  // Tras el caos cualquiera vale de Canciller salvo el Presidente de turno.
+  assert.deepEqual(eligibleChancellors(g).sort(), ['p0', 'p2', 'p3', 'p4']);
+});
+
+test('applyChaos: si el decreto a ciegas cierra el marcador, la partida termina', () => {
+  const g = chaosGame({ fascistPolicies: 5, draw: ['fascist', 'liberal', 'liberal'] });
+  const out = applyChaos(g);
+  assert.equal(out.win.winner, 'fascist');
+  assert.equal(g.winner, 'fascist');
+  assert.equal(g.phase, 'end');
+  assert.ok(g.winReason, 'el desenlace explica el porqué');
+});
+
+test('applyChaos rebaraja si el mazo se ha quedado corto (nunca se queda sin cartas)', () => {
+  const g = chaosGame({ draw: [], discard: ['liberal', 'liberal', 'fascist'] });
+  const out = applyChaos(g);
+  assert.ok(['liberal', 'fascist'].includes(out.policy));
+  assert.equal(g.reshuffles, 1);
+  assert.equal(g.liberalPolicies + g.fascistPolicies, 1);
+});
+
+// ——— Veto (con 5 decretos fascistas) ———
+
+const vetoGame = (over: Partial<SHState> = {}): SHState => {
+  const pids = ['p0', 'p1', 'p2', 'p3', 'p4'];
+  return mkGame({
+    playerIds: pids, alive: allAlive(pids), presidentIdx: 0, phase: 'vetoDecision',
+    nominatedChancellor: 'p1', lastPresident: 'p0', lastChancellor: 'p1',
+    chancellorDraw: ['fascist', 'fascist'], discard: [], draw: ['liberal', 'fascist', 'liberal'],
+    fascistPolicies: 5, vetoUnlocked: true, vetoRequested: true, electionTracker: 0, ...over,
+  });
+};
+
+test('canVeto: solo con el veto desbloqueado y si el Presidente no lo rechazó ya', () => {
+  assert.equal(canVeto(vetoGame()), true);
+  assert.equal(canVeto(vetoGame({ vetoUnlocked: false })), false, 'sin 5 decretos fascistas no hay veto');
+  assert.equal(canVeto(vetoGame({ vetoRefused: true })), false, 'rechazado una vez: obligado a promulgar');
+});
+
+test('applyVetoAccept: la agenda entera se descarta, no se promulga nada y cuenta como gobierno caído', () => {
+  const g = vetoGame();
+  const out = applyVetoAccept(g);
+  assert.equal(out.chaos, null);
+  assert.deepEqual(g.discard, ['fascist', 'fascist'], 'las dos cartas van al descarte');
+  assert.equal(g.chancellorDraw, null);
+  assert.equal(g.fascistPolicies, 5, 'no se promulga nada');
+  assert.equal(g.electionTracker, 1, 'suma hacia el caos');
+  assert.equal(g.vetoRequested, false);
+  assert.equal(g.phase, 'nominate');
+  assert.equal(g.nominatedChancellor, null);
+  assert.equal(g.presidentIdx, 1, 'la presidencia avanza');
+});
+
+test('applyVetoAccept con 2 gobiernos ya caídos desemboca en CAOS', () => {
+  const g = vetoGame({ electionTracker: 2, draw: ['liberal', 'fascist', 'fascist'] });
+  const out = applyVetoAccept(g);
+  assert.ok(out.chaos, 'el tercer gobierno caído dispara el caos');
+  assert.equal(out.chaos!.policy, 'liberal');
+  assert.equal(g.liberalPolicies, 1, 'el decreto a ciegas sí se promulga');
+  assert.equal(g.electionTracker, 0);
+  assert.equal(g.lastChancellor, null, 'el caos borra los límites de mandato');
+  assert.equal(g.chaosCount, 1);
+  assert.equal(g.phase, 'nominate');
+});
+
+test('applyVetoRefuse: el Canciller vuelve a su agenda OBLIGADO a promulgar y sin poder re-vetar', () => {
+  const g = vetoGame();
+  applyVetoRefuse(g);
+  assert.equal(g.phase, 'legislativeChancellor');
+  assert.equal(g.vetoRequested, false);
+  assert.equal(g.vetoRefused, true);
+  assert.equal(canVeto(g), false);
+  assert.deepEqual(g.chancellorDraw, ['fascist', 'fascist'], 'sigue con las mismas dos cartas');
+  assert.equal(g.electionTracker, 0, 'un veto rechazado NO cuenta como gobierno caído');
 });
 
 // ——— Actores por fase ———

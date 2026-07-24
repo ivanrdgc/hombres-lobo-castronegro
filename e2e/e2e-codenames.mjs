@@ -1,7 +1,8 @@
 // E2E de «Codenames»: 4 jugadores (2 equipos, Ana narra y juega). God-view (el
-// doc tiene el mapa secreto): catálogo → empezar → el Jefe da pista, el agente
-// toca casillas → cambio de turno al pasar → el otro equipo destapa las suyas y
-// gana. Verifica además la FUGA: el agente NO ve el mapa; el Jefe sí.
+// doc tiene el mapa secreto): catálogo → empezar → pista validada → el agente
+// selecciona y CONFIRMA casillas → transeúnte, casilla regalada al rival y
+// ASESINO → revancha. Verifica además la FUGA (el agente NO ve el mapa; el Jefe
+// sí), la escotilla anti-atasco del Jefe y qué dice la voz.
 import { chromium } from 'playwright';
 const BASE = process.env.BASE; if (!BASE) { console.error('Define BASE=https://tu-sitio.web.app'); process.exit(1); }
 let fail = 0;
@@ -22,7 +23,7 @@ const hlc = (page) => page.evaluate(() => {
   return !g ? null : {
     phase: g.phase, playerIds: g.playerIds, names: g.names, teams: g.teams,
     spymaster: g.spymaster, map: g.map, revealed: g.revealed, starting: g.starting, turn: g.turn,
-    clue: g.clue, guessesLeft: g.guessesLeft, remaining: g.remaining,
+    clue: g.clue, guessesLeft: g.guessesLeft, guessesMade: g.guessesMade, remaining: g.remaining,
     winner: g.winner, scores: g.scores, log: (g.log || []).map((l) => l.txt),
   };
 });
@@ -39,14 +40,39 @@ const other = (t) => (t === 'red' ? 'blue' : 'red');
 const agentOf = (s, team) => s.playerIds.find((pid) => s.teams[pid] === team && s.spymaster[team] !== pid);
 const spyColoredCells = (page) => page.evaluate(() =>
   [...document.querySelectorAll('.cncell')].filter((c) => /\bspy\b/.test(c.className)).length);
-
-async function giveClue(spy, num) {
-  const p = pg(spy);
-  await p.click(`[data-a=cn-clue-num][data-p="${num}"]`, { timeout: 15000 });
-  await p.click('[data-a=cn-clue-give]');
+// Qué habría dicho la voz (transcript del modo test; Ana es el altavoz).
+const saidTimes = (re) => pages.ana.evaluate((src) =>
+  (window.__hlcNarration || []).filter((e) => new RegExp(src).test(e.text)).length, re.source);
+async function waitSaid(re, n, timeout = 10000) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < timeout) {
+    if (await saidTimes(re) >= n) return true;
+    await pages.ana.waitForTimeout(150);
+  }
+  return false;
 }
+
+// El aviso de por qué NO se puede enviar la pista, esperando a su texto: la
+// nota está siempre en pantalla (el botón gris nunca se queda mudo), así que
+// mirar solo si existe no distinguiría un motivo del siguiente.
+const clueBad = (page, re) => page.waitForFunction((src) => {
+  const el = document.querySelector('[data-a=cn-clue-bad]');
+  return !!el && new RegExp(src).test(el.textContent || '');
+}, re.source, { timeout: 10000 });
+
+// La pista tiene que ser UNA palabra y no estar en el tablero: «enigma» no es
+// ninguna de las 25 (el banco son sustantivos concretos).
+async function giveClue(spy, num, word = 'enigma') {
+  const p = pg(spy);
+  await p.fill('[data-a=cn-clue-word]', word, { timeout: 15000 });
+  await p.click(`[data-a=cn-clue-num][data-p="${num}"]`, { timeout: 15000 });
+  await p.click('[data-a=cn-clue-give]:not([disabled])');
+}
+// Dos pasos: tocar selecciona; el botón de abajo confirma.
 async function touch(agent, cell) {
-  await pg(agent).click(`.cncell[data-a=cn-cell][data-p="${cell}"]`, { timeout: 15000 });
+  const p = pg(agent);
+  await p.click(`.cncell[data-a=cn-cell][data-p="${cell}"]`, { timeout: 15000 });
+  await p.click('[data-a=cn-confirm]:not([disabled])', { timeout: 15000 });
 }
 
 try {
@@ -89,42 +115,109 @@ try {
   check(await pg(agentA).locator('[data-a=cn-clue-give]').count() === 0, 'un agente no puede dar la pista');
   check(await spyColoredCells(pg(spyA)) > 0, 'el Jefe SÍ ve el mapa (casillas coloreadas sin destapar)');
   check(await spyColoredCells(pg(agentA)) === 0, 'el agente NO ve el mapa (ninguna casilla coloreada sin destapar)');
+  check(await pg(spyA).locator('.cncell.spy .cntag').count() === 25, 'el mapa del Jefe marca cada casilla con su emoji');
 
-  // ——— Turno 1: acierto propio y pase ———
+  // ——— La voz arranca diciendo quién empieza (línea 0 del diario) ———
+  check(await waitSaid(/Comienza Codenames/, 1), 'la voz locuta el arranque (qué equipo empieza)');
+
+  // ——— La chuleta se consulta sin salir del panel, y «La mesa» está en el ⋯ ———
+  check(await pg(agentA).locator('[data-a=cn-ref]').count() === 1, 'el panel lleva plegada la chuleta de colores');
+  await pg(agentA).click('[data-a=game-menu]');
+  await pg(agentA).click('[data-a=table-open]');
+  await pg(agentA).waitForSelector('[data-a=table-player]');
+  ok('el menú ⋯ abre «🪑 La mesa» (rescate de un móvil apagado)');
+  await pg(agentA).click('button[data-a=close-modal]');
+
+  // ——— La pista se valida antes de enviarla ———
+  check(await pg(spyA).locator('[data-a=cn-clue-give][disabled]').count() === 1, 'con el campo vacío no se puede dar la pista');
+  await clueBad(pg(spyA), /Escribe la palabra/);
+  await pg(spyA).fill('[data-a=cn-clue-word]', 'dos palabras');
+  await clueBad(pg(spyA), /UNA sola palabra/);
+  check(await pg(spyA).locator('[data-a=cn-clue-give][disabled]').count() === 1, 'una pista de dos palabras se rechaza');
+  await pg(spyA).fill('[data-a=cn-clue-word]', await pg(spyA).locator('.cncell .cnword').first().innerText());
+  await clueBad(pg(spyA), /está en el tablero/);
+  check(await pg(spyA).locator('[data-a=cn-clue-give][disabled]').count() === 1, 'una palabra del tablero se rechaza');
+
+  // ——— Turno 1: acierto propio (en dos pasos) y pase ———
   await giveClue(spyA, 9);
   s = await waitState(ana, (x) => x.phase === 'guess' && x.turn === teamA, 'el equipo A puede tocar');
   check(s.clue?.num === 9 && s.guessesLeft === 10, 'la pista fija número + 1 intentos');
-  // Regla oficial: no se puede pasar sin haber tocado al menos una vez.
+  check(await waitSaid(/da la pista/, 1), 'la voz canta la pista');
+  // «🔁 Repetir» vuelve a locutar la última línea (la pista).
+  await ana.click('[data-a=game-menu]'); await ana.click('[data-a=cn-repeat]');
+  check(await waitSaid(/da la pista/, 2), '«🔁 Repetir» vuelve a decir la pista');
+  // Regla oficial: no se puede pasar sin haber destapado al menos una vez.
   check(await pg(agentA).locator('[data-a=cn-pass][disabled]').count() === 1, 'antes del primer toque, «Pasar» está deshabilitado');
   const ownA = s.map.findIndex((c, i) => c === teamA && !s.revealed[i]);
-  await touch(agentA, ownA);
-  s = await waitState(ana, (x) => x.revealed[ownA], 'se destapa la casilla propia');
+  await pg(agentA).click(`.cncell[data-a=cn-cell][data-p="${ownA}"]`);
+  await pg(agentA).waitForSelector('[data-a=cn-unselect]');
+  s = await st();
+  check(!s.revealed[ownA], 'un toque en el tablero NO destapa: solo selecciona');
+  await pg(agentA).click('[data-a=cn-confirm]');
+  s = await waitState(ana, (x) => x.revealed[ownA], 'se destapa la casilla propia tras confirmar');
   check(s.turn === teamA, 'acertar una propia deja seguir en el mismo turno');
   await pg(agentA).click('[data-a=cn-pass]');
   s = await waitState(ana, (x) => x.turn === other(teamA) && x.phase === 'clue', 'pasar cede el turno');
   ok('acierto propio + pase: el turno cambia de equipo');
 
-  // ——— Turno 2: el equipo B destapa todas las suyas y gana ———
+  // ——— Recarga del altavoz: retoma por la última línea, no relee el diario ———
+  const lines = (await st()).log.length;
+  await ana.reload();
+  await ana.waitForSelector('.cncell', { timeout: 20000 });
+  await ana.waitForTimeout(1500);
+  const reread = await ana.evaluate(() => (window.__hlcNarration || []).length);
+  check(reread <= 1, `tras recargar, el altavoz no relee las ${lines} líneas del diario (dijo ${reread})`);
+
+  // ——— Escotilla: si el Jefe de turno no actúa, cualquiera salta su turno ———
   const teamB = other(teamA);
+  await pg(agentA).waitForTimeout(5200); // en modo test el atasco salta a los 4 s
+  await pg(agentA).click('[data-a=game-menu]');
+  await pg(agentA).waitForSelector('[data-a=cn-skip-clue]', { timeout: 15000 });
+  await pg(agentA).click('[data-a=cn-skip-clue]');
+  s = await waitState(ana, (x) => x.turn === teamA && x.phase === 'clue', 'saltar el turno del Jefe atascado');
+  ok('con el Jefe atascado, la mesa puede saltarle el turno');
+
+  // ——— Transeúnte: corta el turno ———
+  await giveClue(spyA, 3);
+  s = await waitState(ana, (x) => x.phase === 'guess' && x.turn === teamA, 'el equipo A puede tocar');
+  const neutral = s.map.findIndex((c, i) => c === 'neutral' && !s.revealed[i]);
+  await touch(agentA, neutral);
+  s = await waitState(ana, (x) => x.revealed[neutral], 'se destapa el transeúnte');
+  check(s.turn === teamB && s.phase === 'clue', 'tocar un transeúnte corta el turno');
+
+  // ——— Casilla regalada al rival ———
   const spyB = s.spymaster[teamB];
   const agentB = agentOf(s, teamB);
   await giveClue(spyB, 9);
-  s = await waitState(ana, (x) => x.phase === 'guess' && x.turn === teamB, 'el equipo B puede tocar');
-  for (let guard = 0; guard < 12; guard++) {
-    s = await st();
-    if (s.phase === 'end') break;
-    const own = s.map.findIndex((c, i) => c === teamB && !s.revealed[i]);
-    if (own < 0) break;
-    const before = s.revealed.filter(Boolean).length;
-    await touch(agentB, own);
-    s = await waitState(ana, (x) => x.revealed.filter(Boolean).length > before || x.phase === 'end', 'se destapa otra casilla');
-  }
-  s = await waitState(ana, (x) => x.phase === 'end', 'la partida termina');
-  check(s.winner === teamB, `gana el equipo B (${teamB}) al destapar todas sus casillas`);
+  await waitState(ana, (x) => x.phase === 'guess' && x.turn === teamB, 'el equipo B puede tocar');
+  s = await st();
+  const gift = s.map.findIndex((c, i) => c === teamA && !s.revealed[i]);
+  const beforeA = s.remaining[teamA];
+  await touch(agentB, gift);
+  s = await waitState(ana, (x) => x.revealed[gift], 'se destapa la casilla del rival');
+  check(s.remaining[teamA] === beforeA - 1 && s.turn === teamA, 'destapar una del rival se la regala y cierra el turno');
+
+  // ——— El ASESINO acaba la partida en el acto ———
+  await giveClue(spyA, 9);
+  await waitState(ana, (x) => x.phase === 'guess' && x.turn === teamA, 'el equipo A puede tocar');
+  const assassin = (await st()).map.indexOf('assassin');
+  await touch(agentA, assassin);
+  s = await waitState(ana, (x) => x.phase === 'end', 'la partida termina con el asesino');
+  check(s.winner === teamB, 'tocar al asesino hace ganar al equipo rival');
+  check(s.log.some((t) => /ASESINO/.test(t)), 'el diario canta el asesino');
   check(s.playerIds.filter((pid) => s.teams[pid] === teamB).every((pid) => s.scores[pid] === 1), 'todo el equipo ganador suma 1 punto');
-  check(s.log.some((t) => /Gana el equipo/.test(t)), 'la voz anuncia el ganador');
+  check(await spyColoredCells(pg(agentA)) > 0, 'al terminar, TODOS ven el mapa completo');
   await ana.waitForSelector('text=/Marcador/');
   ok('partida completa de Codenames');
+
+  // ——— Revancha: reparto nuevo, marcador acumulado ———
+  const scoresBefore = s.scores;
+  await ana.click('[data-a=cn-again]');
+  s = await waitState(ana, (x) => x.phase === 'clue' && !x.winner, 'la revancha reparte otra vez');
+  check(s.revealed.every((r) => !r), 'la revancha empieza con el tablero sin destapar');
+  check(s.playerIds.every((pid) => (s.scores[pid] || 0) === (scoresBefore[pid] || 0)), 'la revancha conserva el marcador');
+  check(s.log.some((t) => /Nueva partida/.test(t)), 'el diario anuncia la revancha');
+  ok('revancha de Codenames');
 
   // Limpieza.
   await ana.click('[data-a=game-menu]');

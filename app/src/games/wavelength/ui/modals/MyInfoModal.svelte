@@ -12,9 +12,11 @@
   const inGame = $derived(!!game && !!my && game.playerIds.includes(my.id));
   const iAmPsychic = $derived(!!game && !!my && psychicId(game) === my.id);
   const rows = [
-    { emoji: '🔮', name: 'El Psíquico', note: 'rota cada ronda', desc: 'Ve la diana en su dial y da UNA pista en voz alta que caiga justo ahí. Después calla: ni aclaraciones ni tocar el dial.' },
-    { emoji: '🎚️', name: 'El equipo', desc: 'Debate la pista y UNO fija el marcador por consenso. El Psíquico no participa en la colocación.' },
+    { emoji: '🔮', name: 'El Psíquico', note: 'rota cada ronda', desc: 'Ve la diana en su dial y da UNA pista en voz alta que caiga justo ahí (puede escribirla para que la mesa la relea). Después calla: ni aclaraciones ni tocar el dial.' },
+    { emoji: '🎚️', name: 'El equipo', desc: 'Debate la pista y mueve el marcador, que es COMPARTIDO: se ve igual en todos los móviles. Uno lo fija por consenso, con doble toque. El Psíquico no participa.' },
+    { emoji: '📏', name: 'El dial', note: 'de 0 a 100', desc: '0 es el extremo izquierdo del espectro, 100 el derecho y 50 el centro. La app dice el objetivo en esa escala.' },
     { emoji: '🎯', name: 'Puntos por cercanía', desc: 'Centro de la diana: 4 · cerca: 3 · rozando: 2 · fuera: 0. Los suma el Psíquico de la ronda y también el total del equipo.' },
+    { emoji: '⏭️', name: 'Salidas del menú ⋯', desc: '«Saltar ronda» la anula sin puntuar y pasa el turno (la pulsa cualquiera). «Terminar» cierra la partida para todos y borra el marcador.' },
   ];
 </script>
 

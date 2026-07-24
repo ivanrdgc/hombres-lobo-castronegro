@@ -28,7 +28,7 @@ export const ROLES = {
   hombre_lobo: {
     id: 'hombre_lobo', name: 'Hombre Lobo', emoji: '🐺', team: 'lobos',
     expansion: 'base', always: true,
-    desc: 'Cada noche devora a un aldeano junto con el resto de lobos. Gana cuando no queda nadie del pueblo.',
+    desc: 'Cada noche devora a un aldeano junto con el resto de lobos. La manada gana cuando iguala en número a los demás vivos.',
   },
   aldeano: {
     id: 'aldeano', name: 'Aldeano', emoji: '🧑‍🌾', team: 'pueblo',

@@ -12,15 +12,16 @@ export const DEMO: DemoScript = {
       title: 'La partida de ejemplo',
       text: [
         'Jugáis TÚ, Bea, Carlos y David. Cada uno tiene 3 cartas de integridad boca abajo: tu BANDO es su mayoría (👮 honestos o 🦹 corruptos), y nadie más lo sabe.',
+        'Lo que SÍ sabéis todos: sois 4, así que hay 2 honestos y 2 corruptos, y cada uno lleva siempre 2 cartas de su bando y 1 del contrario. Sin esos números no se puede deducir nada.',
         'Entre los honestos se esconde el 🕵️ AGENTE; entre los corruptos, el 👑 JEFE. Si cae un líder, su bando pierde en el acto. Encontrad al líder rival… antes de que os encuentren.',
       ],
     },
     {
       icon: '🎴',
       title: 'El reparto: tres cartas, una mayoría',
-      who: { actor: 'TODOS miráis vuestras 3 cartas a la vez (botón 🎴, cuando queráis)', others: 'en el tablero, las cartas ajenas son dorsos 🂠.' },
+      who: { actor: 'TODOS miráis vuestras 3 cartas a la vez, con el botón 🎴 de abajo, cuando queráis', others: 'en el tablero, las cartas ajenas se ven siempre por el dorso.' },
       text: [
-        'Tus cartas: 👮 👮 🦹 → eres HONESTO (mayoría). Y una de ellas es… el 🕵️ Agente: ¡eres el líder honesto! Que nadie lo huela.',
+        'Tus cartas 👮 👮 🦹 son dos honestas y una corrupta: tu bando por mayoría es el HONESTO. Y una de esas dos es… el 🕵️ Agente: ¡eres el líder honesto! Que nadie lo huela.',
       ],
       visual: {
         kind: 'screens',
@@ -35,22 +36,23 @@ export const DEMO: DemoScript = {
       title: 'Turno de Bea: investigar',
       who: { actor: 'Bea (su turno) elige «Investigar», te señala y elige una de tus cartas', others: 'la mesa VE que te investiga… pero solo Bea ve el resultado.' },
       text: [
-        'Bea mira tu carta 2 (👮 Honesto). En su pantalla le sale una tarjeta privada; en el diario, todos leen solo «Bea investiga una carta de TÚ».',
-        'Cada turno es UNA acción: investigar, armarse, apuntar o disparar.',
+        'Bea mira tu carta 2 (👮 Honesto). En su pantalla le sale una tarjeta privada; en el diario, todos leen «Bea investiga la carta 2 de TÚ»: se sabe QUÉ carta ha mirado, no lo que ha visto.',
+        'Cuidado: al investigar puede salir la carta de LÍDER. Si Bea llega a ver tu 🕵️ Agente (o el 👑 Jefe de un corrupto), sabe de golpe a quién hay que disparar. Ese es todo el juego.',
+        'Lo que investigas queda guardado en tu botón 🎴, en «lo que has visto»: no hace falta memorizarlo.',
       ],
       visual: {
         kind: 'screens',
         panes: [
-          { title: 'Bea (investiga)', lines: ['🔍 «TÚ, carta 2: 👮 Honesto. Solo tú lo sabes.»'], buttons: [{ label: 'Entendido', kind: 'ghost' }] },
-          { title: 'TÚ', lines: ['📜 «Bea investiga una carta de TÚ.»', 'No sabes CUÁL ha visto ni qué opina.'] },
+          { title: 'Bea (investiga)', lines: ['🔍 «TÚ, carta 2: 👮 Honesto. Solo tú lo sabes.»', 'Si hubiera elegido tu carta 1: 🕵️ Agente.'], buttons: [{ label: 'Entendido', kind: 'ghost' }] },
+          { title: 'TÚ', lines: ['📜 «Bea investiga la carta 2 de TÚ.»', 'Sabes cuál ha mirado, no qué opina.'] },
         ],
       },
     },
     {
       icon: '🤔',
       title: 'Tu turno',
-      who: { actor: 'TÚ eliges tu acción', others: 'Carlos va armado 🔫 y apunta 🎯 a David; la mesa entera lo ve.' },
-      text: ['Eres el Agente (líder honesto). Carlos —¿corrupto?— apunta a David, que a ti te huele a honesto.'],
+      who: { actor: 'TÚ eliges tu acción', others: 'Carlos acaba de coger una pistola 🔫; la mesa entera lo ve.' },
+      text: ['Eres el Agente (líder honesto). Carlos —¿corrupto?— se ha armado y todavía no ha apuntado a nadie: tienes un turno de margen.'],
       ask: {
         prompt: '¿Qué haces?',
         choices: [
@@ -61,22 +63,42 @@ export const DEMO: DemoScript = {
       },
     },
     {
-      icon: '💥',
-      title: 'Apuntar y disparar',
-      who: { actor: 'Carlos (armado y apuntando) elige «Disparar» en su turno', others: 'todos veis caer a David: sus 3 cartas se destapan.' },
+      icon: '⏱️',
+      title: 'Matar cuesta TRES turnos tuyos',
+      who: { actor: 'Carlos necesita tres turnos suyos seguidos: 🔫 armarse, 🎯 apuntar y 💥 disparar', others: 'entre medias juegan todos los demás, y lo ven venir.' },
       text: [
-        'David era 🦹 corrupto… pero NO el Jefe: la partida sigue, con más información sobre la mesa. Disparar gasta la bala (Carlos tendrá que rearmarse).',
-        'Apuntar es público y se puede cambiar: es tanto amenaza como farol.',
+        'No se puede disparar de sopetón: para apuntar hay que ir armado, y para disparar hay que tener a alguien apuntado. Cada paso gasta un turno entero.',
+        'Y los dos primeros son PÚBLICOS: la mesa ve el arma y ve la diana, así que el apuntado tiene tiempo de defenderse, de negociar… o de armarse él.',
       ],
-      visual: { kind: 'log', lines: ['🎯 Carlos apunta a David.', '💥 Carlos dispara a David: era de 🦹 los Corruptos.', '🔍 Bea investiga una carta de Carlos.'] },
+      visual: {
+        kind: 'log',
+        lines: [
+          '🔫 Carlos empuña una pistola.',
+          '🎬 Turno de David.',
+          '🎯 Carlos apunta a David.',
+          '🎬 Turno de David. Le apuntan: tiene UN turno para reaccionar.',
+        ],
+      },
+    },
+    {
+      icon: '💥',
+      title: 'El disparo (con confirmación)',
+      who: { actor: 'Carlos elige «💥 Disparar a David» y confirma', others: 'todos veis caer a David: sus 3 cartas se destapan.' },
+      text: [
+        'La app pregunta «¿seguro?» antes de disparar: es irreversible y puede acabar la partida de un toque.',
+        'David era 🦹 corrupto… pero NO el Jefe: la partida sigue, con más información sobre la mesa. Disparar gasta la bala (Carlos tendrá que rearmarse).',
+        'David queda eliminado: no juega más turnos y sus cartas se quedan boca arriba, pero sigue en la mesa mirando, comentando y sufriendo.',
+      ],
+      visual: { kind: 'log', lines: ['💥 Carlos dispara a David: era de 🦹 los Corruptos.', '🎬 Turno de TÚ.', '🔍 Bea investiga la carta 1 de Carlos.'] },
     },
     {
       icon: '🏆',
       title: 'El final',
       who: { actor: 'Quien dispara a un LÍDER acaba la partida en el acto', others: 'pierde el bando entero del líder caído; el otro puntúa.' },
       text: [
-        'Si cae el 👑 Jefe, ganan los honestos; si cae el 🕵️ Agente (tú), ganan los corruptos. Al final se destapan todas las cartas.',
-        'Habla, acusa, promete… y consulta tu 🎴 siempre que dudes de tus propias cartas. 🚔',
+        'Si cae el 👑 Jefe, ganan los honestos; si cae el 🕵️ Agente (tú), ganan los corruptos. Al final se destapan todas las cartas y sale el marcador (gana un punto TODO el bando ganador, también los eliminados).',
+        'Desde ahí, «🔁 Otra partida» reparte de nuevo con los mismos jugadores y conserva el marcador; «🏁 Terminar» os devuelve al lobby.',
+        'Habla, acusa, promete… y consulta tus cartas con el botón 🎴 siempre que dudes de lo que llevas. 🚔',
       ],
       visual: { kind: 'log', lines: ['💥 Bea dispara a Carlos: era de 🦹 los Corruptos ¡y su LÍDER!', '🏆 ¡Ganan 👮 los Honestos! Ha caído el Jefe.'] },
     },

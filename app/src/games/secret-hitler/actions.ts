@@ -15,7 +15,9 @@ import type { PolicyId } from './roles';
 import {
   presidentId, advancePresidency, eligibleChancellors, tallyElection, takeTop, drawTop,
   enactPolicy, checkPolicyWin, hitlerChancellorWin, aliveIds, aliveCount, playersOf, pendingActors,
+  applyChaos, applyVetoAccept, applyVetoRefuse, canVeto,
 } from './engine';
+import type { ChaosOutcome } from './engine';
 import type { SHState } from './types';
 
 export function shGame(g: GroupDoc | null): SHState | null {
@@ -49,6 +51,8 @@ async function tx(fn: TxFn, mid?: string, opts: { allowPaused?: boolean } = {}):
 }
 
 const nameOf = (g: SHState, pid: string | null | undefined) => (pid && g.names[pid]) || '¿?';
+/** Lista de nombres para la crónica (los votos son PÚBLICOS: van con nombre). */
+const namesOf = (g: SHState, pids: string[]) => (pids.length ? pids.map((p) => nameOf(g, p)).join(', ') : '—');
 
 // ——— Inicio ———
 
@@ -68,11 +72,11 @@ export async function startSecretHitler(playerIds: string[], narratorId: string 
     secretHitler: true, phase: 'reveal', startedAt: now, seed,
     playerIds, names, roles, alive: Object.fromEntries(playerIds.map((p) => [p, true])), seen: {},
     presidentIdx: seed % playerIds.length, specialPresident: null, nominatedChancellor: null,
-    lastPresident: null, lastChancellor: null, votes: {}, lastElection: null,
+    lastPresident: null, lastChancellor: null, votes: {}, lastElection: null, elections: 0,
     electionTracker: 0, liberalPolicies: 0, fascistPolicies: 0,
     draw: newDeck(seed), discard: [], presidentDraw: null, chancellorDraw: null,
     vetoUnlocked: false, vetoRequested: false, lastEnacted: null, power: null,
-    peek: null, investigateResult: null, investigated: [], reshuffles: 0,
+    peek: null, investigateResult: null, investigated: [], chaosCount: 0, lastExecuted: null, reshuffles: 0,
     winner: null, winReason: null, paused: null, repeatNonce: 0,
     log: [{ txt: `🏛️ Comienza Secret Hitler con ${playerIds.length} jugadores. Liberales contra fascistas… y un Hitler oculto.` }],
   };
@@ -133,8 +137,11 @@ export async function voteGov(ja: boolean): Promise<void> {
     const { ja: jaV, nein, passed } = tallyElection(game);
     const pres = presidentId(game);
     const chan = game.nominatedChancellor!;
-    game.lastElection = { president: pres, chancellor: chan, ja: jaV, nein, passed };
-    game.log.push({ txt: `🗳️ Gobierno ${passed ? 'APROBADO' : 'RECHAZADO'} (${jaV.length} Ja, ${nein.length} Nein).` });
+    game.elections = (game.elections || 0) + 1;
+    game.lastElection = { president: pres, chancellor: chan, ja: jaV, nein, passed, no: game.elections };
+    // Los votos son PÚBLICOS: la crónica guarda quién votó qué (es la prueba
+    // principal de la mesa, y se puede releer rondas después).
+    game.log.push({ txt: `🗳️ Gobierno ${passed ? 'APROBADO' : 'RECHAZADO'} — 👍 Ja (${jaV.length}): ${namesOf(game, jaV)} · 👎 Nein (${nein.length}): ${namesOf(game, nein)}.` });
     if (!passed) {
       game.nominatedChancellor = null;
       game.electionTracker += 1;
@@ -163,24 +170,16 @@ export async function voteGov(ja: boolean): Promise<void> {
   });
 }
 
-// Caos: 3 gobiernos caídos → se promulga el decreto de arriba a ciegas.
+// Crónica del caos (lo dispara el 3.er gobierno caído, sea por Nein o por veto).
+function logChaos(game: SHState, out: ChaosOutcome): void {
+  game.log.push({ txt: `🔥 ¡Caos! Tres gobiernos caídos: se promulga a ciegas un decreto ${out.policy === 'liberal' ? 'LIBERAL 🕊️' : 'FASCISTA 🐷'} (sin poder presidencial) y se borran los límites de mandato: el próximo gobierno puede repetir cargos.` });
+  if (out.win.winner) game.log.push({ txt: out.win.winner === 'liberal' ? `🕊️ ${out.win.reason}` : `🐷 ${out.win.reason}` });
+}
+
+// Caos: 3 gobiernos caídos → se promulga el decreto de arriba a ciegas (el
+// motor está en engine.applyChaos; aquí solo la crónica).
 function chaos(game: SHState): SHState {
-  const [top] = takeTop(game, 1);
-  const power = enactPolicy(game, top); // el caos NO activa poderes
-  game.log.push({ txt: `🔥 ¡Caos! Tres gobiernos rechazados: se promulga a ciegas un decreto ${top === 'liberal' ? 'LIBERAL 🕊️' : 'FASCISTA 🐷'}.` });
-  game.electionTracker = 0;
-  game.lastPresident = null; // el caos borra los límites de mandato
-  game.lastChancellor = null;
-  game.nominatedChancellor = null;
-  const win = checkPolicyWin(game);
-  if (win.winner) {
-    game.winner = win.winner; game.winReason = win.reason; game.phase = 'end';
-    game.log.push({ txt: win.winner === 'liberal' ? `🕊️ ${win.reason}` : `🐷 ${win.reason}` });
-    return game;
-  }
-  void power; // el poder se ignora en el caos (regla oficial)
-  advancePresidency(game);
-  game.phase = 'nominate';
+  logChaos(game, applyChaos(game));
   return game;
 }
 
@@ -247,7 +246,7 @@ export async function requestVeto(): Promise<void> {
   const me = myPid();
   await tx((game) => {
     if (game.phase !== 'legislativeChancellor' || me !== game.nominatedChancellor) return null;
-    if (!game.vetoUnlocked || game.vetoRefused) return null; // rechazado una vez: obligado a promulgar
+    if (!canVeto(game)) return null; // rechazado una vez: obligado a promulgar
     game.vetoRequested = true;
     game.phase = 'vetoDecision';
     game.log.push({ txt: `✋ El Canciller propone VETAR esta agenda. Decide el Presidente.` });
@@ -260,21 +259,14 @@ export async function decideVeto(agree: boolean): Promise<void> {
   await tx((game) => {
     if (game.phase !== 'vetoDecision' || me !== presidentId(game)) return null;
     if (agree) {
-      for (const c of game.chancellorDraw || []) game.discard.push(c);
-      game.chancellorDraw = null;
-      game.vetoRequested = false;
-      game.electionTracker += 1;
-      game.log.push({ txt: `🚫 Veto aceptado: la agenda se descarta (${game.electionTracker}/3 hacia el caos).` });
-      if (game.electionTracker >= 3) return chaos(game);
-      advancePresidency(game);
-      game.phase = 'nominate';
-      game.nominatedChancellor = null;
+      const { chaos: chaosOut } = applyVetoAccept(game);
+      // Si el veto disparó el caos, el contador ya volvió a 0: la crónica cuenta 3/3.
+      game.log.push({ txt: `🚫 Veto aceptado: la agenda se descarta (${chaosOut ? 3 : game.electionTracker}/3 hacia el caos).` });
+      if (chaosOut) logChaos(game, chaosOut);
       return game;
     }
     // Rechazado: el Canciller DEBE promulgar (sin derecho a re-vetar).
-    game.vetoRequested = false;
-    game.vetoRefused = true;
-    game.phase = 'legislativeChancellor';
+    applyVetoRefuse(game);
     game.log.push({ txt: `↩️ El Presidente rechaza el veto: el Canciller debe promulgar.` });
     return game;
   });
@@ -344,7 +336,8 @@ export async function powerExecute(target: string): Promise<void> {
     if (!game.alive[target] || target === me) return null;
     game.alive = { ...game.alive, [target]: false };
     game.power = null;
-    game.log.push({ txt: `💀 ${nameOf(game, me)} ejecuta a ${nameOf(game, target)}.` });
+    game.lastExecuted = target; // la voz anuncia quién cayó y la UI se lo dice al muerto
+    game.log.push({ txt: `💀 ${nameOf(game, me)} ejecuta a ${nameOf(game, target)}: ya no vota ni puede gobernar.` });
     if (game.roles[target] === 'hitler') {
       game.winner = 'liberal';
       game.winReason = `¡${nameOf(game, target)} era Hitler! La bala salva la República: ganan los liberales.`;
@@ -374,14 +367,16 @@ export async function playAgain(): Promise<void> {
       seed, roles, phase: 'reveal', seen: {},
       alive: Object.fromEntries(game.playerIds.map((p) => [p, true])),
       presidentIdx: seed % players.length, specialPresident: null, nominatedChancellor: null,
-      lastPresident: null, lastChancellor: null, votes: {}, lastElection: null,
+      lastPresident: null, lastChancellor: null, votes: {}, lastElection: null, elections: 0,
       electionTracker: 0, liberalPolicies: 0, fascistPolicies: 0,
       draw: newDeck(seed), discard: [], presidentDraw: null, chancellorDraw: null,
-      vetoUnlocked: false, vetoRequested: false, lastEnacted: null, power: null,
-      peek: null, investigateResult: null, investigated: [], reshuffles: 0,
+      vetoUnlocked: false, vetoRequested: false, vetoRefused: false, lastEnacted: null, power: null,
+      peek: null, investigateResult: null, investigated: [], chaosCount: 0, lastExecuted: null, reshuffles: 0,
       winner: null, winReason: null,
+      // Crónica en blanco: arrastrar la de la partida anterior confunde (y delata
+      // los bandos ya destapados).
+      log: [{ txt: '🔁 Nueva partida: bandos repartidos de nuevo.' }],
     });
-    game.log.push({ txt: '🔁 Nueva partida: bandos repartidos de nuevo.' });
     return game;
   });
 }

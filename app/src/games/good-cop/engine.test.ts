@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   dealGame, bandOf, leaderId, isLeader, investigate, arm, aim, shoot, isAlive, aliveIds,
-  nextAlive, MIN_PLAYERS,
+  nextAlive, skipTurn, aimersOf, bandCounts, bandCountsLine, turnsUntil, MIN_PLAYERS,
 } from './engine';
 import type { GoodCopState } from './types';
 import type { Card } from './cards';
@@ -22,7 +22,7 @@ function base(over: Partial<GoodCopState> = {}): GoodCopState {
     alive: Object.fromEntries(IDS.map((id) => [id, true])),
     armed: Object.fromEntries(IDS.map((id) => [id, false])),
     aimAt: Object.fromEntries(IDS.map((id) => [id, null])),
-    turn: 'p-a', peek: null, winner: null, winReason: null, scores: {}, log: [],
+    turn: 'p-a', peeks: {}, winner: null, winReason: null, scores: {}, log: [],
     ...over,
   };
 }
@@ -43,16 +43,61 @@ describe('reparto', () => {
     expect(bandOf([c('honest'), c('honest'), c('crook')])).toBe('honest');
     expect(bandOf([c('crook'), c('crook'), c('honest')])).toBe('crook');
   });
+  it('el reparto de bandos es público y calculable', () => {
+    expect(bandCounts(4)).toEqual({ honest: 2, crook: 2 });
+    expect(bandCounts(5)).toEqual({ honest: 3, crook: 2 });
+    expect(bandCounts(7)).toEqual({ honest: 4, crook: 3 });
+    expect(bandCountsLine(5)).toBe('Sois 5: 3 honestos 👮 y 2 corruptos 🦹');
+    // Y coincide con lo que reparte de verdad.
+    const d = dealGame(IDS, 7);
+    const honests = IDS.filter((p) => bandOf(d.cards[p]) === 'honest');
+    expect(honests).toHaveLength(bandCounts(IDS.length).honest);
+  });
 });
 
 describe('acciones del turno', () => {
   it('investigar mira una carta en secreto y pasa el turno', () => {
     const g = base();
     expect(investigate(g, 'p-a', 'p-c', 0)).toBe(true);
-    expect(g.peek).toMatchObject({ by: 'p-a', target: 'p-c', kind: 'crook', role: 'kingpin' });
+    expect(g.peeks['p-a'][0]).toMatchObject({ by: 'p-a', target: 'p-c', kind: 'crook', role: 'kingpin', ack: false });
     expect(g.turn).toBe('p-b');
     // No revela públicamente.
     expect(g.cards['p-c'][0].up).toBe(false);
+    // El diario dice QUÉ carta se miró (en la mesa se señala con el dedo).
+    expect(g.log[0].txt).toContain('carta 1');
+  });
+  it('el historial de investigaciones es por jugador y no se pisa', () => {
+    const g = base();
+    investigate(g, 'p-a', 'p-c', 0);
+    investigate(g, 'p-b', 'p-d', 1); // otro investiga: el de p-a debe seguir ahí
+    expect(g.peeks['p-a']).toHaveLength(1);
+    expect(g.peeks['p-b']).toHaveLength(1);
+    g.turn = 'p-a';
+    investigate(g, 'p-a', 'p-d', 0);
+    expect(g.peeks['p-a']).toHaveLength(2);
+  });
+  it('cada acción anuncia de quién es el turno siguiente', () => {
+    const g = base();
+    arm(g, 'p-a');
+    expect(g.log.at(-1)!.txt).toBe('🎬 Turno de P-B.');
+    // La línea lleva el estado PÚBLICO de quien entra a jugar.
+    g.armed['p-c'] = true; g.aimAt['p-c'] = 'p-d';
+    investigate(g, 'p-b', 'p-a', 0);
+    expect(g.log.at(-1)!.txt).toBe('🎬 Turno de P-C. Va armado y apunta a P-D.');
+  });
+  it('no puedes gastar el turno apuntando a quien ya apuntas', () => {
+    const g = base({ armed: { ...base().armed, 'p-a': true } });
+    expect(aim(g, 'p-a', 'p-c')).toBe(true);
+    g.turn = 'p-a';
+    expect(aim(g, 'p-a', 'p-c')).toBe(false);
+    expect(g.turn).toBe('p-a'); // el turno NO se ha gastado
+  });
+  it('la mesa puede saltar el turno de quien no responde', () => {
+    const g = base();
+    expect(skipTurn(g, 'p-a')).toBe(false); // el suyo lo pasa él actuando
+    expect(skipTurn(g, 'p-b')).toBe(true);
+    expect(g.turn).toBe('p-b');
+    expect(g.log[0].txt).toContain('salta el turno de P-A');
   });
   it('no puedes investigarte a ti ni una carta ya revelada', () => {
     const g = base();
@@ -99,6 +144,22 @@ describe('disparar y victoria', () => {
     expect(g.armed['p-a']).toBe(false);
     expect(g.aimAt['p-a']).toBeNull();
   });
+  it('el caído suelta la pistola y deja de apuntar', () => {
+    const g = base({
+      armed: { 'p-a': true, 'p-b': false, 'p-c': false, 'p-d': true },
+      aimAt: { 'p-a': 'p-d', 'p-b': 'p-d', 'p-c': null, 'p-d': 'p-b' },
+    });
+    shoot(g, 'p-a');
+    expect(g.armed['p-d']).toBe(false); // antes: «❌ D 🔫 🎯 B» para siempre
+    expect(g.aimAt['p-d']).toBeNull();
+    expect(g.aimAt['p-b']).toBeNull(); // quien le apuntaba pierde la mira
+  });
+  it('el anuncio del líder caído no lleva punto tras la exclamación', () => {
+    const g = base({ armed: { ...base().armed, 'p-a': true }, aimAt: { ...base().aimAt, 'p-a': 'p-c' } });
+    shoot(g, 'p-a');
+    expect(g.log[0].txt).toContain('¡y su LÍDER!');
+    expect(g.log[0].txt).not.toContain('!.');
+  });
 });
 
 it('nextAlive salta a los muertos', () => {
@@ -108,4 +169,11 @@ it('nextAlive salta a los muertos', () => {
   expect(isLeader(g, 'p-a')).toBe(true);
   expect(leaderId(g, 'crook')).toBe('p-c');
   expect(MIN_PLAYERS).toBe(4);
+});
+
+it('sabes quién te apunta y cuánto falta para tu turno', () => {
+  const g = base({ aimAt: { 'p-a': null, 'p-b': 'p-a', 'p-c': 'p-a', 'p-d': null } });
+  expect(aimersOf(g, 'p-a')).toEqual(['p-b', 'p-c']);
+  expect(turnsUntil(g, 'p-a')).toBe(0);
+  expect(turnsUntil(g, 'p-c')).toBe(2);
 });

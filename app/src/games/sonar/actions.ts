@@ -11,9 +11,9 @@ import {
 import type { GroupDoc, MatchDoc } from '../../core/sync/schema';
 import type { VoiceMode } from '../../core/narrator/voice-mode';
 import {
-  MIN_PLAYERS, MAX_PLAYERS, dealGame, move as moveMut, silence as silenceMut,
+  MIN_PLAYERS, MAX_PLAYERS, dealGame, splitSpeakers, move as moveMut, silence as silenceMut,
   torpedo as torpedoMut, drone as droneMut, surface as surfaceMut, resetForRematch,
-  teamOf, canAct, legalDirs, torpedoTargets, narrates, rival, TEAM_LABEL,
+  teamOf, canAct, legalDirs, torpedoTargets, silenceSteps, narrates, rival, TEAM_NAME,
 } from './engine';
 import type { Cell, Dir } from './map';
 import type { SonarState } from './types';
@@ -66,6 +66,9 @@ export async function startSonar(
   const now = Date.now();
   const seed = Math.floor(now % 2147483647);
   const deal = dealGame(playerIds, seed);
+  // F1: con un altavoz por corro, el reparto al azar podía dejar a los dos en la
+  // misma tripulación (y al otro corro sin voz). Se separan tras el reparto.
+  if (voiceMode === 'perRoom') splitSpeakers(deal.teams, speaker, speakerBlue);
   const game: SonarState = {
     sonar: true, phase: 'turn', startedAt: now, seed,
     playerIds, names, teams: deal.teams, subs: deal.subs,
@@ -95,9 +98,9 @@ export async function move(dir: Dir): Promise<void> {
   const me = myPid();
   await tx((game) => (moveMut(game, me, dir) ? game : null));
 }
-export async function silence(dir: Dir): Promise<void> {
+export async function silence(dir: Dir, steps = 1): Promise<void> {
   const me = myPid();
-  await tx((game) => (silenceMut(game, me, dir) ? game : null));
+  await tx((game) => (silenceMut(game, me, dir, steps) ? game : null));
 }
 export async function torpedo(target: Cell): Promise<void> {
   const me = myPid();
@@ -118,7 +121,7 @@ export async function playAgain(): Promise<void> {
   await tx((game) => {
     if (game.phase !== 'end') return null;
     resetForRematch(game, (game.seed || 0) + 101);
-    game.log.push({ txt: '🔁 Nueva partida: tripulaciones nuevas y submarinos recolocados en secreto.' });
+    game.log.push({ txt: '🔁 Nueva partida: las MISMAS tripulaciones (nadie cambia de corro) y los submarinos recolocados en secreto. Vida y energía a cero.' });
     return game;
   });
 }
@@ -151,4 +154,4 @@ registerMatchTools('sonar', {
   leaveEndsMatch: true,
 });
 
-export { teamOf, canAct, legalDirs, torpedoTargets, narrates, rival, TEAM_LABEL };
+export { teamOf, canAct, legalDirs, torpedoTargets, silenceSteps, narrates, rival, TEAM_NAME };

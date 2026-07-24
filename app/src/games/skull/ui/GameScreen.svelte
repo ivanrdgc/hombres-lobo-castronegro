@@ -28,11 +28,21 @@
   }
   let logEl: HTMLElement | null = $state(null);
   $effect(() => { void (game.log || []).length; if (logEl) logEl.scrollTop = logEl.scrollHeight; });
+  const nm = (pid: string) => game.names[pid] || '¿?';
+  // En qué momento de la ronda estamos, sin tener que leerlo entre líneas.
+  const phaseChip = $derived(
+    game.phase === 'setup' ? '🌸 Colocación'
+      : game.phase === 'play' ? '🎬 Turnos'
+        : game.phase === 'bid' ? '🗣️ Puja'
+          : game.phase === 'reveal' ? '🎲 Revelado'
+            : game.phase === 'roundEnd' ? '🔄 Fin de ronda' : '',
+  );
 </script>
 
 <div class="topbar">
   <h2>💀 {group.name}</h2>
   {#if game.phase !== 'end'}<span class="chip">Ronda {game.round}</span>{/if}
+  {#if phaseChip}<span class="chip">{phaseChip}</span>{/if}
   <GameMenu {game} {my} />
 </div>
 <Flash />
@@ -60,7 +70,14 @@
     <RevealPhase {game} {my} />
   {:else if game.phase === 'roundEnd'}
     {#if game.lastResult}<div class="narration">{game.lastResult.text}</div>{/if}
-    <button class="primary block" data-a="sk-next-round" onclick={() => guard(nextRound)}>▶️ Siguiente ronda</button>
+    <div class="card">
+      <p class="hint" style="margin:0">🔄 Se recogen todas las pilas: cada uno recupera sus discos (menos el descartado al fallar).</p>
+      <p class="small-note">La ronda {game.round + 1} la empieza <b>{nm(game.starter)}</b>. Los ⭐ del tablero son los retos ganados: con dos se acaba la partida.</p>
+    </div>
+    <!-- El espectador no juega: no le ofrecemos el botón de continuar. -->
+    {#if inGame}
+      <button class="primary block" data-a="sk-next-round" onclick={() => guard(nextRound)}>▶️ Siguiente ronda (empieza {nm(game.starter)})</button>
+    {/if}
   {/if}
   {#if !inGame}<p class="small-note" style="text-align:center">👀 Sigues la partida de espectador (sin ver las pilas ocultas).</p>{/if}
 {/if}

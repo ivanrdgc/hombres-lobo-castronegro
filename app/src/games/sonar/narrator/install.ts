@@ -44,17 +44,34 @@ function amSpeaker(s: Snap): boolean {
 
 const gm = (ctx: Ctx): SonarState => sonarGame(ctx.state().group)!;
 
+/** Último repeatNonce visto por este dispositivo (para distinguir «han pedido
+ *  repetir ahora mismo» de «ya venía pedido»). */
+let lastNonce = 0;
+
 function sceneOf(s: Snap): SceneDef<Snap> | null {
   if (!amSpeaker(s)) return null;
   const g = sonarGame(s.group)!;
   if (g.paused) return { key: `N${g.startedAt}:paused:${g.paused.at}`, hardEntry: true, run: pausedScene };
-  return { key: `N${g.startedAt}:log${g.log.length}`, run: logScene };
+  // «🔁 Repetir» sube repeatNonce: si no entra en la clave, la escena es la
+  // misma y no se repite nada. El corte en seco (hardEntry) SOLO en la
+  // repetición: una línea nueva del diario deja terminar la frase en curso.
+  const rf = g.repeatNonce || 0;
+  const asked = rf > lastNonce;
+  lastNonce = rf;
+  return { key: `N${g.startedAt}:log${g.log.length}:r${rf}`, hardEntry: asked, run: logScene };
 }
 
 async function pausedScene(ctx: Ctx): Promise<void> { await ctx.waitFor(() => false); }
 
 async function logScene(ctx: Ctx): Promise<void> {
   const g = gm(ctx);
+  // Al pedir repetición se olvida el hito de la ÚLTIMA línea (solo esa): así se
+  // relocuta sin recitar el diario entero.
+  const last = g.log.length - 1;
+  if (g.repeatNonce && !ctx.ledger.has(`N${g.startedAt}:rep${g.repeatNonce}`)) {
+    ctx.ledger.mark(`N${g.startedAt}:rep${g.repeatNonce}`);
+    ctx.ledger.clearPrefix(`N${g.startedAt}:log${last}`);
+  }
   await ctx.sayOnce(`N${g.startedAt}:intro`, () => utt('sn-intro', SONAR_INTRO));
   for (let i = 1; i < g.log.length; i++) {
     const txt = speakable(g.log[i].txt);

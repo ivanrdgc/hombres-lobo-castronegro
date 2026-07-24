@@ -12,6 +12,7 @@
   import TakeoverModal from './TakeoverModal.svelte';
   import GroupExistsModal from './GroupExistsModal.svelte';
   import VoiceModal from './VoiceModal.svelte';
+  import TableModal from './TableModal.svelte';
 
   const SHELL_MODALS: Record<string, unknown> = {
     'player-menu': PlayerMenuModal,
@@ -21,6 +22,7 @@
     takeover: TakeoverModal,
     'group-exists': GroupExistsModal,
     voice: VoiceModal,
+    table: TableModal,
   };
 
   const Current = $derived.by(() => {

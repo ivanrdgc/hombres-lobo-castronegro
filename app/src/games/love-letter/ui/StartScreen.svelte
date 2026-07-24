@@ -9,7 +9,7 @@
   import { play } from '../../../core/audio/player';
   import type { GroupDoc, PlayerDoc } from '../../../core/sync/schema';
   import * as A from '../actions';
-  import { MIN_PLAYERS, MAX_PLAYERS } from '../engine';
+  import { MIN_PLAYERS, MAX_PLAYERS, tokensToWin } from '../engine';
   import Flash from '../../../shell/Flash.svelte';
   import SeatPicker from '../../../shell/SeatPicker.svelte';
 
@@ -61,7 +61,7 @@
   <p class="small-note" style="margin-top:6px">La voz solo relata las cartas jugadas y el desenlace (público); nunca tu mano. Puede ponerla alguien que también juega.</p>
   <div class="btnrow" style="margin-top:6px">
     {#each rows.filter((p) => !matchOf(p.id)) as p (p.id)}
-      <button class="small {narrator === p.id ? 'primary' : 'ghost'}" data-a="pick-narrator" data-p={p.id} style="flex:0 1 auto;min-width:0" onclick={() => (narrPick = p.id)}>
+      <button class="pick {narrator === p.id ? 'primary' : 'ghost'}" data-a="pick-narrator" data-p={p.id} style="flex:0 1 auto;min-width:0" onclick={() => (narrPick = p.id)}>
         {narrator === p.id ? '🔊 ' : ''}{p.name}{p.id === meId ? ' (tú)' : ''}{!isActiveDevice(p, now) ? ' 💤' : ''}
       </button>
     {/each}
@@ -71,8 +71,15 @@
 
 <div class="card">
   <p class="small-note" style="margin-top:0">💌 Jugarán <b>{n}</b>{n ? ': ' : ''}<span style="opacity:.75">{chosen.map((p) => p.name).join(', ')}</span></p>
-  {#if n < MIN_PLAYERS}<p class="small-note">⚠️ Love Letter necesita al menos {MIN_PLAYERS} jugadores.</p>{/if}
-  {#if n > MAX_PLAYERS}<p class="small-note">⚠️ Máximo {MAX_PLAYERS} jugadores.</p>{/if}
+  {#if okStart}<p class="small-note">🏆 Con {n} jugadores gana quien reúna <b>{tokensToWin(n)} favores</b> (uno por ronda ganada). El mazo es siempre el mismo: 16 cartas, 8 tipos.</p>{/if}
+  {#if n < MIN_PLAYERS}<p class="small-note">⚠️ Love Letter necesita al menos {MIN_PLAYERS} jugadores: marca {MIN_PLAYERS - n} más arriba.</p>{/if}
+  {#if n > MAX_PLAYERS}<p class="small-note">⚠️ Máximo {MAX_PLAYERS} jugadores: desmarca {n - MAX_PLAYERS} arriba.</p>{/if}
   <div id="form-error">{#if app.ui.formError}<div class="flash error">{app.ui.formError}</div>{/if}</div>
-  <button class="primary block" disabled={!okStart} data-a="ll-start" onclick={startNow}>💌 ¡Empezar!</button>
+  <button class="primary block" disabled={!okStart} data-a="ll-start" onclick={startNow}>💌 ¡Empezar!{okStart ? ` (${n} jugadores)` : ''}</button>
 </div>
+
+<style>
+  /* Chips de dispositivo y ← de la cabecera con área de toque cómoda (B26·9). */
+  .pick { min-height: 44px; padding: 10px 12px; font-size: 0.85rem; border-radius: 10px; }
+  .topbar button { min-height: 44px; min-width: 44px; }
+</style>

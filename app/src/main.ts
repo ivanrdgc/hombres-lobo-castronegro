@@ -66,22 +66,31 @@ applyRoute();
 const app = mount(App, { target: document.getElementById('app-root')! });
 
 // Referencia de solo lectura para depuración y para los e2e (window.__hlc).
+// Lo que lleva SECRETOS (la partida, las cartas de los jugadores) solo se
+// publica en modo test: en una mesa de verdad, un curioso abría la consola y
+// leía los roles de todos de un vistazo. Los datos siguen viajando en el doc
+// (la secrecía es de interfaz, no criptográfica), pero ya no están servidos.
 // `group` es la VISTA del dispositivo (su partida superpuesta, si está en
 // una): así los e2e siguen leyendo group.game aunque la mesa tenga varias
 // partidas; el doc crudo queda en rawGroup y las partidas en matches.
-(window as unknown as { __hlc: unknown }).__hlc = {
+const debugBase = {
   get route() { return state.route; },
-  get group() { return viewGroup(); },
-  get rawGroup() { return state.group; },
   get groupMissing() { return state.groupMissing; },
-  get players() { return state.players; },
-  get matches() { return state.matches; },
   get session() { return state.session; },
   get flash() { return state.flash; },
   get ui() { return state.ui; },
-  // Transcript de la voz en los e2e (window.__hlcTest): qué habría dicho el
-  // narrador, en orden. Permite verificar el contrato pantalla=voz sin audio.
-  get narration() { return (window as unknown as { __hlcNarration?: unknown[] }).__hlcNarration || []; },
 };
+(window as unknown as { __hlc: unknown }).__hlc = e2eTestMode()
+  ? {
+    ...debugBase,
+    get group() { return viewGroup(); },
+    get rawGroup() { return state.group; },
+    get players() { return state.players; },
+    get matches() { return state.matches; },
+    // Transcript de la voz: qué habría dicho el narrador, en orden. Permite
+    // verificar el contrato pantalla=voz sin audio.
+    get narration() { return (window as unknown as { __hlcNarration?: unknown[] }).__hlcNarration || []; },
+  }
+  : debugBase;
 
 export default app;

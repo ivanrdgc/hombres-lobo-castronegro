@@ -7,7 +7,18 @@ import type { TwoRoomsState, Team, Role } from './types';
 
 export const MIN_PLAYERS = 6;
 export const MAX_PLAYERS = 30;
-export const TOTAL_ROUNDS = 3;
+/** Plazo del voto de rehén (segundos): sin él, un móvil que se apaga dejaba la
+ *  partida colgada para siempre (nadie más podía cerrar la votación). */
+export const HOSTAGE_SECONDS = 60;
+
+/**
+ * Rondas según el tamaño de la mesa, como el juego original: hasta 10 jugadores
+ * bastan 3 rondas (3, 2 y 1 minutos); de 11 en adelante hacen falta 5 (5, 4, 3,
+ * 2 y 1) o casi nadie llegaría a cambiar de sala.
+ */
+export function roundsFor(playerCount: number): number {
+  return playerCount <= 10 ? 3 : 5;
+}
 
 export interface Player { id: string; name?: string; order?: number }
 
@@ -86,31 +97,52 @@ export const presidentId = (game: TwoRoomsState): string | null =>
 export const bomberId = (game: TwoRoomsState): string | null =>
   game.playerIds.find((pid) => game.roles[pid] === 'bomber') || null;
 
+/**
+ * Cuántos rehenes manda CADA sala esta ronda: uno de cada cuatro, mínimo uno.
+ * Se mide sobre la sala más pequeña para que el trueque sea parejo (si una
+ * mandara más que la otra, las salas se descompensarían ronda a ronda).
+ */
+export function hostagesPerRoom(game: TwoRoomsState): number {
+  const small = Math.min(roomMembers(game, 0).length, roomMembers(game, 1).length);
+  return Math.max(1, Math.ceil(small / 4));
+}
+
 /** ¿Han votado ya todos los de la sala r? */
 export const allVotedInRoom = (game: TwoRoomsState, r: 0 | 1): boolean => {
   const mem = roomMembers(game, r);
   return mem.length > 0 && mem.every((pid) => game.hVotes[pid] !== undefined);
 };
 
+/** ¿Ha votado ya MÁS DE LA MITAD de la sala? Habilita cerrar la votación a mano
+ *  sin esperar al que se ha quedado sin batería. */
+export const majorityVotedInRoom = (game: TwoRoomsState, r: 0 | 1): boolean => {
+  const mem = roomMembers(game, r);
+  const voted = mem.filter((pid) => game.hVotes[pid] !== undefined).length;
+  return mem.length > 0 && voted * 2 > mem.length;
+};
+
+/** Quiénes de la sala r aún no han votado (para decir a quién se espera). */
+export const pendingInRoom = (game: TwoRoomsState, r: 0 | 1): string[] =>
+  roomMembers(game, r).filter((pid) => game.hVotes[pid] === undefined);
+
 /**
- * Rehén elegido por una sala: el más votado por los suyos (los votos válidos son
- * a gente de la MISMA sala). Empate en cabeza → el primero por orden de mesa
- * (determinista).
+ * Rehenes elegidos por una sala: los `k` más votados por los suyos (los votos
+ * válidos son a gente de la MISMA sala). Empates —y los huecos, si la sala
+ * concentró los votos en menos de k personas— se resuelven por orden de mesa,
+ * así que el resultado es determinista y nunca se queda corto.
  */
-export function tallyRoom(game: TwoRoomsState, r: 0 | 1): string | null {
+export function tallyRoom(game: TwoRoomsState, r: 0 | 1, k = 1): string[] {
   const mem = roomMembers(game, r);
   const counts: Record<string, number> = {};
   for (const voter of mem) {
     const t = game.hVotes[voter];
     if (t && mem.includes(t)) counts[t] = (counts[t] || 0) + 1;
   }
-  let best: string | null = null;
-  let max = 0;
-  for (const pid of game.playerIds) { // orden de mesa como desempate estable
-    const cprev = counts[pid] || 0;
-    if (cprev > max) { max = cprev; best = pid; }
-  }
-  return max > 0 ? best : null;
+  const order = new Map(game.playerIds.map((pid, i) => [pid, i]));
+  return mem
+    .slice()
+    .sort((a, b) => (counts[b] || 0) - (counts[a] || 0) || (order.get(a) ?? 0) - (order.get(b) ?? 0))
+    .slice(0, Math.max(0, Math.min(k, mem.length)));
 }
 
 /** Dictamen final: gana el rojo si Bombardero y Presidente comparten sala. */
@@ -125,6 +157,40 @@ export const WIN_LABELS: Record<Team, string> = {
   red: '💥 ¡BOOM! El Bombardero acabó junto al Presidente. Gana el equipo ROJO.',
   blue: '🕊️ El Presidente sobrevive: el Bombardero quedó en la otra sala. Gana el equipo AZUL.',
 };
+
+/** Lista de nombres legible («Ana», «Ana y Bea», «Ana, Bea y Coco»). */
+export function nameList(game: TwoRoomsState, ids: string[]): string {
+  const ns = ids.map((pid) => game.names[pid] || '¿?');
+  if (!ns.length) return 'nadie';
+  if (ns.length === 1) return ns[0];
+  return `${ns.slice(0, -1).join(', ')} y ${ns[ns.length - 1]}`;
+}
+
+/**
+ * La voz de cada sala vive en un dispositivo físico de esa sala (modo perRoom).
+ * Si el altavoz es un JUGADOR y cruza como rehén, se lleva el móvil consigo: hay
+ * que repartir de nuevo las voces o una sala se queda muda el resto de partida.
+ * Los altavoces que no juegan (una tele, una tablet) no se mueven nunca.
+ */
+export function rebalanceSpeakers(game: TwoRoomsState): void {
+  if (game.voiceMode !== 'perRoom') return;
+  const next: [string | null, string | null] = [null, null];
+  for (const r of [0, 1] as const) {
+    const s = game.roomSpeakers[r];
+    if (s && !game.playerIds.includes(s)) next[r] = s; // fijo: se queda en su sala
+  }
+  for (const r of [0, 1] as const) {
+    const s = game.roomSpeakers[r];
+    if (!s || !game.playerIds.includes(s)) continue;
+    const nr = game.room[s];
+    if (nr !== undefined && next[nr] === null) next[nr] = s;
+  }
+  for (const r of [0, 1] as const) {
+    if (next[r]) continue; // sala sin voz: la toma cualquiera de los que están en ella
+    next[r] = roomMembers(game, r).find((pid) => pid !== next[r === 0 ? 1 : 0]) ?? null;
+  }
+  game.roomSpeakers = next;
+}
 
 // ——— Salida a mitad de partida ———
 
@@ -143,6 +209,7 @@ function dissolve(game: TwoRoomsState): 'dissolved' {
   game.phase = 'end';
   game.deadline = null;
   game.winner = null;
+  game.winReason = `🚪 Quedasteis menos de ${MIN_PLAYERS}: la partida se disolvió sin ganador.`;
   game.log.push({ txt: `🚪 Quedan menos de ${MIN_PLAYERS} jugadores: la partida se disuelve sin ganador y se destapan las cartas.` });
   return 'dissolved';
 }
@@ -183,14 +250,18 @@ export function leavePlayer(game: TwoRoomsState, pid: string): LeaveOutcome {
   // discuss / hostages
   const role = game.roles[pid];
   game.playerIds = game.playerIds.filter((x) => x !== pid);
-  const wasPick0 = game.pick[0] === pid;
-  const wasPick1 = game.pick[1] === pid;
+  const wasPicked = ([0, 1] as const).filter((r) => (game.picks?.[r] || []).includes(pid));
   stripPlayer(game, pid);
   if (role === 'president' || role === 'bomber') {
     const winner: Team = role === 'president' ? 'red' : 'blue';
     game.phase = 'end';
     game.deadline = null;
     game.winner = winner;
+    // El cartel final no puede cantar «¡BOOM!» si nadie ha volado nada: la
+    // rendición se cuenta tal cual.
+    game.winReason = role === 'president'
+      ? `🚪 ${name} era el PRESIDENTE y abandonó la partida: el azul se rinde y gana el equipo ROJO.`
+      : `🚪 ${name} era el BOMBARDERO y abandonó la partida: la bomba se fue con él y gana el equipo AZUL.`;
     for (const p of game.playerIds) if (game.teams[p] === winner) game.scores[p] = (game.scores[p] || 0) + 1;
     game.log.push({ txt: role === 'president'
       ? `🚪 ¡${name} era el PRESIDENTE y abandona! El azul se rinde: gana el equipo ROJO.`
@@ -200,8 +271,7 @@ export function leavePlayer(game: TwoRoomsState, pid: string): LeaveOutcome {
   game.log.push({ txt: `🚪 ${name} deja la partida.` });
   if (game.playerIds.length < MIN_PLAYERS) return dissolve(game);
   if (game.phase === 'hostages') {
-    if (wasPick0) game.pick[0] = null;
-    if (wasPick1) game.pick[1] = null;
+    for (const r of wasPicked) game.picks[r] = null; // era rehén: su sala vuelve a decidir
     // Los votos que lo señalaban caen: esos vecinos vuelven a votar.
     for (const [voter, target] of Object.entries(game.hVotes)) {
       if (target === pid) delete game.hVotes[voter];

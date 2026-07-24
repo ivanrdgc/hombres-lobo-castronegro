@@ -1,6 +1,8 @@
 <script lang="ts">
-  // Menú ⋯ de Ávalon: voz, pausar/reanudar y repetir (narrador), dejar y
-  // terminar. Como en los otros juegos, terminar cierra la partida para todos.
+  // Menú ⋯ de Ávalon: voz, «cómo se juega» (la ayuda solo se abría desde el
+  // lobby y a media partida no había forma de consultar las reglas),
+  // pausar/reanudar y repetir (narrador), dejar y terminar. Como en los otros
+  // juegos, terminar cierra la partida para todos.
   import { app, matchOf, navigate } from '../../../core/sync/store.svelte';
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
@@ -23,6 +25,10 @@
     <button class="menu-scrim" aria-label="Cerrar menú" onclick={close}></button>
     <div class="menu-pop" role="menu">
       <button role="menuitem" data-a="voice-open" onclick={() => { app.ui.modal = { type: 'voice' }; app.ui.voiceTest = null; close(); }}>{app.ui.muted ? '🔇 Voz' : '🗣️ Voz'}</button>
+      <button role="menuitem" data-a="av-help-open" onclick={() => { app.ui.modal = { type: 'av-help' }; close(); }}>🎲 Cómo se juega</button>
+      <!-- «La mesa» desde DENTRO de la partida: el rescate cuando a alguien se le
+           muere el móvil y la fase se queda esperando su voto para siempre. -->
+      <button role="menuitem" data-a="table-open" onclick={() => { app.ui.modal = { type: 'table' }; close(); }}>🪑 La mesa</button>
       {#if playing}
         <button role="menuitem" data-a="av-repeat" onclick={() => { guard(A.requestRepeat); close(); }}>🔁 Repetir</button>
         {#if game.paused}

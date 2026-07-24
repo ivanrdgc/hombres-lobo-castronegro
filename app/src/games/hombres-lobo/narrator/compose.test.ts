@@ -43,6 +43,30 @@ test('shotUtterance: anuncia toda la cadena de la flecha (p. ej. enamorado que m
   expect(u.display).toMatch(/Ana/);
 });
 
+// ——— Avisos de la llamada de los encantados ———
+import { nagUtterance } from './compose';
+import type { PlayerDoc } from '../../../core/sync/schema';
+
+test('aviso de los encantados: repite las palabras de TODOS los que faltan, no solo las de los nuevos', () => {
+  // Regresión: con acts.gaiteroTargets, un encantado de una noche anterior no
+  // volvía a oír su palabra y el paso no avanzaba nunca.
+  const players = [
+    { id: 'p-old', name: 'Vieja', inGame: true, alive: true, charmed: true, keyword: 'Búho de Niebla' },
+    { id: 'p-new', name: 'Nuevo', inGame: true, alive: true, charmed: true, keyword: 'Luna de Plata' },
+  ] as unknown as PlayerDoc[];
+  const u = nagUtterance(mkGame({ keywordsActive: true, acts: { gaiteroTargets: ['p-new'] } }), players, 'encantados', 0);
+  expect(u.display).toContain('Búho de Niebla');
+  expect(u.display).toContain('Luna de Plata');
+
+  // Y quien ya confirmó deja de ser nombrado (su palabra ya rotó).
+  const u2 = nagUtterance(
+    mkGame({ keywordsActive: true, acts: { gaiteroTargets: ['p-new'], encantadosSeen: { 'p-new': true } } }),
+    players, 'encantados', 0,
+  );
+  expect(u2.display).toContain('Búho de Niebla');
+  expect(u2.display).not.toContain('Luna de Plata');
+});
+
 // ——— Densidad del guion por perfil de ritmo (rápido/normal/teatral) ———
 import { bienvenidaUtterance, introUtterance, outroUtterance, nocheCaeUtterance, fillerUtterance } from './compose';
 import { DRAMA, IMPROV } from '../texts/corpus';

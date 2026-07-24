@@ -13,7 +13,7 @@ import {
 } from '../texts/corpus';
 import type { Density } from '../../../core/narrator/pacing';
 import { ROLES } from '../roles';
-import { WINNER_LABELS } from '../engine';
+import { WINNER_LABELS, stepActors } from '../engine';
 import type { GameState, StepId } from '../types';
 import type { PlayerDoc } from '../../../core/sync/schema';
 
@@ -278,8 +278,12 @@ export function nagUtterance(game: GameState, players: PlayerDoc[], nagId: strin
     }
   }
   if (id === 'encantados') {
-    const targets = game.acts.gaiteroTargets || [];
-    const ps = players.filter((p) => targets.includes(p.id) && p.keyword);
+    // La llamada despierta a TODOS los encantados pendientes (los de esta
+    // noche y los de noches anteriores), así que el aviso debe repetir SUS
+    // palabras: con los recién encantados (acts.gaiteroTargets) un encantado
+    // antiguo no volvía a oír la suya y el paso no avanzaba nunca.
+    const pend = stepActors('encantados', game, players.filter((p) => p.inGame)) || [];
+    const ps = players.filter((p) => pend.includes(p.id) && p.keyword);
     if (game.keywordsActive && ps.length) text = nagEncantadosKw(ps.map((p) => p.keyword!));
   }
   if (id === 'infectado') {

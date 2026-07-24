@@ -18,11 +18,14 @@ export interface ShadowHState {
   hp: Record<string, number>;
   maxHp: number;
   alive: Record<string, boolean>;
+  /** Identidad pública. Es también el candado del poder: se usa al revelarse. */
   revealed: Record<string, boolean>;
-  powerUsed: Record<string, boolean>;
   turn: string;
-  /** Pista en curso: solo `by` y `target` ven el TEXTO; la mesa, el resultado. */
-  pista: { by: string; target: string; idx: number; outcome: string } | null;
+  /** Pista en curso: solo `by` y `target` ven el TEXTO; la mesa, el resultado.
+   *  `ack` = quién ha pulsado «Entendido»; la carta no se retira hasta que la
+   *  han leído los DOS (el que la da pulsa enseguida y dejaba al receptor sin
+   *  la información, que es justo lo que se juega aquí). */
+  pista: { by: string; target: string; idx: number; outcome: string; ack: string[] } | null;
   /** Golpes de gracia por jugador (objetivo de Bob: tener al menos uno). */
   killsBy: Record<string, number>;
   /** Facción ganadora ('hunter'/'shadow') o null si acabó por otra vía. */

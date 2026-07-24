@@ -9,7 +9,7 @@
 {#each rows as r, i (i)}
   <div class="settingrow">
     <div class="sinfo">
-      <div class="sname">{r.emoji} {r.name}{#if r.note}<span style="opacity:.65;font-weight:400"> · {r.note}</span>{/if}</div>
+      <div class="sname">{r.emoji} {r.name}{#if r.note}<span style="opacity:.65;font-weight:400">&nbsp;· {r.note}</span>{/if}</div>
       <div class="sdesc">{r.desc}</div>
     </div>
   </div>

@@ -16,7 +16,7 @@
 <div class="card" style="text-align:center">
   <span class="moon">👑</span>
   <h3 style="margin:6px 0">¡Gana {winnerName(game)}!</h3>
-  <p class="small-note">Último en pie en la corte de Castronegro.</p>
+  <p class="small-note">Último en pie en la corte de Castronegro. Arriba se destapan TODAS las influencias: ahí se ve quién faroleaba.</p>
 </div>
 
 <div class="card">

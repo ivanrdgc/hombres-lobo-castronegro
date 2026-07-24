@@ -91,10 +91,15 @@ const TEAM_SIZES: Record<number, number[]> = {
   10: [3, 4, 4, 5, 5],
 };
 
+/** La fila completa de la tabla oficial para `n` jugadores (misiones 1..5).
+ *  La comparten el motor, la ayuda y la chuleta en partida: una sola fuente. */
+export function teamSizes(n: number): number[] {
+  return TEAM_SIZES[Math.max(MIN_PLAYERS, Math.min(MAX_PLAYERS, n))].slice();
+}
+
 /** Jugadores que van en la misión `quest` (1..5) con `n` jugadores. */
 export function teamSize(n: number, quest: number): number {
-  const row = TEAM_SIZES[Math.max(MIN_PLAYERS, Math.min(MAX_PLAYERS, n))];
-  return row[Math.max(0, Math.min(4, quest - 1))];
+  return teamSizes(n)[Math.max(0, Math.min(4, quest - 1))];
 }
 
 /** Sabotajes necesarios para que FRACASE la misión (la 4.ª pide 2 con 7+). */

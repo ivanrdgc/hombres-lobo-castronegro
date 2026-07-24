@@ -29,6 +29,7 @@ export const HOW_TO: HelpSection[] = [
     heading: '🎴 El reparto',
     items: [
       'La app reparte una carta a cada jugador y deja TRES en el centro, boca abajo. Cada uno mira la suya a solas y la confirma.',
+      'UN SOLO móvil pone la voz y narra para toda la mesa (se deja en el centro, sonando). Los demás se quedan boca abajo: solo se miran cuando la voz llama a tu rol. Cuando todos han confirmado su carta, cualquiera pulsa «Comenzar la noche».',
       'Memorízala bien: durante la noche alguien puede cambiártela sin que te enteres. Por eso solo se te muestra tu carta INICIAL, con el aviso de que pudo cambiar.',
       'El mazo (qué roles y cuántos) se elige en el lobby y siempre suma jugadores + 3 cartas de centro.',
     ],
@@ -45,17 +46,20 @@ export const HOW_TO: HelpSection[] = [
   {
     heading: '☀️ El día y la votación',
     items: [
-      'Amanece y se abren los ojos. Se debate una vez: ¿quién esconde colmillos? Cuando el pueblo lo tenga claro, UNA persona registra la decisión en la app (como en Los Hombres Lobo), y es definitiva.',
-      'Se puede condenar a uno, PERDONAR (que no muera nadie) o, si hubo EMPATE, señalar a varios a la vez: en One Night, en un empate mueren TODOS los empatados.',
-      'Si el condenado resulta ser el Cazador (por su carta final), su flecha se lleva a alguien más antes de acabar.',
+      'Amanece y se abren los ojos. Se debate una vez: ¿quién esconde colmillos? El debate tiene reloj (cinco minutos, que la app cuenta en pantalla): cuando se agota, se vota.',
+      'Se vota como en la mesa original: alguien cuenta hasta tres y TODOS señalan A LA VEZ a quien creen hombre lobo. Nadie se guarda el voto para ver por dónde van los demás.',
+      'Cae el más señalado. Si hay EMPATE caen todos los empatados; y si nadie saca más de un voto, no muere nadie. Después, UNA sola persona registra en la app lo que salió (condena, empate o perdón), y es definitivo.',
+      'Si el condenado resulta ser el Cazador (por su carta final), la app le pide señalar a quién se lleva por delante antes de acabar.',
     ],
   },
   {
     heading: '🏆 Cómo se gana',
     items: [
       'Todo se calcula por la carta FINAL de cada uno. Gana el Pueblo si entre los condenados cae al menos un hombre lobo.',
-      'Ganan los Lobos si hay lobos en juego y ninguno cae. Si no hay lobos en la mesa (todos en el centro) y no muere nadie, también gana el Pueblo (acertó al no linchar).',
-      'El Curtidor gana SOLO si lo linchan a él. Puede haber varios ganadores a la vez (p. ej. Curtidor + Pueblo).',
+      'Ganan los Lobos si hay lobos en juego y ninguno cae… salvo que el pueblo linche al Curtidor: entonces gana él solo. Si no hay lobos en la mesa (todos en el centro) y no muere nadie, también gana el Pueblo (acertó al no linchar).',
+      'El Curtidor gana SOLO si lo linchan a él. Puede haber varios ganadores a la vez (por ejemplo Curtidor y Pueblo, si además cae un lobo).',
+      'Y hay un desenlace sin ganador: si no había ningún lobo en la mesa y el pueblo condena a un inocente, la partida acaba en «nadie gana».',
+      'Matiz del Esbirro: si los dos lobos quedaron en el centro, gana igual con tal de que muera cualquiera que no sea él; y si el único caído es el propio Esbirro, gana el Pueblo.',
     ],
   },
 ];
@@ -73,7 +77,7 @@ export const NIGHT_FALL =
 export const STEP_CALL: Partial<Record<StepId, string>> = {
   doble: 'El Doble, abre los ojos. Mira la carta de otro jugador: te conviertes en ese rol. Si ese rol actúa ahora, hazlo también.',
   lobos: 'Hombres lobo, abrid los ojos y reconoceos. Si eres el único lobo, puedes mirar una carta del centro.',
-  esbirro: 'Esbirro del mal, abre los ojos: los hombres lobo te mostrarán quiénes son.',
+  esbirro: 'Esbirro del mal, abre los ojos: tu pantalla te dirá quiénes son los hombres lobo. Ellos siguen dormidos y jamás sabrán de ti.',
   masones: 'Masones, abrid los ojos y reconoceos entre vosotros.',
   vidente: 'Vidente, abre los ojos. Mira la carta de un jugador… o dos cartas del centro.',
   ladron: 'Ladrón, abre los ojos. Puedes cambiar tu carta por la de otro jugador y mirar tu nueva carta.',
@@ -122,7 +126,11 @@ export const NAG_FORGOT: string[] = [
 export const DAWN = 'Castronegro, abrid todos los ojos. Ha amanecido, y alguien entre vosotros no es quien dice ser.';
 
 export const DEBATE =
-  'Es de día. Debatid: ¿quién esconde colmillos? Cuando el pueblo lo tenga claro, que una persona registre a quién condena… o si preferís perdonar y que no muera nadie.';
+  'Es de día, y el reloj corre: tenéis cinco minutos. Debatid: ¿quién esconde colmillos? Al final, contad hasta tres y señalad todos a la vez; luego que una persona registre lo que salió… o el perdón, si preferís que no muera nadie.';
+
+/** Se agota el tiempo de debate: hay que votar (R7). */
+export const TIME_UP =
+  'Se acabó el tiempo de debate. Contad hasta tres y señalad todos a la vez… y que alguien registre la decisión del pueblo.';
 
 export const END: Record<WinnerId, string> = {
   pueblo: 'Se acabó. El pueblo respira: gana el Pueblo de Castronegro.',
@@ -130,6 +138,11 @@ export const END: Record<WinnerId, string> = {
   tanner: 'Se acabó. El Curtidor sonríe por fin desde el otro barrio: gana él, y solo él.',
   nadie: 'Se acabó… y esta vez no gana nadie. Castronegro se queda con la duda.',
 };
+
+/** Único desenlace con DOS ganadores (cayeron el Curtidor y, además, un lobo):
+ *  sin esto la voz leía solo el primero y contradecía a la pantalla (V1). */
+export const END_BOTH =
+  'Se acabó, y esta vez celebran dos. El Curtidor descansa por fin… y el pueblo, además, se ha llevado por delante a un hombre lobo: ganan los dos.';
 
 /** Textos del lobby y la ayuda, limpios tal y como los lee el ▶️ local. */
 function helpPieces(): string[] {
@@ -140,7 +153,7 @@ function helpPieces(): string[] {
 /** Todas las piezas estáticas del juego (para pregenerar clips en la F6). */
 export function allUnaNocheStaticPieces(): string[] {
   return [
-    WELCOME, LISTOS, NIGHT_FALL, DAWN, DEBATE,
+    WELCOME, LISTOS, NIGHT_FALL, DAWN, DEBATE, TIME_UP, END_BOTH,
     ...Object.values(STEP_CALL).filter((t): t is string => !!t),
     ...Object.values(STEP_CLOSE).filter((t): t is string => !!t),
     ...Object.values(STEP_NAG).filter((t): t is string => !!t),

@@ -4,23 +4,27 @@
   // ya miraste): tu carta puede haber cambiado de noche sin que lo sepas, así
   // que NO es necesariamente tu carta final. Se avisa con claridad. Debajo, un
   // historial privado de lo que has visto y hecho esta noche.
+  import { untrack } from 'svelte';
   import type { GameState, RoleId } from '../types';
   import RoleCard from './RoleCard.svelte';
   import { playerHistory } from '../history';
 
-  const { game, pid }: { game: GameState; pid: string } = $props();
+  // startOpen: en el modal «🎴 Tu carta inicial» la carta se enseña ya abierta
+  // (el título prometía la carta y estaba tras otro toque); en la partida sigue
+  // plegada, que ahí la privacidad manda.
+  const { game, pid, startOpen = false }: { game: GameState; pid: string; startOpen?: boolean } = $props();
   const role = $derived(game.originalRole[pid] as RoleId);
   const history = $derived(playerHistory(game, pid));
-  let open = $state(false);
+  let open = $state(untrack(() => startOpen)); // solo el valor de partida
 </script>
 
 {#if !open}
-  <div style="text-align:center;margin:10px 0"><button class="small ghost" data-a="una-show-card" onclick={() => (open = true)}>👁 Ver mi carta y lo que hice</button></div>
+  <div style="text-align:center;margin:10px 0"><button class="small ghost" data-a="una-show-card" onclick={() => (open = true)}>👁 Ver en secreto: con qué carta empecé y qué hice</button></div>
 {:else}
   <RoleCard {role} note="⚠️ Es la carta con la que EMPEZASTE la noche. En Una Noche alguien pudo cambiártela sin que lo sepas: NO es necesariamente tu carta final." />
   {#if history.length}
     <div class="card">
-      <h3>📝 Lo que has hecho esta noche</h3>
+      <h3>📝 Lo que viste e hiciste esta noche</h3>
       <ul class="histlist">{#each history as h (h)}<li>{h}</li>{/each}</ul>
       <p class="small-note">Solo tú ves esto. Al final de la partida se muestra el historial completo de todos.</p>
     </div>

@@ -1,7 +1,8 @@
 // E2E de «Love Letter»: 3 jugadores (Ana narra y juega). God-view (el doc tiene
-// las manos): catálogo → empezar → el jugador de turno juega cartas (Guardia
-// que acierta y elimina, etc.) hasta que gana una ronda → verifica el favor y
-// la FUGA (solo ves tu propia carta). Dirige jugando siempre desde god-view.
+// las manos): catálogo → empezar → el panel de turno en dos pasos (carta con su
+// efecto → objetivo/adivinanza) hasta que alguien gana una ronda → verifica el
+// favor, el aviso del eliminado y la FUGA (quien espera no ve NINGUNA carta:
+// la suya está tapada tras «👁 Ver mi carta»). Dirige siempre desde god-view.
 import { chromium } from 'playwright';
 const BASE = process.env.BASE; if (!BASE) { console.error('Define BASE=https://tu-sitio.web.app'); process.exit(1); }
 let fail = 0;
@@ -36,43 +37,49 @@ let NAMES = {};
 const pg = (pid) => pages[(NAMES[pid] || pid).toLowerCase()];
 const st = () => hlc(pages.ana);
 const CARD_A = 'data-a=ll-card';
+const ES = {
+  guard: 'Guardia', priest: 'Sacerdote', baron: 'Barón', handmaid: 'Doncella',
+  prince: 'Príncipe', king: 'Rey', countess: 'Condesa', princess: 'Princesa',
+};
+const NEEDS_TARGET = { guard: 1, priest: 1, baron: 1, prince: 1, king: 1 };
 
-// El jugador de turno juega, dirigido por god-view: si tiene Guardia y hay un
-// objetivo vivo no protegido, adivina su carta REAL (para acertar); si no,
-// juega su carta de menor valor sin objetivo o sobre el primero válido.
+// Objetivos válidos de una carta (mismas reglas que el motor: vivos y sin la
+// protección de la Doncella; el Príncipe puede apuntarse a sí mismo).
+const targetsFor = (s, me, card) =>
+  s.playerIds.filter((x) => s.alive[x] && !s.protected[x] && (card === 'prince' ? true : x !== me));
+
+// Qué carta juega el bot: la Condesa si el motor la fuerza, si no el Guardia
+// (acelera: elimina) y si no, cualquiera que no sea la Princesa.
+function chooseIdx(hand, s, me) {
+  if (hand.includes('countess') && (hand.includes('king') || hand.includes('prince'))) return hand.indexOf('countess');
+  const gi = hand.indexOf('guard');
+  if (gi >= 0 && targetsFor(s, me, 'guard').length) return gi;
+  const pi = hand.indexOf('princess');
+  return pi === 0 && hand.length > 1 ? 1 : 0;
+}
+
+// El jugador de turno juega, dirigido por god-view. El panel va en dos pasos:
+// 1) tocar la carta (tarjeta con su efecto), 2) objetivo y —con el Guardia—
+// adivinanza, y confirmar.
 async function playTurn(s) {
   const me = s.turn;
   const hand = s.hands[me];
   const p = pg(me);
-  const alive = s.playerIds.filter((x) => x.alive?.[x] ?? s.alive[x]);
-  const targets = s.playerIds.filter((x) => x !== me && s.alive[x] && !s.protected[x]);
-  const guardIdx = hand.indexOf('guard');
-  if (guardIdx >= 0 && targets.length) {
-    const tgt = targets[0];
-    const realCard = s.hands[tgt][0];
-    const guess = realCard === 'guard' ? 'baron' : realCard; // si tiene Guardia no se puede adivinar; fallará (da igual)
-    await p.click(`[${CARD_A}][data-p="${guardIdx}"]`, { timeout: 15000 });
-    await p.click(`[data-a=ll-target][data-p="${tgt}"]`);
-    await p.click(`[data-a=ll-guess][data-p="${guess}"]`);
-    await p.click('[data-a=ll-play]:not([disabled])');
-    return;
-  }
-  // Sin Guardia útil: juega la primera carta jugable (índice 0 salvo Condesa forzada).
-  // Elige objetivo si lo pide (primero válido); si es Príncipe sin otros, a sí mismo.
-  const idx = 0;
+  const idx = chooseIdx(hand, s, me);
+  const card = hand[idx];
   await p.click(`[${CARD_A}][data-p="${idx}"]`, { timeout: 15000 });
-  // Si aparece selección de objetivo, elige el primero disponible.
-  const tbtn = p.locator('[data-a=ll-target]').first();
-  if (await tbtn.count()) await tbtn.click().catch(() => {});
-  const gbtn = p.locator('[data-a=ll-guess]').first();
-  if (await gbtn.count()) await gbtn.click().catch(() => {});
-  await p.click('[data-a=ll-play]:not([disabled])', { timeout: 15000 }).catch(async () => {
-    // Si esa carta no era jugable (Condesa forzada), prueba la otra.
-    await p.click(`[${CARD_A}][data-p="1"]`).catch(() => {});
-    const t2 = p.locator('[data-a=ll-target]').first();
-    if (await t2.count()) await t2.click().catch(() => {});
-    await p.click('[data-a=ll-play]:not([disabled])');
-  });
+  await p.waitForSelector('[data-a=ll-play]', { timeout: 15000 });
+  const targets = NEEDS_TARGET[card] ? targetsFor(s, me, card) : [];
+  if (targets.length) {
+    const tgt = targets[0];
+    await p.click(`[data-a=ll-target][data-p="${tgt}"]`, { timeout: 15000 });
+    if (card === 'guard') {
+      const real = s.hands[tgt][0];
+      const guess = real === 'guard' ? 'baron' : real; // «Guardia» no se puede adivinar: fallará
+      await p.click(`[data-a=ll-guess][data-p="${guess}"]`, { timeout: 15000 });
+    }
+  }
+  await p.click('[data-a=ll-play]:not([disabled])', { timeout: 15000 });
 }
 
 try {
@@ -107,18 +114,42 @@ try {
   check(s.hands[s.turn].length === 2, 'el jugador de turno tiene 2 cartas');
   check(s.playerIds.filter((p) => p !== s.turn).every((p) => s.hands[p].length === 1), 'los demás tienen 1 carta');
 
-  // Fuga: cada jugador solo ve su carta (comprobamos que el DOM del de turno
-  // muestra SUS cartas y no las ajenas — indirecto: el panel de turno existe).
-  check(await pg(s.turn).locator('[data-a=ll-card]').count() >= 1, 'el jugador de turno ve sus cartas para jugar');
+  // El panel de turno enseña las DOS cartas con su efecto y la referencia de
+  // las 8, sin salir de la pantalla donde se decide.
+  const turnPage = pg(s.turn);
+  check(await turnPage.locator('[data-a=ll-card]').count() === 2, 'el jugador de turno ve sus dos cartas para elegir');
+  const firstCard = await turnPage.locator('[data-a=ll-card]').first().innerText();
+  check(/valor \d/.test(firstCard) && firstCard.length > 60, 'cada carta muestra valor, copias y su efecto entero');
+  check(await turnPage.locator('[data-a=ll-ref]').count() === 1, 'la referencia de las 8 cartas se consulta desde el panel');
+  check(await turnPage.locator('[data-a=ll-target]').count() === 0, 'el objetivo no se pide hasta elegir carta');
+
+  // Fuga: quien espera no tiene botones de jugar NI ve carta ajena alguna (su
+  // propia carta está tapada tras «👁 Ver mi carta»).
   const otherP = s.playerIds.find((p) => p !== s.turn);
   check(await pg(otherP).locator('[data-a=ll-card]').count() === 0, 'quien no es de turno no tiene botones de jugar');
+  const waitTxt = await pg(otherP).evaluate(() => document.body.innerText);
+  const leaked = [...new Set([...s.hands[s.turn], ...s.hands[otherP]])].map((c) => ES[c]).filter((n) => waitTxt.includes(n));
+  check(leaked.length === 0, `la pantalla de quien espera no enseña ninguna carta${leaked.length ? ` (se cuela: ${leaked.join(', ')})` : ''}`);
+  check(await pg(otherP).locator('[data-a=ll-show-card]').count() === 1, 'quien espera puede destapar SU carta a propósito');
+  await pg(otherP).click('[data-a=ll-show-card]');
+  await pg(otherP).waitForSelector('[data-a=ll-hide-card]', { timeout: 10000 });
+  const shownTxt = await pg(otherP).evaluate(() => document.body.innerText);
+  check(shownTxt.includes(ES[s.hands[otherP][0]]), 'al destaparla ve SU carta (y solo la suya)');
+  await pg(otherP).click('[data-a=ll-hide-card]');
 
   // Juega turnos (dirigidos) hasta que termine una ronda (roundEnd o end).
+  let bannerSeen = null;
   for (let guardN = 0; guardN < 40; guardN++) {
     s = await st();
     if (s.phase === 'roundEnd' || s.phase === 'end') break;
     if (s.phase !== 'turn') { await ana.waitForTimeout(150); continue; }
-    // Limpia un posible aviso del Sacerdote en la pantalla del que miró.
+    // Al eliminado se le dice en la pantalla principal que es solo por esta ronda.
+    const dead = s.playerIds.find((p) => !s.alive[p]);
+    if (dead && bannerSeen === null) {
+      bannerSeen = await pg(dead).locator('[data-a=ll-out-banner]').count() > 0;
+      check(bannerSeen, 'el eliminado ve el aviso «fuera de ESTA ronda» en su pantalla');
+    }
+    // Limpia los vistazos privados pendientes (Sacerdote o duelo del Barón).
     for (const pid of s.playerIds) {
       const okp = pg(pid); const pk = okp.locator('[data-a=ll-peek-ok]');
       if (await pk.count()) await pk.click().catch(() => {});
@@ -133,6 +164,14 @@ try {
   check((s.tokens[champ] || 0) >= 1, `${NAMES[champ]} suma un favor por ganar la ronda`);
   check(s.log.some((t) => /gana la ronda/.test(t)), 'la voz anuncia el fin de la ronda');
   ok('una ronda completa de Love Letter');
+
+  // El menú ⋯ ofrece «🪑 La mesa» (B26): el rescate cuando a alguien se le muere
+  // el móvil y la partida se queda esperándolo.
+  await ana.click('[data-a=game-menu]');
+  await ana.click('[data-a=ll-table-open]');
+  await ana.waitForSelector('.modal [data-a=table-player]', { timeout: 10000 });
+  check(await ana.locator('.modal [data-a=table-player]').count() === 3, 'el menú ⋯ abre «🪑 La mesa» con los 3 dispositivos');
+  await ana.click('.modal [data-a=close-modal]');
 
   // Limpieza.
   await ana.click('[data-a=game-menu]');

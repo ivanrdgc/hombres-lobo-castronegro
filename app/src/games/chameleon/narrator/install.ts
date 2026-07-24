@@ -11,7 +11,7 @@ import type { GroupDoc, PlayerDoc, Session } from '../../../core/sync/schema';
 import { chamGame } from '../actions';
 import { topicName } from '../engine';
 import type { ChameleonState } from '../types';
-import { CH_INTRO, VOTE_LINE, roundLine, outcomeLine } from '../texts';
+import { CH_INTRO, NEW_ROUND_LINE, VOTE_LINE, caughtLine, roundLine, outcomeLine } from '../texts';
 
 interface Snap { group: GroupDoc | null; players: PlayerDoc[]; session: Session | null }
 type Ctx = SceneCtx<Snap>;
@@ -38,6 +38,10 @@ function amSpeaker(s: Snap): boolean {
 
 const gm = (ctx: Ctx): ChameleonState => chamGame(ctx.state().group)!;
 const nm = (g: ChameleonState, pid: string | null | undefined): string => (pid && g.names[pid]) || 'alguien';
+// «🔁 Repetir» sube repeatNonce y con él la clave de escena; si la clave del
+// LEDGER no lo lleva también, la escena rearranca pero el sayOnce ya está
+// marcado y no suena nada (mismo remedio que en Avalon).
+const rk = (g: ChameleonState, key: string): string => `C${g.startedAt}:${key}:r${g.repeatNonce || 0}`;
 
 function sceneOf(s: Snap): SceneDef<Snap> | null {
   if (!amSpeaker(s)) return null;
@@ -49,7 +53,8 @@ function sceneOf(s: Snap): SceneDef<Snap> | null {
     case 'reveal': return { key: `${C}:reveal:${rf}`, run: revealScene };
     case 'clue': return { key: `${C}:clue:${rf}`, run: clueScene };
     case 'vote': return { key: `${C}:vote:${rf}`, run: voteScene };
-    case 'end': return { key: `${C}:end`, run: endScene };
+    case 'guess': return { key: `${C}:guess:${rf}`, run: guessScene };
+    case 'end': return { key: `${C}:end:${rf}`, run: endScene };
     default: return null;
   }
 }
@@ -58,7 +63,10 @@ async function pausedScene(ctx: Ctx): Promise<void> { await ctx.waitFor(() => fa
 
 async function revealScene(ctx: Ctx): Promise<void> {
   const g = gm(ctx);
-  if (g.round === 1) await ctx.sayOnce(`C${g.startedAt}:intro`, () => utt('ch-intro', CH_INTRO));
+  // Ronda 1, la intro larga; de la 2 en adelante, un aviso corto (sin él, el
+  // reparto era mudo y la mesa no sabía que tenía que volver a mirar la carta).
+  if (g.round === 1) await ctx.sayOnce(rk(g, 'intro'), () => utt('ch-intro', CH_INTRO));
+  else await ctx.sayOnce(rk(g, `r${g.round}:newround`), () => utt('ch-newround', NEW_ROUND_LINE));
   await ctx.waitFor((s) => {
     const game = chamGame(s.group);
     return !!game && (game.phase !== 'reveal' || game.playerIds.every((pid) => game.seen[pid]));
@@ -67,20 +75,28 @@ async function revealScene(ctx: Ctx): Promise<void> {
 
 async function clueScene(ctx: Ctx): Promise<void> {
   const g = gm(ctx);
-  await ctx.sayOnce(`C${g.startedAt}:r${g.round}:clue`, () =>
+  await ctx.sayOnce(rk(g, `r${g.round}:clue`), () =>
     utt('ch-clue', roundLine(topicName(g.topicId), nm(g, g.playerIds[g.starterIdx]))));
 }
 
 async function voteScene(ctx: Ctx): Promise<void> {
   const g = gm(ctx);
-  await ctx.sayOnce(`C${g.startedAt}:r${g.round}:vote`, () => utt('ch-vote', VOTE_LINE));
+  await ctx.sayOnce(rk(g, `r${g.round}:vote`), () => utt('ch-vote', VOTE_LINE));
+}
+
+/** El momento más dramático: la mesa acaba de cazar a alguien y le queda una bala. */
+async function guessScene(ctx: Ctx): Promise<void> {
+  const g = gm(ctx);
+  await ctx.sleep(400);
+  await ctx.sayOnce(rk(g, `r${g.round}:guess`), () =>
+    utt('ch-guess', caughtLine(nm(g, g.chameleonId))));
 }
 
 async function endScene(ctx: Ctx): Promise<void> {
   const g = gm(ctx);
   if (!g.winner) return;
   await ctx.sleep(400);
-  await ctx.sayOnce(`C${g.startedAt}:r${g.round}:end`, () =>
+  await ctx.sayOnce(rk(g, `r${g.round}:end`), () =>
     utt('ch-end', outcomeLine(g.winner!, nm(g, g.chameleonId), g.caught, g.guessedRight)));
 }
 

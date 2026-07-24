@@ -5,6 +5,8 @@
   import { guard } from '../../../core/sync/guard';
   import { unlockAudio } from '../../../core/audio/engine';
   import { play } from '../../../core/audio/player';
+  import { e2eTestMode } from '../../../core/test-hooks';
+  import { CLUE_STALL_MS, clueStalled } from '../engine';
   import type { GroupDoc, PlayerDoc } from '../../../core/sync/schema';
   import Flash from '../../../shell/Flash.svelte';
   import CardFab from '../../../shell/CardFab.svelte';
@@ -27,12 +29,27 @@
   }
   let logEl: HTMLElement | null = $state(null);
   $effect(() => { void (game.log || []).length; if (logEl) logEl.scrollTop = logEl.scrollHeight; });
+
+  // Un toque en el tablero SELECCIONA; destapar se confirma abajo (las celdas
+  // son pequeñas y un roce en el asesino termina la partida). La selección es
+  // local y se borra en cuanto cambia algo en el tablero o el turno.
+  let sel: number | null = $state(null);
+  $effect(() => { void game.phase; void game.turn; void (game.log || []).length; sel = null; });
+
+  // Reloj local para detectar un turno de pista atascado (Jefe ausente).
+  const STALL_MS = e2eTestMode() ? 4000 : CLUE_STALL_MS;
+  let now = $state(Date.now());
+  $effect(() => { const t = setInterval(() => (now = Date.now()), 2500); return () => clearInterval(t); });
+  const stalled = $derived(clueStalled(game, now, STALL_MS));
 </script>
 
 <div class="topbar">
   <h2>🕵️ {group.name}</h2>
-  {#if game.phase !== 'end'}<span class="chip">🔴 {game.remaining.red} · 🔵 {game.remaining.blue}</span>{/if}
-  <GameMenu {game} {my} />
+  {#if game.phase !== 'end'}
+    <span class="chip" data-a="cn-turn-chip">{game.turn === 'red' ? '🔴 Turno rojo' : '🔵 Turno azul'} · {game.phase === 'clue' ? 'pista' : 'toques'}</span>
+    <span class="chip">🔴 {game.remaining.red} · 🔵 {game.remaining.blue}</span>
+  {/if}
+  <GameMenu {game} {my} {stalled} />
 </div>
 <Flash />
 
@@ -49,11 +66,11 @@
   <EndPhase {game} {my} />
 {:else}
   {#if inGame}<MyCard {game} pid={my.id} />{/if}
-  <div class="card"><Board {game} {my} onpick={(i) => guard(() => revealCell(i))} /></div>
+  <div class="card"><Board {game} {my} {sel} onpick={(i) => (sel = sel === i ? null : i)} /></div>
   {#if game.phase === 'clue'}
-    <CluePhase {game} {my} />
+    <CluePhase {game} {my} {stalled} />
   {:else if game.phase === 'guess'}
-    <GuessPhase {game} {my} />
+    <GuessPhase {game} {my} {sel} onconfirm={() => guard(() => revealCell(sel!))} oncancel={() => (sel = null)} />
   {/if}
   {#if !inGame}<p class="small-note" style="text-align:center">👀 Sigues la partida de espectador (sin ver el mapa oculto).</p>{/if}
 {/if}

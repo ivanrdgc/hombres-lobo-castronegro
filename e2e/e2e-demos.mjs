@@ -9,9 +9,13 @@ const ok = (m) => console.log('  ✔', m);
 const bad = (m) => { fail++; console.log('  ✖', m); };
 const check = (c, m) => (c ? ok(m) : bad(m));
 
+// LOS 17: el tutorial es la puerta de entrada de una mesa que no conoce el
+// juego, así que se recorre entero en todos (antes solo se probaban 9 y los
+// tutoriales nuevos podían romperse sin que saltara nada).
 const GAMES = [
   'hombres_lobo', 'una_noche', 'avalon', 'secret_hitler', 'chameleon',
-  'insider', 'coup', 'two_rooms', 'espia',
+  'insider', 'coup', 'two_rooms', 'codenames', 'decrypto', 'good_cop',
+  'shadow_hunters', 'sonar', 'wavelength', 'skull', 'love_letter', 'espia',
 ];
 
 const browser = await chromium.launch();

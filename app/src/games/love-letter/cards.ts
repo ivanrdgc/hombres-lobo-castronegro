@@ -31,3 +31,29 @@ export const cardName = (c: Card): string => `${CARD_INFO[c].emoji} ${CARD_INFO[
 export const NEEDS_TARGET: Record<Card, boolean> = {
   guard: true, priest: true, baron: true, handmaid: false, prince: true, king: true, countess: false, princess: false,
 };
+
+/** Qué VA A PASAR si juegas esta carta, en futuro y sin objetivo aún elegido.
+ *  Se enseña antes de señalar a nadie: nadie debería tener que recordar las
+ *  reglas de memoria para decidir. */
+export const PLAN: Record<Card, string> = {
+  guard: 'Señalas a alguien y dices qué carta crees que tiene (no vale «Guardia»). Si aciertas, queda fuera de la ronda; si fallas, no pasa nada.',
+  priest: 'Verás en secreto la carta de quien elijas. Solo la ves tú: no sale en el diario.',
+  baron: 'Comparas en secreto tu OTRA carta con la de quien elijas: el de valor menor queda fuera de la ronda (si empatáis, no cae nadie). Solo se destapa la carta del perdedor.',
+  handmaid: 'No elige objetivo: quedas protegido y nadie podrá señalarte hasta tu próximo turno.',
+  prince: 'Quien elijas —puedes ser tú— descarta su carta y roba otra. Si lo que descarta es la Princesa, queda fuera de la ronda.',
+  king: 'Intercambias tu OTRA carta con la de quien elijas. Los dos os quedáis con la del otro.',
+  countess: 'No elige objetivo y no hace nada: solo se descarta. Obligatoria si tienes el Rey o el Príncipe en la mano.',
+  princess: 'No elige objetivo y no hace nada… salvo dejarte FUERA de la ronda por descartarla. Casi nunca quieres jugarla.',
+};
+
+/** La pregunta del paso «¿a quién?», con el verbo de cada carta. */
+export const ASK_TARGET: Record<Card, string> = {
+  guard: '¿A quién señalas?',
+  priest: '¿A quién le miras la carta?',
+  baron: '¿Con quién te bates en duelo?',
+  handmaid: '',
+  prince: '¿Quién descarta y roba? (puedes elegirte a ti)',
+  king: '¿Con quién intercambias la carta?',
+  countess: '',
+  princess: '',
+};

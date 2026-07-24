@@ -28,6 +28,10 @@ export interface ChameleonState {
   seen: Record<string, boolean>;
   /** Quién da la primera pista (índice en playerIds). */
   starterIdx: number;
+  /** Pistas ya dadas en esta ronda (0..N): marca DE QUIÉN es el turno. */
+  clueIdx: number;
+  /** Cuándo empezó la fase actual (para ofrecer salida si alguien no responde). */
+  phaseAt?: number;
   /** Voto secreto: votante → señalado. Se destapa al completarse. */
   votes: Record<string, string>;
   /** Señalado por mayoría (null = empate → el Camaleón escapa). */

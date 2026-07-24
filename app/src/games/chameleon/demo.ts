@@ -19,16 +19,19 @@ export const DEMO: DemoScript = {
       title: 'La ronda de ejemplo',
       text: [
         'Jugáis TÚ, Bea, Carlos y David. Todos veis la misma rejilla de 16 palabras del tema «El mar». Todos sabéis cuál es la SECRETA… menos uno: el CAMALEÓN, que solo ve la rejilla y tiene que fingir.',
+        'La rejilla es pública y se ve así, sin nada marcado: cuál es la secreta te lo dice tu carta privada, no la pantalla de todos.',
         'El grupo gana si lo desenmascara (y él no adivina la palabra); el Camaleón gana si pasa desapercibido o si, pillado, la acierta.',
       ],
-      visual: { kind: 'grid', words: WORDS, hl: 0 },
+      // Sin `hl`: esta es la pantalla PÚBLICA. Marcar aquí la secreta hacía creer
+      // que la app la resalta en la rejilla que todos ven.
+      visual: { kind: 'grid', words: WORDS },
     },
     {
       icon: '🎴',
       title: 'El reparto: dos cartas muy distintas',
       who: { actor: 'TODOS miráis vuestra carta a la vez, a solas, y confirmáis', others: 'la rejilla queda a la vista de todos, sin resaltar nada.' },
       text: [
-        'A ti te marca la palabra secreta: «Tiburón». A Bea (aunque nadie lo sabe) le ha tocado ser el Camaleón: su carta solo dice «disimula».',
+        'A ti te escribe la palabra secreta: «Tiburón». A Bea (aunque nadie lo sabe) le ha tocado ser el Camaleón: su carta le dice que disimule.',
       ],
       visual: {
         kind: 'screens',
@@ -41,9 +44,13 @@ export const DEMO: DemoScript = {
     {
       icon: '🗣️',
       title: 'Las pistas, por turnos y en voz alta',
-      who: { actor: 'Cada uno, en su turno de mesa, dice UNA palabra en voz alta (empieza quien marque la app)', others: 'no se toca el móvil en esta fase: es todo hablado.' },
+      who: {
+        actor: 'La app marca de quién es el turno; quien acaba de hablar confirma en el móvil con el botón de ya he dicho mi pista',
+        others: 'nadie más toca el móvil, salvo para releer su propia carta con el botón redondo 🎴 de la esquina o con el de ver mi carta.',
+      },
       text: [
         'Carlos: «aleta». David: «peligro». Bea (¡el Camaleón, improvisando!): «playa». Te toca a ti…',
+        'La pantalla siempre dice a quién le toca y quién va después. Si alguien se salta un turno por error, el botón de atrás lo devuelve.',
       ],
       ask: {
         prompt: 'La secreta es «Tiburón». ¿Qué pista das?',
@@ -57,10 +64,9 @@ export const DEMO: DemoScript = {
     {
       icon: '👉',
       title: 'El voto, en secreto',
-      who: { actor: 'TODOS señaláis a la vez en el móvil a vuestro sospechoso (a ti mismo no)', others: 'la app espera a que vote el último y destapa el recuento de golpe.' },
+      who: { actor: 'Cuando ha hablado toda la mesa, cualquiera pulsa el botón de votar; luego TODOS señalan a la vez a su sospechoso (a ti mismo no)', others: 'antes de señalar se comenta en voz alta lo que ha chirriado: ese debate es media partida.' },
       text: [
-        '«Playa» ha chirriado: tú, Carlos y David votáis a Bea; ella vota a David. La app anuncia: «La mesa señala a Bea».',
-        'Ojo: si hay EMPATE en cabeza, la mesa no se aclara… y el Camaleón escapa (+2).',
+        'La pista playa ha chirriado: tú, Carlos y David votáis a Bea; ella vota a David. La app espera al último voto y destapa el recuento entero: quién señaló a quién.',
       ],
       visual: {
         kind: 'screens',
@@ -71,21 +77,37 @@ export const DEMO: DemoScript = {
       },
     },
     {
+      icon: '🎲',
+      title: 'Los tres finales posibles',
+      text: [
+        'Este es el final más frecuente y el que más se olvida: si señaláis a un INOCENTE, o si hay empate en cabeza, la ronda acaba ahí mismo. El Camaleón gana 2 puntos sin tener que adivinar nada.',
+        'Solo si el señalado ES el Camaleón hay última bala: tiene que acertar la palabra secreta. Si acierta, gana 1 punto; si falla, gana el grupo y suma 1 punto cada jugador que no era el Camaleón.',
+      ],
+      visual: {
+        kind: 'board',
+        rows: [
+          { label: 'Señaláis a un inocente o empatáis', value: 'gana el Camaleón · 2 puntos' },
+          { label: 'Lo pilláis y acierta la palabra', value: 'gana el Camaleón · 1 punto' },
+          { label: 'Lo pilláis y falla', value: 'gana el grupo · 1 punto cada uno' },
+        ],
+      },
+    },
+    {
       icon: '🎯',
       title: 'La última bala del Camaleón',
       who: { actor: 'Bea (pillada) toca en la rejilla la palabra que cree secreta', others: 'los demás contenéis la respiración: si acierta, gana ella.' },
       text: [
-        'La app le muestra la rejilla tocable SOLO a ella. Con las pistas «aleta», «peligro», «mandíbula»… Bea apuesta por «Tiburón». ¡Acierta! Escapa por la puerta grande (+1).',
-        'Si hubiera fallado, punto para cada uno del grupo.',
+        'La app le muestra la rejilla tocable SOLO a ella. Con las pistas «aleta», «peligro», «mandíbula»… Bea apuesta por «Tiburón». ¡Acierta! Escapa por la puerta grande y se lleva 1 punto.',
+        'Si hubiera fallado, 1 punto para cada uno del grupo.',
       ],
-      visual: { kind: 'log', lines: ['🗳️ La mesa señala a Bea.', '🦎 ¡Bea era el Camaleón! Pero aún puede escapar si adivina la palabra…', '🦎 El Camaleón apuesta por «Tiburón». La palabra era «Tiburón».', '🦎 El Camaleón gana la ronda (+1).'] },
+      visual: { kind: 'log', lines: ['🗳️ Recuento: Bea 3 (tú, Carlos, David) · David 1 (Bea).', '🗳️ La mesa señala a Bea.', '🦎 ¡Bea era el Camaleón! Pero aún puede escapar si adivina la palabra…', '🦎 El Camaleón apuesta por «Tiburón». La palabra era «Tiburón».'] },
     },
     {
       icon: '🏆',
       title: 'Rondas y puntos',
-      who: { actor: 'Cualquiera pulsa «🔁 Otra ronda»: tema nuevo y Camaleón nuevo', others: 'el marcador se acumula entre rondas.' },
+      who: { actor: 'Cualquiera pulsa «🔁 Otra ronda»: tema nuevo y Camaleón nuevo (nunca repite el de la ronda anterior)', others: 'el marcador se acumula entre rondas.' },
       text: [
-        'Puntos: Camaleón sin pillar +2 · pillado pero acierta +1 · pillado y falla, +1 a cada uno del grupo.',
+        'Si el Camaleón no cae, se lleva 2 puntos. Si lo pilláis pero acierta la palabra, se lleva 1 punto. Si lo pilláis y falla, suma 1 punto cada jugador del grupo.',
         'La lección de hoy: pistas ni obvias ni vagas… y cuidado con los que hablan en genérico. 🦎',
       ],
     },

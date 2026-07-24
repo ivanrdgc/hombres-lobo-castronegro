@@ -143,6 +143,17 @@ export function resolveTimeout(s: EspiaState): EspiaOutcome {
   };
 }
 
+/** Sin quórum (quedan menos de ESPIA_MIN_PLAYERS): la ronda no cuenta.
+ *  No es una victoria del espía: nadie llegó a jugarla entera, así que ni
+ *  puntos ni «gana el espía» (que era lo que la pantalla final insinuaba). */
+export function resolveVoid(s: EspiaState): EspiaOutcome {
+  return {
+    type: 'round_void', spyId: s.spyId, locationId: s.locationId,
+    delta: {},
+    txt: `🚪 Quedan menos de ${ESPIA_MIN_PLAYERS} jugadores: ronda ANULADA, sin puntos para nadie. El espía era ${nameOf(s, s.spyId)} y el lugar, ${locName(s.locationId)}.`,
+  };
+}
+
 /** El espía abandona la ronda: los agentes se apuntan la victoria. */
 export function resolveSpyLeft(s: EspiaState): EspiaOutcome {
   return {

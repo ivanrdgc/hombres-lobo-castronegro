@@ -149,11 +149,10 @@ export const dobleCopy = (targetId: string) => night('doble', (game, me) => {
   if (!role || targetId === me) return null;
   game.acts.dobleTarget = targetId;
   game.acts.dobleRole = role;
-  // Roles sin acción propia en el turno del Doble (grupo/al final o pasivos):
-  // quedan listos; los de grupo/al final actúan luego en su paso.
-  const instant = ['vidente', 'ladron', 'alborotadora', 'borracho'].includes(role);
-  if (!instant) game.acts.dobleActionDone = true;
-  game.log!.push({ kind: 'evento', txt: '👯 El Doble ha copiado a alguien.' });
+  // NO se cierra el paso aquí (ni siquiera al copiar un rol de grupo/pasivo):
+  // el propio jugador lo cierra con dobleConfirm() cuando ha leído QUÉ copió.
+  // Y NADA va al diario público: delataría que El Doble está repartido (y que
+  // su paso era real), justo lo que los pasos fantasma ocultan.
   return game;
 });
 
@@ -327,6 +326,28 @@ export async function advanceGhostStep(expectedIdx: number): Promise<void> {
   });
 }
 
+/**
+ * Escape del dispositivo que narra: marca el paso en curso como SALTADO porque
+ * nadie actúa (alguien bloqueó el móvil o se durmió). No avanza a mano: deja de
+ * esperar actores y el narrador lo cierra como cualquier otro paso —con su
+ * «cerrad los ojos»—, así el salto no suena distinto ni delata nada. Sin línea
+ * en el diario por lo mismo.
+ */
+export async function skipCurrentStep(expectedIdx: number): Promise<void> {
+  await tx((game, m) => {
+    if (game.phase !== 'night' || game.stepIdx !== expectedIdx) return null;
+    if (myPid() !== m.masterId) return null;
+    const step = game.steps[expectedIdx];
+    if (!step || step === 'durmiendo' || step === 'amanecer') return null;
+    if ((game.skippedSteps || []).includes(expectedIdx)) return null;
+    game.skippedSteps = [...(game.skippedSteps || []), expectedIdx];
+    return game;
+  });
+}
+
+/** Minutos de debate (regla oficial: el día tiene reloj). */
+export const DISCUSSION_MS = 5 * 60 * 1000;
+
 /** Amanece: se abren los ojos y empieza el día (debate + votación). */
 export async function wakeUp(): Promise<void> {
   await tx((game) => {
@@ -335,6 +356,7 @@ export async function wakeUp(): Promise<void> {
     game.lynched = null;
     game.pendingHunter = null;
     game.deaths = [];
+    game.discussionEndsAt = Date.now() + DISCUSSION_MS;
     game.log!.push({ kind: 'dia', txt: '☀️ Amanece. Debatid y, cuando el pueblo decida, que alguien registre a quién condena (o si perdona).' });
     return game;
   });
@@ -351,6 +373,7 @@ export async function castVote(choices: string[]): Promise<void> {
     if (!game.playerIds.includes(me)) return null;
     const valid = [...new Set(choices)].filter((c) => game.playerIds.includes(c));
     game.lynched = valid;
+    game.discussionEndsAt = null; // el debate ha terminado: fuera el reloj
     if (!valid.length) {
       game.log!.push({ kind: 'dia', txt: `🕊️ ${nameOf(game, me)} registra: el pueblo perdona, no se condena a nadie.` });
     } else if (valid.length === 1) {
@@ -414,9 +437,15 @@ export async function playAgain(): Promise<void> {
     const seed = (game.seed || 0) + 101;
     const { originalRole, slots, center } = dealOneNight(players, game.composition, seed);
     game.seed = seed;
+    // Partida NUEVA, reloj nuevo: el narrador guarda sus hitos por startedAt y
+    // solo olvida los de la anterior cuando cambia. Sin esto, la 2.ª partida
+    // (y las siguientes) se narraban EN SILENCIO: cada sayOnce ya estaba dicho.
+    game.startedAt = Date.now();
+    game.repeatNonce = 0;
     game.phase = 'reveal';
     game.steps = [];
     game.stepIdx = 0;
+    game.skippedSteps = [];
     game.acts = {};
     game.originalRole = originalRole;
     game.slots = slots;
@@ -428,6 +457,7 @@ export async function playAgain(): Promise<void> {
     game.deaths = [];
     game.winners = [];
     game.winner = null;
+    game.discussionEndsAt = null;
     game.log!.push({ kind: 'evento', txt: '🔁 Nueva noche: cartas repartidas de nuevo.' });
     return game;
   });
@@ -454,6 +484,8 @@ export async function pauseGame(): Promise<void> {
 export async function resumeGame(): Promise<void> {
   await tx((game) => {
     if (!game.paused) return null;
+    // El reloj del debate no corre durante la pausa: se estira lo pausado.
+    if (game.discussionEndsAt) game.discussionEndsAt += Math.max(0, Date.now() - game.paused.at);
     game.paused = null;
     return game;
   }, undefined, { allowPaused: true });

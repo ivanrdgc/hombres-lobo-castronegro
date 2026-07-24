@@ -25,8 +25,8 @@ export const ROLE_HELP: Record<RoleId, RoleHelp> = {
   hitler: {
     when: 'Bando fascista · el rostro oculto',
     steps: [
-      'Eres fascista, pero tu meta es pasar por liberal. Con 5-6 jugadores conoces a tu fascista; con 7 o más, juegas a ciegas como ellos.',
-      'Si te ejecutan, ganan los liberales; si te eligen Canciller con 3+ decretos fascistas, ganan los fascistas.',
+      'Eres fascista, pero tu meta es pasar por liberal. Con 5 o 6 jugadores conoces a tu fascista; con 7 o más, juegas a ciegas como ellos.',
+      'Si te ejecutan, ganan los liberales; si te eligen Canciller con 3 o más decretos fascistas, ganan los fascistas.',
     ],
     tip: 'Compórtate como el liberal más ejemplar: tu vida depende de que nadie sospeche.',
   },

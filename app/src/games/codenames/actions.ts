@@ -11,7 +11,8 @@ import {
 import type { GroupDoc, MatchDoc } from '../../core/sync/schema';
 import {
   MIN_PLAYERS, MAX_PLAYERS, BOARD, dealGame, giveClue as giveClueMut, reveal as revealMut,
-  pass as passMut, resetForRematch, teamOf, isSpymaster, canSeeMap, canGuess, teamMembers,
+  pass as passMut, skipClue as skipClueMut, resetForRematch, teamOf, isSpymaster, canSeeMap,
+  canGuess, teamMembers,
 } from './engine';
 import type { CodenamesState } from './types';
 
@@ -62,10 +63,12 @@ export async function startCodenames(playerIds: string[], narratorId: string | n
     codenames: true, phase: 'clue', startedAt: now, seed,
     playerIds, names, teams: deal.teams, spymaster: deal.spymaster,
     words: deal.words, map: deal.map, revealed: Array(BOARD).fill(false),
-    starting: deal.starting, turn: deal.starting, clue: null, guessesLeft: 0,
-    remaining: deal.remaining, winner: null, winReason: null,
+    starting: deal.starting, turn: deal.starting, clue: null, guessesLeft: 0, guessesMade: 0,
+    clueAt: now, remaining: deal.remaining, winner: null, winReason: null,
     scores: Object.fromEntries(playerIds.map((p) => [p, 0])), paused: null, repeatNonce: 0,
-    log: [{ txt: `🕵️ Comienza Codenames. Empieza el equipo ${deal.starting === 'red' ? 'ROJO (9 casillas)' : 'AZUL (9 casillas)'}. Los Jefes ven el mapa; sus agentes, solo las palabras.` }],
+    // Primera línea del diario: la voz la locuta, así que dice lo esencial para
+    // arrancar —quién empieza, con cuántas casillas y qué Jefe debe hablar—.
+    log: [{ txt: `🕵️ Comienza Codenames. Empieza el equipo ${deal.starting === 'red' ? 'ROJO 🔴' : 'AZUL 🔵'}, que tiene 9 casillas; el otro tiene 8. El Jefe ${names[deal.spymaster[deal.starting]] || 'de ese equipo'} prepara la primera pista.` }],
   };
   await txWithRetry(async (t) => {
     const snap = await t.get(gref(slug));
@@ -82,9 +85,15 @@ export async function startCodenames(playerIds: string[], narratorId: string | n
 
 // ——— Turno ———
 
-export async function giveClue(word: string, num: number): Promise<void> {
+export async function giveClue(word: string, num: number, unlimited = false): Promise<void> {
   const me = myPid();
-  await tx((game) => (giveClueMut(game, me, word, num) ? game : null));
+  await tx((game) => (giveClueMut(game, me, word, num, unlimited) ? game : null));
+}
+
+/** Escotilla anti-bloqueo: ceder el turno de un Jefe que no puede dar su pista. */
+export async function skipClue(): Promise<void> {
+  const me = myPid();
+  await tx((game) => (skipClueMut(game, me) ? game : null));
 }
 
 export async function revealCell(cell: number): Promise<void> {
@@ -103,7 +112,7 @@ export async function playAgain(): Promise<void> {
   await tx((game) => {
     if (game.phase !== 'end') return null;
     resetForRematch(game, (game.seed || 0) + 101);
-    game.log.push({ txt: `🔁 Nueva partida: tablero y mapa nuevos. Empieza el equipo ${game.starting === 'red' ? 'ROJO' : 'AZUL'}.` });
+    game.log.push({ txt: `🔁 Nueva partida: equipos, Jefes, tablero y mapa nuevos. Empieza el equipo ${game.starting === 'red' ? 'ROJO 🔴' : 'AZUL 🔵'}. El Jefe ${game.names[game.spymaster[game.starting]] || 'de ese equipo'} prepara la primera pista.` });
     return game;
   });
 }

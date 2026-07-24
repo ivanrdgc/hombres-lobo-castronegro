@@ -5,6 +5,6 @@
 </script>
 
 <h3>🏳️ ¿Terminar la partida?</h3>
-<p class="small-note">Se cierra la partida en curso: la mesa vuelve al lobby de El Camaleón.</p>
+<p class="small-note">Se cierra la partida en curso y se pierde el marcador de las rondas jugadas: la mesa vuelve al lobby de El Camaleón.</p>
 <button class="danger block" data-a="ch-end-confirm" onclick={() => guard(async () => { await A.endChameleon(); app.ui.modal = null; })}>🏳️ Sí, terminar</button>
 <button class="ghost block" data-a="close-modal" onclick={() => (app.ui.modal = null)}>Cancelar</button>

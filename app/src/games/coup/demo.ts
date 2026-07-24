@@ -22,11 +22,12 @@ export const DEMO: DemoScript = {
       who: { actor: 'TODOS miráis vuestras 2 cartas a la vez («👁 Ver mis influencias» → «✅ Lo tengo»)', others: 'cuando el último confirma, cualquiera pulsa «▶️ Todos listos».' },
       text: [
         'A ti te tocan 🎩 Duque y 🎭 Embajador. Buen combo: puedes cobrar impuestos con la verdad… y farolear el resto.',
+        'Las 15 cartas de la corte (el mazo) son 5 personajes con 3 copias de cada uno. Abajo a la derecha tienes SIEMPRE el botón flotante 🎴: tus influencias, tus monedas y la chuleta de los 5 personajes, en cualquier fase y sin que nadie lo vea.',
       ],
       visual: {
         kind: 'screens',
         panes: [
-          { title: 'TÚ', lines: ['🎩 Duque — Impuestos (+3)', '🎭 Embajador — intercambia con la corte'] },
+          { title: 'TÚ', lines: ['🎩 Duque — Impuestos (+3)', '🎭 Embajador — intercambia cartas con la corte (el mazo)'] },
           { title: 'Bea (tú no lo ves)', lines: ['🗡️ Asesino y ⚓ Capitán', 'Ella tampoco ve las tuyas.'] },
         ],
       },
@@ -56,18 +57,47 @@ export const DEMO: DemoScript = {
       },
     },
     {
-      icon: '🗡️',
-      title: 'Un asesinato y su defensa',
-      who: { actor: 'Bea (otro turno) paga 3 y declara «Asesinar» contra TI', others: 'primero todos pueden desafiar su Asesino; si nadie lo hace, TÚ decides si bloqueas.' },
+      icon: '🎭',
+      title: 'Tu turno: robar e intercambiar',
+      who: { actor: 'TÚ eliges «⚓ Robar» o «🎭 Intercambiar» en tu móvil', others: 'los demás abren su ventana de desafío; el intercambio, además, no se puede bloquear.' },
       text: [
-        'En tu pantalla: «🛡️ Bloquear · digo ser Condesa» o «👍 Paso». Bloquear es OTRA declaración —puede ser farol— y cualquiera puede desafiarla a su vez.',
+        '⚓ Robar (Capitán): le quitas 2 monedas a quien elijas. Si solo tiene 1, te llevas esa; a quien no tiene ninguna la app ni te deja apuntarle. La víctima puede bloquearte diciendo ser Capitán o Embajador.',
+        '🎭 Intercambiar (Embajador): la app roba 2 cartas de la corte (el mazo) y te enseña CUATRO —tus 2 ocultas y las 2 nuevas—. Conservas tantas como influencias te queden (2 si estás entero, 1 si ya perdiste una) y el resto vuelve barajado a la corte. Nadie ve qué te has quedado: es la forma limpia de dejar de ser el Duque que todos creen que eres.',
+      ],
+      visual: {
+        kind: 'screens',
+        panes: [
+          {
+            title: 'TÚ (Embajador) · elige 2 de 4',
+            lines: ['🎩 Duque (tuya)', '🎭 Embajador (tuya)', '👑 Condesa (de la corte)', '⚓ Capitán (de la corte)'],
+            buttons: [{ label: '🎭 Conservar estas 2 y devolver el resto', kind: 'primary' }],
+          },
+          { title: 'Bea y Carlos', lines: ['«🎭 Barajas con la corte…»', 'No ven las 4 cartas ni con cuáles te quedas.'] },
+        ],
+      },
+    },
+    {
+      icon: '🗡️',
+      title: 'Un asesinato y sus DOS ventanas',
+      who: { actor: 'Bea (otro turno) paga 3 y declara «Asesinar» contra TI', others: 'se abren dos ventanas seguidas: 1) desafiar su Asesino (todos), 2) bloquear con la Condesa (solo tú, la víctima).' },
+      text: [
+        'Por eso te sale un botón y, después, otro distinto: son dos preguntas seguidas. Bloquear es OTRA declaración —puede ser farol— y abre a su vez su propia ventana de desafío.',
         'Regla fina (oficial): aunque pierdas un desafío contra el Asesino, CONSERVAS tu opción de bloquear con la Condesa. Eso sí: farolear la Condesa y que te cacen son las dos cartas de una tacada.',
       ],
       visual: {
         kind: 'screens',
         panes: [
-          { title: 'TÚ (víctima)', lines: ['«🗡️ Bea declara Asesinar contra ti.»'], buttons: [{ label: '🛡️ Bloquear · digo ser Condesa', kind: 'primary' }, { label: '👍 Paso (me lo como)', kind: 'ghost' }] },
-          { title: 'Carlos', lines: ['Ya pasó su ventana de desafío.', 'Mira el duelo con palomitas.'] },
+          {
+            title: 'TÚ · paso 1: ¿la desafías?',
+            lines: ['«🗡️ Bea declara Asesinar contra ti (dice ser Asesino).»', 'Aquí reaccionáis TODOS: tú y Carlos.'],
+            buttons: [{ label: '❗ Desafiar', kind: 'danger' }, { label: '👍 No lo desafío', kind: 'ghost' }],
+          },
+          {
+            title: 'TÚ · paso 2: ¿lo bloqueas?',
+            lines: ['Nadie desafió: ahora decides SOLO tú, la víctima.'],
+            buttons: [{ label: '🛡️ Bloquear · digo ser Condesa', kind: 'primary' }, { label: '👍 Paso, me lo como', kind: 'ghost' }],
+          },
+          { title: 'Carlos', lines: ['En el paso 1 desafía o pasa, como tú.', 'En el paso 2 solo mira: el bloqueo es cosa de la víctima.'] },
         ],
       },
     },
@@ -85,7 +115,8 @@ export const DEMO: DemoScript = {
       title: 'Y a ganar',
       who: { actor: 'El último con influencia gana; la voz va cantando cada jugada', others: 'revancha con «🔁 Otra partida»: el marcador se guarda.' },
       text: [
-        'Chuleta rápida: 🪙 Renta +1 (nadie la para) · 🤝 Ayuda +2 (la bloquea cualquier «Duque») · 🎩 Impuestos +3 · ⚓ Robar 2 · 🗡️ Asesinar (3 monedas) · 🎭 Intercambiar cartas · 💥 Golpe 7 monedas (imparable).',
+        'Chuleta rápida: 🪙 Renta +1 (nadie la para) · 🤝 Ayuda +2 (la bloquea cualquier «Duque») · 🎩 Impuestos +3 · ⚓ Robar 2 · 🗡️ Asesinar (3 monedas) · 🎭 Intercambiar cartas · 💥 Golpe 7 monedas (imparable) · 👑 Condesa: sin acción propia, solo bloquea el asesinato.',
+        'Esa chuleta y tus cartas viven en el botón flotante 🎴 de abajo a la derecha: consúltalo cuando quieras, es privado. Ganas si eres quien queda en pie: 1 punto al marcador y se destapan todas las manos.',
         'Farolea, duda de todos y no enseñes la pantalla. 🎭',
       ],
     },

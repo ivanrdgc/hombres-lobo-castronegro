@@ -6,6 +6,10 @@ import type { ChameleonState } from './types';
 export const MIN_PLAYERS = 3;
 export const MAX_PLAYERS = 10;
 export const GRID_SIZE = 16;
+/** Margen antes de ofrecer cerrar el voto sin quien no responde (móvil perdido…). */
+export const VOTE_GRACE_MS = 45_000;
+/** Ídem para el Camaleón que no señala su apuesta: la mesa puede resolver. */
+export const GUESS_GRACE_MS = 60_000;
 
 export interface Player { id: string; name?: string; order?: number }
 
@@ -40,8 +44,12 @@ export interface DealResult {
   starterIdx: number;
 }
 
-/** Reparte una ronda: tema no repetido, palabra secreta, Camaleón y starter. */
-export function dealRound(playerIds: string[], round: number, usedTopics: string[], seed: number): DealResult {
+/**
+ * Reparte una ronda: tema no repetido, palabra secreta, Camaleón y starter.
+ * `prevChameleonId` se excluye del sorteo (la app anuncia «nuevo Camaleón»: si
+ * repitiera, la frase sería mentira y la mesa descartaría a quien no debe).
+ */
+export function dealRound(playerIds: string[], round: number, usedTopics: string[], seed: number, prevChameleonId?: string | null): DealResult {
   const rnd = mulberry32(seed);
   let pool = TOPICS.filter((t) => !usedTopics.includes(t.id));
   if (!pool.length) {
@@ -50,9 +58,41 @@ export function dealRound(playerIds: string[], round: number, usedTopics: string
   }
   const topic = pool[Math.floor(rnd() * pool.length)];
   const secret = Math.floor(rnd() * GRID_SIZE);
-  const chameleonId = playerIds[Math.floor(rnd() * playerIds.length)];
+  const candidates = playerIds.filter((p) => p !== prevChameleonId);
+  const chamPool = candidates.length ? candidates : playerIds;
+  const chameleonId = chamPool[Math.floor(rnd() * chamPool.length)];
   const starterIdx = Math.floor(rnd() * playerIds.length);
   return { topicId: topic.id, grid: topic.words.slice(), secret, chameleonId, starterIdx };
+}
+
+// ——— Turno de las pistas ———
+
+/** Orden de las pistas: empieza el starter y sigue el orden de la mesa. */
+export function clueOrder(game: ChameleonState): string[] {
+  const ids = game.playerIds || [];
+  const s = ((game.starterIdx || 0) % (ids.length || 1) + ids.length) % (ids.length || 1);
+  return [...ids.slice(s), ...ids.slice(0, s)];
+}
+
+/** Pistas ya dadas (tolerante con partidas repartidas antes de existir el turno). */
+export function cluesGiven(game: ChameleonState): number {
+  const n = (game.playerIds || []).length;
+  return Math.max(0, Math.min(n, game.clueIdx ?? 0));
+}
+
+/** A quién le toca hablar ahora (null = ya han hablado todos). */
+export function currentCluePid(game: ChameleonState): string | null {
+  return clueOrder(game)[cluesGiven(game)] ?? null;
+}
+
+/** Quién habla después del actual (null = el actual cierra la ronda de pistas). */
+export function nextCluePid(game: ChameleonState): string | null {
+  return clueOrder(game)[cluesGiven(game) + 1] ?? null;
+}
+
+/** ¿Han dado ya su pista los N jugadores? */
+export function cluesDone(game: ChameleonState): boolean {
+  return cluesGiven(game) >= (game.playerIds || []).length;
 }
 
 export interface VoteTally {
@@ -83,10 +123,42 @@ export function allVoted(game: ChameleonState): boolean {
   return game.playerIds.every((pid) => game.votes[pid] !== undefined);
 }
 
+/** Cuántos han votado ya (para saber si se puede cerrar el voto sin todos). */
+export function votedCount(game: ChameleonState): number {
+  return game.playerIds.filter((pid) => game.votes[pid] !== undefined).length;
+}
+
+export interface VoteRow { pid: string; voters: string[] }
+
+/**
+ * El recuento destapado: a quién señaló cada cual, agrupado por señalado y de
+ * más a menos votos. Es lo que la ayuda promete («la app destapa el recuento»).
+ */
+export function voteRows(game: ChameleonState): VoteRow[] {
+  const by: Record<string, string[]> = {};
+  for (const voter of game.playerIds) {
+    const t = game.votes?.[voter];
+    if (t && game.playerIds.includes(t)) (by[t] ||= []).push(voter);
+  }
+  return Object.entries(by)
+    .map(([pid, voters]) => ({ pid, voters }))
+    .sort((a, b) => b.voters.length - a.voters.length || game.playerIds.indexOf(a.pid) - game.playerIds.indexOf(b.pid));
+}
+
 export const WIN_LABELS: Record<'chameleon' | 'group', string> = {
   chameleon: '🦎 ¡Gana el Camaleón! Se escurre entre las palabras.',
   group: '👥 ¡Gana el grupo! El Camaleón ha quedado al descubierto.',
 };
+
+/** POR QUÉ se ganó la ronda: los cuatro desenlaces posibles, en una frase. */
+export function outcomeReason(game: ChameleonState): string {
+  const cham = game.names?.[game.chameleonId] || '¿?';
+  if (game.winner === 'group') return `Señalasteis a ${cham} y no supo la palabra secreta.`;
+  if (game.caught) return `Señalasteis a ${cham}… pero acertó la palabra secreta y se escapa.`;
+  if (!game.accusedId) return 'Empate en el voto: la mesa no señaló a nadie con claridad y el Camaleón se libra.';
+  const acc = game.names?.[game.accusedId] || '¿?';
+  return `Señalasteis a ${acc}, que era inocente: la ronda acaba ahí y el Camaleón ni siquiera tiene que adivinar.`;
+}
 
 export function topicName(topicId: string): string {
   const t = topicById(topicId);

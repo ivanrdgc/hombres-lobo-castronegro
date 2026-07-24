@@ -9,7 +9,10 @@ import {
 } from '../../core/sync/group-actions';
 import type { GroupDoc, MatchDoc } from '../../core/sync/schema';
 import { TOPICS } from './topics';
-import { MIN_PLAYERS, MAX_PLAYERS, dealRound, tallyVotes, allVoted, playersOf, isChameleon } from './engine';
+import {
+  MIN_PLAYERS, MAX_PLAYERS, VOTE_GRACE_MS, GUESS_GRACE_MS,
+  dealRound, tallyVotes, allVoted, votedCount, voteRows, cluesGiven, cluesDone, playersOf, isChameleon,
+} from './engine';
 import type { ChameleonState } from './types';
 
 export function chamGame(g: GroupDoc | null): ChameleonState | null {
@@ -60,7 +63,7 @@ export async function startChameleon(playerIds: string[], narratorId: string | n
   const game: ChameleonState = {
     chameleon: true, phase: 'reveal', startedAt: now, seed, round: 1,
     playerIds, names, topicId: deal.topicId, grid: deal.grid, secret: deal.secret,
-    chameleonId: deal.chameleonId, seen: {}, starterIdx: deal.starterIdx,
+    chameleonId: deal.chameleonId, seen: {}, starterIdx: deal.starterIdx, clueIdx: 0, phaseAt: now,
     votes: {}, accusedId: null, caught: false, guess: null, guessedRight: false,
     winner: null, scores: Object.fromEntries(playerIds.map((p) => [p, 0])),
     usedTopics: [deal.topicId], paused: null, repeatNonce: 0,
@@ -93,19 +96,55 @@ export async function beginClues(): Promise<void> {
   await tx((game) => {
     if (game.phase !== 'reveal' || !game.playerIds.every((pid) => game.seen[pid])) return null;
     game.phase = 'clue';
+    game.clueIdx = 0;
+    game.phaseAt = Date.now();
     game.log.push({ txt: `🗣️ A dar pistas. Empieza ${nameOf(game, game.playerIds[game.starterIdx])}; una palabra cada uno.` });
     return game;
   });
 }
 
-/** Terminadas las pistas, se pasa a la votación (cualquiera lo dispara). */
+/**
+ * Avanza (o retrocede) el turno de las pistas. Lo normal es que lo pulse quien
+ * acaba de hablar en su propio móvil, pero cualquiera puede moverlo: con 10
+ * personas siempre hay un móvil en el bolsillo, y «↩️ Atrás» deshace el toque
+ * de más (antes, un solo toque erróneo cortaba las pistas sin vuelta atrás).
+ */
+export async function stepClue(delta: number): Promise<void> {
+  const me = myPid();
+  await tx((game) => {
+    if (game.phase !== 'clue' || !game.playerIds.includes(me)) return null;
+    const n = game.playerIds.length;
+    const next = Math.max(0, Math.min(n, cluesGiven(game) + delta));
+    if (next === cluesGiven(game)) return null;
+    game.clueIdx = next;
+    return game;
+  });
+}
+
+/** Terminadas TODAS las pistas, se pasa a la votación (cualquiera lo dispara). */
 export async function startVote(): Promise<void> {
   const me = myPid();
   await tx((game) => {
     if (game.phase !== 'clue' || !game.playerIds.includes(me)) return null;
+    if (!cluesDone(game)) return null; // el botón solo aparece al final de la vuelta
     game.phase = 'vote';
     game.votes = {};
+    game.phaseAt = Date.now();
     game.log.push({ txt: '👉 A votar: señalad en secreto a quien creáis el Camaleón.' });
+    return game;
+  });
+}
+
+/** Se votó por error / falta comentar algo: se vuelve a las pistas (sin votos aún). */
+export async function backToClues(): Promise<void> {
+  const me = myPid();
+  await tx((game) => {
+    if (game.phase !== 'vote' || !game.playerIds.includes(me)) return null;
+    if (votedCount(game) > 0) return null; // con votos echados ya no: rompería el secreto
+    game.phase = 'clue';
+    game.clueIdx = game.playerIds.length;
+    game.phaseAt = Date.now();
+    game.log.push({ txt: '↩️ La mesa vuelve a las pistas antes de votar.' });
     return game;
   });
 }
@@ -120,20 +159,47 @@ export async function castVote(target: string): Promise<void> {
     if (target === me) return null; // a uno mismo no (como en Insider)
     game.votes = { ...game.votes, [me]: target };
     if (!allVoted(game)) return game;
-    // Todos han votado: se destapa el recuento.
-    const { accusedId } = tallyVotes(game);
-    game.accusedId = accusedId;
-    game.caught = !!accusedId && accusedId === game.chameleonId;
-    if (accusedId) game.log.push({ txt: `🗳️ La mesa señala a ${nameOf(game, accusedId)}.` });
-    else game.log.push({ txt: '🗳️ Voto dividido: nadie es señalado con claridad.' });
-    if (game.caught) {
-      game.phase = 'guess';
-      game.log.push({ txt: `🦎 ¡${nameOf(game, game.chameleonId)} era el Camaleón! Pero aún puede escapar si adivina la palabra…` });
-      return game;
-    }
-    // No lo pillan (fallan o empatan): el Camaleón escapa.
-    return finish(game, 'chameleon');
+    return resolveVote(game);
   });
+}
+
+/**
+ * Cierra el voto con lo que haya: salida para cuando alguien no responde
+ * (móvil bloqueado, se ha ido al baño). Cualquiera puede pedirlo pasado el
+ * margen y habiendo al menos dos votos, para que el recuento signifique algo.
+ */
+export async function closeVote(): Promise<void> {
+  const me = myPid();
+  await tx((game) => {
+    if (game.phase !== 'vote' || !game.playerIds.includes(me)) return null;
+    if (allVoted(game)) return null;
+    if (votedCount(game) < 2) return null;
+    if (Date.now() - (game.phaseAt || 0) < VOTE_GRACE_MS) return null;
+    const faltan = game.playerIds.filter((pid) => game.votes[pid] === undefined).map((pid) => nameOf(game, pid));
+    game.log.push({ txt: `⏱️ Se cierra la votación sin ${faltan.join(', ')}.` });
+    return resolveVote(game);
+  });
+}
+
+// Destapa el recuento y decide si hay caza (fase de adivinar) o escapada.
+function resolveVote(game: ChameleonState): ChameleonState {
+  const { accusedId } = tallyVotes(game);
+  game.accusedId = accusedId;
+  game.caught = !!accusedId && accusedId === game.chameleonId;
+  const detalle = voteRows(game)
+    .map((r) => `${nameOf(game, r.pid)} ${r.voters.length} (${r.voters.map((v) => nameOf(game, v)).join(', ')})`)
+    .join(' · ');
+  if (detalle) game.log.push({ txt: `🗳️ Recuento: ${detalle}.` });
+  if (accusedId) game.log.push({ txt: `🗳️ La mesa señala a ${nameOf(game, accusedId)}.` });
+  else game.log.push({ txt: '🗳️ Voto dividido: nadie es señalado con claridad.' });
+  if (game.caught) {
+    game.phase = 'guess';
+    game.phaseAt = Date.now();
+    game.log.push({ txt: `🦎 ¡${nameOf(game, game.chameleonId)} era el Camaleón! Pero aún puede escapar si adivina la palabra…` });
+    return game;
+  }
+  // No lo pillan (fallan o empatan): el Camaleón escapa sin adivinar nada.
+  return finish(game, 'chameleon');
 }
 
 // ——— El Camaleón adivina ———
@@ -147,6 +213,20 @@ export async function chameleonGuess(cell: number): Promise<void> {
     game.guessedRight = cell === game.secret;
     game.log.push({ txt: `🦎 El Camaleón apuesta por «${game.grid[cell]}». La palabra era «${game.grid[game.secret]}».` });
     return finish(game, game.guessedRight ? 'chameleon' : 'group');
+  });
+}
+
+/** El Camaleón no señala nada (se ha ido, se le ha muerto el móvil): la mesa
+ *  resuelve la ronda como fallo pasado el margen. */
+export async function resolveNoGuess(): Promise<void> {
+  const me = myPid();
+  await tx((game) => {
+    if (game.phase !== 'guess' || !game.playerIds.includes(me)) return null;
+    if (Date.now() - (game.phaseAt || 0) < GUESS_GRACE_MS) return null;
+    game.guess = null;
+    game.guessedRight = false;
+    game.log.push({ txt: `⏱️ El Camaleón no señala ninguna palabra. Era «${game.grid[game.secret]}».` });
+    return finish(game, 'group');
   });
 }
 
@@ -173,15 +253,18 @@ export async function nextRound(): Promise<void> {
     if (game.phase !== 'end') return null;
     const round = game.round + 1;
     const seed = (game.seed || 0) + 101;
-    const deal = dealRound(game.playerIds, round, game.usedTopics, seed);
+    // Se excluye al Camaleón anterior: la app promete «nuevo Camaleón».
+    const deal = dealRound(game.playerIds, round, game.usedTopics, seed, game.chameleonId);
     game.seed = seed;
     game.round = round;
     game.phase = 'reveal';
+    game.phaseAt = Date.now();
     game.topicId = deal.topicId;
     game.grid = deal.grid;
     game.secret = deal.secret;
     game.chameleonId = deal.chameleonId;
     game.starterIdx = deal.starterIdx;
+    game.clueIdx = 0;
     game.seen = {};
     game.votes = {};
     game.accusedId = null;

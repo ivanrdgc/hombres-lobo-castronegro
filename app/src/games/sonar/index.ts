@@ -15,7 +15,7 @@ export const sonar: GameDefinition = {
   id: 'sonar',
   emoji: '⚓',
   name: 'Captain Sonar',
-  desc: 'Dos submarinos se cazan a ciegas en el mismo mapa: cada rumbo se anuncia en voz alta y el rival lo apunta para triangularte. Navega para cargar energía y gasta en torpedos, dron, silencio o emerger. Por equipos, con un altavoz por tripulación si os sentáis separados.',
+  desc: 'Dos submarinos se cazan a ciegas en el mismo mapa: cada rumbo se anuncia en voz alta y el rival lo apunta para triangularte. Navega para cargar energía y gasta en torpedos, dron, silencio o emerger. Por equipos y mejor de 4 a 6, con un altavoz por tripulación si os sentáis separados.',
   minPlayers: 2,
   maxPlayers: 10,
   Lobby: LobbyScreen,

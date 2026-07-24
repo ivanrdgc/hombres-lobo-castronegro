@@ -31,10 +31,16 @@ export interface CodenamesState {
   starting: Team;
   /** Equipo al que le toca ahora. */
   turn: Team;
-  /** Pista en curso: palabra dicha (o «en voz alta»), número y quién la dio. */
-  clue: { word: string; num: number; by: string } | null;
-  /** Toques que le quedan al equipo en este turno (número + 1). */
+  /** Pista en curso: palabra, número y quién la dio. `unlimited` = pista «∞». */
+  clue: { word: string; num: number; by: string; unlimited?: boolean } | null;
+  /** Toques que le quedan al equipo en este turno (número + 1); -1 = sin límite
+   *  (pistas de 0 y de ∞, que no acotan cuántas casillas se pueden tocar). */
   guessesLeft: number;
+  /** Toques ya dados en este turno: con 0/∞ es lo único que distingue «aún no
+   *  ha tocado nadie» (no se puede pasar) de «ya han tocado» (sí se puede). */
+  guessesMade: number;
+  /** Cuándo empezó la fase de pista: si se eterniza, la mesa puede saltarla. */
+  clueAt?: number;
   /** Casillas por destapar de cada equipo. */
   remaining: Record<Team, number>;
   winner: Team | null;

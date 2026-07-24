@@ -1,7 +1,7 @@
 <script lang="ts">
   import { app, navigate } from '../../../core/sync/store.svelte';
   import { localAudioState, toggleLocalSpeech } from '../../../shell/explain-audio';
-  import { MIN_PLAYERS, MAX_PLAYERS } from '../engine';
+  import { MIN_PLAYERS, MAX_PLAYERS, BEST_PLAYERS } from '../engine';
   import { INTRO_LOBBY } from '../texts';
   import type { GroupDoc, PlayerDoc } from '../../../core/sync/schema';
   import Flash from '../../../shell/Flash.svelte';
@@ -33,6 +33,6 @@
 </div>
 
 <div class="card">
-  <p class="small-note" style="margin-top:0">De {MIN_PLAYERS} a {MAX_PLAYERS} jugadores en dos tripulaciones. Mejor con las tripulaciones en corros separados; la voz puede sonar en un narrador, un altavoz por equipo o todos los móviles.</p>
+  <p class="small-note" style="margin-top:0">De {MIN_PLAYERS} a {MAX_PLAYERS} jugadores en dos tripulaciones, pero <b>lo ideal es de {BEST_PLAYERS}</b>: con 2 sale un duelo de dos solitarios, sin nadie con quien deliberar. Mejor con las tripulaciones en corros separados; la voz puede sonar en un narrador, un altavoz por equipo o todos los móviles.</p>
   <button class="primary block" data-a="open-start" onclick={() => navigate(`/g/${group.id}/sonar/empezar`)}>⚓ Empezar partida</button>
 </div>

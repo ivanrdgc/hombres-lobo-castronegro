@@ -33,12 +33,18 @@ export const invCount = (game: SkullState, pid: string): number => game.inv[pid]
 export const placed = (game: SkullState, pid: string): Disc[] => game.stacks[pid] || [];
 export const placedCount = (game: SkullState, pid: string): number => placed(game, pid).length;
 
-/** Discos que le quedan a `pid` EN MANO (inventario menos lo ya puesto). */
+/** Discos que le quedan a `pid` EN MANO (inventario menos lo ya puesto).
+ *  Nunca negativo: al fallar se descuenta del inventario pero la pila sigue en
+ *  la mesa hasta `nextRound`, así que en `roundEnd` lo puesto puede superarlo
+ *  (y un negativo reventaría los `'🌸'.repeat(n)` de la interfaz). */
 export function inHand(game: SkullState, pid: string): { flowers: number; skulls: number } {
   const st = placed(game, pid);
   const usedSkulls = st.filter((d) => d === 'skull').length;
   const usedFlowers = st.length - usedSkulls;
-  return { flowers: game.inv[pid].flowers - usedFlowers, skulls: game.inv[pid].skulls - usedSkulls };
+  return {
+    flowers: Math.max(0, game.inv[pid].flowers - usedFlowers),
+    skulls: Math.max(0, game.inv[pid].skulls - usedSkulls),
+  };
 }
 export const handCount = (game: SkullState, pid: string): number => {
   const h = inHand(game, pid); return h.flowers + h.skulls;
@@ -125,6 +131,8 @@ export function placeDisc(game: SkullState, pid: string, disc: Disc): boolean {
   if (disc === 'skull' ? h.skulls <= 0 : h.flowers <= 0) return false;
   game.stacks[pid] = [...placed(game, pid), disc];
   game.turn = nextAlive(game, pid);
+  // Línea pública (sin decir QUÉ disco): si no, la voz calla toda la colocación.
+  log(game, `🌀 ${nm(game, pid)} coloca otro disco. Turno de ${nm(game, game.turn)}.`);
   return true;
 }
 
@@ -138,6 +146,9 @@ export function openBid(game: SkullState, pid: string, n: number): boolean {
   game.phase = 'bid';
   game.turn = nextBidder(game, pid);
   log(game, `🗣️ ${nm(game, pid)} apuesta que levanta ${n} flor${n === 1 ? '' : 'es'} sin topar una calavera.`);
+  // Apuesta al tope: nadie puede subir, así que se revela ya (si no, obligaría
+  // a una vuelta de «Pasar» inútiles). Mismo criterio que `raiseBid`.
+  if (n >= max) { startReveal(game); return true; }
   if (game.turn === pid) startReveal(game); // nadie más puede pujar
   return true;
 }
@@ -208,7 +219,8 @@ function resolveFail(game: SkullState): void {
   log(game, game.lastResult.text);
   if (invCount(game, by) === 0) {
     game.alive[by] = false;
-    log(game, `☠️ ${nm(game, by)} se queda sin discos y queda ELIMINADO.`);
+    // «ELIMINADO» chirriaba con nombres femeninos: «FUERA» vale para todos.
+    log(game, `☠️ ${nm(game, by)} se queda sin discos y queda FUERA de la partida.`);
   }
   // El que perdió empieza la siguiente (si sigue vivo; si no, el siguiente).
   game.starter = isAlive(game, by) ? by : nextAlive(game, by);
@@ -250,6 +262,9 @@ export function nextRound(game: SkullState): boolean {
   for (const pid of game.playerIds) game.stacks[pid] = [];
   game.bid = null; game.passed = {}; game.reveal = null; game.lastResult = null;
   if (!isAlive(game, game.starter)) game.starter = nextAlive(game, game.starter);
+  // Sin esto el tablero seguiría resaltando al último que reveló (que puede
+  // estar ya fuera) durante toda la colocación.
+  game.turn = game.starter;
   game.phase = 'setup';
   log(game, `🔄 Ronda ${game.round}: cada uno coloca un disco. Empieza ${nm(game, game.starter)}.`);
   return true;

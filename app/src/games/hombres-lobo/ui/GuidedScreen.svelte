@@ -89,7 +89,9 @@
     </div>
   {:else if head.type === 'cabeza_pick'}
     <div class="actionpanel"><h3>🐐 El Cabeza de Turco decide</h3>
-      <ActionGrid players={players} selKey={key} canPick={(p) => p.id !== head.pid} />
+      <!-- Nunca el Tonto ya descubierto: no vota (y en automático dejaría el
+           juicio de mañana sin registrador). -->
+      <ActionGrid players={players} selKey={key} canPick={(p) => p.id !== head.pid && !p.revealedTonto} />
       <button class="primary block" data-a="cabeza-pick" disabled={!selName(key)} onclick={() => cabezaPick(key)}>👉 {selName(key) ? `Elegir a ${selName(key)}` : 'Elegir'}</button>
       <button class="ghost block" data-a="cabeza-skip" onclick={() => guard(() => A.cabezaPick(null))}>Que voten todos</button>
     </div>
@@ -113,6 +115,11 @@
       <p class="small-note">Cada jugador mira su carta en su móvil y confirma.</p>
       {#if pend.length}
         <div class="waitlist">Faltan por confirmar: {pend.join(', ')}</div>
+        <!-- Sin esto, un móvil que no confirma (pantalla apagada, se fue a por
+             hielo…) impedía empezar la partida: el narrador da por vista su
+             carta y arranca la noche. -->
+        <button class="ghost block" data-a="guided-first-night-force"
+          onclick={() => guard(async () => { await A.forceAdvance(); await A.startFirstNight(); })}>⏭️ Empezar igualmente</button>
       {:else}
         <button class="primary block" data-a="guided-first-night" onclick={() => guard(() => A.startFirstNight())}>🌙 Empezar la primera noche</button>
       {/if}

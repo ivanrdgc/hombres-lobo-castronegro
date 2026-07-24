@@ -19,6 +19,8 @@ export interface ElectionRecord {
   ja: string[];
   nein: string[];
   passed: boolean;
+  /** Nº de elección resuelta (1, 2, 3…): da clave única a la voz del resultado. */
+  no?: number;
 }
 
 export interface SHState {
@@ -41,6 +43,8 @@ export interface SHState {
   lastChancellor: string | null;
   votes: Record<string, boolean>;
   lastElection: ElectionRecord | null;
+  /** Elecciones resueltas (numera `lastElection.no`). */
+  elections: number;
   electionTracker: number;
   liberalPolicies: number;
   fascistPolicies: number;
@@ -64,6 +68,10 @@ export interface SHState {
   investigateResult: { target: string; faction: 'liberal' | 'fascist' } | null;
   /** pids ya investigados (no se puede investigar dos veces al mismo). */
   investigated: string[];
+  /** Veces que el país cayó en el caos (la voz lo anuncia una vez por caos). */
+  chaosCount: number;
+  /** Último ejecutado (la voz dice quién cayó; la UI lo destaca). */
+  lastExecuted: string | null;
   /** Reshuffle: veces que se rebarajó el mazo (para la crónica/claves). */
   reshuffles: number;
   winner: 'liberal' | 'fascist' | null;

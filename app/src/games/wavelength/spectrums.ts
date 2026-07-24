@@ -7,6 +7,10 @@ export interface Spectrum {
   right: string;
 }
 
+// Una noche larga se come el mazo: con ~50 pares, y sin repetir hasta agotarlos,
+// una mesa de 6 juega ocho vueltas sin ver dos veces el mismo espectro. Fuera
+// los pares ambiguos (aquellos en los que no se sabe qué lado es el «más») y los
+// demasiado locales: estos se entienden en cualquier mesa.
 export const SPECTRUMS: Spectrum[] = [
   { id: 'temp', left: 'Frío', right: 'Caliente' },
   { id: 'util', left: 'Inútil', right: 'Útil' },
@@ -32,6 +36,32 @@ export const SPECTRUMS: Spectrum[] = [
   { id: 'limpio', left: 'Sucio', right: 'Limpio' },
   { id: 'aburrido', left: 'Aburrido', right: 'Emocionante' },
   { id: 'sobrio', left: 'Elegante', right: 'Hortera' },
+  { id: 'lento', left: 'Lento', right: 'Rápido' },
+  { id: 'tamano', left: 'Diminuto', right: 'Enorme' },
+  { id: 'feo', left: 'Feo', right: 'Bonito' },
+  { id: 'dulce', left: 'Salado', right: 'Dulce' },
+  { id: 'blando', left: 'Blando', right: 'Duro' },
+  { id: 'oscuro', left: 'Oscuro', right: 'Luminoso' },
+  { id: 'triste', left: 'Triste', right: 'Alegre' },
+  { id: 'formal', left: 'Informal', right: 'Formal' },
+  { id: 'natural', left: 'Artificial', right: 'Natural' },
+  { id: 'relax', left: 'Relajante', right: 'Agotador' },
+  { id: 'olvidable', left: 'Olvidable', right: 'Inolvidable' },
+  { id: 'exagerado', left: 'Discreto', right: 'Exagerado' },
+  { id: 'adictivo', left: 'Nada adictivo', right: 'Muy adictivo' },
+  { id: 'justo', left: 'Injusto', right: 'Justo' },
+  { id: 'noche', left: 'Cosa de noche', right: 'Cosa de día' },
+  { id: 'verano', left: 'De invierno', right: 'De verano' },
+  { id: 'deporte', left: 'No es deporte', right: 'Es deporte' },
+  { id: 'arte', left: 'No es arte', right: 'Es arte' },
+  { id: 'pereza', left: 'Da pereza', right: 'Apetece' },
+  { id: 'esfuerzo', left: 'Sale solo', right: 'Cuesta un esfuerzo' },
+  { id: 'rutina', left: 'Rutina', right: 'Aventura' },
+  { id: 'olor', left: 'Huele mal', right: 'Huele bien' },
+  { id: 'regalo', left: 'Mal regalo', right: 'Regalazo' },
+  { id: 'locura', left: 'Una locura', right: 'Una buena idea' },
+  { id: 'grave', left: 'Una tontería', right: 'Un problema serio' },
+  { id: 'social', left: 'Cosa de uno', right: 'Cosa de grupo' },
 ];
 
 export function spectrumById(id: string): Spectrum | undefined {
@@ -41,4 +71,12 @@ export function spectrumById(id: string): Spectrum | undefined {
 export function spectrumLabel(id: string): string {
   const s = spectrumById(id);
   return s ? `${s.left} ↔ ${s.right}` : id;
+}
+
+/** El espectro DICHO en voz alta. El ↔ se queda para la pantalla: leerlo como
+ *  «frente a» chirría con pares del tipo «No es deporte ↔ Es deporte», y
+ *  nombrar los dos extremos deja claro cuál es cada lado del dial. */
+export function spectrumSpeech(id: string): string {
+  const s = spectrumById(id);
+  return s ? `en un extremo, ${s.left}; en el otro, ${s.right}` : id;
 }

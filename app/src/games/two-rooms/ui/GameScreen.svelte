@@ -18,12 +18,30 @@
   import DiscussPhase from './DiscussPhase.svelte';
   import HostagePhase from './HostagePhase.svelte';
   import EndPhase from './EndPhase.svelte';
+  import Timer from './Timer.svelte';
 
   const { group, my }: { group: GroupDoc; my: PlayerDoc } = $props();
   const game = $derived(twoRoomsGame(group)!);
   const inGame = $derived(game.playerIds.includes(my.id) && !!matchOf(my.id));
   const iNarrate = $derived(narrates(game, my.id, group.masterId));
   const needsUnlock = $derived(iNarrate && !app.ui.audioReady && !app.ui.muted);
+
+  // Quién cruza en la colocación: al rehén hay que avisarle EN PERSONA (el
+  // tablero solo dice dónde acaba cada cual, no que te toca levantarte).
+  const lastSwap = $derived(game.swaps[game.swaps.length - 1] || null);
+  const iCross = $derived.by(() => {
+    if (!lastSwap || !inGame) return null;
+    if ((lastSwap.from0 || []).includes(my.id)) return 2;
+    if ((lastSwap.from1 || []).includes(my.id)) return 1;
+    return null;
+  });
+  const nm = (pid: string) => game.names[pid] || '¿?';
+  // Los que llegan a MI sala (los que se van de la otra).
+  const incoming = $derived.by(() => {
+    if (!lastSwap || !inGame) return [] as string[];
+    const mine = game.room[my.id];
+    return (mine === 0 ? lastSwap.from1 : lastSwap.from0) || [];
+  });
 
   function unlockVoice() {
     unlockAudio();
@@ -52,16 +70,28 @@
 
 {#if game.phase === 'reveal'}
   <RevealPhase {game} {my} />
+  <!-- El tablero también en el reparto (B22): es info pública y es JUSTO ahora
+       cuando hay que saber quién va a qué sala para colocarse. -->
+  <RoomsBoard {game} meId={my.id} />
 {:else if game.phase === 'end'}
   <EndPhase {game} {my} />
 {:else}
+  <!-- El reloj, ENCIMA del tablero: con 12+ jugadores la lista es larga y la
+       cuenta atrás se salía de la pantalla. -->
+  {#if game.phase === 'discuss' || game.phase === 'hostages'}<Timer {game} />{/if}
   <RoomsBoard {game} meId={my.id} />
   {#if game.phase === 'discuss'}
     <DiscussPhase {game} {my} />
   {:else if game.phase === 'hostages'}
     <HostagePhase {game} {my} />
   {:else if game.phase === 'move'}
-    <div class="narration">🚶 Los rehenes cruzan de sala (mirad el tablero de arriba). Sin prisa: el reloj no corre.</div>
+    {#if iCross}
+      <div class="narration" data-a="tr-cross">🚶 TE TOCA CRUZAR a la Sala {iCross}. Coge tus cosas y cambia de espacio.</div>
+    {:else if incoming.length}
+      <div class="narration">🚶 Os quedáis donde estáis. Recibís a {incoming.map(nm).join(', ')}.</div>
+    {:else}
+      <div class="narration">🚶 Los rehenes cruzan de sala (mirad el tablero de arriba). Sin prisa: el reloj no corre.</div>
+    {/if}
     {#if inGame}
       <div class="card"><p class="hint">Cuando todos estéis cada uno en vuestra sala, que cualquiera arranque la ronda.</p>
         <button class="primary block" data-a="tr-begin" onclick={() => guard(A.beginRound)}>▶️ Empezar la ronda {game.round}</button></div>

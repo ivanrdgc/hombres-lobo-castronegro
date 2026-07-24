@@ -47,6 +47,7 @@ export const ROLE_HELP: Record<RoleId, RoleHelp> = {
       'Puedes salvarlo con la poción de vida (interruptor) y/o envenenar a alguien tocándolo en la lista. Cada poción se usa UNA vez por partida.',
       'Cuando se gasten, la voz seguirá llamándote cada noche: disimula y termina tu turno como si nada.',
     ],
+    tip: 'Regla de la casa: solo conoces —y solo puedes curar— a la víctima principal de la manada. Si esa noche hubo una SEGUNDA presa (la del Gran Lobo Feroz o la del Lobo Albino), no te enterarás hasta el amanecer.',
   },
   cazador: {
     when: 'Al morir',
@@ -123,9 +124,10 @@ export const ROLE_HELP: Record<RoleId, RoleHelp> = {
   gitana: {
     when: 'Cada noche',
     steps: [
-      'Cada noche eliges una pregunta de sí o no (o escribes la tuya) en tu móvil.',
-      'Al amanecer, la voz pedirá a un espíritu (un jugador muerto) que la responda ante todo el pueblo.',
+      'Cada noche eliges en tu móvil una pregunta de sí o no de la lista… o escribes la tuya.',
+      'Al amanecer, la voz la hará en alto y TODOS los muertos responderán a la vez, poniéndose de acuerdo antes: solo pueden decir sí o no.',
     ],
+    tip: 'Sin ningún muerto todavía, nadie puede responderte: guarda la pregunta para cuando el cementerio tenga inquilinos.',
   },
   cuervo: {
     when: 'Cada noche',

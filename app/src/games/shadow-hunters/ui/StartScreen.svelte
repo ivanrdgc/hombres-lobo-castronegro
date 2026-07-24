@@ -8,6 +8,7 @@
   import type { GroupDoc, PlayerDoc } from '../../../core/sync/schema';
   import * as A from '../actions';
   import { MIN_PLAYERS, MAX_PLAYERS } from '../engine';
+  import { factionSummary } from '../chars';
   import Flash from '../../../shell/Flash.svelte';
   import SeatPicker from '../../../shell/SeatPicker.svelte';
 
@@ -52,6 +53,9 @@
   <h3>🎮 ¿Quién juega?</h3>
   <SeatPicker {group} {meId} gameId="shadow_hunters" onState={(s) => (seat = s)} />
   <p class="small-note">La app repartirá un personaje secreto a cada uno: 🏹 Cazadores, 🌑 Sombras y (con 5 o más) 🧭 neutrales.</p>
+  <!-- El reparto es público: decirlo ANTES de repartir evita la pregunta de
+       toda mesa novata («¿cuántos hay de cada bando?»). -->
+  {#if okStart}<p class="small-note" style="margin-top:2px"><b>{factionSummary(n)}</b> Lo secreto es quién es quién, no cuántos hay.</p>{/if}
 </div>
 
 <div class="card">

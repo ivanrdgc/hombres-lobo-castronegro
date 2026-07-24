@@ -38,10 +38,10 @@ export const ROLE_HELP: Record<RoleId, RoleHelp> = {
     steps: [
       'La voz te despierta después de los lobos: la app te muestra quiénes son los hombres lobo. Ellos NO saben que existes.',
       'Juegas para el bando de los lobos: ganas si ellos ganan, es decir, si ningún lobo cae en la votación.',
-      'Si no hay lobos en la mesa (ambas cartas cayeron en el centro), lo verás: tú solo defiendes su causa.',
+      'Si no hay lobos en la mesa (ambas cartas cayeron en el centro), lo verás: tú solo defiendes su causa. En ese caso ganas con que caiga cualquiera que no seas tú… pero si el único condenado eres TÚ, gana el Pueblo.',
       'De día, protege a los lobos y desvía las sospechas.',
     ],
-    tip: 'Sacrifícate si hace falta: que el pueblo te linche a TI en lugar de a un lobo hace ganar a tu bando (matarte a ti no cuenta como matar a un lobo).',
+    tip: 'Sacrifícate si hace falta: mientras HAYA lobos en la mesa, que el pueblo te linche a TI en lugar de a uno de ellos hace ganar a tu bando (matarte a ti no cuenta como matar a un lobo).',
   },
   mason: {
     when: 'De noche, tras el Esbirro',
@@ -109,7 +109,8 @@ export const ROLE_HELP: Record<RoleId, RoleHelp> = {
     when: 'Si te linchan',
     steps: [
       'No actúas de noche.',
-      'Si mueres en la votación del día, también muere el jugador al que TÚ votaste: la app lo resuelve sola.',
+      'Si el pueblo te condena, tu flecha aún vuela: la app te pide (a ti, o a quien narra) señalar a quién te llevas por delante antes de cerrar la partida.',
+      'La regla de la mesa manda: te llevas a quien TÚ señalaste en la votación. La app te deja elegirlo para poder registrarlo… y también permite no disparar.',
       'Cuenta la carta que tengas al final: si acabaste de Cazador (aunque empezaras siendo otro), tu disparo se cumple.',
     ],
     tip: 'Apunta tu voto a quien más sospeches: si caes, te lo llevas contigo. Puede darle la vuelta a la partida.',

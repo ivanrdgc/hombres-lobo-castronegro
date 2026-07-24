@@ -3,7 +3,7 @@
   // la chuleta de TODOS los personajes posibles. Accesible en cualquier fase.
   import { app, viewGroup, me } from '../../../../core/sync/store.svelte';
   import { shadowHGame } from '../../actions';
-  import { CHARS, FACTION_LABEL } from '../../chars';
+  import { CHARS, FACTION_LABEL, charRefRows, pistaRefRows, factionSummary } from '../../chars';
   import RefRows from '../../../../shell/RefRows.svelte';
 
   const g = $derived(viewGroup());
@@ -11,12 +11,12 @@
   const my = $derived(me());
   const inGame = $derived(!!game && !!my && game.playerIds.includes(my.id));
   const c = $derived(inGame ? CHARS[game!.chars[my!.id]] : null);
-  const rows = Object.values(CHARS).map((ch) => ({
-    emoji: ch.emoji,
-    name: ch.name,
-    note: FACTION_LABEL[ch.faction],
-    desc: ch.power + (ch.goal ? ` Objetivo: ${ch.goal}` : ''),
-  }));
+  // Las mismas filas que el desplegable «📖» del panel de acción: la chuleta se
+  // consulta desde donde se decide y desde aquí, y dice siempre lo mismo.
+  const rows = charRefRows();
+  // El mazo de pistas es público en el original: saber qué 8 cartas hay es
+  // media deducción (si ves una cura, sabes que solo 4 cartas curan y a quién).
+  const pistaRows = pistaRefRows();
 </script>
 
 {#if game && my}
@@ -30,7 +30,9 @@
   {:else}
     <p class="small-note">👀 Miras de espectador: sin personaje propio.</p>
   {/if}
+  <p class="small-note" style="margin:8px 0 0"><b>{factionSummary(game.playerIds.length)}</b> El reparto es público; lo secreto es quién es quién. El resto de personajes se quedan fuera.</p>
   <RefRows title="📖 Todos los personajes posibles" {rows} />
-  <p class="small-note" style="margin:8px 0 0">Según cuántos juguéis hay 2-3 Cazadores, 2-3 Sombras y 0-2 neutrales en la mesa; el resto de personajes se quedan fuera.</p>
+  <RefRows title="🔮 Las 8 cartas de pista" rows={pistaRows} />
+  <p class="small-note" style="margin:8px 0 0">Siempre son estas ocho: solo la leéis quien la da y quien la recibe, y la mesa ve el resultado. Si te deja a 0, mueres.</p>
 {/if}
 <button class="primary block" style="margin-top:14px" data-a="close-modal" onclick={() => (app.ui.modal = null)}>Cerrar</button>

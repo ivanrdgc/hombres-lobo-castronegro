@@ -13,7 +13,7 @@
   import { guard } from '../core/sync/guard';
   import * as A from '../core/sync/group-actions';
   import { isActiveDevice } from '../core/sync/presence';
-  import { GAME_DEFS, gameDef } from '../games/registry';
+  import { GAME_DEFS, gameDef, gameMeta } from '../games/registry';
   import { seatingOrder } from './ui-helpers';
   import { seatInsertIndex } from '../core/util/seat-insert';
   import type { GroupDoc, MatchDoc, PlayerDoc } from '../core/sync/schema';
@@ -222,9 +222,17 @@
 </div>
 <div class="card">
   <h3>🎮 ¿A qué jugamos?</h3>
+  <p class="small-note" style="margin-top:0">Cada ficha dice para cuántos es, cuánto dura y de qué palo va. Los marcados <b>🌱 fácil</b> se explican en dos minutos: buen sitio para empezar si es vuestra primera noche. Dentro de cada juego tenéis «🎓 Tutorial interactivo» antes de repartir nada.</p>
   {#each GAME_DEFS as j (j.id)}
+    {@const meta = gameMeta(j.id)}
     <div class="card" style="margin:10px 0 4px">
-      <h3>{j.emoji} {j.name} <span class="chip" style="font-weight:400">👥 {j.minPlayers}–{j.maxPlayers}</span></h3>
+      <h3>{j.emoji} {j.name}</h3>
+      <p class="chips" style="margin:2px 0 6px">
+        <span class="chip">👥 {j.minPlayers}–{j.maxPlayers}</span>
+        <span class="chip">⏱️ {meta.mins[0]}–{meta.mins[1]} min</span>
+        {#if meta.easy}<span class="chip">🌱 fácil de explicar</span>{/if}
+      </p>
+      {#if meta.vibe}<p class="small-note" style="margin:0 0 4px;opacity:.85"><b>{meta.vibe}</b></p>{/if}
       <p class="small-note">{j.desc}</p>
       <button class="primary block" data-a="select-game" data-p={j.id} onclick={() => { navigate(`/g/${group.id}/${j.id}`); guard(() => A.selectGame(j.id)); }}>{j.emoji} Jugar a esto</button>
     </div>

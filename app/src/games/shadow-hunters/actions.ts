@@ -59,6 +59,7 @@ export async function startShadowH(playerIds: string[], narratorId: string | nul
   const now = Date.now();
   const seed = Math.floor(now % 2147483647);
   const deal = dealGame(playerIds, seed);
+  const first = playerIds[seed % playerIds.length];
   const game: ShadowHState = {
     shadowh: true, phase: 'turn', startedAt: now, seed, rng: 0,
     playerIds, names, chars: deal.chars,
@@ -66,12 +67,16 @@ export async function startShadowH(playerIds: string[], narratorId: string | nul
     maxHp: MAX_HP,
     alive: Object.fromEntries(playerIds.map((p) => [p, true])),
     revealed: Object.fromEntries(playerIds.map((p) => [p, false])),
-    powerUsed: Object.fromEntries(playerIds.map((p) => [p, false])),
-    turn: playerIds[seed % playerIds.length],
+    turn: first,
     pista: null, killsBy: {},
     winner: null, winners: [], winReason: null,
     scores: Object.fromEntries(playerIds.map((p) => [p, 0])), paused: null, repeatNonce: 0,
-    log: [{ txt: '🌘 Comienza Shadow Hunters. Cazadores, Sombras y neutrales con identidad SECRETA: mira tu personaje en el móvil. En tu turno: pista, ataque, descanso… o revélate y usa tu poder.' }],
+    // Segunda línea: quién abre. Sin ella la mesa oía la intro y nadie sabía
+    // por quién empezar (el motor ya canta el turno tras cada acción).
+    log: [
+      { txt: '🌘 Comienza Shadow Hunters. Cazadores, Sombras y neutrales con identidad SECRETA: mira tu personaje en el móvil. En tu turno: pista, ataque, descanso… o revélate y usa tu poder.' },
+      { txt: `🎬 Turno de ${names[first]}.` },
+    ],
   };
   await txWithRetry(async (t) => {
     const snap = await t.get(gref(slug));
@@ -104,12 +109,19 @@ export async function revealSelf(target: string | null): Promise<void> {
   const me = myPid();
   await tx((game) => (revealMut(game, me, target) ? game : null));
 }
-/** Descarta la pista una vez leída (quien la recibió o quien la dio). */
+/** Acusa recibo de la pista. La carta se retira SOLO cuando la han leído los
+ *  dos: el que la da es el jugador activo y pulsaba al instante, borrándole el
+ *  texto al que la recibe (y el texto ES la información del juego). */
 export async function clearPista(): Promise<void> {
   const me = myPid();
   await tx((game) => {
-    if (!game.pista || (game.pista.target !== me && game.pista.by !== me)) return null;
-    game.pista = null;
+    const p = game.pista;
+    if (!p || (p.target !== me && p.by !== me)) return null;
+    const prev = p.ack || [];
+    if (prev.includes(me)) return null;
+    const ack = [...prev, me];
+    if (ack.includes(p.by) && ack.includes(p.target)) game.pista = null;
+    else game.pista = { ...p, ack };
     return game;
   }, undefined, { allowPaused: true });
 }
@@ -121,6 +133,7 @@ export async function playAgain(): Promise<void> {
     if (game.phase !== 'end') return null;
     resetForRematch(game, (game.seed || 0) + 101);
     game.log.push({ txt: '🔁 Nueva partida: identidades repartidas de nuevo.' });
+    game.log.push({ txt: `🎬 Turno de ${game.names[game.turn] || 'alguien'}.` });
     return game;
   });
 }

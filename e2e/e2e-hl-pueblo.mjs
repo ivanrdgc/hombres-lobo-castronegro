@@ -2,9 +2,10 @@
 // 1 lobo fijado a mano, 3 noches).
 //  N1: la Gitana escribe su PROPIA pregunta; el lobo devora a un aldeano.
 //  D1: los espíritus reciben la pregunta en el amanecer; el pueblo lincha al
-//      TONTO → se salva, pierde el voto y su panel de juicio desaparece.
-//  D2: EMPATE → muere el Cabeza de Turco y designa al único registrador de
-//      mañana.
+//      TONTO → se salva y pierde el voto (pero NO el derecho a registrar).
+//  D2: el propio Tonto registra un EMPATE (regresión: si no pudiera anotar,
+//      designarlo colgaría el día) → muere el Cabeza de Turco, que designa al
+//      único registrador de mañana (y no puede designar al Tonto).
 //  N3: el lobo devora AL DESIGNADO → regresión: antes nadie podía registrar el
 //      voto (partida colgada); ahora el voto vuelve al pueblo y se anuncia.
 //  D3: cualquiera registra, cae el lobo y gana el pueblo.
@@ -154,7 +155,7 @@ try {
   st = await waitState(ana, (s) => s.players.find((p) => p.id === tonto.id)?.revealedTonto === true, 'el Tonto revelado');
   check(st.players.find((p) => p.id === tonto.id)?.alive === true, 'el Tonto se salva del linchamiento');
   check(st.log.some((t) => t.includes('Tonto del Pueblo')), 'la crónica lo explica');
-  // Su panel de juicio desaparece para siempre (ya no vota)…
+  // Pierde el VOTO, no el panel: sigue pudiendo anotar lo que decida el pueblo.
   st = await waitState(ana, (s) => (s.votesLeft || 0) <= 0 && !s.pending.length, 'día 1 cerrado');
   await pageOf(gitana).waitForSelector('button[data-a=begin-night]', { timeout: 20000 });
   await pageOf(gitana).click('button[data-a=begin-night]');
@@ -162,17 +163,21 @@ try {
 
   await driveNight(2, victims[1]);
   st = await waitState(ana, (s) => s.phase === 'day' && s.dayNum === 2, 'amanecer 2');
-  const tontoPanel = await pageOf(tonto).locator('.actionpanel:has-text("juicio")').count();
-  check(tontoPanel === 0, 'el Tonto descubierto ya no ve el panel de venir a registrar (no vota)');
+  const tp = pageOf(tonto);
+  await tp.waitForSelector('.actionpanel:has-text("juicio")', { timeout: 30000 });
+  check((await tp.locator('.actionpanel:has-text("ya no votas")').count()) > 0,
+    'REGRESIÓN: el Tonto descubierto SÍ ve el panel del juicio (no vota, pero anota la decisión)');
 
-  // D2: EMPATE → muere el Cabeza de Turco y designa registrador único.
-  await reg1.waitForSelector('button[data-a=vote-empate]', { timeout: 30000 });
-  await reg1.click('button[data-a=vote-empate]');
+  // D2: EMPATE registrado por el PROPIO Tonto (prueba de que puede anotar) →
+  // muere el Cabeza de Turco y designa registrador único.
+  await tp.click('button[data-a=vote-empate]');
   st = await waitState(ana, (s) => s.players.find((p) => p.id === cabeza.id)?.alive === false, 'el Cabeza de Turco muere en el empate');
   ok('empate: el Cabeza de Turco se sacrifica (regla oficial)');
   const designado = aldeanos[2];
   const cp = pageOf(cabeza);
   await cp.waitForSelector('[data-a=cabeza-pick]', { timeout: 20000 });
+  check((await cp.locator(`.actionpanel .player.selectable[data-p=${tonto.id}]`).count()) === 0,
+    'REGRESIÓN: no puede designar al Tonto descubierto como registrador único');
   await cp.click(`.actionpanel .player.selectable[data-p=${designado.id}]`);
   await cp.click('[data-a=cabeza-pick]');
   st = await waitState(ana, (s) => s.soloVoteId === designado.id, 'designa al único registrador de mañana');

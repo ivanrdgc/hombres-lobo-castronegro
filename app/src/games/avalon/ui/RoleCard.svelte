@@ -37,7 +37,7 @@
     {:else if k.knows.kind === 'oberon'}
       <div class="rextra">👁️ Juegas en SOLITARIO: no conoces a los demás esbirros ni ellos a ti. Merlín, en cambio, sí te ve.</div>
     {:else if k.knows.kind === 'merlin'}
-      <div class="rextra">🧙 Los esbirros del Mal: {k.knows.pids.length ? nameList(k.knows.pids) : '—'}. {game.enabledRoles.includes('mordred') ? 'Ojo: Mordred se te oculta, así que puede haber uno más.' : ''} No te delates.</div>
+      <div class="rextra">🧙 Los esbirros del Mal: {k.knows.pids.length ? nameList(k.knows.pids) : '—'}. {Object.values(game.roles).includes('mordred') ? 'Ojo: Mordred se te oculta, así que puede haber uno más.' : ''} No te delates.</div>
     {:else if k.knows.kind === 'percival'}
       <div class="rextra">{k.knows.ambiguous ? `🛡️ Merlín es UNO de estos dos: ${nameList(k.knows.pids)} (el otro es Morgana, la falsa). Averigua cuál.` : `🛡️ Merlín es: ${nameList(k.knows.pids)}.`}</div>
     {:else}

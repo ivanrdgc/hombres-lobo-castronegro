@@ -13,6 +13,7 @@ import type { Utterance } from '../../../core/audio/player';
 import { matchView, onChange, state } from '../../../core/sync/store.svelte';
 import type { GroupDoc, PlayerDoc, Session } from '../../../core/sync/schema';
 import { coupGame } from '../actions';
+import { pendingReactors } from '../engine';
 import { COUP_INTRO } from '../texts';
 import type { CoupState } from '../types';
 
@@ -47,19 +48,41 @@ function amSpeaker(s: Snap): boolean {
 }
 
 const gm = (ctx: Ctx): CoupState => coupGame(ctx.state().group)!;
+const nm = (g: CoupState, pid: string): string => g.names[pid] || 'alguien';
+// Prefijo de hitos: la revancha reinicia el diario, así que la SEMILLA (que
+// cambia en cada reparto) entra en la clave; si no, las líneas nuevas
+// heredarían los hitos de la partida anterior y el narrador se quedaría mudo.
+const pre = (g: CoupState): string => `C${g.startedAt}:s${g.seed}`;
+
+const REACTION_PHASES: CoupState['phase'][] = ['challengeAction', 'block', 'challengeBlock'];
 
 function sceneOf(s: Snap): SceneDef<Snap> | null {
   if (!amSpeaker(s)) return null;
   const game = coupGame(s.group)!;
-  if (game.phase === 'reveal') return { key: `C${game.startedAt}:reveal`, run: revealScene };
+  // En pausa, silencio duro (hardEntry) hasta reanudar.
+  if (game.paused) return { key: `C${game.startedAt}:paused:${game.paused.at}`, hardEntry: true, run: pausedScene };
+  const rf = game.repeatNonce || 0; // «🔁 Repetir» re-arranca la escena
+  if (game.phase === 'reveal') return { key: `${pre(game)}:reveal:r${rf}`, run: revealScene };
   // Escena viva: la clave incluye el nº de líneas del diario → cada línea nueva
   // arranca una escena que las locuta todas (las ya dichas, instantáneas).
-  return { key: `C${game.startedAt}:log${game.log.length}`, run: logScene };
+  return { key: `${pre(game)}:log${game.log.length}:r${rf}`, run: logScene };
+}
+
+async function pausedScene(ctx: Ctx): Promise<void> { await ctx.waitFor(() => false); }
+
+/** ¿Toca atender un «🔁 Repetir» nuevo? (una sola escena lo sirve por nonce). */
+function repeatPending(ctx: Ctx, g: CoupState): boolean {
+  if (!g.repeatNonce) return false;
+  const k = `${pre(g)}:rep${g.repeatNonce}`;
+  if (ctx.ledger.has(k)) return false;
+  ctx.ledger.mark(k);
+  return true;
 }
 
 async function revealScene(ctx: Ctx): Promise<void> {
   const g = gm(ctx);
-  if (g.round === 1) await ctx.sayOnce(`C${g.startedAt}:intro`, () => utt('coup-intro', COUP_INTRO));
+  if (repeatPending(ctx, g)) ctx.ledger.clearPrefix(`${pre(g)}:intro`);
+  if (g.round === 1) await ctx.sayOnce(`${pre(g)}:intro`, () => utt('coup-intro', COUP_INTRO));
   await ctx.waitFor((s) => {
     const game = coupGame(s.group);
     return !!game && (game.phase !== 'reveal' || game.playerIds.every((pid) => game.seen[pid]));
@@ -68,11 +91,40 @@ async function revealScene(ctx: Ctx): Promise<void> {
 
 async function logScene(ctx: Ctx): Promise<void> {
   const g = gm(ctx);
-  // Se salta la línea 0 (el cartel «Comienza Coup»): ya lo cubre la intro.
+  const last = g.log.length - 1;
+  // «🔁 Repetir»: la clave de escena lleva el nonce, así que al pedirlo esta
+  // escena vuelve a arrancar; olvidar el hito de la ÚLTIMA línea (y solo ese,
+  // no hay índices mayores) hace que se relocute sin recitar el diario entero.
+  if (repeatPending(ctx, g)) ctx.ledger.clearPrefix(`${pre(g)}:log${last}`);
+  // Se salta la línea 0 (el cartel de apertura): ya lo cubre la intro.
   for (let i = 1; i < g.log.length; i++) {
     const txt = speakable(g.log[i].txt);
-    if (txt) await ctx.sayOnce(`C${g.startedAt}:log${i}`, () => utt(`coup-log-${i}`, txt));
+    if (txt) await ctx.sayOnce(`${pre(g)}:log${i}`, () => utt(`coup-log-${i}`, txt));
   }
+  await nagStalledWindow(ctx);
+}
+
+/** Ventana de reacción abierta: si nadie contesta, recuerda cada ~30 s quién
+ *  falta (sin ellos la jugada no avanza y la mesa se queda colgada). */
+async function nagStalledWindow(ctx: Ctx): Promise<void> {
+  const g = gm(ctx);
+  if (!REACTION_PHASES.includes(g.phase) || !pendingReactors(g).length) return;
+  const len = g.log.length;
+  await ctx.waitOrNag(
+    (s) => {
+      const game = coupGame(s.group);
+      return !game || game.log.length !== len || !pendingReactors(game).length;
+    },
+    {
+      nagKey: `${pre(g)}:nag${len}`,
+      escalateAfter: 999, // nunca decide sola: pasar por los ausentes es cosa de un humano
+      nag: () => {
+        const game = gm(ctx);
+        const who = pendingReactors(game).map((pid) => nm(game, pid));
+        return who.length ? utt('coup-nag', `Faltan por reaccionar: ${who.join(', ')}.`) : null;
+      },
+    },
+  );
 }
 
 // ——— Instalación ———

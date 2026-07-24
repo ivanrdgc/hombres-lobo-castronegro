@@ -8,6 +8,7 @@
   import Flash from '../../../shell/Flash.svelte';
   import CardFab from '../../../shell/CardFab.svelte';
   import GameMenu from './GameMenu.svelte';
+  import NarratorPanel from './NarratorPanel.svelte';
   import RevealPhase from './RevealPhase.svelte';
   import NightPhase from './NightPhase.svelte';
   import DayPhase from './DayPhase.svelte';
@@ -51,11 +52,17 @@
 {/if}
 
 {#if !inGame && game.phase !== 'end'}
-  <div class="card" style="text-align:center">
-    <span class="moon">👀</span>
-    <h3>Hay una partida en curso</h3>
-    <p class="small-note">Este dispositivo no juega: puedes seguir la partida desde aquí, sin mirar pantallas ajenas.</p>
-  </div>
+  <!-- Quien narra sin jugar SÍ ve el guion (su móvil es el que mira la mesa
+       cuando algo se atasca); el resto de espectadores, solo el cartel. -->
+  {#if isMaster()}
+    <NarratorPanel {game} detail />
+  {:else}
+    <div class="card" style="text-align:center">
+      <span class="moon">👀</span>
+      <h3>Hay una partida en curso</h3>
+      <p class="small-note">Este dispositivo no juega: puedes seguir la partida desde aquí, sin mirar pantallas ajenas.</p>
+    </div>
+  {/if}
 {:else if game.phase === 'reveal'}
   <RevealPhase {game} {my} />
 {:else if game.phase === 'night'}

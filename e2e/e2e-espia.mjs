@@ -1,7 +1,9 @@
-// E2E de El Espía (Spyfall): partida completa a 2 rondas con 4 jugadores.
-//  R1: acusación fallida (reanuda el reloj) + acusación unánime al espía
-//      → puntuación oficial (+1 agentes, +2 al iniciador).
-//  R2: el espía se revela y ACIERTA el lugar (+4).
+// E2E de El Espía (Spyfall): partida completa a 2 rondas con 4 jugadores (y
+// una quinta persona en la mesa que se incorpora entre rondas).
+//  R1: pausa de mesa (⋯ → ⏸️), acusación fallida (reanuda el reloj), acusación
+//      RETIRADA por su autor + acusación unánime al espía → puntuación oficial
+//      (+1 agentes, +2 al iniciador).
+//  R2: Eva se sienta entre rondas y el espía se revela y ACIERTA el lugar (+4).
 // También: URL propia /g/<mesa>/espia/partida y limpieza de la mesa.
 import { chromium } from 'playwright';
 const BASE = process.env.BASE; if (!BASE) { console.error('Define BASE=https://tu-sitio.web.app'); process.exit(1); }
@@ -24,7 +26,7 @@ const hlc = (page) => page.evaluate(() => {
     phase: g.phase, round: g.round, spyId: g.spyId, locationId: g.locationId,
     playerIds: g.playerIds, seen: g.seen, vote: g.vote, deadline: g.deadline,
     scores: g.scores, accusedUsed: g.accusedUsed, outcome: g.outcome?.type || null,
-    historyLen: (g.history || []).length,
+    historyLen: (g.history || []).length, paused: !!g.paused,
   };
 });
 async function waitState(page, fn, what, timeout = 45000) {
@@ -42,12 +44,14 @@ try {
   await ana.fill('#inp-name', 'Ana'); await ana.fill('#inp-group', GROUP);
   await ana.click('[data-a=create-group]'); await ana.waitForURL('**/g/**');
   const url = ana.url();
-  for (const n of ['Bea', 'Carlos', 'David']) {
+  // Eva está en la mesa pero se queda fuera de la primera ronda: se sentará
+  // entre rondas (incorporación en caliente).
+  for (const n of ['Bea', 'Carlos', 'David', 'Eva']) {
     const p = await mk(n.toLowerCase());
     await p.goto(url); await p.fill('#inp-name', n); await p.click('[data-a=join]');
     await p.waitForSelector('text=/Dispositivos/');
   }
-  await ana.waitForSelector('text=Dispositivos (4)');
+  await ana.waitForSelector('text=Dispositivos (5)');
 
   // El catálogo ofrece los dos juegos; elegimos El Espía por su data-p.
   await ana.click('button[data-a=select-game][data-p=espia]');
@@ -61,10 +65,14 @@ try {
   await ana.click('button[data-a=close-modal]');
   ok('la lista pública de localizaciones se consulta desde el lobby');
 
-  // Empezar: 4 jugadores (todos), duración por defecto 8 (oficial).
+  // Empezar: 4 jugadores (Eva se queda fuera), duración por defecto 8 (oficial).
   await ana.click('[data-a=open-start]');
   await ana.waitForSelector('[data-a=espia-start]');
   if (/\/espia\/empezar$/.test(new URL(ana.url()).pathname)) ok('«Empezar» tiene URL propia: …/espia/empezar'); else bad('URL inesperada: ' + ana.url());
+  // Eva, fuera de la R1 (se sentará entre rondas).
+  await ana.waitForSelector('.player[data-a=start-player][data-p=p-eva].selected');
+  await ana.click('.player[data-a=start-player][data-p=p-eva]');
+  await ana.waitForSelector('.player[data-a=start-player][data-p=p-eva].off');
   await ana.click('[data-a=espia-start]');
 
   // ——— RONDA 1: reparto y confirmaciones ———
@@ -96,6 +104,17 @@ try {
   const agents = st.playerIds.filter((p) => p !== spy);
   console.log('  espía:', spy, '· lugar:', st.locationId);
 
+  // Pausa de mesa: congela el reloj sin gastar una acusación (⋯ → ⏸️).
+  const dl0 = st.deadline;
+  await ana.click('[data-a=game-menu]');
+  await ana.click('[data-a=espia-pause]');
+  st = await waitState(ana, (s) => s && s.paused, 'partida en pausa');
+  ok('⋯ → ⏸️ Pausar congela la ronda');
+  await ana.click('[data-a=game-menu]');
+  await ana.click('[data-a=espia-resume]');
+  st = await waitState(ana, (s) => s && !s.paused, 'partida reanudada');
+  check(st.deadline > dl0, 'al reanudar, el reloj devuelve el tiempo de la pausa');
+
   // Acusación FALLIDA: un agente acusa a otro agente; alguien vota que no.
   const accuser1 = agents[0];
   const wrongTarget = agents[1];
@@ -111,6 +130,17 @@ try {
   check(st.deadline !== null, 'el reloj se reanuda tras el desacuerdo');
   check(!!st.accusedUsed[accuser1], 'la acusación gastada no se devuelve');
   ok('acusación fallida: el juego continúa');
+
+  // El espía se marca un farol y RETIRA su acusación (desatasco cuando alguien
+  // no vota): el reloj vuelve a correr y su acusación sigue gastada.
+  await pg(spy).click(`.player[data-a=espia-accuse-pick][data-p=${agents[2]}]`);
+  await pg(spy).click('button[data-a=espia-accuse]');
+  st = await waitState(ana, (s) => s && !!s.vote, 'acusación del espía');
+  await pg(spy).waitForSelector('[data-a=espia-vote-cancel]');
+  await pg(spy).click('[data-a=espia-vote-cancel]');
+  st = await waitState(ana, (s) => s && !s.vote && s.phase === 'play', 'acusación retirada');
+  check(st.deadline !== null, 'al retirar la acusación, el reloj se reanuda');
+  check(!!st.accusedUsed[spy], 'la acusación retirada sigue gastada');
 
   // Acusación UNÁNIME al espía por otro agente.
   const accuser2 = agents[1];
@@ -130,6 +160,15 @@ try {
   check(scoresOk, `puntuación R1 correcta: ${JSON.stringify(st.scores)}`);
   await ana.waitForSelector('text=/Marcador/');
   ok('marcador visible al final de la ronda');
+
+  // ——— ENTRE RONDAS: Eva se sienta a la mesa ———
+  await ana.waitForSelector('.player[data-a=espia-add-pick][data-p=p-eva]');
+  await ana.click('.player[data-a=espia-add-pick][data-p=p-eva]');
+  await ana.click('[data-a=espia-add-players]');
+  st = await waitState(ana, (s) => s && s.playerIds.includes('p-eva'), 'Eva entra en la partida');
+  check(st.playerIds.length === 5, 'la mesa pasa a 5 jugadores entre rondas');
+  await pages.eva.waitForSelector('[data-a=espia-next-round]', { timeout: 15000 });
+  check(/\/espia\/partida\/[a-z0-9]+$/.test(new URL(pages.eva.url()).pathname), 'el dispositivo de Eva entra en la partida');
 
   // ——— RONDA 2: el espía adivina el lugar ———
   await ana.click('[data-a=espia-next-round]');

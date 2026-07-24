@@ -13,11 +13,17 @@
     return Math.max(0, game.deadline - now);
   });
   const mmss = (ms: number) => { const s = Math.ceil(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
+  // El mismo reloj mide dos cosas distintas (la ronda y el voto de rehén): sin
+  // rótulo, ver la cuenta atrás en la pantalla del voto asustaba sin explicar
+  // qué pasa al llegar a cero.
+  const label = $derived(game.phase === 'hostages'
+    ? 'para votar · al llegar a cero, cada sala manda a los más votados'
+    : `de la ronda ${game.round} · al llegar a cero se vota el rehén`);
 </script>
 
 {#if remaining !== null}
   <div class="trtimer {remaining <= 30000 ? 'low' : ''} {game.paused ? 'frozen' : ''}" data-a="tr-timer">
-    {game.paused ? '⏸' : '⏱'} {mmss(remaining)}{#if game.paused}<span class="tnote">en pausa</span>{/if}
+    {game.paused ? '⏸' : '⏱'} {mmss(remaining)}<span class="tnote">{game.paused ? 'en pausa' : label}</span>
   </div>
 {/if}
 

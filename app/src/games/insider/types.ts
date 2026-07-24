@@ -5,7 +5,7 @@
 
 export type Phase =
   | 'reveal' // cada cual mira su carta (el Maestro y el Insider ven la palabra)
-  | 'question' // preguntas de sí/no contrarreloj; el Maestro responde de viva voz
+  | 'question' // preguntas de SÍ o NO contrarreloj; el Maestro responde de viva voz
   | 'vote' // adivinada la palabra, se caza al Insider (voto secreto)
   | 'end';
 

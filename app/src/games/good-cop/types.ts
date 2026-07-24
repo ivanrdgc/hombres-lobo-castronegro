@@ -5,6 +5,19 @@ import type { Card, Kind } from './cards';
 
 export type Phase = 'turn' | 'end';
 
+/** Una carta investigada por alguien: SOLO la ve `by`. */
+export interface Peek {
+  by: string;
+  target: string;
+  idx: number;
+  kind: Kind;
+  role: string | null;
+  /** Nº de línea del diario en que se miró (para ordenar el historial). */
+  at: number;
+  /** Ya la ha leído (la tarjeta deja de saltar en su pantalla). */
+  ack: boolean;
+}
+
 export interface GoodCopState {
   goodcop: true;
   phase: Phase;
@@ -20,8 +33,8 @@ export interface GoodCopState {
   /** A quién apunta (si está armado). */
   aimAt: Record<string, string | null>;
   turn: string;
-  /** Resultado de investigar: qué carta vio `by` (SOLO lo ve `by`). Efímero. */
-  peek: { by: string; target: string; idx: number; kind: Kind; role: string | null } | null;
+  /** Lo investigado por cada jugador, en orden (cada uno solo ve lo suyo). */
+  peeks: Record<string, Peek[]>;
   winner: 'honest' | 'crook' | null;
   winReason: string | null;
   scores: Record<string, number>;

@@ -51,3 +51,39 @@ export const GAME_DEFS: GameDefinition[] = [hombresLobo, unaNoche, avalon, secre
 export function gameDef(id: string | null | undefined): GameDefinition {
   return GAME_DEFS.find((g) => g.id === id) ?? GAME_DEFS[0];
 }
+
+// Lo que una mesa necesita para ELEGIR sin haber jugado a nada: cuánto dura y
+// de qué palo es. Vive aquí y no en cada GameDefinition para poder compararlos
+// de un vistazo (y para que la tabla se mantenga coherente entre juegos).
+export interface GameMeta {
+  /** Duración típica de una partida completa, en minutos (mínimo y máximo). */
+  mins: [number, number];
+  /** De qué palo es, en tres palabras. */
+  vibe: string;
+  /** Entrada suave para una mesa que no ha jugado a nada de esto. */
+  easy?: boolean;
+}
+
+export const GAME_META: Record<string, GameMeta> = {
+  hombres_lobo: { mins: [30, 60], vibe: 'Roles ocultos, noche narrada' },
+  una_noche: { mins: [5, 10], vibe: 'Una sola noche, muy rápido', easy: true },
+  avalon: { mins: [25, 45], vibe: 'Misiones y traición' },
+  secret_hitler: { mins: [30, 60], vibe: 'Política y sospecha' },
+  chameleon: { mins: [10, 20], vibe: 'Una palabra, un impostor', easy: true },
+  insider: { mins: [10, 15], vibe: 'Contrarreloj, traidor cooperativo', easy: true },
+  coup: { mins: [15, 30], vibe: 'Farol y desafíos' },
+  two_rooms: { mins: [15, 25], vibe: 'Dos salas, dos bandos' },
+  codenames: { mins: [15, 30], vibe: 'Palabras por equipos', easy: true },
+  decrypto: { mins: [30, 45], vibe: 'Pistas cifradas por equipos' },
+  good_cop: { mins: [15, 25], vibe: 'Comisaría podrida, dos líderes' },
+  shadow_hunters: { mins: [30, 45], vibe: 'Tres facciones y dados' },
+  sonar: { mins: [20, 40], vibe: 'Submarinos a ciegas' },
+  wavelength: { mins: [15, 30], vibe: 'Intuición en equipo', easy: true },
+  skull: { mins: [15, 25], vibe: 'Farol puro, reglas mínimas', easy: true },
+  love_letter: { mins: [15, 25], vibe: 'Cartas, deducción, rondas cortas', easy: true },
+  espia: { mins: [10, 20], vibe: 'Un lugar, un intruso', easy: true },
+};
+
+export function gameMeta(id: string): GameMeta {
+  return GAME_META[id] ?? { mins: [15, 30], vibe: '' };
+}

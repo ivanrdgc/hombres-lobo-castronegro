@@ -25,20 +25,23 @@ export const HOW_TO: HelpSection[] = [
     items: [
       'Cada ronda empieza con todos colocando UN disco boca abajo a la vez (flor o calavera, tú eliges). Es tu «disco de salida».',
       'Luego, por turnos, en el tuyo puedes colocar OTRO disco sobre tu pila… o abrir una apuesta (ver abajo). Si ya no te quedan discos en la mano, tendrás que apostar.',
+      'Al cerrar la ronda cada uno RECOGE TODA su pila y vuelve a tener sus discos: lo único que se pierde es el disco descartado por fallar un reto.',
     ],
   },
   {
     heading: '🗣️ La apuesta y las pujas',
     items: [
-      'Abrir una apuesta es declarar un número: «levantaré N flores seguidas sin topar una calavera». N no puede pasar del total de discos que hay en la mesa.',
+      'Abrir una apuesta es declarar un número: levantaré tantas flores seguidas sin topar una calavera. Ese número no puede pasar del total de discos que hay en la mesa.',
       'A partir de ahí, por turnos, los demás SUBEN la apuesta (un número mayor) o PASAN. Cuando todos menos uno pasan, ese se la juega: le toca levantar.',
+      'Pasar es DEFINITIVO: quien pasa ya no vuelve a pujar en esa ronda. Y si alguien apuesta el total de discos de la mesa, no hay más pujas posibles: se revela directamente.',
     ],
   },
   {
     heading: '🎲 El revelado',
     items: [
       'Quien ganó la puja levanta discos de uno en uno, empezando OBLIGATORIAMENTE por toda su propia pila (de arriba abajo). Luego elige de qué pilas ajenas seguir levantando (el de arriba de cada una).',
-      'Si levanta tantas FLORES como apostó, gana el reto (una marca). Si topa una CALAVERA antes de llegar, falla y pierde un disco al azar (¡puede ser su calavera o una flor!).',
+      'Si levanta tantas FLORES como apostó, gana el reto (una marca). Si topa una CALAVERA antes de llegar, falla y pierde un disco al azar (¡puede ser su calavera o una flor!) y todos ven cuál fue.',
+      'La ronda acaba ahí: se recogen todas las pilas. Empieza la siguiente quien ganó el reto; si falló, empieza el que perdió el disco (o el siguiente jugador si se quedó sin discos).',
     ],
   },
   {

@@ -39,6 +39,6 @@
   <button class="block" data-a="espia-open-lugares" onclick={() => (app.ui.modal = { type: 'espia-lugares' })}>📍 Ver las localizaciones</button>
 </div>
 <div class="card">
-  <p class="small-note" style="margin-top:0">De 3 a 8 jugadores. Rondas de 8 minutos (elegible al empezar) con marcador acumulado.</p>
+  <p class="small-note" style="margin-top:0">De 3 a 8 jugadores. Rondas de 5, 8 o 10 minutos (lo elegís al empezar; la oficial son 8) con marcador acumulado.</p>
   <button class="primary block" data-a="open-start" onclick={() => navigate(`/g/${group.id}/espia/empezar`)}>🕵️ Empezar partida</button>
 </div>

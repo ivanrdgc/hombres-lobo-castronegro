@@ -12,7 +12,7 @@ import {
 import type { GroupDoc, MatchDoc } from '../../core/sync/schema';
 import {
   MIN_PLAYERS, MAX_PLAYERS, tokensToWin, dealRound, playCard as playCardMut, startRound,
-  validTargets, playableIdx, countessForced, isAlive, aliveIds, myHand,
+  dropOut, validTargets, playableIdx, countessForced, isAlive, aliveIds, myHand, myPeek, outCounts,
 } from './engine';
 import type { Card } from './cards';
 import type { LoveLetterState } from './types';
@@ -68,11 +68,13 @@ export async function startLoveLetter(playerIds: string[], narratorId: string | 
     hands: deal.hands, discards: Object.fromEntries(playerIds.map((p) => [p, []])),
     alive: Object.fromEntries(playerIds.map((p) => [p, true])),
     protected: Object.fromEntries(playerIds.map((p) => [p, false])),
-    turn: starter, starter, peek: null, roundResult: null,
+    turn: starter, starter, peeks: {}, roundResult: null,
     tokens: Object.fromEntries(playerIds.map((p) => [p, 0])), need: tokensToWin(playerIds.length),
     winner: null, scores: Object.fromEntries(playerIds.map((p) => [p, 0])),
     paused: null, repeatNonce: 0,
-    log: [{ txt: `💌 Comienza Love Letter con ${playerIds.length} jugadores. Cada uno tiene una carta; en tu turno robas otra y juegas una. Gana quien acumule ${tokensToWin(playerIds.length)} favores.` }],
+    // Esta línea SÍ se locuta (el narrador arranca en el índice 0): es donde la
+    // mesa se entera de cuántos favores hacen falta, que depende de cuántos sois.
+    log: [{ txt: `💌 Comienza Love Letter con ${playerIds.length} jugadores. Gana quien acumule ${tokensToWin(playerIds.length)} favores.` }],
   };
   // El jugador inicial roba su 2ª carta.
   startRound(game, seed);
@@ -96,22 +98,32 @@ export async function playCard(idx: number, target: string | null, guess: Card |
   await tx((game) => (playCardMut(game, me, idx, { target, guess }) ? game : null));
 }
 
-/** Descarta el resultado del Sacerdote una vez leído (solo lo puede quitar quien miró). */
+/** Descarta el vistazo privado una vez leído (solo lo quita su dueño). */
 export async function clearPeek(): Promise<void> {
   const me = myPid();
   await tx((game) => {
-    if (!game.peek || game.peek.by !== me) return null;
-    game.peek = null;
+    if (!game.peeks || !game.peeks[me]) return null;
+    delete game.peeks[me];
     return game;
   }, undefined, { allowPaused: true });
+}
+
+/** El máster retira de la ronda a un jugador ausente (móvil muerto) para que la
+ *  partida siga; sacarlo de la mesa, en cambio, cerraría la partida entera. */
+export async function dropPlayer(pid: string): Promise<void> {
+  await tx((game, m) => {
+    if (m.masterId !== myPid()) return null;
+    return dropOut(game, pid) ? game : null;
+  });
 }
 
 export async function nextRound(): Promise<void> {
   await tx((game) => {
     if (game.phase !== 'roundEnd') return null;
     game.round += 1;
+    // El cartel va ANTES del reparto: startRound ya anuncia de quién es el turno.
+    game.log.push({ txt: `🔁 Ronda ${game.round}: cartas repartidas.` });
     startRound(game, (game.seed || 0) + game.round * 131);
-    game.log.push({ txt: `🔁 Ronda ${game.round}: cartas repartidas. Empieza ${game.names[game.starter] || '¿?'}.` });
     return game;
   });
 }
@@ -124,8 +136,8 @@ export async function playAgain(): Promise<void> {
     game.round = 1;
     game.tokens = Object.fromEntries(game.playerIds.map((p) => [p, 0]));
     game.winner = null;
-    startRound(game, (game.seed || 0) + 997);
     game.log.push({ txt: '🔁 Nueva partida: favores a cero y cartas repartidas.' });
+    startRound(game, (game.seed || 0) + 997);
     return game;
   });
 }
@@ -153,11 +165,13 @@ export async function requestRepeat(): Promise<void> {
   await tx((game) => { game.repeatNonce = (game.repeatNonce || 0) + 1; return game; }, undefined, { allowPaused: true });
 }
 
-// Una partida depende del reparto y del mazo: sacar a alguien la invalida.
+// Una partida depende del reparto y del mazo: sacar a alguien la invalida. Si
+// lo que falla es un móvil a mitad de ronda no hace falta llegar a esto: el
+// máster usa `dropPlayer` y la ronda sigue sin el ausente.
 registerMatchTools('love_letter', {
   leave: (mid) => endLoveLetter(mid),
   end: (mid) => endLoveLetter(mid),
   leaveEndsMatch: true,
 });
 
-export { validTargets, playableIdx, countessForced, isAlive, aliveIds, myHand };
+export { validTargets, playableIdx, countessForced, isAlive, aliveIds, myHand, myPeek, outCounts };

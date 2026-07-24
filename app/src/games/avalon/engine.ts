@@ -65,6 +65,41 @@ export function pendingActors(game: AvalonState): string[] {
   }
 }
 
+/** Ficha PÚBLICA de un jugador: lo que cualquiera vio en la mesa (en qué
+ *  misiones estuvo y cómo salieron, cuántos equipos propuso y cómo votó la
+ *  última propuesta). No filtra nada secreto: sale del historial visible. */
+export interface PublicRecord {
+  quests: number[];
+  failed: number;
+  proposed: number;
+  lastVote: boolean | null;
+}
+
+export function publicRecord(game: AvalonState, pid: string): PublicRecord {
+  const missions = game.missions || [];
+  const mine = missions.filter((m) => m.team.includes(pid));
+  const proposals = game.proposals || [];
+  const last = proposals.length ? proposals[proposals.length - 1] : null;
+  return {
+    quests: mine.map((m) => m.quest),
+    failed: mine.filter((m) => !m.success).length,
+    proposed: proposals.filter((p) => p.leaderId === pid).length,
+    lastVote: !last ? null : last.approvals.includes(pid) ? true : last.rejections.includes(pid) ? false : null,
+  };
+}
+
+/** Esa ficha en una línea, para las fichas de jugador (misma frase en todas
+ *  las pantallas: el líder y el Asesino leen exactamente lo mismo). */
+export function recordLine(r: PublicRecord): string {
+  const bits: string[] = [];
+  if (r.quests.length) {
+    bits.push(`⚔️ M${r.quests.join(', M')}${r.failed ? ` · ${r.failed} 💥` : ' · sin sabotajes'}`);
+  } else bits.push('⚔️ sin misiones aún');
+  if (r.proposed) bits.push(`🧭 propuso ${r.proposed}`);
+  if (r.lastVote !== null) bits.push(r.lastVote ? '👍 aprobó la última' : '👎 rechazó la última');
+  return bits.join(' · ');
+}
+
 /** Recuento del voto: aprueba si hay MAYORÍA ESTRICTA de aprobaciones. */
 export function tallyVote(game: AvalonState): { approvals: string[]; rejections: string[]; approved: boolean } {
   const approvals = game.playerIds.filter((pid) => game.votes[pid] === true);
@@ -110,5 +145,7 @@ export function isGoodRole(r: RoleId): boolean {
   return !isEvil(r);
 }
 
-/** Fases en las que una locución/voz tiene sentido (para claves de escena). */
-export const SPEAKABLE_PHASES: Phase[] = ['reveal', 'propose', 'voteReveal', 'result', 'assassin', 'end'];
+/** Fases en las que una locución/voz tiene sentido (para claves de escena).
+ *  `vote` y `quest` entran también: son las dos en las que la mesa está
+ *  esperando a que alguien toque su móvil y el silencio despistaba. */
+export const SPEAKABLE_PHASES: Phase[] = ['reveal', 'propose', 'vote', 'voteReveal', 'quest', 'result', 'assassin', 'end'];

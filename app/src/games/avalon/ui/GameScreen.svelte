@@ -53,27 +53,32 @@
 
 {#if game.paused}
   <div class="card" style="text-align:center"><span class="moon">⏸️</span><h3>Partida en pausa</h3>
-    <p class="small-note">La ha pausado {game.paused.name || 'alguien'}.</p></div>
+    <p class="small-note">La ha pausado {game.paused.name || 'alguien'}. Nadie puede actuar: los botones vuelven al reanudar (⋯ → ▶️ Reanudar).</p></div>
 {/if}
 
 {#if game.phase !== 'reveal'}<QuestTrack {game} />{/if}
 
-{#if game.phase === 'reveal'}
-  <RevealPhase {game} {my} />
-{:else if game.phase === 'propose'}
-  <ProposePhase {game} {my} />
-{:else if game.phase === 'vote'}
-  <VotePhase {game} {my} />
-{:else if game.phase === 'voteReveal'}
-  <VoteRevealPhase {game} {my} />
-{:else if game.phase === 'quest'}
-  <QuestPhase {game} {my} />
-{:else if game.phase === 'result'}
-  <ResultPhase {game} {my} />
-{:else if game.phase === 'assassin'}
-  <AssassinPhase {game} {my} />
-{:else if game.phase === 'end'}
-  <EndPhase {game} {my} />
+<!-- En pausa el tablero y la crónica siguen a la vista, pero el panel de acción
+     NO se pinta: sus botones no responden (la transacción se descarta) y verlos
+     ahí solo hacía que la mesa creyera que la app se había colgado. -->
+{#if !game.paused}
+  {#if game.phase === 'reveal'}
+    <RevealPhase {game} {my} />
+  {:else if game.phase === 'propose'}
+    <ProposePhase {game} {my} />
+  {:else if game.phase === 'vote'}
+    <VotePhase {game} {my} />
+  {:else if game.phase === 'voteReveal'}
+    <VoteRevealPhase {game} {my} />
+  {:else if game.phase === 'quest'}
+    <QuestPhase {game} {my} />
+  {:else if game.phase === 'result'}
+    <ResultPhase {game} {my} />
+  {:else if game.phase === 'assassin'}
+    <AssassinPhase {game} {my} />
+  {:else if game.phase === 'end'}
+    <EndPhase {game} {my} />
+  {/if}
 {/if}
 
 {#if game.log && game.log.length}

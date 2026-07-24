@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { dealRound, scoreFor, psychicId, isPsychic, targetHint, MIN_PLAYERS } from './engine';
-import { SPECTRUMS } from './spectrums';
+import { average, dealRound, goalMet, goalOptions, scoreFor, psychicId, isPsychic, targetHint, MIN_PLAYERS } from './engine';
+import { SPECTRUMS, spectrumSpeech } from './spectrums';
 import type { WavelengthState } from './types';
 
 const IDS = ['p-a', 'p-b', 'p-c'];
@@ -8,8 +8,9 @@ function base(over: Partial<WavelengthState> = {}): WavelengthState {
   return {
     wavelength: true, phase: 'clue', startedAt: 0, seed: 1, round: 1,
     playerIds: IDS.slice(), names: Object.fromEntries(IDS.map((id) => [id, id.toUpperCase()])),
-    psychicIdx: 0, spectrumId: 'temp', target: 50, clue: false, marker: null,
-    lastScore: null, scores: {}, teamScore: 0, usedSpectrums: ['temp'], log: [],
+    psychicIdx: 0, spectrumId: 'temp', target: 50, clue: false, pick: null, marker: null,
+    lastScore: null, scores: {}, psychicRounds: {}, teamScore: 0, scored: 0,
+    usedSpectrums: ['temp'], log: [],
     ...over,
   };
 }
@@ -59,6 +60,42 @@ describe('targetHint', () => {
   });
 });
 
+describe('meta de la partida', () => {
+  it('sin meta, la partida no termina sola', () => {
+    expect(goalMet(base({ round: 99, teamScore: 999 }))).toBe(false);
+  });
+  it('por rondas: se cumple al llegar a la ronda pactada', () => {
+    const g = { kind: 'rounds' as const, n: 3, label: 'Una vuelta' };
+    expect(goalMet(base({ goal: g, round: 2 }))).toBe(false);
+    expect(goalMet(base({ goal: g, round: 3 }))).toBe(true);
+  });
+  it('por puntos: se cumple al alcanzar el total de equipo', () => {
+    const g = { kind: 'points' as const, n: 20, label: 'Hasta 20' };
+    expect(goalMet(base({ goal: g, teamScore: 19 }))).toBe(false);
+    expect(goalMet(base({ goal: g, teamScore: 20 }))).toBe(true);
+  });
+  it('la primera opción es una vuelta a la mesa (una ronda por jugador) y la última, sin meta', () => {
+    const opts = goalOptions(5);
+    expect(opts[0]).toMatchObject({ kind: 'rounds', n: 5 });
+    expect(opts.at(-1)).toBeNull();
+  });
+});
+
+it('la media por ronda evita dividir entre cero', () => {
+  expect(average(0, 0)).toBe('—');
+  expect(average(7, 2)).toBe('3,5');
+});
+
+it('el espectro hablado nombra los dos extremos (sin el ↔, que se lee fatal)', () => {
+  const said = spectrumSpeech('deporte');
+  expect(said).toContain('No es deporte');
+  expect(said).toContain('Es deporte');
+  expect(said).not.toContain('↔');
+});
+
 it('constantes de jugadores coherentes', () => {
-  expect(MIN_PLAYERS).toBeLessThanOrEqual(3);
+  // Con 2 el «equipo» sería una sola persona: el mínimo real es 3.
+  expect(MIN_PLAYERS).toBe(3);
+  expect(SPECTRUMS.length).toBeGreaterThanOrEqual(40); // mazo para una noche
+  expect(new Set(SPECTRUMS.map((s) => s.id)).size).toBe(SPECTRUMS.length);
 });

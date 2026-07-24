@@ -280,3 +280,127 @@ Estados: 🔴 abierto · 🟢 arreglado (con commit) · 🟡 re-reportado tras u
 - **2026-07-24 · 🟢 arreglado**: tras el intercambio de rehenes la partida entra en una fase de
   COLOCACIÓN (`move`) sin reloj: los rehenes cruzan de sala con calma y, cuando todos están,
   cualquiera pulsa «▶️ Empezar la ronda N» (igual que al arrancar la ronda 1). La voz lo anuncia.
+
+## B23 · Audios: cuando el emoji ERA el contenido, la frase se queda coja (🟡 re-reporte de B20)
+- **2026-07-24 · reporte.** «Todavía hay algunos iconos que no se leen bien en los audios. En
+  concreto estoy en el tutorial de 🚔 Good Cop Bad Cop y *Tus cartas: 👮 👮 🦹 → eres HONESTO
+  (mayoría). Y una de ellas es… el 🕵️ Agente…* **no lee mis cartas**.»
+- **Diagnóstico.** B20 arregló el ruido (la voz ya no lee «policía policía villano»), pero abrió el
+  agujero contrario: `cleanForSpeech` borra TODOS los emojis, así que cuando el emoji era el
+  sustantivo de la frase, la voz dice «Tus cartas: eres HONESTO». Un lint sobre las 739 piezas
+  habladas (intro del lobby + «cómo se juega» + los 17 tutoriales) destapa 28 casos del mismo
+  patrón, repartidos por 11 juegos: «toca al 💀», «con 9 ❤️», «gastan 3 ⚡», «la tira del Azul:
+  ⬅️⬅️⬇️», «Dos tripulaciones (🔴 y 🔵)», «míralo en 🎴»… Además `→` caía dentro del rango de
+  flechas y «G3→F3→E3» se leía «G3F3E3», y al quitar el emoji quedaba un espacio antes del punto.
+- **2026-07-24 · 🟢 arreglado** (este commit): tres capas.
+  1. `cleanForSpeech` recompone la puntuación tras quitar los emojis (nada de « ,» ni «( )») y
+     traduce los símbolos que sí significan algo: `→` a coma, `×` entre dígitos a «por».
+  2. Los textos afectados se reescriben para que la frase **se sostenga sola en voz**, sin perder
+     el emoji en pantalla: «Tus cartas: 👮 👮 🦹 — dos honestas y una corrupta».
+  3. `speech-lint.test.ts` recorre TODAS las piezas habladas de TODOS los juegos y falla si una
+     frase se queda con un signo colgando, con un artículo sin sustantivo o con una ristra de
+     emojis que era el contenido. Así el agujero no se puede reabrir sin que salte un test.
+- **2026-07-24 · ampliación.** La revisión juego a juego (B24) destapó que el rango de purga se
+  quedaba corto: `⏱ ⏫ ▶ ⋯` (U+2300-23FF, U+25A0-25FF, U+22EF) llegaban al sintetizador y sonaban
+  como un carraspeo o un símbolo leído — «⏱️ Ronda 1 de 3», «pulsa ▶️ Empezar la ronda», «⏫ emerge»,
+  «el menú ⋯». Ahora la purga combina los rangos explícitos con la propiedad Unicode
+  `\p{Extended_Pictographic}` (cubre también los que vengan), `↔` se traduce a «frente a» (el
+  «Frío ↔ Caliente» de Wavelength se leía «Frío Caliente») y el lint falla si sobrevive cualquier
+  pictograma. Dos reglas nuevas cazan lo que se escapaba: determinante + emoji + palabra que no
+  puede ser el sustantivo («consulta tu 🎴 siempre que…») y paréntesis que arrancan con un signo
+  suelto. Y el ▶️ del tutorial lee además el enunciado de la pregunta del paso (`ask.prompt`), que
+  antes dejaba mudos los pasos cuya enseñanza vivía en la pregunta.
+
+## B24 · Revisión juego a juego de los 17 juegos (mesa novata)
+- **2026-07-24 · petición.** «Por favor revisa todos los juegos de nuevo. Siéntete libre de
+  reescribir lo que haga falta para que todo funcione de la mejor forma posible de cara a una mesa
+  con jugadores reales jugando, donde muchos juegos serán nuevos para nosotros y queremos entender
+  bien cómo jugar y pasar un buen rato. […] Por favor revisa uno a uno todos los juegos.»
+- **Método.** Un revisor por juego (17 en paralelo) leyendo motor, tests, acciones, textos,
+  tutorial, narrador, TODA la UI y el e2e, con una rejilla fija: reglas y bloqueos, tutorial,
+  ayuda, voz, UI en la mesa y fugas. Varios fuzzearon el motor (Coup 2.500 partidas, Love Letter
+  20.000 rondas, Skull 4.000, Sonar 6.000) para descartar atascos. Después, un ejecutor por juego
+  aplicando los hallazgos dentro de su carpeta, más los arreglos transversales del coordinador.
+- **2026-07-24 · 🟢 aplicado** (este commit). Transversal: la purga de voz (B23 ampliado), el
+  catálogo de la mesa con duración y «🌱 fácil de explicar» por juego, el tutorial de los 17 en el
+  e2e (antes solo 9) y `window.__hlc` sin secretos fuera de modo test (un curioso leía los roles de
+  todos desde la consola del móvil). Lo de cada juego, en el resumen de abajo.
+
+## B25 · Love Letter: en tu turno no ves qué hace cada carta (ni el mazo entero)
+- **2026-07-24 · reporte.** «Cuando me toca en mi turno jugar una carta, no veo todas las cartas
+  disponibles y lo que hacen. Tampoco veo qué hace cada una de las dos cartas que puedo jugar (solo
+  veo el nombre y me deja elegir un jugador al que aplicarlo). Es muy difícil de jugar y recordar.
+  Imaginaba una UI donde se pueda revisar en cualquier momento lo que hace y cómo se juega cada una
+  de las cartas, cuántas hay de cada, etc. Además de poder ver sencillamente el efecto que va a
+  hacer cualquiera de mis dos cartas antes de seleccionar otro jugador.»
+- **Diagnóstico.** B21 dejó la referencia completa dentro del modal 🎴, pero **a dos toques y fuera
+  del sitio donde se decide**. En el panel de turno el botón de cada carta solo lleva emoji, nombre
+  y valor: el efecto y las copias hay que recordarlos o ir a buscarlos, justo cuando la mesa te
+  está esperando. Y elegir carta y elegir objetivo van en el mismo gesto, sin poder «asomarse» a lo
+  que haría cada opción.
+
+## B26 · «En general las UIs son bastante poco intuitivas»
+- **2026-07-24 · reporte.** «En general las UIs son bastante poco intuitivas, no sé si se podría
+  mejorar?» (a raíz de B25, jugando a Love Letter).
+- **Criterio de trabajo que sale de aquí** (aplica a los 17 juegos): en la pantalla donde se
+  DECIDE, cada opción debe decir lo que hace antes de tocarla — nada de botones que solo llevan un
+  nombre; elegir qué y elegir a quién son dos pasos, con lo elegido a la vista y vuelta atrás; y la
+  referencia del juego (mazo/roles/costes) se consulta desde el propio panel de acción, no solo
+  desde el 🎴.
+
+### B24 · Lo que se arregló en cada juego (resumen)
+- **Hombres Lobo** — 🔴 BLOQUEO: con el Cabeza de Turco designando al Tonto ya descubierto, nadie
+  podía registrar el voto del día siguiente (`canRegisterVote` + el Cabeza ya no puede designarlo).
+  🔴 Sin salida si un móvil moría de noche en modo automático («⏭️ Continuar sin él» y «Saltar
+  paso»). La partida no cerraba por paridad si el pueblo mataba al Anciano. El aviso de los
+  encantados solo repetía la palabra de los nuevos. La Gitana prometía una lista de preguntas que
+  la app no daba (ahora sí). Tres redacciones distintas de la victoria lobuna, unificadas.
+- **Una Noche** — 🔴 la 2.ª partida y siguientes se narraban EN SILENCIO (`playAgain` no renovaba
+  `startedAt`, el ledger daba todo por dicho). 🔴 FUGA: el diario público cantaba «el Doble ha
+  copiado a alguien», delatando que el Doble estaba repartido. Escape para pasos encallados,
+  temporizador de debate, panel del narrador, y la ayuda con cómo se vota de verdad.
+- **Ávalon** — el contador de rechazos mentía en la pantalla del destape; con 5-7 jugadores los
+  especiales del Mal se descartaban en silencio Y la carta de Merlín le mentía; «Repetir» era un
+  botón muerto; sin tabla de misiones en partida.
+- **Secret Hitler** — los votos no se destapaban por nombre (la prueba principal del juego); la
+  ayuda no decía la composición del mazo (11/6); la voz callaba en toda la ronda legislativa, en el
+  resultado de la elección, en el caos y en las ejecuciones.
+- **El Camaleón** — la rejilla se veía al 45 % de opacidad (ilegible); no se sabía a quién le tocaba
+  dar pista; un toque de cualquiera cortaba las pistas sin vuelta atrás; el momento de pillar al
+  Camaleón era mudo; el recuento prometido no se enseñaba nunca.
+- **Insider** — el sorteo de «quién pregunta primero» podía caer en el Maestro (instrucción
+  imposible 1 de cada N rondas); la votación se atascaba sin nombres ni recuento forzado; pausar
+  mataba al narrador el resto de la ronda; el Insider era el único con un botón suelto en pantalla
+  (se le distinguía de reojo).
+- **Coup** — se podía robar a quien tenía 0 monedas; una ventana sin respuesta no se cerraba nunca;
+  la Condesa no figuraba en la lista de personajes; «queda ELIMINADO» en masculino fijo.
+- **Two Rooms** — 🔴 el voto de rehén se bloqueaba si faltaba un móvil; con más de 10 jugadores 3
+  rondas y 1 rehén hacían irrelevante el juego; el cartel final mentía en las rendiciones; una sala
+  veía a quién mandaba la otra antes de decidir; el modo de voz por defecto dejaba muda la Sala 2.
+- **Codenames** — el tablero al 45 % de opacidad y los tintes del Jefe casi idénticos; el arranque
+  no decía qué equipo empieza; al recargar el altavoz se releía el diario entero; 282 palabras tras
+  quitar los pares que se tapan por significado.
+- **Decrypto** — el empate en la ronda 8 coronaba al azul «por decreto»; la transmisión ganadora no
+  se destapaba nunca; los códigos podían repetirse (72 % de los equipos en 8 rondas); la hoja de
+  pistas —el corazón del juego— era una lista plana.
+- **Good Cop Bad Cop** — la voz nunca decía de quién era el turno; un muerto conservaba pistola y
+  mira; el reparto (2+1 y cuántos de cada bando) era información pública que la app ocultaba;
+  disparar era un solo toque.
+- **Shadow Hunters** — la carta de pista desaparecía de la pantalla del que la recibía; el diario
+  cantaba curas que no ocurrían (delatando el efecto); la voz no decía de quién era el turno;
+  `MAX_HP` 10 → 8 para que la partida no se eternice.
+- **Captain Sonar** — 🔴 si un torpedo hundía a los dos, ganaba **el que se hundía** (y la ayuda
+  prometía lo contrario); sin herramienta para triangular el 80 % de las partidas no terminaba
+  (cuaderno de sonar local); «de el submarino» en cada torpedo; los dos altavoces podían caer en la
+  misma tripulación.
+- **Wavelength** — 🔴 FUGA: el móvil que solo ponía la voz enseñaba la diana en plena adivinanza;
+  el dial era local a cada móvil; no había fin de partida; «Frío ↔ Caliente» se leía «Frío Caliente»
+  en cada ronda.
+- **Skull** — 🔴 `RangeError` al abrir la carta tras fallar un reto (dejaba el móvil colgado); el
+  eliminado veía un panel muerto cada ronda; abrir la puja al tope obligaba a una vuelta de «pasar».
+- **Love Letter** — 🔴 el Barón cantaba en el diario la carta del GANADOR del duelo; el vistazo del
+  Sacerdote se borraba en cuanto otro jugaba; el desempate por descartes era mudo; «queda
+  protegida» en femenino fijo. Y la reforma de UI de B25.
+- **El Espía** — el espía no podía adivinar tras el tiempo pero tres textos lo prometían; «otra
+  ronda» no comprobaba el mínimo; una acusación abierta no se podía retirar; la voz hablaba de un
+  reloj que ya no existía.

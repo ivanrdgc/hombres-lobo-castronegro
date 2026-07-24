@@ -2,6 +2,7 @@
 // de su partida. NUNCA dice cartas ocultas ni resultados de investigar; relata
 // lo PÚBLICO leyendo el diario. Una línea, una vez.
 import { createNarrator, type SceneCtx, type SceneDef } from '../../../core/narrator/sequencer';
+import type { Ledger } from '../../../core/narrator/ledger';
 import { pauseMs, profileOf } from '../../../core/narrator/pacing';
 import { e2eTestMode } from '../../../core/test-hooks';
 import { cleanForSpeech } from '../../../core/util/speech';
@@ -39,11 +40,16 @@ function amSpeaker(s: Snap): boolean {
 
 const gm = (ctx: Ctx): GoodCopState => goodCopGame(ctx.state().group)!;
 
+// Prefijo de los hitos del diario: lleva la semilla porque la revancha vacía el
+// diario y, sin ella, las líneas nuevas heredarían los hitos de la anterior.
+const pre = (g: GoodCopState): string => `G${g.startedAt}:s${g.seed}`;
+
 function sceneOf(s: Snap): SceneDef<Snap> | null {
   if (!amSpeaker(s)) return null;
   const g = goodCopGame(s.group)!;
   if (g.paused) return { key: `G${g.startedAt}:paused:${g.paused.at}`, hardEntry: true, run: pausedScene };
-  return { key: `G${g.startedAt}:log${g.log.length}`, run: logScene };
+  // El nonce va en la clave: sin él, «🔁 Repetir» no re-arrancaba la escena.
+  return { key: `${pre(g)}:log${g.log.length}:r${g.repeatNonce || 0}`, run: logScene };
 }
 
 async function pausedScene(ctx: Ctx): Promise<void> { await ctx.waitFor(() => false); }
@@ -51,10 +57,33 @@ async function pausedScene(ctx: Ctx): Promise<void> { await ctx.waitFor(() => fa
 async function logScene(ctx: Ctx): Promise<void> {
   const g = gm(ctx);
   await ctx.sayOnce(`G${g.startedAt}:intro`, () => utt('gc-intro', GC_INTRO));
+  // «🔁 Repetir»: olvida el hito de la ÚLTIMA línea (y solo ese) para relocutarla
+  // sin recitar el diario entero.
+  const last = g.log.length - 1;
+  if (g.repeatNonce && !ctx.ledger.has(`${pre(g)}:rep${g.repeatNonce}`)) {
+    ctx.ledger.mark(`${pre(g)}:rep${g.repeatNonce}`);
+    ctx.ledger.clearPrefix(`${pre(g)}:log${last}`);
+  }
   for (let i = 1; i < g.log.length; i++) {
     const txt = speakable(g.log[i].txt);
-    if (txt) await ctx.sayOnce(`G${g.startedAt}:log${i}`, () => utt(`gc-log-${i}`, txt));
+    if (txt) await ctx.sayOnce(`${pre(g)}:log${i}`, () => utt(`gc-log-${i}`, txt));
   }
+}
+
+/**
+ * Al tomar el altavoz (relevo o recarga del móvil): dar por dichas la intro y
+ * las líneas ya escritas salvo la última, que se relocuta para retomar el hilo.
+ * Antes se re-narraba la partida entera desde la línea 1.
+ */
+function primeLedger(narrator: { ledger: Ledger }, g: GoodCopState | null): void {
+  const led = narrator.ledger;
+  led.resetFor(g?.startedAt ?? null); // fija la partida: el primer tick ya no borra esto
+  led.forceReset();
+  // Con 2 líneas (apertura + «Turno de X») aún no ha pasado nada: es el arranque
+  // de la partida y toca locutarlo todo, intro incluida.
+  if (!g || g.log.length <= 2) return;
+  led.mark(`G${g.startedAt}:intro`);
+  for (let i = 1; i < g.log.length - 1; i++) led.mark(`${pre(g)}:log${i}`);
 }
 
 let wakeLock: WakeLockSentinel | null = null;
@@ -82,7 +111,10 @@ export function installGoodCopNarrator(): void {
   onChange(() => {
     const s = snapshot();
     const speaker = amSpeaker(s);
-    if (speaker && !wasSpeaker) narrator.respawn({ resetLedger: true });
+    if (speaker && !wasSpeaker) {
+      primeLedger(narrator, goodCopGame(s.group)); // (antes: respawn con resetLedger → re-narraba todo)
+      narrator.respawn();
+    }
     wasSpeaker = speaker;
     if (speaker) requestWakeLock();
     narrator.tick();

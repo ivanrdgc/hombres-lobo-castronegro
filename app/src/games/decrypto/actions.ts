@@ -13,8 +13,9 @@ import type { GroupDoc, MatchDoc } from '../../core/sync/schema';
 import {
   MIN_PLAYERS, MAX_PLAYERS, dealGame, beginTransmission, giveClues as giveCluesMut,
   submitIntercept as submitInterceptMut, submitDecode as submitDecodeMut,
-  nextTransmission as nextTransmissionMut, resetForRematch, teamOf, teamMembers, encoderId,
-  isEncoder, interceptorsCanPlay, other,
+  nextTransmission as nextTransmissionMut, relieveEncoder as relieveEncoderMut,
+  resetForRematch, teamOf, teamMembers, encoderId,
+  isEncoder, interceptorsCanPlay, other, cluesForWord, pendingWin,
 } from './engine';
 import type { DecryptoState } from './types';
 
@@ -70,7 +71,7 @@ export async function startDecrypto(playerIds: string[], narratorId: string | nu
     encoderIdx: { red: 0, blue: 0 }, active: 'red', code: [1, 2, 3], clues: null,
     intercept: null, decode: null,
     tokens: { red: { intercepts: 0, errors: 0 }, blue: { intercepts: 0, errors: 0 } },
-    history: [], winner: null, winReason: null,
+    history: [], usedCodes: { red: [], blue: [] }, winner: null, winReason: null,
     scores: Object.fromEntries(playerIds.map((p) => [p, 0])), paused: null, repeatNonce: 0,
     log: [{ txt: '🔐 Comienza Decrypto. Cada equipo tiene 4 palabras clave (solo suyas). Transmite un código de 3 cifras a los tuyos… sin que el rival lo intercepte.' }],
   };
@@ -104,6 +105,11 @@ export async function submitDecode(guess: [number, number, number]): Promise<voi
 }
 export async function nextTransmission(): Promise<void> {
   await tx((game) => (nextTransmissionMut(game, seedFor(game) + 3) ? game : null));
+}
+/** Relevo del encriptador (móvil muerto o ausencia): lo pide alguien de su equipo. */
+export async function relieveEncoder(): Promise<void> {
+  const me = myPid();
+  await tx((game) => (relieveEncoderMut(game, me, seedFor(game) + 41) ? game : null));
 }
 
 // ——— Revancha / fin ———
@@ -145,4 +151,4 @@ registerMatchTools('decrypto', {
   leaveEndsMatch: true,
 });
 
-export { teamOf, teamMembers, encoderId, isEncoder, interceptorsCanPlay, other };
+export { teamOf, teamMembers, encoderId, isEncoder, interceptorsCanPlay, other, cluesForWord, pendingWin };

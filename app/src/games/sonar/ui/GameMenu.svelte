@@ -27,6 +27,7 @@
           <button role="menuitem" data-a="sn-pause" onclick={() => { guard(A.pauseGame); close(); }}>⏸️ Pausar</button>
         {/if}
       {/if}
+      <button role="menuitem" data-a="table-open" onclick={() => { app.ui.modal = { type: 'table' }; close(); }}>🪑 La mesa</button>
       {#if spectator}
         <button role="menuitem" data-a="back-to-mesa" onclick={() => { close(); navigate(`/g/${slug}`); }}>← Volver a la mesa</button>
       {/if}

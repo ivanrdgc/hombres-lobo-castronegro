@@ -43,13 +43,22 @@ function sceneOf(s: Snap): SceneDef<Snap> | null {
   if (!amSpeaker(s)) return null;
   const g = shadowHGame(s.group)!;
   if (g.paused) return { key: `S${g.startedAt}:paused:${g.paused.at}`, hardEntry: true, run: pausedScene };
-  return { key: `S${g.startedAt}:log${g.log.length}`, run: logScene };
+  // El nonce de «🔁 Repetir» entra en la clave: sin él la escena no rearrancaba
+  // y el botón no hacía nada (mismo remedio que en Coup y en Avalon).
+  return { key: `S${g.startedAt}:log${g.log.length}:r${g.repeatNonce || 0}`, run: logScene };
 }
 
 async function pausedScene(ctx: Ctx): Promise<void> { await ctx.waitFor(() => false); }
 
 async function logScene(ctx: Ctx): Promise<void> {
   const g = gm(ctx);
+  const last = g.log.length - 1;
+  // Al repetir se olvida el hito de la ÚLTIMA línea (y solo ese): se relocuta lo
+  // que la mesa no ha oído bien, sin recitar el diario entero desde el principio.
+  if (g.repeatNonce && !ctx.ledger.has(`S${g.startedAt}:rep${g.repeatNonce}`)) {
+    ctx.ledger.mark(`S${g.startedAt}:rep${g.repeatNonce}`);
+    ctx.ledger.clearPrefix(`S${g.startedAt}:log${last}`);
+  }
   await ctx.sayOnce(`S${g.startedAt}:intro`, () => utt('sh-intro', SH_INTRO));
   for (let i = 1; i < g.log.length; i++) {
     const txt = speakable(g.log[i].txt);

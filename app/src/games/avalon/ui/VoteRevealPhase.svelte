@@ -22,10 +22,10 @@
   {#if v.approved}
     <p class="small-note">Equipo: <b>{v.team.map(nm).join(', ')}</b> → a la misión {game.quest}.</p>
   {:else}
-    <p class="small-note">Propuestas rechazadas seguidas: <b>{game.voteTrack}/5</b> (a las 5, gana el Mal).</p>
+    <p class="small-note">Propuestas rechazadas seguidas: <b>{game.voteTrack + 1}/5</b> (a las 5, gana el Mal).</p>
   {/if}
   {#if canGo}
-    <button class="primary block" data-a="av-vote-continue" onclick={() => guard(A.continueAfterVote)}>{v.approved ? '⚔️ A la misión' : '↪️ Siguiente propuesta'}</button>
+    <button class="primary block" data-a="av-vote-continue" onclick={() => guard(A.continueAfterVote)}>{v.approved ? '⚔️ A la misión' : game.voteTrack >= 4 ? '🗡️ Quinto rechazo: el reino cae' : '↪️ Siguiente propuesta'}</button>
   {:else}
     <p class="small-note">Esperando a que la mesa continúe…</p>
   {/if}

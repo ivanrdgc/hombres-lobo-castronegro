@@ -21,6 +21,8 @@ export interface TableSettings {
   pacing?: string;
   /** El Espía: duración de la ronda en minutos (oficial: 8). */
   espiaMin?: number;
+  /** Insider: duración del interrogatorio en minutos (oficial: 5). */
+  insiderMin?: number;
   /** Una Noche: mazo elegido (rol → nº de cartas). Se recuerda entre partidas. */
   unaNoche?: Record<string, number>;
   /** Ávalon: roles opcionales activados (lista de ids). Se recuerda entre partidas. */

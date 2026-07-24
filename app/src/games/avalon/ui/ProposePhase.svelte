@@ -1,10 +1,13 @@
 <script lang="ts">
   // Fase de propuesta: el LÍDER elige quiénes van a la misión; los demás miran.
+  // Lo que exige ESTA misión (cuántos van, cuántos sabotajes la hunden, cuántos
+  // rechazos llevamos) va delante, y cada ficha lleva su historial público: el
+  // líder decide con la mesa a la vista, no de memoria.
   import { guard } from '../../../core/sync/guard';
   import { selIds, clearSel } from '../../../shell/selection';
   import * as A from '../actions';
-  import { playersOf, leaderId } from '../engine';
-  import { teamSize } from '../roles';
+  import { playersOf, leaderId, publicRecord, recordLine } from '../engine';
+  import { teamSize, teamSizes, requiredFails, evilCountFor } from '../roles';
   import type { PlayerDoc } from '../../../core/sync/schema';
   import type { AvalonState } from '../types';
   import AvGrid from './AvGrid.svelte';
@@ -16,10 +19,14 @@
   const leader = $derived(leaderId(game));
   const amLeader = $derived(my.id === leader);
   const inGame = $derived(game.playerIds.includes(my.id));
-  const size = $derived(teamSize(game.playerIds.length, game.quest));
+  const n = $derived(game.playerIds.length);
+  const size = $derived(teamSize(n, game.quest));
+  const req = $derived(requiredFails(n, game.quest));
   const key = $derived(`av-team:q${game.quest}:t${game.voteTrack}`);
   const sel = $derived(selIds(key));
   const nm = (pid: string) => game.names[pid] || '¿?';
+  const note = (pid: string) => recordLine(publicRecord(game, pid));
+  const left = $derived(size - sel.length);
 
   function propose() {
     if (sel.length !== size) return;
@@ -27,13 +34,56 @@
   }
 </script>
 
+<!-- Los requisitos de ESTA misión, en grande y antes de tocar nada. -->
+<div class="reqbox" data-a="av-req">
+  <span class="reqbig">Misión {game.quest} · van <b>{size}</b></span>
+  <span class="reqline">{req === 2 ? '💥 Necesita 2 sabotajes para fracasar (uno solo no basta).' : '💥 Un solo sabotaje la hace fracasar.'}</span>
+  {#if game.voteTrack}
+    <span class="reqline {game.voteTrack >= 4 ? 'warn' : ''}">↪️ Van <b>{game.voteTrack}/5</b> propuestas rechazadas seguidas{game.voteTrack >= 4 ? ' — si se rechaza esta, GANA EL MAL' : ' (a las 5 gana el Mal)'}.</span>
+  {/if}
+</div>
+
 {#if amLeader}
-  <div class="actionpanel"><h3>🧭 Formas el equipo · Misión {game.quest}</h3>
-    <p class="hint">Eres el líder. Elige a <b>{size}</b> caballero{size === 1 ? '' : 's'} para la misión (puedes incluirte). Toda la mesa votará tu propuesta.</p>
-    <AvGrid {players} selKey={key} max={size} leaderId={leader} />
+  <div class="actionpanel"><h3>🧭 Eres el líder: forma el equipo</h3>
+    <p class="hint">Toca a <b>{size}</b> caballero{size === 1 ? '' : 's'} (puedes incluirte). Después toda la mesa votará tu propuesta: si la tumban, el liderazgo pasa al siguiente.</p>
+    <AvGrid {players} selKey={key} max={size} leaderId={leader} meId={my.id} noteOf={note} />
+    {#if sel.length}<p class="small-note" data-a="av-sel-count">{left > 0 ? `Te falta${left === 1 ? '' : 'n'} ${left} por elegir (${sel.length}/${size}).` : `Equipo completo: ${sel.map(nm).join(', ')}. Toca a alguien para quitarlo.`}</p>{/if}
     <button class="primary block" data-a="av-propose" disabled={sel.length !== size} onclick={propose}>⚔️ {sel.length === size ? `Proponer a ${sel.map(nm).join(', ')}` : `Elige a ${size} (${sel.length}/${size})`}</button>
+
+    <!-- La referencia, DENTRO del panel: nadie debe salir de la pantalla en la
+         que está decidiendo. -->
+    <details class="avref">
+      <summary data-a="av-ref">📖 Cómo elegir (los números de la partida)</summary>
+      <p class="small-note">Debajo de cada nombre tienes lo PÚBLICO: en qué misiones estuvo, si alguna se saboteó con él dentro, cuántos equipos propuso y si aprobó o rechazó la última propuesta.</p>
+      <p class="small-note">Equipos de las misiones 1 a 5 con {n} jugadores: <b>{teamSizes(n).join(' · ')}</b>. Vas por la {game.quest}.</p>
+      <p class="small-note">😈 Hay <b>{evilCountFor(n)}</b> malvados entre los {n}: un solo infiltrado hunde casi cualquier misión{req === 2 ? ', aunque ESTA aguanta un sabotaje (hacen falta dos)' : ''}. Los del Bien no pueden sabotear ni queriendo.</p>
+      <p class="small-note">Rechazar es un arma con la mecha corta: cinco propuestas seguidas rechazadas en la misma misión y gana el Mal sin sabotear nada.</p>
+    </details>
   </div>
 {:else}
-  <div class="card"><p class="hint">🧭 <b>{nm(leader)}</b> está formando el equipo de la misión {game.quest} ({size} caballero{size === 1 ? '' : 's'}). Prepárate para votar.</p></div>
+  <div class="card">
+    <p class="hint">🧭 <b>{nm(leader)}</b> está eligiendo el equipo de la misión {game.quest}: {size} caballero{size === 1 ? '' : 's'}. Su elección no aparece hasta que la propone.</p>
+    <p class="small-note" data-a="av-propose-pending">⏳ Se espera a <b>{nm(leader)}</b>. Mientras tanto: repasa quién fue a cada misión (tablero de arriba) y decide ya si vas a aprobar o rechazar.</p>
+    <details class="avref">
+      <summary data-a="av-ref">📖 Qué está pasando y qué haré yo</summary>
+      <p class="small-note">Cuando {nm(leader)} proponga, votaréis TODOS (vayáis o no en la misión): 👍 aprobar o 👎 rechazar ese equipo. Los votos se destapan a la vez y son públicos.</p>
+      <p class="small-note">Equipos de las misiones 1 a 5 con {n} jugadores: <b>{teamSizes(n).join(' · ')}</b>. {req === 2 ? 'Esta misión necesita DOS sabotajes para fracasar.' : 'Un solo sabotaje hunde esta misión.'}</p>
+      <p class="small-note">↪️ Van {game.voteTrack} de 5 propuestas rechazadas seguidas: a las cinco, gana el Mal.</p>
+    </details>
+  </div>
 {/if}
 {#if inGame}<RoleCard {game} pid={my.id} mini={true} />{/if}
+
+<style>
+  .reqbox {
+    display: flex; flex-direction: column; gap: 3px; margin: 12px 0 0;
+    border: 1px solid var(--accent, #c8a24a); border-radius: var(--r-2, 14px);
+    background: color-mix(in srgb, var(--accent, #c8a24a) 12%, transparent);
+    padding: 10px 12px;
+  }
+  .reqbig { font-size: 1.06rem; font-weight: 700; }
+  .reqline { font-size: 0.8rem; color: var(--muted); }
+  .reqline.warn { color: #f3a0a0; }
+  .avref { margin-top: 14px; border-top: 1px solid var(--border, #333); padding-top: 8px; }
+  .avref summary { cursor: pointer; font-size: 0.88rem; color: var(--accent, #c8a24a); padding: 6px 0; }
+</style>

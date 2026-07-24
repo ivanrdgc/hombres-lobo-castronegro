@@ -524,8 +524,24 @@ export function resolveDawn(game: DawnGame, playersIn: GamePlayer[]): DawnResult
   return { players, logs, pendings: chain.pendings, gameUpdates, deaths: chain.deaths, gitanaAnnounce, cuervoAnnounce, osoAnnounce };
 }
 
+// ¿Puede este jugador REGISTRAR la decisión del día? El Tonto del Pueblo
+// descubierto ya no vota, pero sí puede anotar lo que decida el pueblo (no es
+// un voto ponderado, es quien lo escribe): si se le negara, bastaría con que
+// el Cabeza de Turco lo designara para que NADIE pudiera registrar el juicio
+// del día siguiente y la partida quedara colgada.
+export function canRegisterVote(
+  game: { soloVoteId?: string | null },
+  p: Pick<GamePlayer, 'id' | 'alive'> | null | undefined,
+): boolean {
+  if (!p || !p.alive) return false;
+  return !game.soloVoteId || game.soloVoteId === p.id;
+}
+
 // ——— Condiciones de victoria ———
-export function checkWinner(players: GamePlayer[]): WinnerId | null {
+// powersLost: el pueblo mató al Anciano y los aldeanos perdieron sus poderes.
+// Sin él, la paridad contaba como «resistencia» a un Cazador sin flecha o a
+// una Bruja sin veneno, y la partida no terminaba nunca.
+export function checkWinner(players: GamePlayer[], powersLost = false): WinnerId | null {
   const alive = players.filter((p) => p.alive);
   if (!alive.length) return 'nadie';
   const wolfish = alive.filter((p) => isWolfSide(p) || p.role === 'lobo_albino');
@@ -556,7 +572,9 @@ export function checkWinner(players: GamePlayer[]): WinnerId | null {
   // Bruja con veneno (aún podrían matar a un lobo), o que el único "lobo" sea
   // el Albino (que busca su victoria en solitario y seguirá cazando).
   const realWolves = alive.some((p) => isWolfSide(p) && p.role !== 'lobo_albino');
-  const resistance = others.some((p) =>
+  // El castigo del Anciano desarma al Cazador (pierde su flecha) y a la Bruja
+  // (no puede usar el veneno): ya no son resistencia frente a la paridad.
+  const resistance = !powersLost && others.some((p) =>
     p.role === 'cazador' || (p.role === 'bruja' && (p.powers || {}).poison !== false));
   // El Tonto del Pueblo descubierto ya no vota: no cuenta como resistencia en la
   // paridad (no puede ayudar a linchar a un lobo en el día).
@@ -655,7 +673,9 @@ export function resolveVote(game: VoteGame, playersIn: GamePlayer[], choice: str
     }
   }
 
-  if (!winner) winner = checkWinner(players);
+  // El linchamiento pudo matar al Anciano en esta misma resolución: la victoria
+  // se comprueba con los poderes YA perdidos.
+  if (!winner) winner = checkWinner(players, gameUpdates.powersLost ?? !!game.powersLost);
   return { players, logs, pendings, gameUpdates, winner };
 }
 

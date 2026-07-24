@@ -13,8 +13,9 @@ import {
 } from '../../core/sync/group-actions';
 import type { GroupDoc, MatchDoc } from '../../core/sync/schema';
 import {
-  MIN_PLAYERS, MAX_PLAYERS, TOTAL_ROUNDS, dealGame, minutesForRound, roomOf, roomMembers,
-  allVotedInRoom, tallyRoom, decideWinner, presidentId, bomberId, playersOf, leavePlayer,
+  MIN_PLAYERS, MAX_PLAYERS, HOSTAGE_SECONDS, roundsFor, dealGame, minutesForRound, roomOf, roomMembers,
+  allVotedInRoom, majorityVotedInRoom, hostagesPerRoom, tallyRoom, decideWinner, presidentId, bomberId,
+  playersOf, leavePlayer, nameList, rebalanceSpeakers, WIN_LABELS,
 } from './engine';
 import type { TwoRoomsState } from './types';
 
@@ -50,6 +51,9 @@ async function tx(fn: TxFn, mid?: string, opts: { allowPaused?: boolean } = {}):
 
 const nameOf = (g: TwoRoomsState, pid: string | null | undefined) => (pid && g.names[pid]) || '¿?';
 const perMinMs = () => (e2eTestMode() ? 4000 : 60000);
+// El plazo del voto de rehén no se comprime tanto como los minutos de ronda: en
+// los e2e hacen falta segundos de sobra para que voten seis u ocho pestañas.
+const hostageMs = () => (e2eTestMode() ? 18000 : HOSTAGE_SECONDS * 1000);
 
 // ——— Inicio ———
 
@@ -76,16 +80,20 @@ export async function startTwoRooms(
   const seed = Math.floor(now % 2147483647);
   const deal = dealGame(playerIds, seed);
   const members = [...new Set([...playerIds, master, ...(speaker1b ? [speaker1b] : [])])];
+  const totalRounds = roundsFor(playerIds.length); // 3 hasta 10 jugadores, 5 de 11 en adelante
   const game: TwoRoomsState = {
-    tworooms: true, phase: 'reveal', startedAt: now, seed, round: 1, totalRounds: TOTAL_ROUNDS,
+    tworooms: true, phase: 'reveal', startedAt: now, seed, round: 1, totalRounds,
     playerIds, names, voiceMode, roomSpeakers: [master, speaker1b],
     teams: deal.teams, roles: deal.roles, room: deal.room,
-    seen: {}, durationMs: minutesForRound(1, TOTAL_ROUNDS) * perMinMs(), deadline: null,
-    hVotes: {}, pick: [null, null], swaps: [],
-    winner: null, scores: Object.fromEntries(playerIds.map((p) => [p, 0])),
+    seen: {}, durationMs: minutesForRound(1, totalRounds) * perMinMs(), deadline: null,
+    hVotes: {}, picks: { 0: null, 1: null }, swaps: [],
+    winner: null, winReason: null, scores: Object.fromEntries(playerIds.map((p) => [p, 0])),
     paused: null, repeatNonce: 0,
-    log: [{ txt: `💣 Comienza Two Rooms and a Boom con ${playerIds.length} jugadores en dos salas. Entre los azules, un Presidente; entre los rojos, un Bombardero.` }],
+    log: [{ txt: `💣 Comienza Two Rooms and a Boom con ${playerIds.length} jugadores en dos salas y ${totalRounds} rondas. Entre los azules, un Presidente; entre los rojos, un Bombardero.` }],
   };
+  // Las salas se reparten al azar: el altavoz elegido «para la Sala 1» puede
+  // haber caído en la 2. Se ajustan las voces a dónde está cada dispositivo.
+  rebalanceSpeakers(game);
   await txWithRetry(async (t) => {
     const snap = await t.get(gref(slug));
     if (!snap.exists()) throw new Error('El grupo ya no existe');
@@ -134,8 +142,10 @@ export async function timeUp(): Promise<void> {
     if (Date.now() < game.deadline - 1500) return null; // aún no (tolerancia de reloj)
     game.phase = 'hostages';
     game.hVotes = {};
-    game.pick = [null, null];
-    game.log.push({ txt: '🔔 ¡Fin de la ronda! Cada sala vota a quién manda de rehén a la otra.' });
+    game.picks = { 0: null, 1: null };
+    game.deadline = Date.now() + hostageMs(); // el voto TAMBIÉN tiene plazo
+    const k = hostagesPerRoom(game);
+    game.log.push({ txt: `🔔 ¡Fin de la ronda! Cada sala vota, contrarreloj, a ${k === 1 ? 'quién manda de rehén' : `las ${k} personas que manda de rehenes`} a la otra.` });
     return game;
   });
 }
@@ -154,33 +164,68 @@ export async function castHostageVote(target: string): Promise<void> {
   });
 }
 
-// Fija el rehén de cada sala que haya terminado de votar y, con las dos
-// decididas, intercambia (lo comparten el voto y las salidas a mitad de voto).
-function maybeCloseRooms(game: TwoRoomsState): TwoRoomsState {
-  for (const r of [0, 1] as const) {
-    if (game.pick[r] === null && allVotedInRoom(game, r)) {
-      game.pick[r] = tallyRoom(game, r);
-      game.log.push({ txt: `🗳️ La sala ${r + 1} manda de rehén a ${nameOf(game, game.pick[r])}.` });
+/** Cerrar la votación de tu sala sin esperar a los que faltan (ya ha votado la
+ *  mayoría). Válvula de escape si a alguien se le muere el móvil. */
+export async function closeRoomVote(): Promise<void> {
+  const me = myPid();
+  await tx((game) => {
+    if (game.phase !== 'hostages' || !game.playerIds.includes(me)) return null;
+    const r = roomOf(game, me);
+    if (game.picks[r] !== null || !majorityVotedInRoom(game, r)) return null;
+    game.log.push({ txt: `🗳️ La sala ${r + 1} cierra su votación sin esperar a los que faltan.` });
+    return settle(game, [r]);
+  });
+}
+
+/** Vence el plazo del voto: cierran las DOS salas con los votos emitidos. Sin
+ *  esto, un móvil apagado congelaba la partida (solo quedaba «Terminar»). */
+export async function hostagesTimeUp(): Promise<void> {
+  await tx((game) => {
+    if (game.phase !== 'hostages' || game.deadline === null) return null;
+    if (Date.now() < game.deadline - 1500) return null; // aún no (tolerancia de reloj)
+    game.log.push({ txt: '⏱️ Se acaba el tiempo de votar: cada sala manda a los más votados y quien no votó se abstiene.' });
+    return settle(game, [0, 1]);
+  });
+}
+
+// Fija los rehenes de las salas indicadas y, con las dos decididas, intercambia
+// (lo comparten el voto, el reloj y las salidas a mitad de votación).
+function settle(game: TwoRoomsState, rooms: (0 | 1)[]): TwoRoomsState {
+  const k = hostagesPerRoom(game);
+  for (const r of rooms) {
+    if (game.picks[r] !== null) continue;
+    game.picks[r] = roomMembers(game, r).length ? tallyRoom(game, r, k) : [];
+    // Se calla QUIÉN cruza hasta que las dos salas han decidido: el diario y la
+    // voz llegan a las dos, y en la mesa el trueque se decide a ciegas.
+    if (game.picks[r === 0 ? 1 : 0] === null) {
+      game.log.push({ txt: `🗳️ La sala ${r + 1} ya ha decidido a quién manda. Falta la otra sala.` });
     }
   }
-  if (game.pick[0] && game.pick[1]) return doSwap(game);
-  return game;
+  return game.picks[0] !== null && game.picks[1] !== null ? doSwap(game) : game;
+}
+
+// Cierra las salas que ya han votado enteras (y las que se han quedado VACÍAS:
+// una sala sin nadie no puede votar y no debe colgar la partida).
+function maybeCloseRooms(game: TwoRoomsState): TwoRoomsState {
+  const ready = ([0, 1] as const).filter((r) => allVotedInRoom(game, r) || roomMembers(game, r).length === 0);
+  return settle(game, [...ready]);
 }
 
 function doSwap(game: TwoRoomsState): TwoRoomsState {
-  const a = game.pick[0]!;
-  const b = game.pick[1]!;
-  game.room[a] = 1;
-  game.room[b] = 0;
+  const a = game.picks[0] || [];
+  const b = game.picks[1] || [];
+  for (const pid of a) game.room[pid] = 1;
+  for (const pid of b) game.room[pid] = 0;
   game.swaps.push({ round: game.round, from0: a, from1: b });
-  game.log.push({ txt: `🔄 Intercambio: ${nameOf(game, a)} pasa a la Sala 2 y ${nameOf(game, b)} a la Sala 1.` });
+  game.log.push({ txt: `🔄 Intercambio: de la Sala 1 cruza ${nameList(game, a)}; de la Sala 2, ${nameList(game, b)}.` });
+  rebalanceSpeakers(game); // si un altavoz cruza, su sala no puede quedarse muda
   if (game.round < game.totalRounds) {
     // Colocación SIN reloj (B22): los rehenes cruzan de sala con calma y,
     // cuando todos están en su sitio, cualquiera arranca la ronda con el botón.
     game.round += 1;
     game.phase = 'move';
     game.hVotes = {};
-    game.pick = [null, null];
+    game.picks = { 0: null, 1: null };
     game.deadline = null;
     game.log.push({ txt: `🚶 Colocaos: los rehenes cruzan de sala. Cuando estéis cada uno en la vuestra, pulsad empezar la ronda ${game.round}.` });
     return game;
@@ -191,12 +236,13 @@ function doSwap(game: TwoRoomsState): TwoRoomsState {
 function finish(game: TwoRoomsState): TwoRoomsState {
   const winner = decideWinner(game);
   game.winner = winner;
+  game.winReason = WIN_LABELS[winner];
   game.phase = 'end';
   game.deadline = null;
   for (const pid of game.playerIds) if (game.teams[pid] === winner) game.scores[pid] = (game.scores[pid] || 0) + 1;
   const pres = presidentId(game);
   const bomb = bomberId(game);
-  game.log.push({ txt: `🏁 El Presidente era ${nameOf(game, pres)} y el Bombardero ${nameOf(game, bomb)}. ${winner === 'red' ? 'Acabaron en la misma sala: ¡BOOM! Gana el ROJO.' : 'Acabaron en salas distintas: el Presidente vive. Gana el AZUL.'}` });
+  game.log.push({ txt: `🏁 El Presidente era ${nameOf(game, pres)} y el Bombardero ${nameOf(game, bomb)}. ${winner === 'red' ? 'Acabaron en la misma sala: ¡BOOM! Gana el ROJO.' : 'Acabaron en salas distintas: el Presidente vive. Gana el AZUL.'} Cada jugador del bando ganador se lleva 1 punto.` });
   return game;
 }
 
@@ -210,6 +256,7 @@ export async function playAgain(): Promise<void> {
     const deal = dealGame(game.playerIds, seed);
     game.seed = seed;
     game.round = 1;
+    game.totalRounds = roundsFor(game.playerIds.length); // la mesa pudo encoger
     game.phase = 'reveal';
     game.teams = deal.teams;
     game.roles = deal.roles;
@@ -217,10 +264,12 @@ export async function playAgain(): Promise<void> {
     game.seen = {};
     game.deadline = null;
     game.hVotes = {};
-    game.pick = [null, null];
+    game.picks = { 0: null, 1: null };
     game.swaps = [];
     game.winner = null;
-    game.log.push({ txt: '🔁 Nueva partida: bandos, roles y salas repartidos de nuevo.' });
+    game.winReason = null;
+    rebalanceSpeakers(game); // las salas se reparten de nuevo: las voces también
+    game.log.push({ txt: `🔁 Nueva partida: bandos, roles y salas repartidos de nuevo, a ${game.totalRounds} rondas.` });
     return game;
   });
 }
@@ -244,8 +293,9 @@ export async function pauseGame(): Promise<void> {
 export async function resumeGame(): Promise<void> {
   await tx((game) => {
     if (!game.paused) return null;
-    if (game.phase === 'discuss' && game.deadline !== null) {
-      game.deadline += Math.max(0, Date.now() - game.paused.at); // no se pierde tiempo de ronda
+    // Ni la ronda ni el voto de rehén pierden tiempo por una pausa.
+    if (game.deadline !== null) {
+      game.deadline += Math.max(0, Date.now() - game.paused.at);
     }
     game.paused = null;
     return game;
@@ -277,6 +327,7 @@ export async function leaveTwoRooms(targetPid?: string, mid?: string): Promise<v
       const who = state.players.find((p) => p.id === me)?.name || 'Un altavoz';
       game.log.push({ txt: `🚪 ${who} deja la partida.` });
     }
+    if (game.phase !== 'end') rebalanceSpeakers(game); // que ninguna sala se quede muda
     // Su salida puede completar el voto de rehén de su sala (o de la otra).
     const g2 = game.phase === 'hostages' ? maybeCloseRooms(game) : game;
     return wasMaster ? { game: g2, members: dropMembers, masterPatch } : { game: g2, members: dropMembers };

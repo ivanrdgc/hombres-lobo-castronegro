@@ -16,7 +16,7 @@ import { unaNocheGame } from '../actions';
 import * as A from '../actions';
 import { playersOf, stepActors } from '../engine';
 import type { GameState, StepId } from '../types';
-import { DAWN, DEBATE, END, LISTOS, NAG_FORGOT, NIGHT_FALL, STEP_CALL, STEP_CLOSE, STEP_NAG, WELCOME } from '../texts';
+import { DAWN, DEBATE, END, END_BOTH, LISTOS, NAG_FORGOT, NIGHT_FALL, STEP_CALL, STEP_CLOSE, STEP_NAG, TIME_UP, WELCOME } from '../texts';
 
 interface Snap {
   group: GroupDoc | null;
@@ -69,6 +69,12 @@ function ghostNagCount(r: number): number {
   return r < 0.62 ? 0 : r < 0.88 ? 1 : 2;
 }
 
+/** Todos los ganadores en una clave estable (Una Noche admite dos a la vez). */
+function winnersKey(game: GameState): string {
+  const w = game.winners && game.winners.length ? game.winners : [game.winner || 'nadie'];
+  return [...w].sort().join('+');
+}
+
 // ——— Proyección: snapshot → escena ———
 
 function sceneOf(s: Snap): SceneDef<Snap> | null {
@@ -78,7 +84,7 @@ function sceneOf(s: Snap): SceneDef<Snap> | null {
   const rf = game.repeatNonce || 0;
   const K = (rest: string) => `U${sa}:${rest}`;
   if (game.paused) return { key: K(`paused:${game.paused.at}`), hardEntry: true, run: pausedScene };
-  if (game.phase === 'end') return { key: K(`end:${game.winner}`), run: endScene };
+  if (game.phase === 'end') return { key: K(`end:${winnersKey(game)}`), run: endScene };
   if (game.phase === 'reveal') return { key: K(`reveal:r${rf}`), run: revealScene };
   if (game.phase === 'day') return { key: K(`day:r${rf}`), run: dayScene };
   if (game.phase === 'night') {
@@ -172,16 +178,28 @@ async function nightStepScene(ctx: Ctx, step: StepId, idx: number): Promise<void
 
 async function dayScene(ctx: Ctx): Promise<void> {
   const g = gm(ctx);
-  await ctx.sayOnce(`U${g.startedAt}:dawn:r${g.repeatNonce || 0}`, () => utt('un-dawn', DAWN));
-  await ctx.sayOnce(`U${g.startedAt}:debate:r${g.repeatNonce || 0}`, () => utt('un-debate', DEBATE));
+  const r = g.repeatNonce || 0;
+  await ctx.sayOnce(`U${g.startedAt}:dawn:r${r}`, () => utt('un-dawn', DAWN));
+  await ctx.sayOnce(`U${g.startedAt}:debate:r${r}`, () => utt('un-debate', DEBATE));
+  // Reloj del debate: se avisa UNA vez al agotarse (waitFor solo despierta por
+  // push del store, así que el tiempo se cuenta a base de colchones cortos).
+  const ends = g.discussionEndsAt || 0;
+  const stillDay = (): boolean => unaNocheGame(ctx.state().group)?.phase === 'day';
+  if (ends) {
+    while (stillDay() && Date.now() < ends) await ctx.sleep(Math.min(2000, ends - Date.now()));
+    if (stillDay()) await ctx.sayOnce(`U${g.startedAt}:timeup:r${r}`, () => utt('un-timeup', TIME_UP));
+  }
   await ctx.waitFor((s) => unaNocheGame(s.group)?.phase !== 'day'); // los votos resuelven a 'end'
 }
 
 async function endScene(ctx: Ctx): Promise<void> {
   const g = gm(ctx);
   await ctx.sleep(400);
-  const label = END[g.winner || 'nadie'] || END.nadie;
-  await ctx.sayOnce(`U${g.startedAt}:end:${g.winner}`, () => utt('un-end', label));
+  // Con DOS ganadores (Curtidor + Pueblo) la voz debe cantarlos los dos: leer
+  // solo el primero contradecía a la pantalla, que ya los muestra ambos.
+  const multi = (g.winners || []).length > 1;
+  const label = multi ? END_BOTH : (END[g.winner || 'nadie'] || END.nadie);
+  await ctx.sayOnce(`U${g.startedAt}:end:${winnersKey(g)}`, () => utt('un-end', label));
   void ps; // (playersOf disponible para futuras locuciones con nombres)
 }
 

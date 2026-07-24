@@ -19,6 +19,7 @@
 
   const { group, my }: { group: GroupDoc; my: PlayerDoc } = $props();
   const game = $derived(shGame(group)!);
+  const executed = $derived(game.playerIds.includes(my.id) && game.alive[my.id] === false);
   // Solo pedimos activar si el audio NO suena ya (estado real del AudioContext).
   const needsUnlock = $derived(isMaster() && !app.ui.audioReady && !app.ui.muted);
   const legislative = $derived(['legislativePresident', 'legislativeChancellor', 'vetoDecision'].includes(game.phase));
@@ -35,6 +36,8 @@
 <div class="topbar">
   <h2>🏛️ {group.name}</h2>
   <span class="chip">🕊️{game.liberalPolicies} · 🐷{game.fascistPolicies}</span>
+  <!-- El ejecutado lleva su estado siempre a la vista, en cualquier fase. -->
+  {#if executed}<span class="chip" data-a="sh-dead-chip">💀 Ejecutado</span>{/if}
   <GameMenu {game} {my} />
 </div>
 <Flash />
@@ -45,23 +48,27 @@
 {/if}
 {#if game.paused}
   <div class="card" style="text-align:center"><span class="moon">⏸️</span><h3>Partida en pausa</h3>
-    <p class="small-note">La ha pausado {game.paused.name || 'alguien'}.</p></div>
+    <p class="small-note">La ha pausado {game.paused.name || 'alguien'}. Los paneles vuelven al reanudar.</p></div>
 {/if}
 
 {#if game.phase !== 'reveal'}<Board {game} />{/if}
 
-{#if game.phase === 'reveal'}
-  <RevealPhase {game} {my} />
-{:else if game.phase === 'nominate'}
-  <NominatePhase {game} {my} />
-{:else if game.phase === 'election'}
-  <ElectionPhase {game} {my} />
-{:else if legislative}
-  <LegislativePhase {game} {my} />
-{:else if game.phase === 'power'}
-  <PowerPhase {game} {my} />
-{:else if game.phase === 'end'}
-  <EndPhase {game} {my} />
+<!-- En pausa se ocultan los paneles de acción: si se dejan a la vista, la mesa
+     toca botones que la transacción descarta en silencio. -->
+{#if !game.paused}
+  {#if game.phase === 'reveal'}
+    <RevealPhase {game} {my} />
+  {:else if game.phase === 'nominate'}
+    <NominatePhase {game} {my} />
+  {:else if game.phase === 'election'}
+    <ElectionPhase {game} {my} />
+  {:else if legislative}
+    <LegislativePhase {game} {my} />
+  {:else if game.phase === 'power'}
+    <PowerPhase {game} {my} />
+  {:else if game.phase === 'end'}
+    <EndPhase {game} {my} />
+  {/if}
 {/if}
 
 {#if game.log && game.log.length}

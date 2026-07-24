@@ -3,7 +3,7 @@ import { describe, expect, test } from 'vitest';
 import { LOCATIONS } from './locations';
 import {
   applyDelta, dealRound, pickLocation, resolveConviction, resolveGuess, resolveSpyLeft,
-  resolveTimeout, tallyVote, timeupOrder, voters,
+  resolveTimeout, resolveVoid, tallyVote, timeupOrder, voters,
 } from './engine';
 import type { EspiaState, EspiaVote } from './types';
 
@@ -122,6 +122,13 @@ describe('puntuación oficial', () => {
   test('tiempo agotado sin condena: espía +2; abandono del espía: +1 agentes', () => {
     expect(resolveTimeout(mkState()).delta).toEqual({ 'p-carlos': 2 });
     expect(resolveSpyLeft(mkState()).delta).toEqual({ 'p-ana': 1, 'p-bea': 1, 'p-david': 1, 'p-elsa': 1 });
+  });
+
+  test('sin quórum la ronda se ANULA: nadie puntúa (no es victoria del espía)', () => {
+    const o = resolveVoid(mkState({ playerIds: ['p-ana', 'p-carlos'] }));
+    expect(o.type).toBe('round_void');
+    expect(o.delta).toEqual({});
+    expect(o.txt).toContain('ANULADA');
   });
 
   test('applyDelta acumula sobre el marcador', () => {

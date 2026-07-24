@@ -17,7 +17,7 @@ export const HOW_TO: HelpSection[] = [
   {
     heading: '🕵️ De qué va',
     items: [
-      'Insider es un juego cooperativo… con un traidor. El EQUIPO debe adivinar una palabra secreta haciendo preguntas de sí/no; el MAESTRO la conoce y responde con la verdad; y el INSIDER, oculto entre el equipo, también la conoce y trata de que la adivinen guiándoos con disimulo.',
+      'Insider es un juego cooperativo… con un traidor, de 4 a 12 jugadores y en un solo móvil por persona. El EQUIPO debe adivinar una palabra secreta haciendo preguntas de SÍ o NO; el MAESTRO la conoce y responde con la verdad; y el INSIDER, oculto entre el equipo, también la conoce y trata de que la adivinen guiándoos con disimulo.',
       'Gana el EQUIPO (Maestro y comunes) si adivináis la palabra a tiempo Y luego desenmascaráis al Insider. Gana el INSIDER si, adivinada la palabra, la mesa NO lo señala. Y si el tiempo se agota sin adivinar la palabra, PIERDEN TODOS, Insider incluido.',
       'La app hace de máster oculto: elige la palabra, reparte los papeles (el Insider en secreto), lleva el reloj y cuenta el voto. Nadie apunta nada a mano.',
     ],
@@ -33,7 +33,7 @@ export const HOW_TO: HelpSection[] = [
   {
     heading: '⏱️ El interrogatorio',
     items: [
-      'Cuando todos han confirmado, el Maestro pone el reloj en marcha (3, 5 u 8 minutos, a elegir). Empieza preguntando quien indique la app.',
+      'Cuando todos han confirmado, se pone el reloj en marcha (3, 5 u 8 minutos, a elegir): normalmente lo pulsa el Maestro, pero vale cualquiera. Empieza preguntando quien indique la app, que nunca es el Maestro: él solo responde.',
       'El equipo hace preguntas de SÍ o NO para acorralar la palabra: «¿es un animal?», «¿cabe en una mano?». El Maestro solo puede responder «sí», «no» o «no lo sé». No da pistas ni la nombra.',
       'El INSIDER hace lo mismo que los demás, pero sabiendo la respuesta: su arte es orientar las preguntas hacia la palabra sin cantarse. Si el equipo se atasca, le interesa echar un cable… con cuidado.',
     ],
@@ -57,6 +57,15 @@ export const HOW_TO: HelpSection[] = [
     items: [
       'Insider cazado: +1 para el Maestro y para cada común. Insider que escapa (con la palabra adivinada): +2 para él.',
       'Tiempo agotado sin adivinar: nadie puntúa. El Maestro rota y la palabra no se repite hasta agotarse; jugad las rondas que queráis.',
+      'Terminada la ronda, el botón «Otra ronda» lo pulsa cualquiera, no hace falta esperar al Maestro.',
+    ],
+  },
+  {
+    heading: '🧰 Las herramientas de la mesa',
+    items: [
+      'El botón redondo con una carta 🎴, abajo a la derecha, abre tu carta en CUALQUIER momento: tu papel, la palabra si la conoces y la chuleta de papeles y puntos. Es la forma de reconsultarla a media partida sin preguntar en voz alta; se oculta sola a los pocos segundos.',
+      'El menú de herramientas de la cabecera (los tres puntos ⋯) pausa la partida: el reloj se congela y los botones desaparecen hasta que alguien reanude, así que podéis salir a por hielo sin perder el interrogatorio. Ahí están también la voz y el repetir la última locución.',
+      'Nada se atasca por un móvil muerto: confirmadas todas las cartas, el reloj lo arranca cualquiera, y si alguien no llega a votar en la caza, el Maestro cierra el recuento con los votos que haya (y si el que falta es él, puede cerrarlo cualquiera que ya haya votado).',
     ],
   },
 ];
@@ -84,7 +93,9 @@ export const WARN_10S = 'Diez segundos.';
 // ——— Líneas dinámicas (nombres → síntesis en vivo, nunca la palabra) ———
 
 export function masterLine(name: string): string {
-  return `El Maestro de esta ronda es ${name}: conoce la palabra y solo él responde.`;
+  // Sin «solo él»: el Maestro puede ser de cualquier género y la voz lo dice a
+  // toda la mesa.
+  return `El Maestro de esta ronda es ${name}: conoce la palabra y es quien responde.`;
 }
 export function starterLine(name: string): string {
   return `Empieza preguntando ${name}.`;

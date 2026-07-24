@@ -1,9 +1,11 @@
 // Motor puro de «Wavelength»: elección de espectro y objetivo, rotación del
 // Psíquico y puntuación por cercanía. Sin navegador ni Firebase (testeable).
 import { SPECTRUMS, spectrumById } from './spectrums';
-import type { WavelengthState } from './types';
+import type { Goal, WavelengthState } from './types';
 
-export const MIN_PLAYERS = 2;
+// Con 2 el «equipo» sería una sola persona debatiendo consigo misma (y todos
+// los textos hablan en plural): hacen falta 3 para que haya sintonía que medir.
+export const MIN_PLAYERS = 3;
 export const MAX_PLAYERS = 12;
 
 // La diana ocupa el centro ±15: banda central (±4) vale 4, la media (±9) 3 y la
@@ -70,6 +72,29 @@ export function scoreLabel(points: number): string {
   if (points === 3) return '👏 Muy cerca (3)';
   if (points === 2) return '🙂 Rozando (2)';
   return '😬 Fuera de la diana (0)';
+}
+
+/** Metas que ofrece la pantalla de empezar (`n` de rondas se calcula con la
+ *  mesa: una «vuelta» es una ronda por jugador, para que todos sean Psíquico). */
+export function goalOptions(players: number): (Goal | null)[] {
+  return [
+    { kind: 'rounds', n: players, label: `Una vuelta a la mesa (${players} rondas)` },
+    { kind: 'rounds', n: players * 2, label: `Dos vueltas (${players * 2} rondas)` },
+    { kind: 'points', n: 20, label: 'Hasta 20 puntos de equipo' },
+    null,
+  ];
+}
+
+/** ¿Se ha cumplido la meta? (sin meta, nunca: la mesa termina cuando quiera). */
+export function goalMet(game: WavelengthState): boolean {
+  const g = game.goal;
+  if (!g) return false;
+  return g.kind === 'rounds' ? game.round >= g.n : game.teamScore >= g.n;
+}
+
+/** Media de puntos por ronda puntuada (0 si aún no hay ninguna). */
+export function average(total: number, rounds: number): string {
+  return rounds > 0 ? (total / rounds).toFixed(1).replace('.', ',') : '—';
 }
 
 /** Etiqueta del extremo hacia el que apunta el objetivo (pista para el diario). */

@@ -44,6 +44,8 @@ async function setCode(page, code) {
 
 // Juega una transmisión completa. `intercept`: si true, el rival ACIERTA el
 // código; el propio equipo siempre acierta. Devuelve el estado en 'reveal'.
+let checkedDecodeUi = false;
+let checkedClueUi = false;
 async function transmit(s, { rivalIntercepts }) {
   const active = s.active;
   const code = s.code;
@@ -52,6 +54,13 @@ async function transmit(s, { rivalIntercepts }) {
   await pg(enc).fill('[data-a=de-clue-0]', 'pista uno');
   await pg(enc).fill('[data-a=de-clue-1]', 'pista dos');
   await pg(enc).fill('[data-a=de-clue-2]', 'pista tres');
+  if (!checkedClueUi) {
+    checkedClueUi = true;
+    // U6: el encriptador lee en claro lo que va a transmitir (pista → cifra y
+    // palabra) ANTES de soltarlo; el botón sigue apagado hasta las tres.
+    const say = await pg(enc).locator('[data-a=de-clue-say]').innerText();
+    check(/pista uno/i.test(say) && say.includes(code.join('-')), 'el encriptador ve en claro lo que va a transmitir antes de darlo');
+  }
   await pg(enc).click('[data-a=de-clue-give]:not([disabled])');
   s = await waitState(pages.ana, (x) => x.phase === 'intercept' || x.phase === 'decode', 'pistas registradas');
   if (s.phase === 'intercept') {
@@ -65,7 +74,25 @@ async function transmit(s, { rivalIntercepts }) {
   // Descifra el propio equipo (no el encriptador): acierta siempre.
   const decoder = teamMembers(s, active).find((p) => p !== enc);
   await pg(decoder).waitForSelector('[data-a=de-decode]', { timeout: 15000 });
+  const firstUi = !checkedDecodeUi;
+  if (firstUi) {
+    checkedDecodeUi = true;
+    // U5: al encriptador se le pide silencio (antes veía el cartel del rival).
+    const silenced = await pg(enc).waitForSelector('text=/ahora/i', { timeout: 10000 }).catch(() => null);
+    check(!!silenced && /calla/i.test(await pg(enc).innerText('body')), 'al encriptador se le dice que calle mientras su equipo descifra');
+    // U3: cada fila del selector es una pista, no una «Cifra n» anónima.
+    const row = await pg(decoder).locator('.cplabel').first().innerText();
+    check(/pista/i.test(row) && /pista uno/i.test(row), 'el selector rotula cada fila con la pista que se está colocando');
+    const digit = await pg(decoder).locator('[data-a=de-digit][data-p="0-1"]').innerText();
+    check(digit.trim().length > 1, 'quien descifra ve el nombre de la palabra en los botones 1-4');
+  }
   await setCode(pg(decoder), code);
+  if (firstUi) {
+    // U6: nada se registra a ciegas: con las tres cifras puestas se lee la
+    // apuesta entera en claro («…«pista uno» → palabra nº 4…»).
+    const say = await pg(decoder).locator('[data-a=de-guess-say]').innerText();
+    check(/palabra nº/i.test(say) && say.includes(code.join('-')), 'al completar el código se lee la apuesta en claro, pista por pista');
+  }
   await pg(decoder).click('[data-a=de-decode]:not([disabled])');
   return waitState(pages.ana, (x) => x.phase === 'reveal' || x.phase === 'end', 'resultado');
 }
@@ -108,6 +135,11 @@ try {
   check(redWords.length === 4 && bluWords.length === 4, 'cada jugador ve sus 4 palabras clave');
   check(!redWords.some((w) => bluWords.includes(w)), 'un equipo NO ve las palabras del rival (sin solapamiento)');
 
+  // ——— U7: marcador público (fichas y quién juega en cada equipo, sin title=) ———
+  check(await pg(redP).locator('[data-a=de-tokens]').count() === 2, 'el marcador enseña las fichas de los dos equipos');
+  const redBoard = await pg(redP).locator('[data-a=de-tokens][data-p=red]').innerText();
+  check(/vosotros/i.test(redBoard), 'el marcador dice cuál es TU equipo y quién va en él');
+
   // ——— Ronda 1: rojo y azul transmiten (sin intercepción en la ronda 1) ———
   s = await transmit(s, { rivalIntercepts: false });
   check(s.round === 1 && s.active === 'red', 'ronda 1: transmite primero el rojo');
@@ -118,6 +150,19 @@ try {
   s = await waitState(ana, (x) => x.round === 2 && x.active === 'red', 'ronda 2 (ya hay intercepción)');
   ok('ronda 1 completa; en la 2 ya se puede interceptar');
 
+  // ——— U1: la hoja de pistas (4 filas por equipo, ya emparejadas) ———
+  await pg(redP).waitForFunction(() => document.querySelectorAll('[data-a=de-sheet-clue]').length === 6, null, { timeout: 15000 }).catch(() => {});
+  check(await pg(redP).locator('[data-a=de-sheet]').count() === 2, 'la hoja de pistas trae un bloque por equipo');
+  check(await pg(redP).locator('[data-a=de-sheet] [data-a=de-sheet-clue]').count() === 6, 'la hoja acumula las 6 pistas de la ronda 1');
+  check(await pg(redP).locator('[data-a=de-sheet][data-p=red] .dhrow').count() === 4, 'cada equipo tiene sus 4 filas, una por palabra');
+  // U2: el encriptador ve lo que su equipo ya dijo para cada número (dos códigos
+  // de 3 cifras sobre 4 comparten al menos 2 números, así que siempre hay algo).
+  const enc2 = encoderOf(s, 'red');
+  await pg(enc2).waitForSelector('[data-a=de-clue-0]', { timeout: 15000 });
+  check(await pg(enc2).locator('[data-a=de-past-clues]').count() >= 1, 'el encriptador ve las pistas previas de su equipo para ese número');
+  // R3: el tope de rondas es visible.
+  check(/Ronda 2 de 8/.test(await pg(redP).innerText('body')), 'la cabecera dice en qué ronda vais de las 8');
+
   // ——— Ronda 2+: el AZUL intercepta al rojo dos veces → gana el azul ———
   for (let guard = 0; guard < 6 && !s.winner; guard++) {
     s = await st();
@@ -125,6 +170,12 @@ try {
     // Cuando transmite el rojo, el azul intercepta; cuando transmite el azul, nadie.
     s = await transmit(s, { rivalIntercepts: s.active === 'red' });
     if (s.phase === 'end') break;
+    // R2: la transmisión que decide la partida TAMBIÉN se destapa; antes se
+    // saltaba a la pantalla final sin que nadie viera el código.
+    if (s.tokens.blue.intercepts >= 2 || s.tokens.red.intercepts >= 2) {
+      check(s.phase === 'reveal', 'la transmisión ganadora se destapa antes del final');
+      check(/desenlace/i.test(await pg(s.playerIds[0]).locator('[data-a=de-next]').innerText()), 'el botón avisa de que lo siguiente es el desenlace');
+    }
     await pg(s.playerIds[0]).click('[data-a=de-next]').catch(() => {});
     await waitState(pages.ana, (x) => x.phase !== 'reveal', 'siguiente transmisión').catch(() => {});
   }
@@ -133,10 +184,18 @@ try {
   check(s.tokens.blue.intercepts >= 2, 'el azul acumuló 2 intercepciones');
   check(s.log.some((t) => /gana/i.test(t)), 'la voz anuncia el ganador');
   await ana.waitForSelector('text=/Equipos/');
+  // U4 + H2: al final se destapan las 8 palabras (el «ahhh, era Faro») y se ve
+  // el marcador de la mesa; la hoja de pistas sigue en pantalla.
+  await pg(redP).waitForSelector('[data-a=de-final-words]', { timeout: 15000 });
+  check(await pg(redP).locator('[data-a=de-final-words] .deword').count() === 8, 'al final se destapan también las palabras del rival');
+  await pg(redP).waitForSelector('text=/Marcador de la mesa/');
+  check(await pg(redP).locator('[data-a=de-sheet]').count() === 2, 'la hoja de pistas sigue visible en el final');
   ok('partida completa de Decrypto');
 
-  // Limpieza.
+  // Limpieza (y U8: desde la partida se llega a «🪑 La mesa» para rescatar un
+  // móvil apagado, que dentro de la partida la URL ya no lleva al lobby).
   await ana.click('[data-a=game-menu]');
+  check(await ana.locator('[data-a=table-open]').count() === 1, 'el menú ⋯ ofrece «🪑 La mesa»');
   await ana.click('[data-a=de-end-open]');
   await ana.waitForSelector('[data-a=de-end-confirm]');
   await ana.click('[data-a=de-end-confirm]');

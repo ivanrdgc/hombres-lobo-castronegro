@@ -19,6 +19,8 @@ export interface VoteRecord {
   approvals: string[];
   rejections: string[];
   approved: boolean;
+  /** Misión a la que pertenecía la propuesta (para el historial público). */
+  quest?: number;
 }
 
 export interface QuestRecord {
@@ -27,6 +29,8 @@ export interface QuestRecord {
   fails: number;
   required: number;
   success: boolean;
+  /** Quién propuso el equipo que salió (para el historial público). */
+  leaderId?: string;
 }
 
 export interface AvalonState {
@@ -56,9 +60,15 @@ export interface AvalonState {
   /** Voto secreto por jugador (pid → aprobar); se destapa al completarse. */
   votes: Record<string, boolean>;
   lastVote: VoteRecord | null;
+  /** Todas las votaciones resueltas, en orden (información PÚBLICA: quién
+   *  propuso qué y quién lo aprobó o rechazó). La mesa real lo recuerda; aquí
+   *  se consulta en pantalla en vez de fiarlo a la memoria. */
+  proposals?: VoteRecord[];
   /** Carta secreta de misión por miembro del equipo (pid → éxito). */
   questCards: Record<string, boolean>;
   lastQuest: QuestRecord | null;
+  /** Misiones ya resueltas, en orden (equipo, líder y cuántos sabotajes). */
+  missions?: QuestRecord[];
   assassinTarget: string | null;
   winner: Team | null;
   winReason: string | null;

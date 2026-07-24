@@ -8,7 +8,7 @@ import { locationById } from './locations';
 
 export const INTRO_LOBBY = [
   'Todos sabéis dónde estáis… menos uno. Cada ronda, la mesa entera recibe la misma localización y un papel en ella; el espía solo recibe una cosa: la certeza de que no tiene ni idea.',
-  'A base de preguntas y respuestas, los agentes deben cazar al impostor sin regalar el lugar, y el espía debe deducirlo mientras finge saberlo. Ocho minutos de interrogatorio, faroles y miradas de reojo.',
+  'A base de preguntas y respuestas, los agentes deben cazar al impostor sin regalar el lugar, y el espía debe deducirlo mientras finge saberlo. De 3 a 8 jugadores y rondas de 5, 8 o 10 minutos —lo elegís al empezar— de interrogatorio, faroles y miradas de reojo.',
 ];
 
 export interface HelpSection {
@@ -20,8 +20,9 @@ export const HOW_TO: HelpSection[] = [
   {
     title: '🎴 El reparto',
     body: [
+      'De 3 a 8 jugadores, en rondas de 5, 8 o 10 minutos (la mesa elige la duración al empezar; la oficial son 8 minutos). Se juegan las rondas que queráis: el marcador es acumulado.',
       'Cada ronda, todos reciben en su móvil la MISMA localización con un papel distinto (médico de a bordo, crupier, becario…). Uno recibe en su lugar la carta de ESPÍA: no sabe dónde está.',
-      'Mira tu carta a solas y confirma; cuando todos han confirmado, cualquiera pone el reloj en marcha.',
+      'Mira tu carta a solas y confirma; cuando todos han confirmado, cualquiera pone el reloj en marcha. Durante la ronda, el botón flotante 🎴 de la esquina vuelve a enseñarte tu carta y la chuleta de reglas.',
       'La lista completa de localizaciones es pública: consultadla cuando queráis. El espía la necesita para adivinar; los agentes, para no pasarse de listos con las respuestas.',
     ],
   },
@@ -35,21 +36,24 @@ export const HOW_TO: HelpSection[] = [
   {
     title: '🛑 Parar el reloj',
     body: [
-      'Una vez por ronda, cada jugador puede parar el reloj y acusar a alguien de ser el espía. Votan los demás (el acusador ya cuenta como «sí»; el acusado no vota): si hay unanimidad, la carta se revela y la ronda TERMINA, sea espía o no. Si alguien discrepa, el reloj sigue.',
-      'El espía puede, en cualquier momento (nunca durante una votación), revelarse e intentar adivinar la localización. Acierte o falle, la ronda termina.',
+      'Una vez por ronda, cada jugador puede parar el reloj y acusar a alguien de ser el espía. Votan los demás (el acusador ya cuenta como «sí»; el acusado no vota): si hay unanimidad, la carta se revela y la ronda TERMINA, sea espía o no. Si alguien discrepa, el reloj sigue y la acusación queda gastada igual.',
+      'El acusador puede retirar su acusación si la votación se atasca (alguien no vota): el reloj vuelve a correr, pero su acusación sigue gastada.',
+      'El espía puede revelarse e intentar adivinar la localización en cualquier momento de la ronda, también después de que se agote el tiempo; solo se le bloquea mientras hay una votación abierta. Acierte o falle, la ronda termina.',
     ],
   },
   {
     title: '⏰ Si el tiempo se agota',
     body: [
-      'Nadie habla más del caso. Empezando por quien repartió y en orden de mesa, cada jugador acusa (o pasa) y se vota igual. El primer voto unánime cierra la ronda; si nadie es condenado, el espía se marcha de rositas.',
+      'Nadie habla más del caso. Empezando por quien repartió y en orden de mesa, cada jugador acusa (o pasa) y se vota igual. En esta tanda acusan todos, incluso quienes ya habían gastado su acusación durante el reloj.',
+      'El primer voto unánime cierra la ronda; si nadie es condenado, el espía se marcha de rositas. Si alguien se despista, cualquier otro jugador puede saltar su turno.',
     ],
   },
   {
     title: '🏆 Puntos (varias rondas)',
     body: [
       'El espía: +2 si nadie es condenado · +4 si condenáis a un inocente · +4 si adivina el lugar.',
-      'Los agentes, cuando ganan: +1 cada uno, y +1 extra a quien inició la acusación acertada.',
+      'Los agentes, cuando ganan: +1 cada uno, y +1 extra a quien inició la acusación acertada. También ganan +1 si el espía deja la ronda a medias.',
+      'Si la mesa se queda con menos de 3 jugadores, la ronda se anula: nadie puntúa. Entre rondas se puede sumar gente nueva y quien quiera puede retirarse.',
       'El reparto rota cada ronda y el lugar no se repite hasta agotar el mazo. Jugad las rondas que queráis: el marcador manda.',
     ],
   },
@@ -80,6 +84,8 @@ export const WARN_10S = 'Diez segundos.';
 export const TIMEUP_LINE = '¡Se acabó el tiempo! Nadie hable más del caso. Llega la hora de las acusaciones, por turnos y empezando por quien preguntó primero.';
 
 export const VOTE_HINT = 'Votad todos: cualquier discrepancia devuelve el reloj a la mesa.';
+/** Tras el tiempo ya no hay reloj que devolver: solo turnos. */
+export const VOTE_HINT_TU = 'Votad todos: cualquier discrepancia tumba la acusación y el turno pasa al siguiente.';
 
 /** Textos del lobby y la ayuda, limpios tal y como los lee el ▶️ local. */
 function helpPieces(): string[] {
@@ -89,7 +95,7 @@ function helpPieces(): string[] {
 
 /** Todas las piezas estáticas del guion (para pregenerar clips y su test). */
 export function allEspiaStaticPieces(): string[] {
-  return [ESPIA_INTRO, ...RONDA_START, LISTOS_PROMPT, ...RELOJ_START, WARN_HALF, WARN_MIN, WARN_10S, TIMEUP_LINE, VOTE_HINT, ...helpPieces()];
+  return [ESPIA_INTRO, ...RONDA_START, LISTOS_PROMPT, ...RELOJ_START, WARN_HALF, WARN_MIN, WARN_10S, TIMEUP_LINE, VOTE_HINT, VOTE_HINT_TU, ...helpPieces()];
 }
 
 // ——— Líneas dinámicas (síntesis en vivo, con precalentamiento) ———
@@ -103,12 +109,18 @@ export function startAskLine(name: string): string {
   return `Empieza preguntando ${name}. Y recordad: quien responde, pregunta después.`;
 }
 
-export function voteLine(accuser: string, accused: string): string {
-  return `¡Alto! ${accuser} detiene el reloj y acusa a ${accused} de ser el espía.`;
+// Tras el tiempo el reloj ya no existe: las líneas de votación no pueden
+// hablar de detenerlo ni de devolverlo a la mesa (V1).
+export function voteLine(accuser: string, accused: string, fromTimeup = false): string {
+  return fromTimeup
+    ? `En su turno, ${accuser} acusa a ${accused} de ser el espía.`
+    : `¡Alto! ${accuser} detiene el reloj y acusa a ${accused} de ser el espía.`;
 }
 
-export function voteFailLine(accused: string): string {
-  return `No hay acuerdo: ${accused} sigue en la mesa y el reloj vuelve a correr.`;
+export function voteFailLine(accused: string, fromTimeup = false): string {
+  return fromTimeup
+    ? `No hay acuerdo: ${accused} sigue en la mesa y el turno pasa al siguiente.`
+    : `No hay acuerdo: ${accused} sigue en la mesa y el reloj vuelve a correr.`;
 }
 
 export function turnLine(name: string): string {
@@ -119,13 +131,18 @@ export function outcomeSpeech(o: EspiaOutcome, s: EspiaState): string {
   return cleanSpeech(o.txt) + (rankingSpeech(s) ? ' ' + rankingSpeech(s) : '');
 }
 
-/** Cabeza del marcador para el cierre de ronda (vacío en la primera). */
+/** Cabeza del marcador para el cierre de ronda (vacío en la primera).
+ *  Los empates se dicen como empates: cantar un líder único cuando hay tres a
+ *  la misma puntuación es mentirle a la mesa (R5). */
 function rankingSpeech(s: EspiaState): string {
   const entries = Object.entries(s.scores).filter(([, v]) => v > 0);
   if (s.round < 2 || !entries.length) return '';
-  const top = entries.sort((a, b) => b[1] - a[1])[0];
-  const name = s.names[top[0]] || '¿?';
-  return `Tras ${s.round} rondas, encabeza el marcador ${name} con ${top[1]} punto${top[1] === 1 ? '' : 's'}.`;
+  const best = Math.max(...entries.map(([, v]) => v));
+  const leaders = entries.filter(([, v]) => v === best).map(([pid]) => s.names[pid] || '¿?');
+  const pts = `${best} punto${best === 1 ? '' : 's'}`;
+  if (leaders.length === 1) return `Tras ${s.round} rondas, encabeza el marcador ${leaders[0]} con ${pts}.`;
+  const list = `${leaders.slice(0, -1).join(', ')} y ${leaders[leaders.length - 1]}`;
+  return `Tras ${s.round} rondas, empatan en cabeza ${list}, con ${pts} cada uno.`;
 }
 
 /** Texto para leer en voz alta la carta propia (lectura local, fuera del reloj). */

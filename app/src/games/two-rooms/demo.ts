@@ -19,9 +19,10 @@ export const DEMO: DemoScript = {
     {
       icon: '🎴',
       title: 'El reparto: carta y sala',
-      who: { actor: 'TODOS pulsáis «👁 Ver mi carta y mi sala», la miráis A SOLAS y confirmáis', others: 'cuando confirma el último, os separáis físicamente y cualquiera pulsa «▶️ Empezar la ronda 1».' },
+      who: { actor: 'TODOS pulsáis «👁 Ver mi carta y mi sala», la miráis A SOLAS y confirmáis con «✅ Lo tengo»', others: 'la pantalla enseña el tablero con quién va a cada sala, para que os coloquéis.' },
       text: [
         'A ti te toca 🔴 rojo, carta normal. Fran (aunque tú no lo sabes) es el 💣 BOMBARDERO. Nadie más que cada uno ve su carta.',
+        'Tras confirmar, la carta se cierra. No se ha perdido: el botón redondo 🎴 de abajo a la derecha la vuelve a abrir siempre que quieras, y durante la ronda tienes también «👁 Ver mi carta».',
       ],
       visual: {
         kind: 'screens',
@@ -36,9 +37,17 @@ export const DEMO: DemoScript = {
       title: 'Ronda 1: hablar y enseñar cartas',
       who: { actor: 'TODOS habláis DENTRO de vuestra sala mientras corre el reloj (3 min)', others: 'el temporizador se ve en cada móvil; la voz suena según el modo elegido al empezar.' },
       text: [
-        'Dentro de tu sala puedes ENSEÑAR tu carta a quien quieras, cara a cara y en privado (eso es cosa vuestra, la app no interviene: solo custodia quién es quién).',
+        'Enseñar la carta es EL mecanismo del juego, y se hace con el móvil: abres tu carta, tapas la pantalla con la mano y se la enseñas a esa persona, cara a cara. Solo a quien tú decidas, y solo si quieres.',
+        'También puedes enseñar SOLO EL COLOR: el botón «🎨 Enseñar solo el color» deja en pantalla un panel con tu bando y nada más. Es la jugada favorita del Presidente, que necesita azules de confianza sin cantar que es el Presidente.',
         'Los azules quieren localizar y proteger al Presidente; los rojos, averiguar dónde está para acercarle al Bombardero.',
       ],
+      visual: {
+        kind: 'screens',
+        panes: [
+          { title: 'Carta entera', lines: ['🔵 Equipo AZUL', '🎖️ Eres el PRESIDENTE'], buttons: [{ label: '🎨 Enseñar solo el color', kind: 'ghost' }] },
+          { title: 'Solo el color', lines: ['🔵 EQUIPO AZUL', 'Solo el bando: tu rol no sale en pantalla.'] },
+        ],
+      },
     },
     {
       icon: '🤔',
@@ -50,35 +59,52 @@ export const DEMO: DemoScript = {
         choices: [
           { label: 'Solo si ella me enseña antes una carta azul', good: true, reply: 'Eso es: confirma primero y gana escoltas de verdad. El Presidente necesita azules que lo mantengan lejos del Bombardero… sin que ningún rojo lo localice.' },
           { label: 'A toda la sala, para que me protejan', reply: 'Si hay un rojo delante, ya sabe a quién acercar al Bombardero en los intercambios. Enseñar la carta de Presidente a la ligera suele costar la partida.' },
-          { label: 'A nadie, jamás', reply: 'Legítimo… pero si ningún azul confía en ti, no podrán protegerte en los votos de rehén. El silencio total también tiene precio.' },
+          { label: 'Solo el color, para empezar', reply: 'Prudente: «soy azul» abre conversación sin destapar que eres el Presidente. Muchas partidas se ganan enseñando el color a media sala y el rol a una sola persona.' },
         ],
       },
     },
     {
       icon: '🔄',
       title: 'Fin del reloj: el voto de rehén',
-      who: { actor: 'CADA SALA vota en su móvil a quién manda de rehén (tocas a alguien de TU sala y pulsas «🗳️ Votar»)', others: 'el voto es secreto: en pantalla solo se ve cuántos han votado.' },
+      who: { actor: 'CADA SALA vota en su móvil a quién manda de rehén (tocas a alguien de TU sala y pulsas «🗳️ Votar»)', others: 'el voto es secreto: en pantalla solo se ve cuántos han votado y a quién se espera.' },
       text: [
-        'En la Sala 1 os ponéis de acuerdo… o no: puedes votarte a ti mismo para ofrecerte. El más votado de cada sala CRUZA a la otra (empate: decide el orden de la mesa).',
-        'Tras el intercambio el reloj NO corre: los rehenes se colocan con calma y, cuando todos están en su sala, cualquiera pulsa «▶️ Empezar la ronda 2» (2 minutos; la ronda 3 dura 1).',
+        'En la Sala 1 os ponéis de acuerdo… o no: puedes votarte a ti mismo para ofrecerte. Cruza el más votado de cada sala (con salas grandes, uno de cada cuatro; empate: decide el orden de la mesa).',
+        'La votación se cierra cuando ha votado toda la sala. Si alguien no vota, con la mayoría echada aparece «🔒 Cerrar la votación» y, si nadie lo pulsa, un minuto de reloj la cierra sola.',
+        'Hasta que las dos salas no han decidido no se dice a quién manda ninguna: el trueque se elige a ciegas.',
       ],
       visual: {
         kind: 'screens',
         panes: [
           { title: 'TÚ (Sala 1)', lines: ['¿A quién mandáis de tu sala?', 'Tocas a Carlos.'], buttons: [{ label: '🗳️ Votar a Carlos', kind: 'primary' }] },
-          { title: 'David (Sala 2)', lines: ['Su sala vota a la vez.', 'Sala 2: 2/3 votos…'] },
+          { title: 'David (Sala 2)', lines: ['Su sala vota a la vez.', 'Sala 2: 2 de 3 votos…'] },
+        ],
+      },
+    },
+    {
+      icon: '🚶',
+      title: 'La colocación: los rehenes cruzan',
+      who: { actor: 'Los rehenes se levantan y CAMBIAN de sala físicamente', others: 'los demás se quedan donde están y el reloj NO corre: sin prisa.' },
+      text: [
+        'A quien le toca cruzar se lo dice su propia pantalla, con todas las letras: «TE TOCA CRUZAR a la Sala 2». Los demás leen a quién reciben, y el tablero de arriba muestra cómo quedan las dos salas.',
+        'Cuando cada uno está en su sitio, cualquiera pulsa «▶️ Empezar la ronda 2» y arranca el reloj de la siguiente (2 minutos; la ronda 3 dura 1).',
+      ],
+      visual: {
+        kind: 'screens',
+        panes: [
+          { title: 'Carlos', lines: ['🚶 TE TOCA CRUZAR a la Sala 2.'], buttons: [{ label: '▶️ Empezar la ronda 2', kind: 'primary' }] },
+          { title: 'TÚ (Sala 1)', lines: ['🚶 Os quedáis donde estáis.', 'Recibís a Fran.'] },
         ],
       },
     },
     {
       icon: '💥',
       title: 'El desenlace',
-      who: { actor: 'Tras el intercambio de la ronda 3, la APP destapa todas las cartas y dictamina', others: 'nadie tiene que contar nada: el veredicto es automático.' },
+      who: { actor: 'Tras el intercambio de la última ronda, la APP destapa todas las cartas y dictamina', others: 'nadie tiene que contar nada: el veredicto es automático.' },
       text: [
-        'En nuestra partida, Fran (Bombardero) logró cruzar hasta la sala del Presidente: ¡BOOM! Gana el equipo rojo (el tuyo).',
+        'En nuestra partida, Fran (Bombardero) logró cruzar hasta la sala del Presidente: ¡BOOM! Gana el equipo rojo (el tuyo), y cada jugador rojo suma 1 punto en el marcador de la mesa.',
         'Bajas a mitad: la partida sigue (sus votos caen), pero si abandona el Presidente o el Bombardero su bando se rinde. Marcador guardado y revancha con «🔁 Otra partida». 💣',
       ],
-      visual: { kind: 'log', lines: ['🔔 ¡Fin de la ronda! Cada sala vota a quién manda de rehén.', '🔄 Intercambio: Fran pasa a la Sala 1 y Bea a la Sala 2.', '🏁 El Presidente era Carlos y el Bombardero Fran. Misma sala: ¡BOOM! Gana el ROJO.'] },
+      visual: { kind: 'log', lines: ['🔔 ¡Fin de la ronda! Cada sala vota a quién manda de rehén.', '🔄 Intercambio: de la Sala 1 cruza Bea; de la Sala 2, Fran.', '🏁 El Presidente era Carlos y el Bombardero Fran. Misma sala: ¡BOOM! Gana el ROJO.'] },
     },
   ],
 };

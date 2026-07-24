@@ -2,7 +2,7 @@
   // «🎴 Mi carta + referencia» (B19/B21): tu mano actual y las 8 cartas del
   // mazo con copias, valores y efectos. Accesible en cualquier fase.
   import { app, viewGroup, me } from '../../../../core/sync/store.svelte';
-  import { loveLetterGame } from '../../actions';
+  import { loveLetterGame, outCounts } from '../../actions';
   import { CARD_INFO, VALUE } from '../../cards';
   import type { Card } from '../../cards';
   import RefRows from '../../../../shell/RefRows.svelte';
@@ -12,9 +12,12 @@
   const my = $derived(me());
   const hand = $derived(game && my ? (game.hands[my.id] || []) : []);
   const inGame = $derived(!!game && !!my && game.playerIds.includes(my.id));
+  // Cuántas copias de cada carta han salido ya: es público y contarlas ES el
+  // juego, así que la app lo lleva por ti.
+  const out = $derived(game ? outCounts(game) : null);
   const rows = $derived((Object.keys(CARD_INFO) as Card[]).map((c) => ({
     emoji: CARD_INFO[c].emoji, name: CARD_INFO[c].name,
-    note: `valor ${VALUE[c]} · ${CARD_INFO[c].count} copia${CARD_INFO[c].count === 1 ? '' : 's'}`,
+    note: `valor ${VALUE[c]} · ya han salido ${out ? out[c] : 0} de ${CARD_INFO[c].count}`,
     desc: CARD_INFO[c].short,
   })));
 </script>
@@ -28,11 +31,20 @@
         <div class="rdesc">{CARD_INFO[c].short}</div></div>
     {/each}
   {:else if inGame}
-    <p class="small-note">Estás fuera de esta ronda (tus cartas ya se descartaron).</p>
+    <p class="small-note">❌ Estás fuera de ESTA ronda (tus cartas ya se descartaron). Vuelves en la siguiente.</p>
   {:else}
     <p class="small-note">👀 Miras de espectador: sin carta propia.</p>
   {/if}
   <p class="small-note">🃏 Quedan <b>{game.deck.length}</b> cartas en el mazo · una apartada boca abajo{game.asideUp.length ? ` · boca arriba: ${game.asideUp.map((c) => CARD_INFO[c].name).join(', ')}` : ''}.</p>
-  <RefRows title="🃏 Las 8 cartas del mazo (16 en total)" {rows} />
+  {#if out}
+    <p class="small-note" data-a="ll-out-counts">🔢 Ya han salido: {(Object.keys(CARD_INFO) as Card[]).map((c) => `${CARD_INFO[c].emoji} ${out[c]}/${CARD_INFO[c].count}`).join(' · ')}.</p>
+  {/if}
+  <div class="refwrap"><RefRows title="🃏 Las 8 cartas del mazo (16 en total)" {rows} /></div>
 {/if}
 <button class="primary block" style="margin-top:14px" data-a="close-modal" onclick={() => (app.ui.modal = null)}>Cerrar</button>
+
+<style>
+  /* Nada esencial por debajo de 0,8 rem (B26·9): el efecto de cada carta es lo
+     más leído de este modal. */
+  .refwrap :global(.sdesc) { font-size: 0.8rem; }
+</style>

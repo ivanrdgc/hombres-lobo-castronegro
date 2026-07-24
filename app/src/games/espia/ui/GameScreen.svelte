@@ -51,6 +51,14 @@
   </div>
 {/if}
 
+{#if game.paused}
+  <div class="card" style="text-align:center">
+    <span class="moon">⏸️</span>
+    <h3>Partida en pausa</h3>
+    <p class="small-note">La ha pausado {game.paused.name || 'alguien'}. El reloj está congelado: nadie puede acusar ni votar hasta que se reanude (⋯ → ▶️ Reanudar).</p>
+  </div>
+{/if}
+
 {#if !inRound && game.phase !== 'end'}
   <div class="card" style="text-align:center">
     <span class="moon">👀</span>
@@ -58,7 +66,10 @@
     <p class="small-note">Este dispositivo no juega esta ronda: puedes seguir el reloj y las votaciones desde aquí. Nada de mirar pantallas ajenas.</p>
   </div>
   {#if game.vote}<VotePanel {game} {my} />{/if}
-  {#if game.phase === 'play' || game.phase === 'timeup'}<PlayPhase {game} {my} spectator={true} />{/if}
+  <!-- El espectador ve la MISMA fase que la mesa: en «timeup» no hay reloj,
+       sino turnos de acusación (antes se quedaba con la pantalla de juego). -->
+  {#if game.phase === 'play'}<PlayPhase {game} {my} spectator={true} />
+  {:else if game.phase === 'timeup'}<TimeupPhase {game} {my} />{/if}
 {:else if game.phase === 'reveal'}
   <RevealPhase {game} {my} />
 {:else if game.phase === 'play'}

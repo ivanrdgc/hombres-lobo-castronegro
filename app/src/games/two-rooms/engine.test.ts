@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
-  dealGame, roomMembers, allVotedInRoom, tallyRoom, decideWinner, minutesForRound,
-  presidentId, bomberId, narrates, leavePlayer, MIN_PLAYERS, MAX_PLAYERS, TOTAL_ROUNDS,
+  dealGame, roomMembers, allVotedInRoom, majorityVotedInRoom, pendingInRoom, hostagesPerRoom,
+  tallyRoom, decideWinner, minutesForRound, roundsFor, nameList, rebalanceSpeakers,
+  presidentId, bomberId, narrates, leavePlayer, MIN_PLAYERS, MAX_PLAYERS,
 } from './engine';
 import type { TwoRoomsState } from './types';
 
@@ -15,10 +16,24 @@ function base(over: Partial<TwoRoomsState> = {}): TwoRoomsState {
     teams: { 'p-a': 'blue', 'p-b': 'blue', 'p-c': 'blue', 'p-d': 'red', 'p-e': 'red', 'p-f': 'red' },
     roles: { 'p-a': 'president', 'p-b': 'none', 'p-c': 'none', 'p-d': 'bomber', 'p-e': 'none', 'p-f': 'none' },
     room: { 'p-a': 0, 'p-b': 0, 'p-c': 0, 'p-d': 1, 'p-e': 1, 'p-f': 1 },
-    seen: {}, durationMs: 1000, deadline: null, hVotes: {}, pick: [null, null], swaps: [],
-    winner: null, scores: {}, log: [],
+    seen: {}, durationMs: 1000, deadline: null, hVotes: {}, picks: { 0: null, 1: null }, swaps: [],
+    winner: null, winReason: null, scores: {}, log: [],
     ...over,
   };
+}
+
+/** Mesa de n jugadores repartida a la par entre las dos salas. */
+function bigTable(n: number, over: Partial<TwoRoomsState> = {}): TwoRoomsState {
+  const ids = Array.from({ length: n }, (_, i) => `q-${i}`);
+  const half = Math.ceil(n / 2);
+  return base({
+    playerIds: ids,
+    names: Object.fromEntries(ids.map((id) => [id, id])),
+    teams: Object.fromEntries(ids.map((id, i) => [id, i < half ? 'blue' : 'red'])) as TwoRoomsState['teams'],
+    roles: Object.fromEntries(ids.map((id, i) => [id, i === 0 ? 'president' : i === half ? 'bomber' : 'none'])) as TwoRoomsState['roles'],
+    room: Object.fromEntries(ids.map((id, i) => [id, i < half ? 0 : 1])) as TwoRoomsState['room'],
+    ...over,
+  });
 }
 
 describe('dealGame', () => {
@@ -49,24 +64,110 @@ describe('dealGame', () => {
 describe('tallyRoom', () => {
   it('elige al más votado por los de su sala', () => {
     const g = base({ hVotes: { 'p-a': 'p-b', 'p-b': 'p-b', 'p-c': 'p-a' } });
-    expect(tallyRoom(g, 0)).toBe('p-b'); // p-b: 2, p-a: 1
+    expect(tallyRoom(g, 0)).toEqual(['p-b']); // p-b: 2, p-a: 1
   });
   it('no cuenta votos a gente de la otra sala', () => {
     const g = base({ hVotes: { 'p-a': 'p-d', 'p-b': 'p-c', 'p-c': 'p-c' } });
-    expect(tallyRoom(g, 0)).toBe('p-c'); // el voto a p-d (sala 1) no cuenta
+    expect(tallyRoom(g, 0)).toEqual(['p-c']); // el voto a p-d (sala 1) no cuenta
   });
   it('empate en cabeza → el primero por orden de mesa', () => {
     const g = base({ hVotes: { 'p-a': 'p-b', 'p-b': 'p-a', 'p-c': 'p-c' } });
-    expect(tallyRoom(g, 0)).toBe('p-a'); // triple empate a 1 → p-a
+    expect(tallyRoom(g, 0)).toEqual(['p-a']); // triple empate a 1 → p-a
+  });
+  it('con k rehenes devuelve los k más votados, en orden', () => {
+    const g = base({ hVotes: { 'p-a': 'p-c', 'p-b': 'p-c', 'p-c': 'p-b' } });
+    expect(tallyRoom(g, 0, 2)).toEqual(['p-c', 'p-b']);
+  });
+  it('si la sala concentró los votos en menos de k, completa por orden de mesa', () => {
+    const g = base({ hVotes: { 'p-a': 'p-c', 'p-b': 'p-c', 'p-c': 'p-c' } });
+    expect(tallyRoom(g, 0, 2)).toEqual(['p-c', 'p-a']);
+  });
+  it('nunca devuelve más gente de la que hay en la sala', () => {
+    const g = base();
+    expect(tallyRoom(g, 0, 9)).toHaveLength(3);
   });
 });
 
-describe('allVotedInRoom', () => {
-  it('exige el voto de todos los de la sala', () => {
+describe('rondas y rehenes escalan con la mesa', () => {
+  it('hasta 10 jugadores, 3 rondas de 3, 2 y 1 minutos', () => {
+    expect(roundsFor(6)).toBe(3);
+    expect(roundsFor(10)).toBe(3);
+    expect([1, 2, 3].map((r) => minutesForRound(r, 3))).toEqual([3, 2, 1]);
+  });
+  it('de 11 en adelante, 5 rondas de 5, 4, 3, 2 y 1 minutos', () => {
+    expect(roundsFor(11)).toBe(5);
+    expect(roundsFor(30)).toBe(5);
+    expect([1, 2, 3, 4, 5].map((r) => minutesForRound(r, 5))).toEqual([5, 4, 3, 2, 1]);
+  });
+  it('rehenes: uno de cada cuatro de la sala, mínimo uno', () => {
+    expect(hostagesPerRoom(base())).toBe(1); // salas de 3
+    expect(hostagesPerRoom(bigTable(14))).toBe(2); // salas de 7
+    expect(hostagesPerRoom(bigTable(20))).toBe(3); // salas de 10
+    expect(hostagesPerRoom(bigTable(30))).toBe(4); // salas de 15
+  });
+  it('con salas desiguales manda la pequeña (el trueque no descompensa las salas)', () => {
+    expect(hostagesPerRoom(bigTable(9))).toBe(1); // salas de 5 y 4
+  });
+});
+
+describe('cierre del voto de rehén', () => {
+  it('allVotedInRoom exige el voto de todos los de la sala', () => {
     const g = base({ hVotes: { 'p-a': 'p-b', 'p-b': 'p-b' } });
     expect(allVotedInRoom(g, 0)).toBe(false);
     g.hVotes['p-c'] = 'p-a';
     expect(allVotedInRoom(g, 0)).toBe(true);
+  });
+  it('la mayoría basta para poder cerrar a mano (móvil muerto)', () => {
+    const g = base({ hVotes: { 'p-a': 'p-b' } });
+    expect(majorityVotedInRoom(g, 0)).toBe(false); // 1 de 3
+    g.hVotes['p-b'] = 'p-b';
+    expect(majorityVotedInRoom(g, 0)).toBe(true); // 2 de 3
+  });
+  it('se sabe a quién se espera en cada sala', () => {
+    const g = base({ hVotes: { 'p-a': 'p-b' } });
+    expect(pendingInRoom(g, 0)).toEqual(['p-b', 'p-c']);
+  });
+});
+
+describe('nameList', () => {
+  it('enumera en castellano', () => {
+    const g = base();
+    expect(nameList(g, [])).toBe('nadie');
+    expect(nameList(g, ['p-a'])).toBe('P-A');
+    expect(nameList(g, ['p-a', 'p-b'])).toBe('P-A y P-B');
+    expect(nameList(g, ['p-a', 'p-b', 'p-c'])).toBe('P-A, P-B y P-C');
+  });
+});
+
+describe('rebalanceSpeakers (la voz de cada sala)', () => {
+  it('el altavoz jugador que cruza se lleva la voz a su nueva sala', () => {
+    // p-a (voz de la sala 1) acaba en la sala 2 y p-d (voz de la 2) en la 1.
+    const g = base({
+      voiceMode: 'perRoom', roomSpeakers: ['p-a', 'p-d'],
+      room: { 'p-a': 1, 'p-b': 0, 'p-c': 0, 'p-d': 0, 'p-e': 1, 'p-f': 1 },
+    });
+    rebalanceSpeakers(g);
+    expect(g.roomSpeakers).toEqual(['p-d', 'p-a']);
+  });
+  it('si las dos voces acaban en la misma sala, la otra sala toma una nueva', () => {
+    const g = base({
+      voiceMode: 'perRoom', roomSpeakers: ['p-a', 'p-d'],
+      room: { 'p-a': 0, 'p-b': 0, 'p-c': 0, 'p-d': 0, 'p-e': 1, 'p-f': 1 },
+    });
+    rebalanceSpeakers(g);
+    expect(g.roomSpeakers[0]).toBe('p-a');
+    expect(['p-e', 'p-f']).toContain(g.roomSpeakers[1]); // la sala 2 no se queda muda
+  });
+  it('un altavoz que NO juega se queda clavado en su sala', () => {
+    const g = base({ voiceMode: 'perRoom', roomSpeakers: ['tele-1', 'p-d'] });
+    rebalanceSpeakers(g);
+    expect(g.roomSpeakers[0]).toBe('tele-1');
+    expect(g.roomSpeakers[1]).toBe('p-d');
+  });
+  it('en los demás modos de voz no toca nada', () => {
+    const g = base({ voiceMode: 'single', roomSpeakers: ['p-a', null] });
+    rebalanceSpeakers(g);
+    expect(g.roomSpeakers).toEqual(['p-a', null]);
   });
 });
 
@@ -101,11 +202,6 @@ describe('narrates (modos de voz)', () => {
 });
 
 describe('utilidades', () => {
-  it('el reloj de la última ronda es el más corto', () => {
-    expect(minutesForRound(1, 3)).toBe(3);
-    expect(minutesForRound(2, 3)).toBe(2);
-    expect(minutesForRound(3, 3)).toBe(1);
-  });
   it('localiza al Presidente y al Bombardero', () => {
     const g = base();
     expect(presidentId(g)).toBe('p-a');
@@ -115,7 +211,6 @@ describe('utilidades', () => {
   it('rangos', () => {
     expect(MIN_PLAYERS).toBe(6);
     expect(MAX_PLAYERS).toBe(30);
-    expect(TOTAL_ROUNDS).toBe(3);
   });
 });
 
@@ -173,11 +268,18 @@ describe('leavePlayer (salidas a mitad de partida)', () => {
   it('si el que se va ya era el rehén elegido, su sala vuelve a quedar sin decisión', () => {
     const g = base({
       phase: 'hostages', playerIds: [...IDS, 'p-g'],
-      pick: ['p-b', null], hVotes: { 'p-a': 'p-b', 'p-b': 'p-b', 'p-c': 'p-b', 'p-g': 'p-b' },
+      picks: { 0: ['p-b'], 1: null }, hVotes: { 'p-a': 'p-b', 'p-b': 'p-b', 'p-c': 'p-b', 'p-g': 'p-b' },
     });
     g.names['p-g'] = 'P-G'; g.teams['p-g'] = 'blue'; g.roles['p-g'] = 'none'; g.room['p-g'] = 0;
     expect(leavePlayer(g, 'p-b')).toBe('removed');
-    expect(g.pick[0]).toBeNull();
+    expect(g.picks[0]).toBeNull();
+  });
+  it('la rendición por abandono NO se cuenta como un BOOM', () => {
+    const g = base({ phase: 'discuss', deadline: 999, playerIds: [...IDS, 'p-g'] });
+    g.names['p-g'] = 'P-G'; g.teams['p-g'] = 'blue'; g.roles['p-g'] = 'none'; g.room['p-g'] = 0;
+    leavePlayer(g, 'p-a'); // el Presidente
+    expect(g.winReason).toContain('abandonó');
+    expect(g.winReason).not.toContain('BOOM');
   });
   it('con la partida acabada solo sale del censo (sin tocar el marcador de otros)', () => {
     const g = base({ phase: 'end', winner: 'blue', scores: { 'p-a': 2, 'p-b': 1 } });

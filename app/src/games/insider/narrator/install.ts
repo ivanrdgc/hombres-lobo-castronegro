@@ -49,13 +49,24 @@ function amSpeaker(s: Snap): boolean {
 
 const gm = (ctx: Ctx): InsiderState => insiderGame(ctx.state().group)!;
 const nm = (g: InsiderState, pid: string | null | undefined): string => (pid && g.names[pid]) || 'alguien';
+// «🔁 Repetir» sube repeatNonce y con él la clave de escena; si la clave del
+// LEDGER no lo lleva también, la escena rearranca pero el sayOnce ya está
+// marcado y no suena nada (mismo remedio que en Avalon y Una Noche).
+const rk = (g: InsiderState, key: string): string => `I${g.startedAt}:${key}:r${g.repeatNonce || 0}`;
 
 // ——— Escenas ———
 
 function sceneOf(s: Snap): SceneDef<Snap> | null {
   if (!amSpeaker(s)) return null;
   const game = insiderGame(s.group)!;
-  const K = (rest: string) => `I${game.startedAt}:r${game.round}:${rest}`;
+  // En pausa, escena muda con hardEntry: corta la voz en seco Y —sobre todo—
+  // cambia la clave, de modo que al reanudar se rearranca la escena de fase. Sin
+  // ella, questionScene salía por su propio `return` y, como la clave no había
+  // cambiado, el tick quedaba en no-op para el resto de la ronda: se perdían los
+  // avisos de tiempo y el disparo del fin de reloj.
+  if (game.paused) return { key: `I${game.startedAt}:paused:${game.paused.at}`, hardEntry: true, run: pausedScene };
+  const rf = game.repeatNonce || 0;
+  const K = (rest: string) => `I${game.startedAt}:r${game.round}:${rest}:r${rf}`;
   if (game.phase === 'reveal') return { key: K('reveal'), run: revealScene };
   if (game.phase === 'question') return { key: K('question'), run: questionScene };
   if (game.phase === 'vote') return { key: K('vote'), run: voteScene };
@@ -63,10 +74,12 @@ function sceneOf(s: Snap): SceneDef<Snap> | null {
   return null;
 }
 
+async function pausedScene(ctx: Ctx): Promise<void> { await ctx.waitFor(() => false); }
+
 async function revealScene(ctx: Ctx): Promise<void> {
   const g = gm(ctx);
-  if (g.round === 1) await ctx.sayOnce(`I${g.startedAt}:intro`, () => utt('insider-intro', INSIDER_INTRO));
-  await ctx.sayOnce(`I${g.startedAt}:r${g.round}:master`, () =>
+  if (g.round === 1) await ctx.sayOnce(rk(g, 'intro'), () => utt('insider-intro', INSIDER_INTRO));
+  await ctx.sayOnce(rk(g, `r${g.round}:master`), () =>
     utt('insider-master', masterLine(nm(g, g.masterId))));
   await ctx.waitFor((s) => {
     const game = insiderGame(s.group);
@@ -76,7 +89,7 @@ async function revealScene(ctx: Ctx): Promise<void> {
 
 async function questionScene(ctx: Ctx): Promise<void> {
   const g0 = gm(ctx);
-  const R = `I${g0.startedAt}:r${g0.round}`;
+  const R = rk(g0, `r${g0.round}`);
   await ctx.sayOnce(`${R}:qstart`, () => utt('insider-qstart', QUESTION_START));
   await ctx.sayOnce(`${R}:starter`, () => utt('insider-starter', starterLine(nm(g0, g0.playerIds[g0.starterIdx]))));
   // Avisos por hitos absolutos del reloj (mitad, último minuto, diez segundos).
@@ -103,7 +116,7 @@ async function questionScene(ctx: Ctx): Promise<void> {
 
 async function voteScene(ctx: Ctx): Promise<void> {
   const g = gm(ctx);
-  await ctx.sayOnce(`I${g.startedAt}:r${g.round}:hunt`, () => utt('insider-hunt', GUESSED_LINE, VOTE_HINT));
+  await ctx.sayOnce(rk(g, `r${g.round}:hunt`), () => utt('insider-hunt', GUESSED_LINE, VOTE_HINT));
 }
 
 async function endScene(ctx: Ctx): Promise<void> {
@@ -111,9 +124,9 @@ async function endScene(ctx: Ctx): Promise<void> {
   if (!g.outcome) return;
   await ctx.sleep(400);
   if (g.outcome === 'timeout') {
-    await ctx.sayOnce(`I${g.startedAt}:r${g.round}:end`, () => utt('insider-timeout', TIMEOUT_LINE));
+    await ctx.sayOnce(rk(g, `r${g.round}:end`), () => utt('insider-timeout', TIMEOUT_LINE));
   } else {
-    await ctx.sayOnce(`I${g.startedAt}:r${g.round}:end`, () => utt('insider-end', outcomeSpeech(g)));
+    await ctx.sayOnce(rk(g, `r${g.round}:end`), () => utt('insider-end', outcomeSpeech(g)));
   }
 }
 

@@ -13,17 +13,22 @@
   const rows = [
     { emoji: '🦎', name: 'El Camaleón', note: 'uno por ronda', desc: 'No conoce la palabra: improvisa pistas y, si lo pillan, aún gana adivinándola en la rejilla.' },
     { emoji: '🔑', name: 'El grupo', desc: 'Conoce la palabra secreta: pistas ni obvias (se la regalas) ni vagas (sospecharán de ti).' },
-    { emoji: '🏆', name: 'Puntos', desc: 'Camaleón sin pillar +2 · pillado pero acierta +1 · pillado y falla: +1 a cada uno del grupo.' },
+    // Las dos reglas que deciden la partida y que solo estaban en el lobby.
+    { emoji: '👉', name: 'El voto', note: 'lo decide todo', desc: 'Si señaláis al Camaleón, le queda una bala: adivinar la palabra. Si señaláis a un inocente (o hay empate), la ronda acaba ahí y gana el Camaleón.' },
+    { emoji: '🏆', name: 'Puntos', desc: 'Camaleón sin pillar, 2 puntos. Pillado pero acierta, 1 punto. Pillado y falla, 1 punto para cada jugador del grupo.' },
   ];
 </script>
 
 {#if game && my}
   <h3 style="margin:0 0 4px">🎴 Tu carta</h3>
   {#if inGame}
-    <MyCard {game} pid={my.id} />
+    <!-- `mini`: la palabra secreta se enseña a petición y se auto-oculta; abierta
+         de par en par se quedaba a la vista de cualquier vecino de mesa. -->
+    <MyCard {game} pid={my.id} mini={true} />
   {:else}
     <p class="small-note">👀 Miras de espectador: sin carta propia.</p>
   {/if}
   <RefRows title="📖 Chuleta" {rows} />
+  <button class="block" style="margin-top:10px" data-a="ch-help-open" onclick={() => (app.ui.modal = { type: 'ch-help' })}>🎲 Cómo se juega (reglas completas)</button>
 {/if}
 <button class="primary block" style="margin-top:14px" data-a="close-modal" onclick={() => (app.ui.modal = null)}>Cerrar</button>

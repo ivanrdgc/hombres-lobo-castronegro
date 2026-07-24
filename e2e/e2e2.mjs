@@ -79,7 +79,13 @@ async function driveNightStep(st) {
       return;
     }
     case 'nino_salvaje': return clickFirstAnd(pages[alive('nino_salvaje').name.toLowerCase()], 'button[data-a=act-nino]');
-    case 'perro_lobo': return pages[alive('perro_lobo').name.toLowerCase()].click('button[data-a=act-perro][data-p=aldeano]');
+    case 'perro_lobo': {
+      // Elegir bando marca toda la partida: se elige y se CONFIRMA (dos gestos).
+      const pg = pages[alive('perro_lobo').name.toLowerCase()];
+      await pg.click('button[data-a=act-perro][data-p=aldeano]');
+      await pg.waitForSelector('button[data-a=act-perro-confirm]');
+      return pg.click('button[data-a=act-perro-confirm]');
+    }
     case 'dos_hermanas': {
       for (const p of st.players.filter((x) => x.role === 'dos_hermanas' && x.alive)) {
         const pg = pages[p.name.toLowerCase()];

@@ -10,14 +10,23 @@ import type { SonarState, Sub, Team } from './types';
 
 export const MIN_PLAYERS = 2;
 export const MAX_PLAYERS = 10;
+/** Tamaño ideal: 4-6 (dos tripulaciones que puedan deliberar). Con 2 «funciona»
+ *  pero es un duelo de dos solitarios: se recomienda en el lobby, no se impone. */
+export const BEST_PLAYERS = '4 a 6';
 export const MAX_HP = 3;
 export const MAX_ENERGY = 6;
 export const COST_TORPEDO = 3;
 export const COST_DRONE = 2;
 export const COST_SILENCE = 3;
 export const TORPEDO_RANGE = 4;
+/** Casillas que puede recorrer una maniobra en silencio (1 o 2, en línea recta):
+ *  moverse 1 gratis navegando ya da +1 de energía, así que un silencio de una
+ *  sola casilla nunca compensaría (era una opción dominada). */
+export const SILENCE_MAX_STEPS = 2;
 
-export const TEAM_LABEL: Record<Team, string> = { red: '🔴 el submarino Rojo', blue: '🔵 el submarino Azul' };
+/** Nombre del submarino SIN artículo: se concatena tras preposición («del …»,
+ *  «al …»), así que meter aquí el «el» producía «de el submarino Azul». */
+export const TEAM_NAME: Record<Team, string> = { red: 'submarino Rojo 🔴', blue: 'submarino Azul 🔵' };
 export const rival = (t: Team): Team => (t === 'red' ? 'blue' : 'red');
 
 function mulberry32(seed: number): () => number {
@@ -51,12 +60,39 @@ function startPos(side: 'left' | 'right', seed: number): Cell {
   }
 }
 
+const mkSub = (side: 'left' | 'right', s: number): Sub => ({ pos: startPos(side, s), trail: [], hp: MAX_HP, energy: 0 });
+
+/** Submarinos a estrenar (posición secreta, sin estela, 3 de vida, 0 de energía). */
+export function freshSubs(seed: number): Record<Team, Sub> {
+  return { red: mkSub('left', seed + 1), blue: mkSub('right', seed + 2) };
+}
+
 export function dealGame(playerIds: string[], seed: number): Deal {
   const order = shuffled(playerIds, seed);
   const teams: Record<Team, string[]> = { red: [], blue: [] };
   order.forEach((pid, i) => teams[i % 2 === 0 ? 'red' : 'blue'].push(pid));
-  const mkSub = (side: 'left' | 'right', s: number): Sub => ({ pos: startPos(side, s), trail: [], hp: MAX_HP, energy: 0 });
-  return { teams, subs: { red: mkSub('left', seed + 1), blue: mkSub('right', seed + 2) } };
+  return { teams, subs: freshSubs(seed) };
+}
+
+/** F1 · Modo «uno por equipo»: los dos altavoces deben acabar en tripulaciones
+ *  DISTINTAS. El reparto es al azar y los altavoces se eligen antes, así que a
+ *  menudo caían los dos en el mismo submarino y el otro corro se quedaba sin
+ *  voz. Intercambia el segundo altavoz con un tripulante del otro submarino
+ *  (así los tamaños de las tripulaciones no cambian). */
+export function splitSpeakers(
+  teams: Record<Team, string[]>, a: string | null, b: string | null,
+): boolean {
+  if (!a || !b || a === b) return false;
+  const teamWith = (pid: string): Team | null =>
+    teams.red.includes(pid) ? 'red' : teams.blue.includes(pid) ? 'blue' : null;
+  const ta = teamWith(a);
+  if (!ta || teamWith(b) !== ta) return false; // ya están separados (o alguno no juega)
+  const other = rival(ta);
+  const swap = teams[other].find((pid) => pid !== a && pid !== b);
+  if (!swap) return false; // el otro submarino no tiene con quién cambiar
+  teams[ta] = teams[ta].map((pid) => (pid === b ? swap : pid));
+  teams[other] = teams[other].map((pid) => (pid === swap ? b : pid));
+  return true;
 }
 
 // ——— Consultas ———
@@ -107,7 +143,7 @@ function finish(game: SonarState, winner: Team, reason: string): void {
   game.winReason = reason;
   game.phase = 'end';
   for (const pid of game.teams[winner]) game.scores[pid] = (game.scores[pid] || 0) + 1;
-  log(game, `🏆 ¡Gana ${TEAM_LABEL[winner]}! ${reason}`);
+  log(game, `🏆 ¡Gana el ${TEAM_NAME[winner]}! ${reason}`);
   log(game, `📍 Posiciones finales: Rojo en ${cellName(game.subs.red.pos)}, Azul en ${cellName(game.subs.blue.pos)}.`);
 }
 
@@ -122,22 +158,40 @@ export function move(game: SonarState, pid: string, dir: Dir): boolean {
   sub.pos = to;
   sub.energy = Math.min(MAX_ENERGY, sub.energy + 1);
   game.moves[team].push(dir);
-  log(game, `🧭 ${TEAM_LABEL[team]} navega al ${DIR_LABEL[dir]}. (+1 de energía)`);
+  log(game, `🧭 El ${TEAM_NAME[team]} navega al ${DIR_LABEL[dir]}. (+1 de energía ⚡)`);
   endTurn(game);
   return true;
 }
 
-export function silence(game: SonarState, pid: string, dir: Dir): boolean {
+/** Recorrido legal de un silencio en esa dirección: 0 (imposible), 1 o 2. */
+export function silenceSteps(game: SonarState, team: Team, dir: Dir): number {
+  const sub = game.subs[team];
+  let cur = sub.pos; let n = 0;
+  for (let i = 0; i < SILENCE_MAX_STEPS; i++) {
+    const nxt = stepTo(cur, dir);
+    if (blocked(sub, nxt)) break;
+    cur = nxt; n++;
+  }
+  return n;
+}
+
+/** Silencio: 1 o 2 casillas en línea recta sin anunciar el rumbo (las casillas
+ *  atravesadas cuentan como estela). Mover 2 es lo que lo hace valer su precio. */
+export function silence(game: SonarState, pid: string, dir: Dir, steps = 1): boolean {
   if (!canAct(game, pid)) return false;
   const team = game.turnTeam; const sub = game.subs[team];
   if (sub.energy < COST_SILENCE) return false;
-  const to = stepTo(sub.pos, dir);
-  if (blocked(sub, to)) return false;
-  sub.trail.push({ ...sub.pos });
-  sub.pos = to;
+  if (steps < 1 || steps > SILENCE_MAX_STEPS || silenceSteps(game, team, dir) < steps) return false;
+  // Se valida todo el recorrido antes de tocar nada: cada casilla atravesada
+  // queda como estela (no se puede volver a pisar).
+  const path: Cell[] = [];
+  let cur = sub.pos;
+  for (let i = 0; i < steps; i++) { cur = stepTo(cur, dir); path.push(cur); }
+  sub.trail.push({ ...sub.pos }, ...path.slice(0, -1));
+  sub.pos = path[path.length - 1];
   sub.energy -= COST_SILENCE;
   game.moves[team].push('silence');
-  log(game, `🤫 ${TEAM_LABEL[team]} maniobra en silencio: rumbo desconocido.`);
+  log(game, `🤫 El ${TEAM_NAME[team]} maniobra en silencio: rumbo desconocido (1 o 2 casillas).`);
   endTurn(game);
   return true;
 }
@@ -155,13 +209,16 @@ export function torpedo(game: SonarState, pid: string, target: Cell): boolean {
     const dmg = sameCell(s.pos, target) ? 2 : chebyshev(s.pos, target) === 1 ? 1 : 0;
     if (dmg > 0) {
       s.hp = Math.max(0, s.hp - dmg);
-      hits.push(`${dmg === 2 ? '¡IMPACTO DIRECTO' : 'la onda alcanza'} a ${TEAM_LABEL[t]}${dmg === 2 ? '!' : ''} (${dmg} de daño, le quedan ${s.hp})`);
+      hits.push(`${dmg === 2 ? `¡IMPACTO DIRECTO en el ${TEAM_NAME[t]}!` : `la onda alcanza al ${TEAM_NAME[t]}`} (${dmg} de daño, le quedan ${s.hp})`);
     }
   }
-  log(game, `🚀 Torpedo de ${TEAM_LABEL[team]} contra ${cellName(target)}: ${hits.length ? hits.join(' y ') : 'agua. Nada a la vista'}.`);
+  log(game, `🚀 Torpedo del ${TEAM_NAME[team]} contra ${cellName(target)}: ${hits.length ? hits.join(' y ') : 'agua. Nada a la vista'}.`);
   const enemy = rival(team);
-  if (game.subs[enemy].hp <= 0) return finish(game, team, `${TEAM_LABEL[enemy]} se hunde.`), true;
-  if (game.subs[team].hp <= 0) return finish(game, enemy, `${TEAM_LABEL[team]} se hunde con su propio torpedo.`), true;
+  // Primero el PROPIO casco: si el torpedo hunde a los dos a la vez, gana el que
+  // no disparó (lo que promete la ayuda). Al revés ganaba quien acababa de
+  // hundirse con su propia onda.
+  if (game.subs[team].hp <= 0) return finish(game, enemy, `El ${TEAM_NAME[team]} se hunde con su propio torpedo.`), true;
+  if (game.subs[enemy].hp <= 0) return finish(game, team, `El ${TEAM_NAME[enemy]} se hunde.`), true;
   endTurn(game);
   return true;
 }
@@ -172,7 +229,7 @@ export function drone(game: SonarState, pid: string): boolean {
   if (sub.energy < COST_DRONE) return false;
   sub.energy -= COST_DRONE;
   const enemy = rival(team);
-  log(game, `🛰️ Dron de ${TEAM_LABEL[team]}: ${TEAM_LABEL[enemy]} está en el cuadrante ${quadrantOf(game.subs[enemy].pos)}.`);
+  log(game, `🛰️ Dron del ${TEAM_NAME[team]}: el ${TEAM_NAME[enemy]} está en el cuadrante ${quadrantOf(game.subs[enemy].pos)}.`);
   endTurn(game);
   return true;
 }
@@ -184,17 +241,17 @@ export function surface(game: SonarState, pid: string): boolean {
   const team = game.turnTeam; const sub = game.subs[team];
   sub.trail = [];
   game.moves[team].push('surface');
-  log(game, `⏫ ${TEAM_LABEL[team]} emerge en el cuadrante ${quadrantOf(sub.pos)} y borra su estela.`);
+  log(game, `⏫ El ${TEAM_NAME[team]} emerge en el cuadrante ${quadrantOf(sub.pos)} y borra su estela.`);
   endTurn(game);
   return true;
 }
 
+/** Revancha: MISMAS tripulaciones (nadie tiene que cambiar de corro ni de
+ *  altavoz: `teamSpeakers` sigue valiendo) y submarinos recolocados en secreto. */
 export function resetForRematch(game: SonarState, seed: number): void {
-  const deal = dealGame(game.playerIds, seed);
   game.seed = seed;
   game.phase = 'turn';
-  game.teams = deal.teams;
-  game.subs = deal.subs;
+  game.subs = freshSubs(seed);
   game.turnTeam = seed % 2 === 0 ? 'red' : 'blue';
   game.moves = { red: [], blue: [] };
   game.winner = null;

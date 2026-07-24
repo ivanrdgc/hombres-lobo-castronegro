@@ -12,21 +12,24 @@
 </script>
 
 {#if mini && !open}
-  <div style="text-align:center;margin:10px 0"><button class="small ghost" data-a="ch-togglecard" onclick={toggle}>👁 Ver mi carta</button></div>
+  <div style="text-align:center;margin:10px 0"><button class="small ghost" data-a="ch-togglecard" onclick={toggle}>👁 Ver mi carta en secreto</button></div>
 {:else}
   <div class="rolecard {cham ? 'cham' : 'town'}" data-a="ch-togglecard" onclick={toggle} role="button" tabindex="0"
     onkeydown={(e) => { if (e.key === 'Enter') toggle(); }}>
     {#if cham}
       <span class="remoji">🦎</span>
+      <div class="rteam" style="margin:0 0 2px">Tu papel en esta ronda</div>
       <span class="rname">Eres el CAMALEÓN</span>
-      <div class="rdesc">No conoces la palabra secreta. Escucha las pistas, imita el tono y suelta una palabra que encaje… sin cantarte.</div>
+      <div class="rdesc" style="margin-top:6px">No conoces la palabra secreta. Escucha las pistas, imita el tono y suelta una palabra que encaje… sin cantarte. Si te pillan, aún puedes ganar adivinándola.</div>
     {:else}
+      <!-- La etiqueta ANTES de la palabra: leída del revés, «Sombrilla» sola en
+           grande no decía si era tu palabra o la del vecino. -->
       <span class="remoji">🔑</span>
+      <div class="rteam" style="margin:0 0 2px">Tu palabra secreta es</div>
       <span class="rname">«{secretWord(game)}»</span>
-      <div class="rteam">es la palabra secreta</div>
-      <div class="rdesc">Da una pista que demuestre que la conoces… pero no tanto que el Camaleón la adivine.</div>
+      <div class="rdesc" style="margin-top:6px">Búscala en la rejilla. Da una pista que demuestre que la conoces… pero no tanto que el Camaleón la adivine.</div>
     {/if}
-    {#if mini}<p class="small-note" style="margin-top:8px">Se oculta sola en unos segundos; toca la carta para ocultarla ya.</p>{/if}
+    {#if mini}<p class="small-note" style="margin-top:8px">🙈 Que nadie te vea la pantalla: se oculta sola en unos segundos, o toca la carta para ocultarla ya.</p>{/if}
   </div>
 {/if}
 

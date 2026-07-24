@@ -9,6 +9,7 @@ import HelpModal from './ui/modals/HelpModal.svelte';
 import DemoModal from './ui/modals/DemoModal.svelte';
 import LeaveModal from './ui/modals/LeaveModal.svelte';
 import EndConfirmModal from './ui/modals/EndConfirmModal.svelte';
+import SkipConfirmModal from './ui/modals/SkipConfirmModal.svelte';
 import MyInfoModal from './ui/modals/MyInfoModal.svelte';
 
 export const wavelength: GameDefinition = {
@@ -16,7 +17,7 @@ export const wavelength: GameDefinition = {
   emoji: '📡',
   name: 'Wavelength',
   desc: 'Sintonía pura y cooperativa: cada ronda hay un espectro entre dos ideas opuestas y un objetivo secreto que solo ve el Psíquico. Él da una pista y el equipo coloca el marcador; cuanto más os leáis, más puntos. Sin respuestas correctas, solo lo bien que os entendáis.',
-  minPlayers: 2,
+  minPlayers: 3,
   maxPlayers: 12,
   Lobby: LobbyScreen,
   Start: StartScreen,
@@ -27,5 +28,6 @@ export const wavelength: GameDefinition = {
     'wl-demo': DemoModal,
     'wl-leave': LeaveModal,
     'wl-end': EndConfirmModal,
+    'wl-skip': SkipConfirmModal,
   },
 };

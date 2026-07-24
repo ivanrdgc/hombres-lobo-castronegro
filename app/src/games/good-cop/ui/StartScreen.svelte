@@ -7,7 +7,7 @@
   import { play } from '../../../core/audio/player';
   import type { GroupDoc, PlayerDoc } from '../../../core/sync/schema';
   import * as A from '../actions';
-  import { MIN_PLAYERS, MAX_PLAYERS } from '../engine';
+  import { MIN_PLAYERS, MAX_PLAYERS, bandCounts } from '../engine';
   import Flash from '../../../shell/Flash.svelte';
   import SeatPicker from '../../../shell/SeatPicker.svelte';
 
@@ -30,6 +30,7 @@
   });
   const narratorP = $derived(app.players.find((p) => p.id === narrator));
   const okStart = $derived(n >= MIN_PLAYERS && n <= MAX_PLAYERS);
+  const counts = $derived(bandCounts(n));
 
   function startNow() {
     const pids = chosen.map((p) => p.id);
@@ -51,7 +52,9 @@
 <div class="card">
   <h3>🎮 ¿Quién juega?</h3>
   <SeatPicker {group} {meId} gameId="good_cop" onState={(s) => (seat = s)} />
-  <p class="small-note">La app repartirá 3 cartas de integridad a cada uno (tu bando es su mayoría), con un Agente y un Jefe ocultos.</p>
+  <p class="small-note">La app repartirá 3 cartas de integridad a cada uno (siempre 2 de tu bando y 1 del contrario: tu bando es su mayoría), con un Agente y un Jefe ocultos.</p>
+  <!-- El reparto es público: hay que saberlo ANTES de empezar a deducir. -->
+  {#if okStart}<p class="small-note">🧮 Con {n} jugadores saldrán <b>{counts.honest} 👮 honestos</b> y <b>{counts.crook} 🦹 corruptos</b>. Esto lo sabe toda la mesa.</p>{/if}
 </div>
 
 <div class="card">

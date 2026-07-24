@@ -19,6 +19,9 @@
     <button class="menu-scrim" aria-label="Cerrar menú" onclick={close}></button>
     <div class="menu-pop" role="menu">
       <button role="menuitem" data-a="voice-open" onclick={() => { app.ui.modal = { type: 'voice' }; app.ui.voiceTest = null; close(); }}>{app.ui.muted ? '🔇 Voz' : '🗣️ Voz'}</button>
+      <!-- «La mesa» desde dentro de la partida: el rescate cuando a alguien se
+           le muere el móvil y una sala espera su voto para siempre. -->
+      <button role="menuitem" data-a="table-open" onclick={() => { app.ui.modal = { type: 'table' }; close(); }}>🪑 La mesa</button>
       {#if playing}
         <button role="menuitem" data-a="tr-repeat" onclick={() => { guard(A.requestRepeat); close(); }}>🔁 Repetir</button>
         {#if game.paused}

@@ -19,6 +19,11 @@
     <button class="menu-scrim" aria-label="Cerrar menú" onclick={close}></button>
     <div class="menu-pop" role="menu">
       <button role="menuitem" data-a="voice-open" onclick={() => { app.ui.modal = { type: 'voice' }; app.ui.voiceTest = null; close(); }}>{app.ui.muted ? '🔇 Voz' : '🗣️ Voz'}</button>
+      <!-- Las reglas también EN PARTIDA: el «cómo se juega» solo vivía en el lobby. -->
+      <button role="menuitem" data-a="ch-help-open" onclick={() => { app.ui.modal = { type: 'ch-help' }; close(); }}>🎲 Cómo se juega</button>
+      <!-- Dentro de una partida la URL se recoloca sola: sin esta entrada no hay
+           forma de llegar al menú de un móvil apagado y sacarlo de la ronda. -->
+      <button role="menuitem" data-a="table-open" onclick={() => { app.ui.modal = { type: 'table' }; close(); }}>🪑 La mesa</button>
       {#if playing}
         <button role="menuitem" data-a="ch-repeat" onclick={() => { guard(A.requestRepeat); close(); }}>🔁 Repetir</button>
         {#if game.paused}

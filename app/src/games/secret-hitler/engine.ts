@@ -114,6 +114,65 @@ export function hitlerChancellorWin(game: SHState, chancellor: string): boolean 
 
 export const factionLabel = (f: Faction): string => (f === 'liberal' ? 'liberal' : 'fascista');
 
+// ——— Caos y veto (pasos puros: actions.ts solo escribe la crónica) ———
+
+export interface ChaosOutcome { policy: PolicyId; win: WinCheck }
+
+/**
+ * Caos: tres gobiernos caídos → se promulga a ciegas el decreto de arriba SIN
+ * disparar su poder y BORRANDO los límites de mandato (regla oficial: el
+ * siguiente gobierno puede repetir cargos).
+ */
+export function applyChaos(game: SHState): ChaosOutcome {
+  const [policy] = takeTop(game, 1);
+  enactPolicy(game, policy); // el poder que devuelva se ignora: el caos no lo activa
+  game.chaosCount = (game.chaosCount || 0) + 1;
+  game.electionTracker = 0;
+  game.lastPresident = null;
+  game.lastChancellor = null;
+  game.nominatedChancellor = null;
+  const win = checkPolicyWin(game);
+  if (win.winner) {
+    game.winner = win.winner;
+    game.winReason = win.reason;
+    game.phase = 'end';
+    return { policy, win };
+  }
+  advancePresidency(game);
+  game.phase = 'nominate';
+  return { policy, win };
+}
+
+export interface VetoOutcome { chaos: ChaosOutcome | null }
+
+/** ¿Puede el Canciller proponer veto? (desbloqueado y sin haberlo pedido ya). */
+export function canVeto(game: SHState): boolean {
+  return !!game.vetoUnlocked && !game.vetoRefused;
+}
+
+/**
+ * Veto ACEPTADO: la agenda entera se descarta, no se promulga nada y cuenta
+ * como gobierno caído (puede desembocar en caos).
+ */
+export function applyVetoAccept(game: SHState): VetoOutcome {
+  for (const c of game.chancellorDraw || []) game.discard.push(c);
+  game.chancellorDraw = null;
+  game.vetoRequested = false;
+  game.electionTracker += 1;
+  if (game.electionTracker >= 3) return { chaos: applyChaos(game) };
+  advancePresidency(game);
+  game.phase = 'nominate';
+  game.nominatedChancellor = null;
+  return { chaos: null };
+}
+
+/** Veto RECHAZADO: el Canciller vuelve a su agenda y ya no puede re-vetar. */
+export function applyVetoRefuse(game: SHState): void {
+  game.vetoRequested = false;
+  game.vetoRefused = true;
+  game.phase = 'legislativeChancellor';
+}
+
 /** ¿Quién debe actuar ahora? (para resaltar en la UI). */
 export function pendingActors(game: SHState): string[] {
   switch (game.phase) {

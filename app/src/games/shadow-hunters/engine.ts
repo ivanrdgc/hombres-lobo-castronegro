@@ -7,7 +7,12 @@ import type { ShadowHState } from './types';
 
 export const MIN_PLAYERS = 4;
 export const MAX_PLAYERS = 8;
-export const MAX_HP = 10;
+// Vida inicial: 8, no 10. El daño medio de |d6−d4| es 1,83, así que 10 PV pedían
+// ~5,5 impactos por muerte y con 8 jugadores hay que tumbar a 3 (30 PV): el
+// primero en caer se pasaba media hora mirando. Con 8 PV son ~4,4 impactos, un
+// 20 % menos de partida. El original reparte 11-14 PV, pero también tiene cartas
+// de equipo y localizaciones que aceleran; esta adaptación no las tiene.
+export const MAX_HP = 8;
 
 export interface Player { id: string; name?: string; order?: number }
 export function playersOf(game: ShadowHState): Player[] {
@@ -87,21 +92,30 @@ function heal(game: ShadowHState, target: string, amount: number): void {
   game.hp[target] = Math.min(game.maxHp, game.hp[target] + amount);
 }
 
+/** Pasa el turno y lo CANTA: con los móviles en el bolsillo, la voz es lo único
+ *  que dice a quién le toca (como en Coup y en Skull). Sin esta línea la mesa
+ *  oía «Ana ataca a Bea» y nadie sabía quién actuaba después. */
 function endTurn(game: ShadowHState): void {
   if (checkWin(game)) return;
   game.turn = nextAlive(game, game.turn);
+  log(game, `🎬 Turno de ${nm(game, game.turn)}.`);
 }
 
-/** ¿Ha terminado? Cazadores ganan sin Sombras vivas y viceversa. Los neutrales
+/** ¿Ha terminado? Cazadores ganan sin Sombras vivas y viceversa; si caen los
+ *  últimos de AMBOS bandos a la vez (poder de área), es empate. Los neutrales
  *  se suman a los ganadores si cumplieron su objetivo. */
 export function checkWin(game: ShadowHState): boolean {
   const shadowsAlive = aliveIds(game).some((p) => factionOf(game, p) === 'shadow');
   const huntersAlive = aliveIds(game).some((p) => factionOf(game, p) === 'hunter');
   if (shadowsAlive && huntersAlive) return false;
-  const winner: 'hunter' | 'shadow' = shadowsAlive ? 'shadow' : 'hunter';
+  // Sin el caso null, un remate simultáneo (Valquiria) daba la victoria a unos
+  // Cazadores igual de muertos.
+  const winner: 'hunter' | 'shadow' | null = shadowsAlive ? 'shadow' : huntersAlive ? 'hunter' : null;
   game.winner = winner;
-  game.winReason = winner === 'hunter' ? 'No queda ninguna Sombra en pie.' : 'No queda ningún Cazador en pie.';
-  const winners = game.playerIds.filter((p) => factionOf(game, p) === winner);
+  game.winReason = winner === 'hunter' ? 'No queda ninguna Sombra en pie.'
+    : winner === 'shadow' ? 'No queda ningún Cazador en pie.'
+      : 'Han caído a la vez el último Cazador y la última Sombra.';
+  const winners = winner ? game.playerIds.filter((p) => factionOf(game, p) === winner) : [];
   // Neutrales: Allie gana si sigue viva; Bob, si dio algún golpe de gracia.
   for (const p of game.playerIds) {
     const c = charOf(game, p);
@@ -112,7 +126,7 @@ export function checkWin(game: ShadowHState): boolean {
   for (const p of game.winners) game.scores[p] = (game.scores[p] || 0) + 1;
   for (const p of game.playerIds) game.revealed[p] = true;
   game.phase = 'end';
-  log(game, `🏆 Ganan ${FACTION_LABEL[winner]}. ${game.winReason}`);
+  log(game, winner ? `🏆 Ganan ${FACTION_LABEL[winner]}. ${game.winReason}` : `🏆 Empate: ningún bando gana. ${game.winReason}`);
   return true;
 }
 
@@ -125,11 +139,20 @@ export function givePista(game: ShadowHState, pid: string, target: string): bool
   const idx = roll(game, PISTAS.length) - 1;
   const p = PISTAS[idx];
   const applies = pistaApplies(p, factionOf(game, target));
-  let outcome = 'no le afecta';
-  if (applies && p.effect === 'damage1') { damage(game, target, 1, null); outcome = 'pierde 1 punto de vida'; }
-  if (applies && p.effect === 'heal1') { heal(game, target, 1); outcome = 'se cura 1 punto de vida'; }
-  game.pista = { by: pid, target, idx, outcome };
-  log(game, `🔮 ${nm(game, pid)} entrega una pista a ${nm(game, target)}… y ${outcome === 'no le afecta' ? 'no le afecta' : outcome.replace('pierde', 'pierde').replace('se cura', 'se cura')}.`);
+  // La cura NO cambia nada si el objetivo ya está a tope (al principio todos lo
+  // están y la mitad del mazo cura): cantar «se cura 1» sin que suba la vida
+  // parecía un fallo de la app y, peor, delataba que la carta SÍ le aplicaba.
+  const hurts = applies && p.effect === 'damage1';
+  const heals = applies && p.effect === 'heal1' && game.hp[target] < game.maxHp;
+  const outcome = hurts ? 'pierde 1 punto de vida' : heals ? 'se cura 1 punto de vida' : 'no le afecta';
+  game.pista = { by: pid, target, idx, outcome, ack: [] };
+  // El sujeto se nombra otra vez: «…y Bea pierde 1 punto de vida» (al oído,
+  // «y pierde 1» sonaba a que la que perdía era quien daba la pista).
+  log(game, `🔮 ${nm(game, pid)} entrega una pista a ${nm(game, target)}… y ${outcome === 'no le afecta' ? 'no le afecta' : `${nm(game, target)} ${outcome}`}.`);
+  // El efecto se aplica DESPUÉS de la línea para que un «☠️ … cae» salga detrás.
+  // El autor es `pid`: una pista que remata SÍ es golpe de gracia (objetivo de Bob).
+  if (hurts) damage(game, target, 1, pid);
+  else if (heals) heal(game, target, 1);
   endTurn(game);
   return true;
 }
@@ -141,10 +164,12 @@ export function attack(game: ShadowHState, pid: string, target: string): boolean
   const d6 = roll(game, 6);
   const d4 = roll(game, 4);
   const dmg = Math.abs(d6 - d4);
+  // «saca 5 y 2, y le hace 3 de daño»: la flecha se leía como coma y salían tres
+  // cifras seguidas («dados 5 y 2, 3 de daño»), imposible de seguir de oído.
   if (dmg === 0) {
-    log(game, `⚔️ ${nm(game, pid)} ataca a ${nm(game, target)}: dados ${d6} y ${d4}… ¡falla!`);
+    log(game, `⚔️ ${nm(game, pid)} ataca a ${nm(game, target)}: saca ${d6} y ${d4}… ¡falla!`);
   } else {
-    log(game, `⚔️ ${nm(game, pid)} ataca a ${nm(game, target)}: dados ${d6} y ${d4} → ${dmg} de daño.`);
+    log(game, `⚔️ ${nm(game, pid)} ataca a ${nm(game, target)}: saca ${d6} y ${d4}, y le hace ${dmg} de daño.`);
     damage(game, target, dmg, pid);
   }
   endTurn(game);
@@ -168,13 +193,15 @@ export function revealSelf(game: ShadowHState, pid: string, target: string | nul
     if (!target || !isAlive(game, target)) return false;
     if (target === pid && c.id !== 'fuka') return false; // solo Fuka puede elegirse a sí misma
   }
+  // El candado del poder es `revealed[pid]` (arriba): no hay un segundo flag.
   game.revealed[pid] = true;
-  game.powerUsed[pid] = true;
   log(game, `🎭 ${nm(game, pid)} se revela: es ${c.emoji} ${c.name} (${FACTION_LABEL[c.faction]}).`);
   if (c.id === 'georg' && target) damage(game, target, 2, pid);
   else if (c.id === 'franklin' && target) { const d = roll(game, 4); log(game, `⚡ El rayo de Franklin hace ${d} de daño.`); damage(game, target, d, pid); }
   else if (c.id === 'fuka' && target) heal(game, target, 3);
-  else if (c.id === 'vampiro' && target) { damage(game, target, 2, pid); heal(game, pid, 2); }
+  // El Vampiro ROBA: se cura lo que ha quitado de verdad (si la víctima tenía
+  // 1 PV, roba 1, no 2: la vida no puede salir de la nada).
+  else if (c.id === 'vampiro' && target) { const before = game.hp[target]; damage(game, target, 2, pid); heal(game, pid, before - game.hp[target]); }
   else if (c.id === 'licantropo') heal(game, pid, 3);
   else if (c.id === 'valquiria') for (const p of aliveIds(game)) { if (p !== pid) damage(game, p, 1, pid); }
   else if (c.id === 'allie') game.hp[pid] = game.maxHp;
@@ -192,7 +219,6 @@ export function resetForRematch(game: ShadowHState, seed: number): void {
   game.hp = Object.fromEntries(game.playerIds.map((p) => [p, game.maxHp]));
   game.alive = Object.fromEntries(game.playerIds.map((p) => [p, true]));
   game.revealed = Object.fromEntries(game.playerIds.map((p) => [p, false]));
-  game.powerUsed = Object.fromEntries(game.playerIds.map((p) => [p, false]));
   game.turn = game.playerIds[seed % game.playerIds.length];
   game.pista = null;
   game.killsBy = {};

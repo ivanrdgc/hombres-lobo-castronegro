@@ -106,14 +106,20 @@ export function legalActionTypes(game: CoupState, pid: string): ActionType[] {
   return ACTION_UI_ORDER.filter((t) => {
     if (t === 'golpe') return coins >= ACTIONS.golpe.cost;
     if (t === 'asesinar') return coins >= ACTIONS.asesinar.cost;
-    return true; // renta, ayuda, impuestos, robar, intercambiar: sin coste
+    // Robar sin nadie a quien robar (todos a 0) malgastaría el turno: se oculta.
+    if (t === 'robar') return targetsFor(game, pid, 'robar').length > 0;
+    return true; // renta, ayuda, impuestos, intercambiar: sin coste
   });
 }
 
 /** Víctimas posibles de una acción con objetivo. */
 export function targetsFor(game: CoupState, actor: string, type: ActionType): string[] {
   if (!ACTIONS[type].needsTarget) return [];
-  return aliveIds(game).filter((pid) => pid !== actor);
+  const rivals = aliveIds(game).filter((pid) => pid !== actor);
+  // Robar a quien no tiene monedas no roba nada: fuera de la lista (el turno
+  // se malgastaría y la voz cantaría «roba 0 monedas»).
+  if (type === 'robar') return rivals.filter((pid) => (game.coins[pid] || 0) > 0);
+  return rivals;
 }
 
 /** Quién debe reaccionar (desafiar/bloquear/pasar) en la ventana en curso. */
@@ -141,6 +147,10 @@ export function allowedReactions(game: CoupState, pid: string): { challenge: boo
   if (game.phase === 'block' && p) return { challenge: false, block: true, blockClaims: blockersFor(p.type) };
   return { challenge: false, block: false, blockClaims: [] };
 }
+
+/** Reactores de la ventana en curso que aún no han tocado nada. */
+export const pendingReactors = (game: CoupState): string[] =>
+  reactorsOf(game).filter((pid) => game.reactions[pid] === undefined);
 
 const allPassed = (game: CoupState): boolean => {
   const r = reactorsOf(game);
@@ -180,7 +190,8 @@ function revealCard(game: CoupState, pid: string, handIdx: number, reason: Pendi
   if (!card || card.lost) return;
   card.lost = true;
   const dead = influenceCount(game, pid) === 0;
-  log(game, `💥 ${nm(game, pid)} descubre ${charName(card.char)}${dead ? ' y queda ELIMINADO.' : '.'}`);
+  // Sin género: la frase vale para cualquiera («ELIMINADO» chirriaba en femenino).
+  log(game, `💥 ${nm(game, pid)} descubre ${charName(card.char)}${dead ? ' y queda FUERA.' : '.'}`);
   void reason;
 }
 
@@ -197,7 +208,7 @@ function finishIfWon(game: CoupState): boolean {
   game.scores[w] = (game.scores[w] || 0) + 1;
   game.losing = [];
   game.resume = null;
-  log(game, `👑 ¡${nm(game, w)} es el último en pie y gana el golpe de Estado!`);
+  log(game, `👑 ¡${nm(game, w)} gana el golpe de Estado: es quien queda en pie!`); // sin género
   return true;
 }
 
@@ -214,7 +225,9 @@ function applyActionEffect(game: CoupState): void {
     const amt = Math.min(2, game.coins[p.target] || 0);
     game.coins[p.target] -= amt;
     game.coins[p.actor] += amt;
-    log(game, `⚓ ${nm(game, p.actor)} roba ${amt} moneda${amt === 1 ? '' : 's'} a ${nm(game, p.target)}.`);
+    // amt 0 no debería darse (targetsFor filtra), pero si pasara se dice claro.
+    if (amt === 0) log(game, `⚓ ${nm(game, p.actor)} intenta robar a ${nm(game, p.target)}, pero no le quedaban monedas que robar.`);
+    else log(game, `⚓ ${nm(game, p.actor)} roba ${amt} moneda${amt === 1 ? '' : 's'} a ${nm(game, p.target)}.`);
   } else if (p.type === 'asesinar' && p.target) {
     log(game, `🗡️ El asesinato de ${nm(game, p.target)} sigue adelante.`);
     enqueueLoss(game, p.target, 'asesinato');
@@ -382,6 +395,20 @@ function advanceAfterAllPass(game: CoupState): void {
   }
 }
 
+/**
+ * Desatasca una ventana abierta: pasa por los que no reaccionan (alguien se fue
+ * al baño). Lo dispara la voz desde su dispositivo tras varios avisos; sin esto
+ * la única salida era terminar la partida.
+ */
+export function passForAbsent(game: CoupState): boolean {
+  const pend = pendingReactors(game);
+  if (!pend.length) return false;
+  log(game, `⏭️ Sin respuesta de ${pend.map((pid) => nm(game, pid)).join(', ')}: la mesa pasa por ${pend.length === 1 ? 'quien falta' : 'quienes faltan'}.`);
+  for (const pid of pend) game.reactions[pid] = 'pass';
+  advanceAfterAllPass(game);
+  return true;
+}
+
 export function doChallenge(game: CoupState, challenger: string): boolean {
   const react = allowedReactions(game, challenger);
   if (!react.challenge) return false;
@@ -507,4 +534,6 @@ export function resetForRematch(game: CoupState, seed: number): void {
   game.resume = null;
   game.exchange = null;
   game.winner = null;
+  // Diario limpio: arrastrar el de la partida anterior confundía a la mesa.
+  game.log = [{ txt: '🔁 Nueva partida: corte barajada y repartida de nuevo. Mirad vuestras influencias.' }];
 }

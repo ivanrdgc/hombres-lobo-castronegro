@@ -74,8 +74,8 @@ export async function startAvalon(
     avalon: true, phase: 'reveal', startedAt: now, seed,
     playerIds, names, roles, enabledRoles, dropped,
     seen: {}, leaderIdx: seed % playerIds.length,
-    quest: 1, results: [], voteTrack: 0, team: [], votes: {}, lastVote: null,
-    questCards: {}, lastQuest: null, assassinTarget: null,
+    quest: 1, results: [], voteTrack: 0, team: [], votes: {}, lastVote: null, proposals: [],
+    questCards: {}, lastQuest: null, missions: [], assassinTarget: null,
     winner: null, winReason: null, paused: null, repeatNonce: 0,
     log: [{ txt: `🏰 Comienza Ávalon con ${playerIds.length} caballeros. El Bien busca completar tres misiones; el Mal, sabotearlas.` }],
   };
@@ -142,7 +142,10 @@ export async function voteTeam(approve: boolean): Promise<void> {
     if (Object.keys(game.votes).length < nplayers(game)) return game; // faltan votos
     // Todos han votado: se destapan a la vez (públicos, como en el original).
     const { approvals, rejections, approved } = tallyVote(game);
-    game.lastVote = { team: game.team, leaderId: leaderId(game), approvals, rejections, approved };
+    game.lastVote = { team: game.team, leaderId: leaderId(game), approvals, rejections, approved, quest: game.quest };
+    // Historial PÚBLICO (quién propuso qué y quién lo aprobó): en la mesa real
+    // está en la memoria de todos; aquí se consulta en pantalla.
+    game.proposals = [...(game.proposals || []), game.lastVote];
     game.phase = 'voteReveal';
     game.log.push({ txt: `🗳️ Propuesta ${approved ? 'APROBADA' : 'RECHAZADA'} (${approvals.length} a favor, ${rejections.length} en contra).` });
     return game;
@@ -156,6 +159,7 @@ export async function continueAfterVote(): Promise<void> {
     if (game.phase !== 'voteReveal') return null;
     if (!game.playerIds.includes(me) && me !== m.masterId) return null;
     if (game.lastVote?.approved) {
+      game.voteTrack = 0;
       game.questCards = {};
       game.phase = 'quest';
       game.log.push({ txt: `⚔️ El equipo parte a la misión ${game.quest}: ${listNames(game, game.team)}.` });
@@ -192,7 +196,8 @@ export async function questCard(wantSuccess: boolean): Promise<void> {
     if (game.team.some((pid) => game.questCards[pid] === undefined)) return game; // faltan cartas
     const { fails, required, success: ok } = resolveQuest(game);
     game.results.push(ok ? 'success' : 'fail');
-    game.lastQuest = { quest: game.quest, team: game.team, fails, required, success: ok };
+    game.lastQuest = { quest: game.quest, team: game.team, fails, required, success: ok, leaderId: leaderId(game) };
+    game.missions = [...(game.missions || []), game.lastQuest];
     game.phase = 'result';
     game.log.push({ txt: `${ok ? '✅' : '💥'} Misión ${game.quest}: ${ok ? 'ÉXITO' : 'FRACASO'} (${fails} sabotaje${fails === 1 ? '' : 's'}).` });
     return game;
@@ -260,8 +265,12 @@ export async function assassinate(targetId: string): Promise<void> {
 // ——— Revancha / fin ———
 
 export async function playAgain(): Promise<void> {
-  await tx((game) => {
+  const me = myPid();
+  await tx((game, m) => {
     if (game.phase !== 'end') return null;
+    // La revancha la deciden los que han jugado (o el narrador): un espectador
+    // no puede rebarajar la mesa desde su móvil.
+    if (!game.playerIds.includes(me) && me !== m.masterId) return null;
     const players = game.playerIds.map((id, i) => ({ id, order: i }));
     const seed = (game.seed || 0) + 101;
     const { roles, dropped } = dealRoles(players, game.enabledRoles, seed);
@@ -277,8 +286,10 @@ export async function playAgain(): Promise<void> {
     game.team = [];
     game.votes = {};
     game.lastVote = null;
+    game.proposals = [];
     game.questCards = {};
     game.lastQuest = null;
+    game.missions = [];
     game.assassinTarget = null;
     game.winner = null;
     game.winReason = null;

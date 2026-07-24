@@ -14,8 +14,9 @@ import { dealRoles, ROLES, isWolfSide, isWolfTeamRole, OFFICIAL_MIN_PLAYERS, CAS
 import type { RoleDef, RoleId } from './roles';
 import {
   computeNightSteps, stepActors, resolveDawn, resolveVote, applyDeathsChain,
-  checkWinner, annotateDeaths, reserveNextKeywords, infectionTonight, GITANA_QUESTIONS,
+  canRegisterVote, checkWinner, annotateDeaths, reserveNextKeywords, infectionTonight, GITANA_QUESTIONS,
 } from './engine';
+import { cleanForSpeech } from '../../core/util/speech';
 import type { GameState, StepId, WinnerId } from './types';
 
 // Re-export de las acciones de grupo: el código del juego (y cualquier import
@@ -283,7 +284,7 @@ export async function leaveGame(targetPid?: string, mid?: string): Promise<void>
     }
     // ¿Su marcha decide la partida? (en manual decide el narrador)
     if (game.mode !== 'manual') {
-      const w = checkWinner(ps);
+      const w = checkWinner(ps, !!game.powersLost);
       if (w) {
         game.winner = w;
         game.phase = 'end';
@@ -300,7 +301,7 @@ export async function leaveGame(targetPid?: string, mid?: string): Promise<void>
 
 export async function endGameNow(winner: WinnerId | null, mid?: string): Promise<void> {
   await gameTx((game, players) => {
-    game.winner = winner || checkWinner(players.filter((p) => p.inGame)) || 'nadie';
+    game.winner = winner || checkWinner(players.filter((p) => p.inGame), !!game.powersLost) || 'nadie';
     game.phase = 'end';
     game.paused = null;
     game.log!.push({ kind: 'evento', txt: '🏁 La partida se da por terminada: se revelan todos los roles.' });
@@ -437,7 +438,8 @@ export async function runDawn(): Promise<void> {
     // ¿Ganó el Ángel muriendo la primera noche?
     let winner: WinnerId | null = null;
     if (game.night === 1 && res.deaths.some((d) => d.role === 'angel')) winner = 'angel';
-    if (!winner) winner = checkWinner(res.players);
+    // game.powersLost ya viene actualizado por res.gameUpdates (Object.assign).
+    if (!winner) winner = checkWinner(res.players, !!game.powersLost);
 
     game.pending = res.pendings || [];
     if ((g.settings || {}).alguacil && game.dayNum === 1) {
@@ -766,9 +768,11 @@ export const actGitana = (qIdx: number | null) => nightAction('gitana', (game) =
   return {};
 });
 
-// La gitana también puede escribir su propia pregunta (de sí o no).
+// La gitana también puede escribir su propia pregunta (de sí o no). El texto
+// se limpia YA (emojis, flechas…): al amanecer entra tal cual en la locución
+// del narrador, y un emoji ahí se leería por su nombre.
 export const actGitanaCustom = (text: string) => nightAction('gitana', (game) => {
-  const q = String(text || '').trim().slice(0, 140);
+  const q = cleanForSpeech(String(text || '')).slice(0, 140).trim();
   if (!q) return null;
   game.acts.gitanaDone = true;
   game.acts.gitanaText = q;
@@ -784,12 +788,10 @@ export async function castVote(choice: string): Promise<void> {
     const myId = myPid();
     const guidedMaster = game.mode === 'guiado' && myId === g.masterId;
     const voter = ps.find((p) => p.id === myId);
-    if (!guidedMaster) {
-      // El Tonto del Pueblo descubierto no tiene voto, pero SÍ puede registrar
-      // la decisión colectiva (es quien la anota, no un voto ponderado).
-      if (!voter || !voter.alive) return null;
-      if (game.soloVoteId && game.soloVoteId !== myId) return null;
-    }
+    // El Tonto del Pueblo descubierto no tiene voto, pero SÍ puede registrar
+    // la decisión colectiva (es quien la anota, no un voto ponderado): mismo
+    // criterio que aplica la interfaz (canRegisterVote).
+    if (!guidedMaster && !canRegisterVote(game, voter)) return null;
     if (choice !== 'nadie' && choice !== 'empate') {
       const t = ps.find((p) => p.id === choice);
       if (!t || !t.alive) return null;
@@ -900,7 +902,7 @@ export async function hunterShoot(targetId: string | null): Promise<void> {
     game.pending = game.pending.slice(1);
     if (!targetId) {
       game.log!.push({ kind: 'evento', txt: `🏹 ${hunter?.name || 'El Cazador'} decide no disparar su última flecha.` });
-      const w = checkWinner(ps);
+      const w = checkWinner(ps, !!game.powersLost);
       if (w) { game.winner = w; game.phase = 'end'; }
       return { game };
     }
@@ -924,7 +926,7 @@ export async function hunterShoot(targetId: string | null): Promise<void> {
       game.soloVoteId = null;
       game.soloVoteName = null;
     }
-    const w = checkWinner(copy);
+    const w = checkWinner(copy, !!game.powersLost);
     if (w) { game.winner = w; game.phase = 'end'; }
     return { game, playerPatches: diffPlayers(ps, copy) };
   });
@@ -1077,7 +1079,12 @@ const STEP_SKIP_DEFAULTS: Partial<Record<StepId, (g: GameState, ps: PlayerDoc[])
   gitana: (g) => { g.acts.gitanaDone = true; },
 };
 
-export async function forceAdvance(): Promise<void> {
+// Salta el trámite en curso (reparto, paso de noche, pendiente del día).
+// `alsoStep` es el RESCATE del modo automático: si un móvil se apagó en mitad
+// de la noche, el repaso de roles no puede cerrarse (exige a TODOS los vivos)
+// y cerrarlo a secas devolvería al mismo paso atascado; con alsoStep se cierra
+// el repaso Y se salta ese paso de una vez, con una sola pulsación.
+export async function forceAdvance(alsoStep = false): Promise<void> {
   function applyAfterSirvientaSkip(game: GameState, ps: PlayerDoc[]): GameTxResult | null {
     const head = game.pending[0];
     game.pending = game.pending.slice(1);
@@ -1092,14 +1099,22 @@ export async function forceAdvance(): Promise<void> {
       return { game, playerPatches: patches };
     }
     if (game.phase === 'night') {
+      // Cerrar el repaso ya es un cambio que hay que guardar: si luego no se
+      // puede saltar el paso, se escribe igualmente (o el repaso se quedaría
+      // abierto para siempre).
+      let refreshCleared = false;
       if (game.roleRefresh) {
         game.roleRefresh = null;
         game.refreshNonce = (game.refreshNonce || 0) + 1;
-        game.log!.push({ kind: 'evento', txt: '⏭️ El máster da por terminado el repaso de roles.' });
-        return { game };
+        game.log!.push({ kind: 'evento', txt: alsoStep
+          ? '⏭️ La mesa continúa sin quien no responde: se salta el paso atascado.'
+          : '⏭️ El máster da por terminado el repaso de roles.' });
+        if (!alsoStep) return { game };
+        refreshCleared = true;
+        // …y sigue abajo para saltar además el paso que dejó colgada la noche.
       }
       const stepId = game.steps[game.stepIdx];
-      if (stepId === 'amanecer') return null; // lo resuelve el conductor
+      if (stepId === 'amanecer') return refreshCleared ? { game } : null; // lo resuelve el conductor
       const actorsNow = stepActors(stepId, game, ps);
       if (!actorsNow || !actorsNow.length) { game.stepIdx += 1; return { game }; }
       const skip = STEP_SKIP_DEFAULTS[stepId];

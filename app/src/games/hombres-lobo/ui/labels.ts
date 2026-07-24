@@ -17,6 +17,14 @@ export const STEP_LABELS: Record<StepId, string> = {
   amanecer: 'el amanecer',
 };
 
+/** Señalado por el Cuervo (o por el Actor haciendo de Cuervo). Es información
+ *  PÚBLICA desde el amanecer —la voz lo anuncia—, así que la pantalla puede
+ *  enseñarla de día sin delatar a nadie. Mismo criterio que el motor. */
+export function cuervoMarkId(game: { acts?: { cuervoTarget?: string | null; actor?: { power?: string; target?: string | null } } } | null | undefined): string | null {
+  const acts = game?.acts || {};
+  return acts.cuervoTarget ?? (acts.actor && acts.actor.power === 'cuervo' ? acts.actor.target ?? null : null);
+}
+
 export const PENDING_LABELS: Record<string, string> = {
   cazador: 'el disparo del Cazador', sirvienta: 'la decisión de la Sirvienta',
   alguacil_elect: 'la elección del Alguacil', alguacil_pick: 'el sucesor del Alguacil',

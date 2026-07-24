@@ -10,7 +10,7 @@ import {
 import type { RoleId } from './roles';
 import {
   computeNightSteps, stepActors, resolveDawn, resolveVote, applyDeathsChain, checkWinner,
-  reserveNextKeywords, infectionTonight, stepNeedsGhostAnnounce, annotateDeaths,
+  canRegisterVote, reserveNextKeywords, infectionTonight, stepNeedsGhostAnnounce, annotateDeaths,
 } from './engine';
 import type { GamePlayer, GameState } from './types';
 import { narr, outro, loveDeathLine } from './texts/corpus';
@@ -670,6 +670,37 @@ test('checkWinner: la paridad respeta al cazador y a la bruja con veneno', () =>
   assert.equal(checkWinner(conBruja), 'lobos', 'sin veneno ya no hay resistencia');
   // El albino en solitario no dispara la paridad: sigue cazando por su cuenta.
   assert.equal(checkWinner(mkPlayers(['lobo_albino', 'aldeano'])), null);
+});
+
+test('checkWinner: con el Anciano matado por el pueblo, cazador y bruja ya NO son resistencia', () => {
+  // Regresión: la paridad no cerraba la partida porque contaba como resistencia
+  // a un Cazador sin flecha y a una Bruja sin veneno (poderes perdidos).
+  assert.equal(checkWinner(mkPlayers(['hombre_lobo', 'cazador']), true), 'lobos', 'el cazador ya no dispara');
+  assert.equal(checkWinner(mkPlayers(['hombre_lobo', 'bruja']), true), 'lobos', 'la bruja ya no envenena');
+  // Sin castigo del Anciano, todo sigue como antes (la partida no cierra).
+  assert.equal(checkWinner(mkPlayers(['hombre_lobo', 'cazador'])), null);
+  // Y el castigo no inventa victorias donde no hay paridad.
+  assert.equal(checkWinner(mkPlayers(['hombre_lobo', 'cazador', 'aldeano']), true), null);
+});
+
+test('resolveVote: linchar al Anciano desarma al Cazador y la paridad cierra la partida', () => {
+  const players = mkPlayers(['hombre_lobo', 'anciano', 'cazador']);
+  const game = mkGame({ phase: 'day', dayNum: 1, votesLeft: 1 });
+  const res = resolveVote(game, players, players[1].id)!; // el pueblo lincha al Anciano
+  assert.equal(res.gameUpdates.powersLost, true, 'el pueblo pierde sus poderes');
+  assert.equal(res.winner, 'lobos', '1 lobo frente a 1 cazador sin flecha: se acabó');
+});
+
+test('canRegisterVote: el Tonto descubierto no vota, pero SÍ registra (si no, el Cabeza de Turco cuelga el día)', () => {
+  const ps = mkPlayers(['hombre_lobo', 'aldeano', 'tonto']);
+  const tonto = ps[2];
+  tonto.revealedTonto = true;
+  assert.equal(canRegisterVote({}, tonto), true, 'el Tonto revelado puede anotar la decisión');
+  assert.equal(canRegisterVote({ soloVoteId: tonto.id }, tonto), true, 'designado por el Cabeza de Turco: registra él');
+  assert.equal(canRegisterVote({ soloVoteId: tonto.id }, ps[1]), false, 'los demás callan ese día');
+  tonto.alive = false;
+  assert.equal(canRegisterVote({}, tonto), false, 'un muerto no registra nada');
+  assert.equal(canRegisterVote({}, null), false);
 });
 
 test('checkWinner: enamorados de bandos distintos, últimos dos', () => {

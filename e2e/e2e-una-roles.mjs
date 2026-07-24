@@ -49,6 +49,8 @@ async function twoSel(p) {
 async function actStep(p, step) {
   if (step === 'doble') {
     if (await vis(p, '[data-a=una-doble-copy]')) { await firstSel(p); await clk(p, '[data-a=una-doble-copy]'); await p.waitForTimeout(200); }
+    // B25: primero se elige QUÉ se mira (jugador / centro) y luego a quién.
+    if (await vis(p, '[data-a=una-dsee-mode][data-p=player]')) { await clk(p, '[data-a=una-dsee-mode][data-p=player]'); await p.waitForTimeout(150); }
     if (await vis(p, '[data-a=una-dsee-player]')) { await firstSel(p); await clk(p, '[data-a=una-dsee-player]'); }
     else if (await vis(p, '[data-a=una-drob]')) { await firstSel(p); await clk(p, '[data-a=una-drob]'); }
     else if (await vis(p, '[data-a=una-dtm]')) { await twoSel(p); await clk(p, '[data-a=una-dtm]'); }
@@ -62,6 +64,8 @@ async function actStep(p, step) {
   } else if (step === 'esbirro') { if (await vis(p, '[data-a=una-minion-ok]')) await clk(p, '[data-a=una-minion-ok]'); }
   else if (step === 'masones') { if (await vis(p, '[data-a=una-mason-ok]')) await clk(p, '[data-a=una-mason-ok]'); }
   else if (step === 'vidente') {
+    // B25: «¿qué quieres mirar?» → objetivo → confirmar.
+    if (await vis(p, '[data-a=una-seer-mode][data-p=player]')) { await clk(p, '[data-a=una-seer-mode][data-p=player]'); await p.waitForTimeout(150); }
     if (await vis(p, '[data-a=una-seer-player]')) { await firstSel(p); await clk(p, '[data-a=una-seer-player]'); await p.waitForTimeout(150); }
     if (await vis(p, '[data-a=una-seer-ok]')) await clk(p, '[data-a=una-seer-ok]');
   } else if (step === 'ladron') {
@@ -170,7 +174,9 @@ try {
   const deck = Object.entries(st.composition).flatMap(([r, n]) => Array(n).fill(r)).sort();
   check(JSON.stringify(inPlay) === JSON.stringify(deck), 'invariante: las cartas nunca se duplican ni se pierden en los intercambios');
   const dobleDealt = Object.values(st.originalRole).includes('doble');
-  if (dobleDealt) check(!!st.acts.dobleRole, 'El Doble copió: ' + st.acts.dobleRole);
+  // R3: copie lo que copie (también un rol de grupo o pasivo), El Doble CIERRA
+  // su turno a mano tras leer en qué se ha convertido.
+  if (dobleDealt) check(!!st.acts.dobleRole && !!st.acts.dobleActionDone, 'El Doble copió y cerró su turno viendo qué era: ' + st.acts.dobleRole);
   else ok('El Doble quedó en el centro: su paso sonó igualmente (fantasma)');
 
   // ——— Día: EMPATE (condena doble registrada por una persona) ———

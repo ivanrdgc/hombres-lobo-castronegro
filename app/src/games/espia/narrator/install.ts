@@ -5,7 +5,7 @@
 import { createNarrator, type SceneCtx, type SceneDef } from '../../../core/narrator/sequencer';
 import { pauseMs, profileOf } from '../../../core/narrator/pacing';
 import { e2eTestMode } from '../../../core/test-hooks';
-import { play, stopSpeech } from '../../../core/audio/player';
+import { lastUtterance, play, stopSpeech } from '../../../core/audio/player';
 import type { Utterance } from '../../../core/audio/player';
 import { prewarmSynth } from '../../../core/audio/clips';
 import { matchView, onChange, state } from '../../../core/sync/store.svelte';
@@ -15,8 +15,9 @@ import * as A from '../actions';
 import { resolveConviction, timeupOrder } from '../engine';
 import type { EspiaState } from '../types';
 import {
-  ESPIA_INTRO, LISTOS_PROMPT, RELOJ_START, RONDA_START, TIMEUP_LINE, VOTE_HINT, WARN_10S, WARN_HALF,
-  WARN_MIN, cleanSpeech, outcomeSpeech, startAskLine, turnLine, voteFailLine, voteLine,
+  ESPIA_INTRO, LISTOS_PROMPT, RELOJ_START, RONDA_START, TIMEUP_LINE, VOTE_HINT, VOTE_HINT_TU,
+  WARN_10S, WARN_HALF, WARN_MIN, cleanSpeech, outcomeSpeech, startAskLine, turnLine, voteFailLine,
+  voteLine,
 } from '../texts';
 
 interface Snap {
@@ -59,6 +60,8 @@ function sceneOf(s: Snap): SceneDef<Snap> | null {
   if (!amSpeaker(s)) return null;
   const game = espiaGame(s.group)!;
   const K = (rest: string) => `E${game.startedAt}:r${game.round}:${rest}`;
+  // En pausa el narrador calla en seco (y el reloj no corre: nada que contar).
+  if (game.paused) return { key: `E${game.startedAt}:paused:${game.paused.at}`, hardEntry: true, run: pausedScene };
   if (game.phase === 'reveal') return { key: K('reveal'), run: revealScene };
   if (game.vote) return { key: K(`vote:${game.voteSeq}`), run: voteScene };
   if (game.phase === 'play') return { key: K(`play:${game.voteSeq}`), run: playScene };
@@ -66,6 +69,8 @@ function sceneOf(s: Snap): SceneDef<Snap> | null {
   if (game.phase === 'end') return { key: K('end'), run: endScene };
   return null;
 }
+
+async function pausedScene(ctx: Ctx): Promise<void> { await ctx.waitFor(() => false); }
 
 async function revealScene(ctx: Ctx): Promise<void> {
   const g = gm(ctx);
@@ -92,14 +97,15 @@ async function playScene(ctx: Ctx): Promise<void> {
   ].filter((m) => m.at > 15000 || m.at === 10000);
   for (const m of marks) {
     const g = gm(ctx);
-    if (g.phase !== 'play' || g.deadline === null) return;
+    if (g.phase !== 'play' || g.deadline === null || g.paused) return;
     const remaining = g.deadline - Date.now();
     if (remaining <= m.at + 1500) continue; // hito ya pasado (reanudación tardía)
     await ctx.sleep(remaining - m.at);
-    if (gm(ctx).phase === 'play') await ctx.sayOnce(m.key, m.mk);
+    const gg = gm(ctx);
+    if (gg.phase === 'play' && !gg.paused) await ctx.sayOnce(m.key, m.mk);
   }
   const g = gm(ctx);
-  if (g.phase !== 'play' || g.deadline === null) return;
+  if (g.phase !== 'play' || g.deadline === null || g.paused) return;
   await ctx.sleep(Math.max(0, g.deadline - Date.now()) + 300);
   // El altavoz también dispara el fin de tiempo (además del vigilante de la UI).
   await A.timeUp().catch(() => { /* otro dispositivo se adelantó */ });
@@ -109,17 +115,19 @@ async function voteScene(ctx: Ctx): Promise<void> {
   const g = gm(ctx);
   const v = g.vote;
   if (!v) return;
+  // Tras el tiempo NO hay reloj: ni se detiene ni vuelve a correr (V1).
+  const tu = v.fromTimeup;
   // Precalienta los posibles desenlaces de ESTA votación (nombres incluidos).
   try {
-    prewarmSynth([cleanSpeech(resolveConviction(g, v.accusedId, v.accuserId).txt), voteFailLine(nm(g, v.accusedId))]);
+    prewarmSynth([cleanSpeech(resolveConviction(g, v.accusedId, v.accuserId).txt), voteFailLine(nm(g, v.accusedId), tu)]);
   } catch { /* opcional */ }
   await ctx.sayOnce(`E${g.startedAt}:r${g.round}:vote:${g.voteSeq}`, () =>
-    utt('espia-vote', voteLine(nm(g, v.accuserId), nm(g, v.accusedId)), VOTE_HINT));
+    utt('espia-vote', voteLine(nm(g, v.accuserId), nm(g, v.accusedId), tu), tu ? VOTE_HINT_TU : VOTE_HINT));
   // Si la acusación cae, la escena de juego/turnos siguiente lo anuncia.
   await ctx.waitFor((s) => !espiaGame(s.group)?.vote);
   const g2 = gm(ctx);
   if (g2.phase === 'play' || g2.phase === 'timeup') {
-    await ctx.play(utt('espia-votefail', voteFailLine(nm(g, v.accusedId))));
+    await ctx.play(utt('espia-votefail', voteFailLine(nm(g, v.accusedId), tu)));
   }
 }
 
@@ -169,6 +177,7 @@ export function installEspiaNarrator(): void {
   });
 
   let wasSpeaker = false;
+  let repeatSeen: number | null = null;
   onChange(() => {
     const s = snapshot();
     const speaker = amSpeaker(s);
@@ -176,6 +185,22 @@ export function installEspiaNarrator(): void {
     if (speaker && !wasSpeaker) narrator.respawn({ resetLedger: true });
     wasSpeaker = speaker;
     if (speaker) requestWakeLock();
+    // «🔁 Repetir»: repite la ÚLTIMA locución (repeatNonce es señal de flanco,
+    // no estado). Sin nada que repetir (recarga del altavoz), re-narra la escena.
+    const game = espiaGame(s.group);
+    const rn = game?.repeatNonce || 0;
+    if (!game) repeatSeen = null;
+    else if (repeatSeen === null) repeatSeen = rn;
+    else if (rn !== repeatSeen) {
+      repeatSeen = rn;
+      if (speaker) {
+        const last = lastUtterance();
+        stopSpeech('hard');
+        // Colchón tras el corte: algún motor se traga un play inmediato.
+        if (last) setTimeout(() => { play(last, { muted: !!state.ui.muted }).catch(() => { /* nada */ }); }, 250);
+        else narrator.respawn();
+      }
+    }
     narrator.tick();
   });
 }

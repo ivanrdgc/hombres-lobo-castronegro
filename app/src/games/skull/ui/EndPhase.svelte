@@ -20,6 +20,8 @@
 
 <div class="card">
   <h3>🏆 Marcador</h3>
+  <!-- Sin leyenda, las tres cifras de cada fila no se entendían. -->
+  <p class="small-note" style="margin:0 0 6px">⭐ retos ganados en esta partida · 💠 discos que le quedaban · el número de la derecha, partidas ganadas en esta mesa.</p>
   {#each ranked as pid (pid)}
     <div class="settingrow" style="align-items:center">
       <div class="sinfo"><div class="sname">{nm(pid)}{game.winner === pid ? ' 👑' : ''}{!game.alive[pid] ? ' ☠️' : ''}</div>

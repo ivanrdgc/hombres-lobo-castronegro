@@ -14,11 +14,18 @@
   const bomb = $derived(bomberId(game));
   const ranked = $derived([...game.playerIds].sort((a, b) => (game.scores[b] || 0) - (game.scores[a] || 0)));
   const canRematch = $derived(game.playerIds.length >= MIN_PLAYERS);
+  // El titular cuenta por qué acabó así: si el Presidente abandonó, gana el rojo
+  // pero NO hubo ningún «¡BOOM!» (winReason lo dice tal cual).
+  const headline = $derived(game.winReason
+    || (game.winner ? WIN_LABELS[game.winner] : 'Partida disuelta: quedasteis menos de los necesarios.'));
+  // El icono sale del propio titular: así una rendición no se corona con 💥.
+  const icon = $derived(headline.match(/^\p{Extended_Pictographic}/u)?.[0]
+    || (game.winner === 'red' ? '💥' : game.winner === 'blue' ? '🕊️' : '🚪'));
 </script>
 
 <div class="card" style="text-align:center">
-  <span class="moon">{game.winner === 'red' ? '💥' : game.winner === 'blue' ? '🕊️' : '🚪'}</span>
-  <h3 style="margin:6px 0">{game.winner ? WIN_LABELS[game.winner] : 'Partida disuelta: quedasteis menos de los necesarios.'}</h3>
+  <span class="moon">{icon}</span>
+  <h3 style="margin:6px 0">{headline}</h3>
   {#if pres || bomb}
     <p class="small-note">Presidente: <b>{nm(pres)}</b> (Sala {pres && game.room[pres] !== undefined ? roomOf(game, pres) + 1 : '?'}). Bombardero: <b>{nm(bomb)}</b> (Sala {bomb && game.room[bomb] !== undefined ? roomOf(game, bomb) + 1 : '?'}).</p>
   {/if}

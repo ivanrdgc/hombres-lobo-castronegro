@@ -12,8 +12,8 @@ import {
 import type { GroupDoc, MatchDoc } from '../../core/sync/schema';
 import {
   MIN_PLAYERS, MAX_PLAYERS, dealGame, beginPlay as beginPlayMut, declareAction, doChallenge,
-  doBlock, doPass, chooseLoss as chooseLossMut, exchangeKeep as exchangeKeepMut, resetForRematch,
-  playersOf, isAlive, influenceCount, aliveIds,
+  doBlock, doPass, passForAbsent, chooseLoss as chooseLossMut, exchangeKeep as exchangeKeepMut,
+  resetForRematch, playersOf, isAlive, influenceCount, aliveIds,
 } from './engine';
 import type { CoupState, ActionType, Character } from './types';
 
@@ -117,6 +117,12 @@ export async function pass(): Promise<void> {
   await tx((game) => (doPass(game, me) ? game : null));
 }
 
+/** Ventana atascada: solo el dispositivo de la voz pasa por los ausentes. */
+export async function passAbsent(): Promise<void> {
+  const me = myPid();
+  await tx((game, m) => (m.masterId === me && passForAbsent(game) ? game : null));
+}
+
 export async function chooseLoss(handIdx: number): Promise<void> {
   const me = myPid();
   await tx((game) => (chooseLossMut(game, me, handIdx) ? game : null));
@@ -132,8 +138,7 @@ export async function exchangeKeep(keepIdxs: number[]): Promise<void> {
 export async function playAgain(): Promise<void> {
   await tx((game) => {
     if (game.phase !== 'end') return null;
-    resetForRematch(game, (game.seed || 0) + 101);
-    game.log.push({ txt: '🔁 Nueva partida: corte barajada y repartida de nuevo.' });
+    resetForRematch(game, (game.seed || 0) + 101); // deja el diario en su línea de apertura
     return game;
   });
 }

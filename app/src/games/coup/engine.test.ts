@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   dealGame, newDeck, legalActionTypes, mustCoup, declareAction, doPass, doChallenge,
   doBlock, chooseLoss, exchangeKeep, beginPlay, influenceCount, isAlive, aliveIds,
-  reactorsOf, targetsFor, MIN_PLAYERS, MAX_PLAYERS,
+  reactorsOf, pendingReactors, passForAbsent, resetForRematch, targetsFor, MIN_PLAYERS, MAX_PLAYERS,
 } from './engine';
 import type { CoupState, Character } from './types';
 
@@ -159,6 +159,24 @@ describe('robar (Capitán)', () => {
     expect(g.coins['p-b']).toBe(0);
     expect(g.phase).toBe('turn');
   });
+  it('a quien no tiene monedas no se le puede robar (ni sale en la lista)', () => {
+    const g = mk({ coins: { 'p-a': 2, 'p-b': 0, 'p-c': 3, 'p-d': 0 } });
+    expect(targetsFor(g, 'p-a', 'robar')).toEqual(['p-c']);
+    expect(declareAction(g, 'p-a', 'robar', 'p-b')).toBe(false);
+  });
+  it('sin nadie con monedas, robar ni se ofrece', () => {
+    const g = mk({ coins: { 'p-a': 2, 'p-b': 0, 'p-c': 0, 'p-d': 0 } });
+    expect(legalActionTypes(g, 'p-a')).not.toContain('robar');
+  });
+  it('a quien solo tiene 1 moneda se le roba esa', () => {
+    const g = mk({ coins: { 'p-a': 2, 'p-b': 1, 'p-c': 2, 'p-d': 2 } });
+    declareAction(g, 'p-a', 'robar', 'p-b');
+    passWindow(g);
+    doPass(g, 'p-b');
+    expect(g.coins['p-a']).toBe(3);
+    expect(g.coins['p-b']).toBe(0);
+    expect(g.log.some((l) => /roba 1 moneda /.test(l.txt))).toBe(true);
+  });
   it('bloqueado por la víctima (Capitán) y aceptado: no se mueven monedas', () => {
     const g = mk();
     declareAction(g, 'p-a', 'robar', 'p-b');
@@ -283,6 +301,26 @@ describe('fin de partida', () => {
     expect(g.winner).toBe('p-a');
     expect(g.phase).toBe('end');
     expect(g.scores['p-a']).toBe(1);
+  });
+});
+
+describe('ventana atascada y revancha', () => {
+  it('pasar por los ausentes cierra la ventana y la jugada sigue', () => {
+    const g = mk();
+    declareAction(g, 'p-a', 'impuestos', null);
+    doPass(g, 'p-b'); // p-c y p-d se han ido al baño
+    expect(pendingReactors(g)).toEqual(['p-c', 'p-d']);
+    expect(passForAbsent(g)).toBe(true);
+    expect(g.coins['p-a']).toBe(5); // los impuestos salen adelante
+    expect(g.phase).toBe('turn');
+    expect(passForAbsent(g)).toBe(false); // sin ventana abierta, no hace nada
+  });
+  it('la revancha empieza con el diario limpio', () => {
+    const g = mk({ phase: 'end', winner: 'p-a', log: [{ txt: 'a' }, { txt: 'b' }, { txt: 'c' }] });
+    resetForRematch(g, 7);
+    expect(g.log).toHaveLength(1);
+    expect(g.log[0].txt).toMatch(/Nueva partida/);
+    expect(g.phase).toBe('reveal');
   });
 });
 

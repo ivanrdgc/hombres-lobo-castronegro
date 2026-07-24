@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   dealGame, placeInitial, placeDisc, openBid, raiseBid, passBid, flip, flipTargets,
-  nextRound, isAlive, aliveIds, invCount, totalPlaced, MARKS_TO_WIN,
+  nextRound, isAlive, aliveIds, invCount, totalPlaced, inHand, handCount, MARKS_TO_WIN,
 } from './engine';
 import type { SkullState, Disc } from './types';
 
@@ -55,12 +55,26 @@ describe('turno y apuestas', () => {
     expect(g.turn).toBe('p-b');
     expect(g.stacks['p-a']).toEqual(['flower', 'flower']);
   });
+  it('cada colocación deja una línea pública en el diario, sin decir qué disco', () => {
+    const g = inPlay({ 'p-a': ['flower'], 'p-b': ['flower'], 'p-c': ['flower'] });
+    placeDisc(g, 'p-a', 'skull');
+    const last = g.log[g.log.length - 1].txt;
+    expect(last).toContain('P-A');
+    expect(last).toContain('P-B'); // a quién le toca ahora
+    expect(last).not.toMatch(/💀|🌸|calavera|flor/i);
+  });
   it('la apuesta no puede pasar del total de discos en mesa', () => {
     const g = inPlay({ 'p-a': ['flower'], 'p-b': ['flower'], 'p-c': ['flower'] });
     expect(openBid(g, 'p-a', 4)).toBe(false); // solo hay 3
     expect(openBid(g, 'p-a', 2)).toBe(true);
     expect(g.phase).toBe('bid');
     expect(g.turn).toBe('p-b');
+  });
+  it('abrir al tope revela ya, sin vuelta de «pasar» inútil', () => {
+    const g = inPlay({ 'p-a': ['flower'], 'p-b': ['flower'], 'p-c': ['flower'] });
+    expect(openBid(g, 'p-a', 3)).toBe(true); // 3 discos en mesa = tope
+    expect(g.phase).toBe('reveal');
+    expect(g.reveal).toMatchObject({ by: 'p-a', need: 3 });
   });
   it('subir y pasar: al pasar todos menos el apostador, se revela', () => {
     const g = inPlay({ 'p-a': ['flower'], 'p-b': ['flower'], 'p-c': ['flower'] });
@@ -91,6 +105,24 @@ describe('revelado', () => {
     expect(g.marks['p-a']).toBe(1);
     expect(g.phase).toBe('roundEnd');
     expect(g.lastResult?.success).toBe(true);
+  });
+  it('tras perder un disco, lo que queda en mano nunca es negativo', () => {
+    // Regresión: el inventario baja al fallar pero la pila sigue en la mesa
+    // hasta `nextRound`; con 3 flores puestas y una perdida, inHand daba -1 y
+    // el '🌸'.repeat(-1) del modal 🎴 reventaba (RangeError).
+    const g = inPlay(
+      { 'p-a': ['flower', 'flower', 'flower'], 'p-b': ['skull'] },
+      { alive: { 'p-a': true, 'p-b': true, 'p-c': false }, inv: { 'p-a': { flowers: 3, skulls: 0 }, 'p-b': { flowers: 3, skulls: 1 }, 'p-c': { flowers: 0, skulls: 0 } } },
+    );
+    openBid(g, 'p-a', 4); // tope: se revela ya
+    flip(g, 'p-a', 'p-a'); flip(g, 'p-a', 'p-a'); flip(g, 'p-a', 'p-a');
+    flip(g, 'p-a', 'p-b'); // calavera ajena: falla y pierde una flor (no tiene calavera)
+    expect(g.phase).toBe('roundEnd');
+    expect(invCount(g, 'p-a')).toBe(2);
+    expect(g.stacks['p-a']).toHaveLength(3); // la pila sigue en la mesa
+    expect(inHand(g, 'p-a')).toEqual({ flowers: 0, skulls: 0 });
+    expect(handCount(g, 'p-a')).toBe(0);
+    expect(() => '🌸'.repeat(inHand(g, 'p-a').flowers)).not.toThrow();
   });
   it('topar una calavera hace perder un disco', () => {
     const g = inPlay({ 'p-a': ['skull'] }, { alive: { 'p-a': true, 'p-b': true, 'p-c': false } });
@@ -134,6 +166,17 @@ describe('nueva ronda', () => {
     expect(g.round).toBe(2);
     expect(g.stacks['p-a']).toEqual([]);
     expect(g.starter).toBe('p-a');
+    expect(g.turn).toBe('p-a');
     expect(aliveIds(g)).toEqual(['p-a', 'p-b']);
+  });
+  it('el turno vuelve al que empieza (aunque el último en revelar quedara fuera)', () => {
+    const g = inPlay({ 'p-a': ['skull'], 'p-b': ['flower'], 'p-c': ['flower'] },
+      { inv: { 'p-a': { flowers: 0, skulls: 1 }, 'p-b': { flowers: 3, skulls: 1 }, 'p-c': { flowers: 3, skulls: 1 } } });
+    openBid(g, 'p-a', 1); passBid(g, 'p-b'); passBid(g, 'p-c');
+    flip(g, 'p-a', 'p-a'); // su calavera: falla, se queda sin discos y sale
+    expect(isAlive(g, 'p-a')).toBe(false);
+    expect(nextRound(g)).toBe(true);
+    expect(g.starter).toBe('p-b');
+    expect(g.turn).toBe('p-b'); // antes seguía marcando a p-a, ya eliminado
   });
 });

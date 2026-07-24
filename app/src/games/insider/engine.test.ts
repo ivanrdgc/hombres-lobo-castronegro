@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { dealRound, tallyVotes, allVoted, roleOf, WIN_LABELS } from './engine';
+import { dealRound, tallyVotes, allVoted, canForceTally, roleOf, WIN_LABELS } from './engine';
 import { WORDS } from './words';
 import type { InsiderState } from './types';
 
@@ -45,6 +45,27 @@ describe('dealRound', () => {
     expect(d.starterIdx).toBeGreaterThanOrEqual(0);
     expect(d.starterIdx).toBeLessThan(IDS.length);
   });
+
+  it('quien pregunta primero NUNCA es el Maestro (él solo responde)', () => {
+    // Barrido ancho: con el sorteo sobre toda la mesa esto caía ~1 de cada n.
+    for (let seed = 0; seed < 300; seed++) {
+      for (let r = 1; r <= IDS.length; r++) {
+        const d = dealRound(IDS, r, [], seed);
+        expect(IDS[d.starterIdx]).not.toBe(d.masterId);
+      }
+    }
+  });
+
+  it('con la mesa mínima y la máxima el sorteo sigue siendo válido', () => {
+    for (const n of [4, 12]) {
+      const ids = Array.from({ length: n }, (_, i) => `p${i}`);
+      for (let seed = 0; seed < 40; seed++) {
+        const d = dealRound(ids, seed + 1, [], seed);
+        expect(ids[d.starterIdx]).not.toBe(d.masterId);
+        expect(d.insiderId).not.toBe(d.masterId);
+      }
+    }
+  });
 });
 
 describe('tallyVotes', () => {
@@ -70,6 +91,30 @@ describe('allVoted', () => {
     expect(allVoted(g)).toBe(false);
     g.votes['p-d'] = 'p-b';
     expect(allVoted(g)).toBe(true);
+  });
+});
+
+describe('canForceTally', () => {
+  it('el Maestro puede cerrar el recuento si falta algún voto', () => {
+    const g = base({ votes: { 'p-a': 'p-b', 'p-c': 'p-b' } });
+    expect(canForceTally(g, 'p-a')).toBe(true); // p-a es el Maestro
+    expect(canForceTally(g, 'p-c')).toBe(false); // el resto, no: él es la autoridad
+  });
+
+  it('si el móvil muerto es el del Maestro, lo cierra cualquiera que ya haya votado', () => {
+    const g = base({ votes: { 'p-c': 'p-b', 'p-d': 'p-b' } }); // el Maestro (p-a) no vota
+    expect(canForceTally(g, 'p-c')).toBe(true);
+    expect(canForceTally(g, 'p-b')).toBe(false); // p-b aún no ha votado
+  });
+
+  it('con todos los votos echados no hay nada que forzar', () => {
+    const g = base({ votes: { 'p-a': 'p-b', 'p-b': 'p-c', 'p-c': 'p-b', 'p-d': 'p-b' } });
+    expect(canForceTally(g, 'p-a')).toBe(false);
+  });
+
+  it('fuera de la fase de caza, nunca', () => {
+    const g = base({ phase: 'question', votes: {} });
+    expect(canForceTally(g, 'p-a')).toBe(false);
   });
 });
 

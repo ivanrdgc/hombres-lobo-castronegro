@@ -19,13 +19,19 @@
     <MyCard {game} pid={my.id} />
     <button class="primary block" data-a="ch-seen" onclick={() => guard(async () => { await A.confirmSeen(); app.ui.revealOpen = false; })}>✅ Lo tengo</button>
   {:else}
-    <div class="card"><p class="small-note">🎴 Tu carta está lista. Mírala sin que nadie vea tu pantalla y confirma.</p>
+    <div class="card"><h3 style="margin-bottom:2px">🎴 Tu carta está lista</h3>
+      <p class="small-note" style="margin:0">Te dirá la palabra secreta… o que eres el Camaleón. Mírala sin que nadie vea tu pantalla y confirma; podrás volver a consultarla durante toda la ronda.</p>
       <button class="primary block" data-a="ch-reveal" onclick={() => (app.ui.revealOpen = true)}>👁 Ver mi carta</button></div>
   {/if}
 {:else if pend.length}
-  <div class="waitlist">Esperando a que confirmen: {pend.join(', ')}</div>
+  <!-- Ni pantalla muda ni callejón sin salida: quién falta, por nombre, y qué
+       puedo ir haciendo mientras. -->
+  <div class="card"><h3 style="margin-bottom:2px">⏳ Esperando a {pend.join(', ')}</h3>
+    <p class="small-note" style="margin:0">{inGame ? 'Tú ya has visto la tuya. Ve leyendo la rejilla de arriba: cuanto mejor la conozcas, mejor pista darás.' : '👀 Miras de espectador: la mesa está viendo sus cartas.'}</p></div>
+  {#if inGame}<MyCard {game} pid={my.id} mini={true} />{/if}
 {:else}
-  <div class="card"><h3>🗣️ Listos</h3>
-    <p class="small-note">Empieza dando pista <b>{game.names[game.playerIds[game.starterIdx]] || '¿?'}</b>; una palabra cada uno, por turnos.</p>
+  <div class="card"><h3 style="margin-bottom:2px">🗣️ Todos habéis visto vuestra carta</h3>
+    <p class="small-note" style="margin:0">Empieza dando pista <b>{game.names[game.playerIds[game.starterIdx]] || '¿?'}</b> y seguís por orden de mesa: una sola palabra en voz alta cada uno. Cualquiera puede arrancar la vuelta.</p>
     <button class="primary block" data-a="ch-begin" onclick={() => guard(A.beginClues)}>🗣️ Empezar las pistas</button></div>
+  {#if inGame}<MyCard {game} pid={my.id} mini={true} />{/if}
 {/if}

@@ -1,37 +1,51 @@
 <script lang="ts">
   // Resultado: se revela el objetivo y la marca del equipo, la puntuación de la
-  // ronda y el marcador. Otra ronda rota el Psíquico y cambia el espectro.
+  // ronda y el marcador. Otra ronda rota el Psíquico y cambia el espectro; si se
+  // cumplió la meta, el botón principal lleva al resumen final.
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
-  import { psychicId, scoreLabel } from '../engine';
+  import { goalMet, psychicId, scoreLabel } from '../engine';
   import { spectrumLabel } from '../spectrums';
   import type { PlayerDoc } from '../../../core/sync/schema';
   import type { WavelengthState } from '../types';
   import Dial from './Dial.svelte';
+  import ScoreBoard from './ScoreBoard.svelte';
 
   const { game, my }: { game: WavelengthState; my: PlayerDoc } = $props();
   const nm = (pid: string) => game.names[pid] || '¿?';
-  const ranked = $derived([...game.playerIds].sort((a, b) => (game.scores[b] || 0) - (game.scores[a] || 0)));
-  void my;
+  const done = $derived(goalMet(game));
+  const psyName = $derived(nm(psychicId(game)));
+  const iAmPsychic = $derived(psychicId(game) === my.id);
+  const dist = $derived(game.marker === null ? null : Math.abs(game.target - game.marker));
 </script>
 
-<div class="narration">🎯 {game.lastScore !== null ? scoreLabel(game.lastScore) : ''}</div>
+<div class="narration">🎯 {game.lastScore !== null ? scoreLabel(game.lastScore) : ''}
+  {#if dist !== null}{game.lastScore === 4 ? ' — clavado.' : ` — os quedasteis a ${dist} del centro de la diana.`}{/if}</div>
 
 <div class="card" style="text-align:center">
   <p class="small-note" style="margin:0 0 2px">📡 {spectrumLabel(game.spectrumId)}</p>
-  <Dial spectrumId={game.spectrumId} target={game.target} marker={game.marker} />
-  <p class="small-note">Objetivo en <b>{game.target}</b> · marca del equipo en <b>{game.marker}</b> · Psíquico: <b>{nm(psychicId(game))}</b></p>
+  {#if game.clueText}<p class="clue">💬 La pista era <b>«{game.clueText}»</b></p>{/if}
+  <Dial spectrumId={game.spectrumId} target={game.target} marker={game.marker} legend="result" />
+  <p class="tally">🔮 {iAmPsychic ? 'Tú, de Psíquico' : `${psyName}, de Psíquico`}, {game.lastScore === 0 ? 'no suma esta ronda' : `suma ${game.lastScore} ${game.lastScore === 1 ? 'punto' : 'puntos'}`} · 🏆 total del equipo: <b>{game.teamScore}</b></p>
 </div>
 
-<div class="card">
-  <h3>🏆 Marcador <span style="opacity:.7;font-weight:400">(equipo: {game.teamScore})</span></h3>
-  {#each ranked as pid (pid)}
-    <div class="settingrow" style="align-items:center">
-      <div class="sinfo"><div class="sname">{nm(pid)}{pid === psychicId(game) ? ' 🔮' : ''}</div></div>
-      <b>{game.scores[pid] || 0}</b>
-    </div>
-  {/each}
-</div>
+<ScoreBoard {game} highlightPsychic={true} />
 
-<button class="primary block" data-a="wl-again" onclick={() => guard(A.nextRound)}>🔁 Otra ronda (rota el Psíquico)</button>
-<button class="ghost block" data-a="wl-back-lobby" onclick={() => guard(() => A.endWavelength())}>🏁 Terminar y volver al lobby</button>
+{#if done}
+  <div class="narration">🏁 Meta cumplida: {game.goal?.label}. Podéis cerrar con el resumen o seguir jugando rondas sueltas.</div>
+  <button class="primary block" data-a="wl-finish" onclick={() => guard(A.finishGame)}>🏁 Ver el resumen final</button>
+  <button class="block" data-a="wl-again" onclick={() => guard(A.nextRound)}>🔁 Otra ronda de propina (rota el Psíquico)</button>
+{:else}
+  <button class="primary block" data-a="wl-again" onclick={() => guard(A.nextRound)}>🔁 Otra ronda (rota el Psíquico)</button>
+  <p class="small-note" style="text-align:center;margin:6px 0 0">La puede pulsar cualquiera{game.goal ? ` · meta: ${game.goal.label.toLowerCase()}` : ' · sin meta: jugad lo que queráis'}.</p>
+  <button class="ghost block" data-a="wl-back-lobby" onclick={() => guard(() => A.endWavelength())}>🏁 Terminar y volver al lobby</button>
+{/if}
+
+<style>
+  /* La leyenda de agujas (amarilla = objetivo, roja = vuestra marca) la pinta
+     ya el propio dial con `legend="result"`: aquí va el recuento. */
+  .clue { background: var(--card2); border: 1px solid var(--border); border-radius: 10px; padding: 7px 12px; margin: 6px 0 2px; font-size: 0.92rem; }
+  .clue b { color: var(--moon); }
+  .tally { font-size: 0.86rem; color: var(--muted); margin-top: 8px; }
+  .tally b { color: var(--text); }
+</style>

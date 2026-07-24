@@ -70,10 +70,14 @@ export function whoLine(who: NonNullable<DemoStep['who']>): string {
   return `${who.actor}. Mientras, ${who.others}`;
 }
 
-/** Título + banner de turno + párrafos de cada paso, limpios: las piezas que
- *  lee el ▶️ del tutorial (se pregeneran como clips). */
+/** Lo que el ▶️ de un paso lee en voz alta: título, banner de turno, párrafos y
+ *  —si el paso pregunta— el enunciado, para que quien escucha sepa que ahí hay
+ *  algo que tocar en la pantalla (las opciones se leen, no se locutan). */
+export function stepSpeech(step: DemoStep): string[] {
+  return [step.title, ...(step.who ? [whoLine(step.who)] : []), ...step.text, ...(step.ask ? [step.ask.prompt] : [])];
+}
+
+/** Todas las piezas habladas de un tutorial, limpias (se pregeneran como clips). */
 export function demoSpeechPieces(demo: DemoScript): string[] {
-  return demo.steps
-    .flatMap((s) => [s.title, ...(s.who ? [whoLine(s.who)] : []), ...s.text])
-    .map(cleanForSpeech).filter(Boolean);
+  return demo.steps.flatMap(stepSpeech).map(cleanForSpeech).filter(Boolean);
 }

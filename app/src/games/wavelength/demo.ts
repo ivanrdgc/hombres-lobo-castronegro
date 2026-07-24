@@ -11,17 +11,18 @@ export const DEMO: DemoScript = {
       icon: '🎯',
       title: 'La ronda de ejemplo',
       text: [
-        'Jugáis TÚ, Bea y Carlos, en el mismo equipo (es cooperativo). Cada ronda hay un espectro entre dos ideas opuestas —esta vez «Frío ↔ Caliente»— y un OBJETIVO secreto en algún punto del dial.',
+        'Jugáis TÚ, Bea y Carlos, en el mismo equipo (es cooperativo). Cada ronda hay un espectro entre dos ideas opuestas —esta vez el dial va de «Frío», a la izquierda, a «Caliente», a la derecha— y un OBJETIVO secreto en algún punto de él.',
+        'El dial se numera de 0 a 100: 0 es el extremo izquierdo, 100 el derecho y 50 el centro justo. Cuando la app diga «el objetivo estaba en 85», habla de esa escala.',
         'Uno de vosotros es el PSÍQUICO de la ronda (rota cada ronda): ve dónde está el objetivo y da una pista para que los demás lo encontréis. Cuanto más cerca dejéis el marcador, más puntos.',
       ],
-      visual: { kind: 'board', rows: [{ label: '📡 Espectro', value: 'Frío ↔ Caliente' }, { label: '🔮 Psíquico de la ronda', value: 'Bea' }, { label: '🎯 Objetivo', value: 'secreto (solo Bea)' }] },
+      visual: { kind: 'board', rows: [{ label: '📡 Espectro', value: 'Frío ↔ Caliente' }, { label: '🎚️ El dial', value: 'de 0 (Frío) a 100 (Caliente)' }, { label: '🔮 Psíquico de la ronda', value: 'Bea' }, { label: '🎯 Objetivo', value: 'secreto (solo Bea)' }] },
     },
     {
       icon: '🔮',
       title: 'Dos pantallas muy distintas',
       who: { actor: 'Bea (Psíquica) mira su dial y piensa una idea', others: 'tú y Carlos veis el dial VACÍO y esperáis su pista, callados.' },
       text: [
-        'Solo Bea ve la DIANA: una franja verde del dial que vale 4 puntos en el centro, 3 y 2 según te alejas. Esta ronda cae muy hacia «Caliente».',
+        'Solo Bea ve la DIANA: una franja verde del dial que vale 4 puntos en el centro, 3 y 2 según te alejas. Esta ronda cae muy hacia «Caliente», por el 85.',
       ],
       visual: {
         kind: 'screens',
@@ -37,6 +38,7 @@ export const DEMO: DemoScript = {
       who: { actor: 'Bea dice UNA idea en voz alta y pulsa «💬 Ya he dado la pista»', others: 'vosotros escucháis; aún no se toca el dial.' },
       text: [
         'Bea busca algo que caiga JUSTO donde está su diana. Como está casi al tope de «Caliente», dice: «una sauna».',
+        'Antes de pulsar, puede escribir la pista en su móvil: aparece en la pantalla de todos durante el debate. Es opcional, pero evita el clásico «¿qué había dicho?» a los treinta segundos.',
         'Desde ese momento Bea calla: ni aclaraciones, ni caras, ni señalar el dial. Su trabajo ya está hecho.',
       ],
     },
@@ -44,7 +46,7 @@ export const DEMO: DemoScript = {
       icon: '🤔',
       title: 'Te toca interpretar',
       who: { actor: 'TÚ y Carlos debatís en voz alta dónde apuntaba', others: 'Bea escucha en silencio (y por dentro se muerde las uñas).' },
-      text: ['La pista es «una sauna», en el espectro «Frío ↔ Caliente».'],
+      text: ['La pista es «una sauna», en un dial que va de «Frío» (0) a «Caliente» (100).'],
       ask: {
         prompt: '¿Dónde lleváis el marcador?',
         choices: [
@@ -59,12 +61,13 @@ export const DEMO: DemoScript = {
       title: 'Fijar la marca',
       who: { actor: 'UNO de vosotros (tú o Carlos) arrastra el marcador y pulsa «✅ Fijar la marca»', others: 'Bea no toca el dial: solo mira.' },
       text: [
-        'Debatís, movéis el marcador con el dedo y, cuando estáis de acuerdo, uno lo fija por todo el equipo (da igual quién: la decisión es compartida).',
+        'El marcador es COMPARTIDO: lo arrastra cualquiera del equipo y se mueve igual en todos los móviles, así que discutís sobre la misma posición.',
+        'Cuando estáis de acuerdo, uno pulsa «✅ Fijar la marca» y confirma (pide dos toques: un roce despistado ya no cierra la ronda). Da igual quién lo pulse: la decisión es compartida.',
       ],
       visual: {
         kind: 'screens',
         panes: [
-          { title: 'TÚ (equipo)', lines: ['Arrastras el marcador hasta 82.'], buttons: [{ label: '✅ Fijar la marca (82)', kind: 'primary' }] },
+          { title: 'TÚ (equipo)', lines: ['Arrastras el marcador hasta 82.', 'Carlos ve el 82 en su móvil.'], buttons: [{ label: '✅ Fijar la marca (82)', kind: 'primary' }] },
           { title: 'Bea (Psíquica 🔮)', lines: ['«🎚️ Ya diste tu pista. El equipo está decidiendo…»', 'Ve su diana y espera el veredicto.'] },
         ],
       },
@@ -78,6 +81,23 @@ export const DEMO: DemoScript = {
         'Puntos por cercanía: 4 el centro, 3 cerca, 2 rozando, 0 fuera. Nueva ronda: nuevo espectro, nuevo Psíquico. ¿Hasta dónde llega vuestra sintonía? 📡',
       ],
       visual: { kind: 'log', lines: ['💬 Bea ya ha dado su pista. El equipo coloca el marcador.', '🎯 El objetivo estaba en 85, el equipo marcó 82. 🎯 ¡En el centro! (4) para Bea. Total del equipo: 4.', '📡 Ronda 2: nuevo espectro y nuevo Psíquico (TÚ).'] },
+    },
+    {
+      icon: '🔮',
+      title: 'Y ahora te toca a ti',
+      who: { actor: 'TÚ eres el Psíquico de la ronda 2', others: 'Bea y Carlos pasan a ser el equipo y esperan tu pista.' },
+      text: [
+        'En TU pantalla aparecerá la franja verde sobre el dial: ese es el objetivo, y solo lo ves tú. Piensa una idea que caiga justo ahí, dila en voz alta (puedes escribirla también) y pulsa «💬 Ya he dado la pista». Después, silencio: ni matices ni gestos.',
+        'Si el espectro que te ha tocado no te dice nada, pulsa «🔀 Cambiar espectro» antes de dar la pista: te reparte otro par y no gasta la ronda.',
+        'La partida acaba con la meta que elegisteis al empezar (por ejemplo, una vuelta a la mesa) y sale un resumen con el total del equipo. ¿Hasta dónde llega vuestra sintonía? 📡',
+      ],
+      visual: {
+        kind: 'screens',
+        panes: [
+          { title: 'TÚ (Psíquico 🔮)', lines: ['Nuevo espectro: Aburrido ↔ Emocionante', 'Tu dial con la diana en el 30.'], buttons: [{ label: '💬 Ya he dado la pista', kind: 'primary' }, { label: '🔀 Cambiar espectro', kind: 'ghost' }] },
+          { title: 'Bea y Carlos (equipo)', lines: ['Dial sin diana.', '«🔮 Está pensando su pista…»'] },
+        ],
+      },
     },
   ],
 };

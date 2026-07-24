@@ -12,8 +12,8 @@ import {
 import type { GroupDoc, MatchDoc } from '../../core/sync/schema';
 import {
   MIN_PLAYERS, MAX_PLAYERS, dealGame, investigate as investigateMut, arm as armMut,
-  aim as aimMut, shoot as shootMut, resetForRematch, isAlive, aliveIds, bandOfPid, leaderId,
-  isLeader, nextAlive,
+  aim as aimMut, shoot as shootMut, skipTurn as skipTurnMut, logTurn, resetForRematch,
+  isAlive, aliveIds, aimersOf, bandCountsLine, bandOfPid, leaderId, isLeader, nextAlive,
 } from './engine';
 import type { GoodCopState } from './types';
 
@@ -66,11 +66,13 @@ export async function startGoodCop(playerIds: string[], narratorId: string | nul
     alive: Object.fromEntries(playerIds.map((p) => [p, true])),
     armed: Object.fromEntries(playerIds.map((p) => [p, false])),
     aimAt: Object.fromEntries(playerIds.map((p) => [p, null])),
-    turn: playerIds[seed % playerIds.length], peek: null,
+    turn: playerIds[seed % playerIds.length], peeks: {},
     winner: null, winReason: null,
     scores: Object.fromEntries(playerIds.map((p) => [p, 0])), paused: null, repeatNonce: 0,
-    log: [{ txt: '🚔 Comienza Good Cop Bad Cop. Cada uno esconde 3 cartas de integridad: tu bando es su mayoría. Encontrad al líder rival… y disparadle.' }],
+    // El reparto es información PÚBLICA: sin los números no se deduce nada.
+    log: [{ txt: `🚔 Comienza Good Cop Bad Cop. ${bandCountsLine(playerIds.length)}. Cada uno esconde 3 cartas de integridad (2 de tu bando y 1 del contrario): tu bando es su mayoría. Encontrad al líder rival… y disparadle.` }],
   };
+  logTurn(game); // quién empieza, dicho en voz alta desde la primera línea
   await txWithRetry(async (t) => {
     const snap = await t.get(gref(slug));
     if (!snap.exists()) throw new Error('El grupo ya no existe');
@@ -102,12 +104,18 @@ export async function shoot(): Promise<void> {
   const me = myPid();
   await tx((game) => (shootMut(game, me) ? game : null));
 }
-/** Descarta el resultado de investigar una vez leído (solo quien miró). */
-export async function clearPeek(): Promise<void> {
+/** Salta el turno de quien no responde (lo pide cualquier otro jugador vivo). */
+export async function skipTurn(): Promise<void> {
+  const me = myPid();
+  await tx((game) => (skipTurnMut(game, me) ? game : null));
+}
+/** Marca como leídas TUS investigaciones: quedan en el historial del 🎴. */
+export async function ackPeeks(): Promise<void> {
   const me = myPid();
   await tx((game) => {
-    if (!game.peek || game.peek.by !== me) return null;
-    game.peek = null;
+    const mine = game.peeks?.[me] || [];
+    if (!mine.some((p) => !p.ack)) return null;
+    game.peeks[me] = mine.map((p) => ({ ...p, ack: true }));
     return game;
   }, undefined, { allowPaused: true });
 }
@@ -118,7 +126,10 @@ export async function playAgain(): Promise<void> {
   await tx((game) => {
     if (game.phase !== 'end') return null;
     resetForRematch(game, (game.seed || 0) + 101);
-    game.log.push({ txt: '🔁 Nueva partida: cartas de integridad repartidas de nuevo.' });
+    // Diario limpio: arrastrar el de la partida anterior confundía sobre qué
+    // se ha investigado y quién ha caído en ESTA.
+    game.log = [{ txt: `🔁 Nueva partida: cartas de integridad repartidas de nuevo. ${bandCountsLine(game.playerIds.length)}.` }];
+    logTurn(game);
     return game;
   });
 }
@@ -151,4 +162,4 @@ registerMatchTools('good_cop', {
   leaveEndsMatch: true,
 });
 
-export { isAlive, aliveIds, bandOfPid, leaderId, isLeader, nextAlive };
+export { isAlive, aliveIds, aimersOf, bandOfPid, leaderId, isLeader, nextAlive };

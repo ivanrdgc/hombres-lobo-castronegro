@@ -13,9 +13,11 @@
   const ranked = $derived([...game.playerIds].sort((a, b) => (game.scores[b] || 0) - (game.scores[a] || 0)));
 </script>
 
+<!-- Sin bando ganador es EMPATE (cayeron a la vez los últimos de ambos): antes
+     el titular se quedaba en «¡Ganan !». -->
 <div class="card" style="text-align:center">
-  <span class="moon">{game.winner === 'hunter' ? '🏹' : '🌑'}</span>
-  <h3 style="margin:6px 0">¡Ganan {game.winner ? FACTION_LABEL[game.winner] : ''}!</h3>
+  <span class="moon">{game.winner === 'hunter' ? '🏹' : game.winner === 'shadow' ? '🌑' : '🤝'}</span>
+  <h3 style="margin:6px 0">{game.winner ? `¡Ganan ${FACTION_LABEL[game.winner]}!` : '🤝 Empate: ningún bando gana'}</h3>
   {#if game.winReason}<p class="small-note">{game.winReason}</p>{/if}
   {#if game.winners.some((p) => factionOf(game, p) === 'neutral')}
     <p class="small-note">🧭 También ganan: {game.winners.filter((p) => factionOf(game, p) === 'neutral').map(nm).join(', ')} (objetivo propio cumplido).</p>

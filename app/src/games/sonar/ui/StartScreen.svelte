@@ -5,7 +5,7 @@
   import { app, matchOf, me, navigate } from '../../../core/sync/store.svelte';
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
-  import { MIN_PLAYERS, MAX_PLAYERS } from '../engine';
+  import { MIN_PLAYERS, MAX_PLAYERS, BEST_PLAYERS } from '../engine';
   import { isActiveDevice } from '../../../core/sync/presence';
   import { defaultNarrator } from '../../../shell/ui-helpers';
   import { unlockAudio } from '../../../core/audio/engine';
@@ -32,8 +32,10 @@
     return cand && !matchOf(cand) ? cand : meId ?? null;
   });
 
-  // Modo de voz compartido: single / perRoom (uno por equipo) / all.
-  let voiceMode = $state<'single' | 'perRoom' | 'all'>('single');
+  // Modo de voz compartido: single / perRoom (uno por equipo) / all. Por
+  // defecto perRoom: este juego se juega en DOS corros separados y un solo
+  // altavoz deja a media mesa sin oír los anuncios.
+  let voiceMode = $state<'single' | 'perRoom' | 'all'>('perRoom');
   const speakerCands = $derived(rows.filter((p) => !matchOf(p.id)));
   let spk1Pick = $state<string | null>(null);
   const speaker1 = $derived.by(() => {
@@ -64,7 +66,7 @@
 <div class="card">
   <h3>🎮 ¿Quién juega?</h3>
   <SeatPicker {group} {meId} gameId="sonar" onState={(s) => (seat = s)} />
-  <p class="small-note">La app repartirá dos tripulaciones al azar (🔴 y 🔵) y colocará los submarinos en secreto. Luego, cada tripulación a su corro.</p>
+  <p class="small-note">La app repartirá dos tripulaciones al azar (🔴 y 🔵) y colocará los submarinos en secreto, cada uno en las 3 columnas de su lado. Luego, cada tripulación a su corro. Lo ideal: de {BEST_PLAYERS} jugadores.</p>
 </div>
 
 <div class="card">
@@ -100,6 +102,7 @@
           {/each}
         </div>
         {#if !speaker1}<p class="small-note">⚠️ Elige un segundo altavoz (distinto del primero).</p>{/if}
+        <p class="small-note" style="margin:6px 0 0">🔀 Al repartir, la app se asegura de que los dos altavoces caigan en tripulaciones DISTINTAS: así cada corro tiene su voz.</p>
       </div>
     {/if}
   {/if}

@@ -51,7 +51,8 @@
 <div class="card">
   <h3>🎮 ¿Quién juega?</h3>
   <SeatPicker {group} {meId} gameId="decrypto" onState={(s) => (seat = s)} />
-  <p class="small-note">La app repartirá dos equipos (rojo y azul) al azar, con 4 palabras clave secretas cada uno.</p>
+  <p class="small-note">La app repartirá dos equipos (rojo y azul) al azar, con 4 palabras clave secretas cada uno.
+    {#if n >= MIN_PLAYERS && n % 2}Sois {n}: un equipo tendrá uno más ({Math.ceil(n / 2)} contra {Math.floor(n / 2)}), que en Decrypto no da ventaja.{/if}</p>
 </div>
 
 <div class="card">

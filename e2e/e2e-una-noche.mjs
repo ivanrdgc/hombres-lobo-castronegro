@@ -24,9 +24,21 @@ const hlc = (page) => page.evaluate(() => {
     phase: g.phase, stepIdx: g.stepIdx, steps: g.steps, playerIds: g.playerIds,
     originalRole: g.originalRole, slots: g.slots, center: g.center, names: g.names,
     seen: g.seen, lynched: g.lynched, pendingHunter: g.pendingHunter, deaths: g.deaths,
-    winners: g.winners, acts: g.acts,
+    winners: g.winners, acts: g.acts, log: (g.log || []).map((l) => l.txt),
   };
 });
+// Cuántas veces ha sonado la BIENVENIDA en cualquiera de los dispositivos (el
+// transcript de la voz solo lo llena el que narra): con eso se ve si la 2.ª
+// partida vuelve a narrarse o se queda muda.
+async function welcomeCount() {
+  let n = 0;
+  for (const p of Object.values(pages)) {
+    if (p.isClosed()) continue;
+    const c = await p.evaluate(() => (window.__hlcNarration || []).filter((e) => e.id === 'un-welcome').length).catch(() => 0);
+    n = Math.max(n, c);
+  }
+  return n;
+}
 async function waitState(page, fn, what, timeout = 60000) {
   const t0 = Date.now(); let last = null;
   while (Date.now() - t0 < timeout) { last = await hlc(page); if (last && fn(last)) return last; await page.waitForTimeout(300); }
@@ -49,6 +61,8 @@ async function twoSel(p) {
 async function actStep(p, step) {
   if (step === 'doble') {
     if (await vis(p, '[data-a=una-doble-copy]')) { await firstSel(p); await clk(p, '[data-a=una-doble-copy]'); await p.waitForTimeout(200); }
+    // B25: primero se elige QUÉ se mira (jugador / centro) y luego a quién.
+    if (await vis(p, '[data-a=una-dsee-mode][data-p=player]')) { await clk(p, '[data-a=una-dsee-mode][data-p=player]'); await p.waitForTimeout(150); }
     if (await vis(p, '[data-a=una-dsee-player]')) { await firstSel(p); await clk(p, '[data-a=una-dsee-player]'); }
     else if (await vis(p, '[data-a=una-drob]')) { await firstSel(p); await clk(p, '[data-a=una-drob]'); }
     else if (await vis(p, '[data-a=una-dtm]')) { await twoSel(p); await clk(p, '[data-a=una-dtm]'); }
@@ -59,6 +73,8 @@ async function actStep(p, step) {
   else if (step === 'esbirro') { if (await vis(p, '[data-a=una-minion-ok]')) await clk(p, '[data-a=una-minion-ok]'); }
   else if (step === 'masones') { if (await vis(p, '[data-a=una-mason-ok]')) await clk(p, '[data-a=una-mason-ok]'); }
   else if (step === 'vidente') {
+    // B25: «¿qué quieres mirar?» → objetivo → confirmar.
+    if (await vis(p, '[data-a=una-seer-mode][data-p=player]')) { await clk(p, '[data-a=una-seer-mode][data-p=player]'); await p.waitForTimeout(150); }
     if (await vis(p, '[data-a=una-seer-player]')) { await firstSel(p); await clk(p, '[data-a=una-seer-player]'); await p.waitForTimeout(150); }
     if (await vis(p, '[data-a=una-seer-ok]')) await clk(p, '[data-a=una-seer-ok]');
   } else if (step === 'ladron') {
@@ -201,12 +217,27 @@ try {
   check((st.deaths || []).includes(victim), 'el condenado cae: ' + JSON.stringify((st.deaths || []).map((d) => st.names[d])));
   check(await ana.locator('[data-a=una-again]').count() > 0, 'la pantalla final ofrece otra partida');
   check(await ana.locator('text=/Las cartas, al final/').count() > 0, 'se revelan las cartas iniciales→finales');
+  // F1: el diario es PÚBLICO — jamás puede delatar que El Doble está repartido.
+  check(!(st.log || []).some((t) => /Doble|👯/.test(t)), 'el diario público no menciona a El Doble (F1)');
   ok('partida completa de Una Noche');
 
-  // Otra partida (revancha) re-reparte.
+  // Otra partida (revancha): pide confirmación (borra la revelación para todos).
+  const welcomesBefore = await welcomeCount();
   await ana.click('[data-a=una-again]');
+  await ana.waitForSelector('[data-a=una-again-ok]', { timeout: 10000 });
+  check((await hlc(ana)).phase === 'end', 'la revancha NO re-reparte hasta confirmar (R6)');
+  await ana.click('[data-a=una-again-ok]');
   st = await waitState(ana, (s) => s.phase === 'reveal', 'revancha repartida');
   ok('la revancha reparte de nuevo con los mismos jugadores');
+
+  // R1: la 2.ª partida debe VOLVER A NARRARSE (antes los hitos del narrador
+  // seguían marcados con el mismo startedAt y la noche entera iba en silencio).
+  const t1 = Date.now(); let welcomesAfter = welcomesBefore;
+  while (Date.now() - t1 < 20000 && welcomesAfter <= welcomesBefore) {
+    welcomesAfter = await welcomeCount();
+    await ana.waitForTimeout(300);
+  }
+  check(welcomesAfter > welcomesBefore, `la 2.ª partida vuelve a narrarse (bienvenidas ${welcomesBefore}→${welcomesAfter}) (R1)`);
 
   // Terminar → lobby de Una Noche; limpieza de la mesa.
   await ana.click('[data-a=game-menu]');

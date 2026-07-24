@@ -44,7 +44,8 @@ function sceneOf(s: Snap): SceneDef<Snap> | null {
   if (!amSpeaker(s)) return null;
   const g = loveLetterGame(s.group)!;
   if (g.paused) return { key: `L${g.startedAt}:paused:${g.paused.at}`, hardEntry: true, run: pausedScene };
-  return { key: `L${g.startedAt}:log${g.log.length}`, run: logScene };
+  // El nonce va en la clave: sin él «🔁 Repetir» no rearrancaba la escena.
+  return { key: `L${g.startedAt}:log${g.log.length}:r${g.repeatNonce || 0}`, run: logScene };
 }
 
 async function pausedScene(ctx: Ctx): Promise<void> { await ctx.waitFor(() => false); }
@@ -52,7 +53,17 @@ async function pausedScene(ctx: Ctx): Promise<void> { await ctx.waitFor(() => fa
 async function logScene(ctx: Ctx): Promise<void> {
   const g = gm(ctx);
   await ctx.sayOnce(`L${g.startedAt}:intro`, () => utt('ll-intro', LL_INTRO));
-  for (let i = 1; i < g.log.length; i++) {
+  const last = g.log.length - 1;
+  // «🔁 Repetir»: la escena rearranca por el nonce, pero el hito de la última
+  // línea ya está marcado y no sonaría nada; se olvida SOLO ese (no hay
+  // índices mayores) para relocutarla sin recitar el diario entero.
+  if (g.repeatNonce && !ctx.ledger.has(`L${g.startedAt}:rep${g.repeatNonce}`)) {
+    ctx.ledger.mark(`L${g.startedAt}:rep${g.repeatNonce}`);
+    ctx.ledger.clearPrefix(`L${g.startedAt}:log${last}`);
+  }
+  // Desde el índice 0: la línea de apertura es la que dice cuántos favores
+  // hacen falta (depende de cuántos sois y la intro estática no puede decirlo).
+  for (let i = 0; i < g.log.length; i++) {
     const txt = speakable(g.log[i].txt);
     if (txt) await ctx.sayOnce(`L${g.startedAt}:log${i}`, () => utt(`ll-log-${i}`, txt));
   }

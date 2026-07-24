@@ -15,7 +15,7 @@ export const insider: GameDefinition = {
   id: 'insider',
   emoji: '🤫',
   name: 'Insider',
-  desc: 'Cooperativo con traidor: el equipo adivina una palabra secreta a preguntas de sí/no contrarreloj mientras un infiltrado, que también la conoce, os guía sin cantarse. Adivinada la palabra, hay que cazarlo. Si no la adivináis a tiempo, perdéis todos. Partidas de pocos minutos.',
+  desc: 'Cooperativo con traidor: el equipo adivina una palabra secreta a preguntas de SÍ o NO contrarreloj mientras un infiltrado, que también la conoce, os guía sin cantarse. Adivinada la palabra, hay que cazarlo. Si no la adivináis a tiempo, perdéis todos. Partidas de pocos minutos.',
   minPlayers: 4,
   maxPlayers: 12,
   Lobby: LobbyScreen,

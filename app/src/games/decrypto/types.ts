@@ -45,6 +45,9 @@ export interface DecryptoState {
   tokens: Record<Team, { intercepts: number; errors: number }>;
   /** Historial de transmisiones (pistas y códigos ya revelados). */
   history: Transmission[];
+  /** Códigos ya transmitidos por cada equipo: en el juego físico las cartas se
+   *  roban sin reposición, así que no se repiten dentro de la partida. */
+  usedCodes?: Record<Team, string[]>;
   winner: Team | null;
   winReason: string | null;
   scores: Record<string, number>;

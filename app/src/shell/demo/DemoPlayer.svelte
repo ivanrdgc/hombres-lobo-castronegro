@@ -4,7 +4,7 @@
   // solo fuera de partida, como los «cómo se juega»). Navegación ‹ ›.
   import { app, viewGroup, state as sync } from '../../core/sync/store.svelte';
   import { localAudioState, toggleLocalSpeech } from '../explain-audio';
-  import { whoLine } from './types';
+  import { stepSpeech } from './types';
   import type { DemoScript } from './types';
 
   const { demo }: { demo: DemoScript } = $props();
@@ -17,9 +17,32 @@
   const audioKey = $derived(`demo:${demo.id}:${i}`);
   const audio = $derived(localAudioState(audioKey));
 
+  // Lectura CORRIDA: un móvil lee el tutorial entero mientras la mesa mira las
+  // pantallas de ejemplo. Es como se aprende un juego nuevo entre amigos, sin
+  // que nadie tenga que ir pulsando el ▶️ paso a paso.
+  let readingAll = $state(false);
+  let wasPlaying = $state(false);
+  $effect(() => {
+    const playing = audio === 'playing';
+    const ended = wasPlaying && !playing;
+    wasPlaying = playing;
+    if (!readingAll || !ended) return;
+    if (i < n - 1) { i += 1; picked = null; speakStep(); } else readingAll = false;
+  });
+
+  function speakStep() {
+    toggleLocalSpeech(`demo:${demo.id}:${i}`, stepSpeech(demo.steps[i]));
+  }
   function stopAudio() {
+    readingAll = false;
     const part = sync.ui.explainAudio?.part;
     if (part && part.startsWith(`demo:${demo.id}:`)) toggleLocalSpeech(part, []);
+  }
+  function toggleReadAll() {
+    if (readingAll) { stopAudio(); return; }
+    stopAudio();
+    readingAll = true;
+    speakStep();
   }
   function go(delta: number) {
     stopAudio();
@@ -37,7 +60,13 @@
   <h3 style="flex:1;margin:0">{demo.emoji} Tutorial de {demo.name}</h3>
   <button class="small ghost" data-a="close-modal" aria-label="Cerrar" title="Cerrar" onclick={close}>✖</button>
 </div>
-<p class="small-note" style="margin:4px 0 10px">Paso {i + 1} de {n} · {'●'.repeat(i + 1)}{'○'.repeat(n - i - 1)}</p>
+<div style="display:flex;align-items:center;gap:8px;margin:4px 0 10px">
+  <p class="small-note" style="flex:1;margin:0">Paso {i + 1} de {n} · {'●'.repeat(i + 1)}{'○'.repeat(n - i - 1)}</p>
+  {#if canPlay}
+    <button class="small ghost" data-a="demo-read-all" onclick={toggleReadAll}>{readingAll ? '⏹️ Parar' : '🔊 Leérnoslo entero'}</button>
+  {/if}
+</div>
+{#if readingAll}<p class="small-note" style="margin:-4px 0 10px;opacity:.8">🔊 Leyendo el tutorial entero: los pasos van pasando solos. Toca «Parar» cuando queráis comentarlo.</p>{/if}
 
 <div style="display:flex;align-items:center;gap:8px;margin-top:2px">
   <h3 style="flex:1;margin:0;font-size:1.05rem">{step.icon} {step.title}</h3>
@@ -47,7 +76,7 @@
     {:else if audio === 'loading'}
       <button class="small ghost" aria-label="Preparando la voz" disabled><span class="spinner"></span></button>
     {:else}
-      <button class="small ghost" data-a="demo-play" aria-label="Escuchar este paso" title="Escuchar" style="font-size:1.05rem;line-height:1" onclick={() => toggleLocalSpeech(audioKey, [step.title, ...(step.who ? [whoLine(step.who)] : []), ...step.text])}>▶️</button>
+      <button class="small ghost" data-a="demo-play" aria-label="Escuchar este paso" title="Escuchar" style="font-size:1.05rem;line-height:1" onclick={() => toggleLocalSpeech(audioKey, stepSpeech(step))}>▶️</button>
     {/if}
   {/if}
 </div>

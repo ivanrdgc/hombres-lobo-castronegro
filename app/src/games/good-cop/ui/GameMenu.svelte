@@ -19,6 +19,11 @@
     <button class="menu-scrim" aria-label="Cerrar menú" onclick={close}></button>
     <div class="menu-pop" role="menu">
       <button role="menuitem" data-a="voice-open" onclick={() => { app.ui.modal = { type: 'voice' }; app.ui.voiceTest = null; close(); }}>{app.ui.muted ? '🔇 Voz' : '🗣️ Voz'}</button>
+      <!-- La ayuda solo se abría desde el lobby: a media partida no había forma
+           de consultar las reglas. -->
+      <button role="menuitem" data-a="gc-help-open" onclick={() => { app.ui.modal = { type: 'gc-help' }; close(); }}>🎲 Cómo se juega</button>
+      <!-- Rescate cuando un móvil se queda sin batería y el turno espera por él. -->
+      <button role="menuitem" data-a="table-open" onclick={() => { app.ui.modal = { type: 'table' }; close(); }}>🪑 La mesa</button>
       {#if playing}
         <button role="menuitem" data-a="gc-repeat" onclick={() => { guard(A.requestRepeat); close(); }}>🔁 Repetir</button>
         {#if game.paused}

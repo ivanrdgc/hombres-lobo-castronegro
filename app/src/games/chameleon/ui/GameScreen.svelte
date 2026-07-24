@@ -19,7 +19,16 @@
   const { group, my }: { group: GroupDoc; my: PlayerDoc } = $props();
   const game = $derived(chamGame(group)!);
   const needsUnlock = $derived(isMaster() && !app.ui.audioReady && !app.ui.muted);
+  // El rótulo del tema acompaña toda la ronda (también mientras el Camaleón
+  // adivina); la rejilla pública, solo hasta el voto: en `guess` y en `end` la
+  // pintan esas fases (tocable / con la secreta destapada) y saldría doble.
+  const showTopic = $derived(game.phase !== 'end');
   const showGrid = $derived(['reveal', 'clue', 'vote'].includes(game.phase));
+  // «¿Dónde estamos?» en la cabecera: con cinco fases y rondas encadenadas, la
+  // ronda sola no situaba a nadie.
+  const PHASES: Record<string, string> = {
+    reveal: '🎴 Reparto', clue: '🗣️ Pistas', vote: '🗳️ Voto', guess: '🎯 Última bala', end: '🌟 Fin de ronda',
+  };
 
   function unlockVoice() {
     unlockAudio();
@@ -32,7 +41,7 @@
 
 <div class="topbar">
   <h2>🦎 {group.name}</h2>
-  <span class="chip">Ronda {game.round}</span>
+  <span class="chip">Ronda {game.round} · {PHASES[game.phase] || ''}</span>
   <GameMenu {game} {my} />
 </div>
 <Flash />
@@ -46,9 +55,14 @@
     <p class="small-note">La ha pausado {game.paused.name || 'alguien'}.</p></div>
 {/if}
 
-{#if showGrid}
-  <div class="card"><p class="small-note" style="margin:0 0 2px">🗺️ Tema: <b>{topicName(game.topicId)}</b></p>
-    <Grid grid={game.grid} /></div>
+{#if showTopic}
+  <div class="card">
+    <h3 style="margin:0 0 2px">🗺️ {topicName(game.topicId)}</h3>
+    {#if showGrid}
+      <p class="small-note" style="margin:0">Las 16 palabras del tema, a la vista de todos. Una de ellas es la secreta: la sabéis todos menos el Camaleón.</p>
+      <Grid grid={game.grid} />
+    {/if}
+  </div>
 {/if}
 
 {#if game.phase === 'reveal'}

@@ -22,14 +22,16 @@ export const HOW_TO: HelpSection[] = [
     heading: '🗺️ El reparto',
     items: [
       'Cada ronda, la app muestra a TODOS la misma rejilla de 16 palabras sobre un tema (la playa, el cine…). La rejilla es pública: está siempre a la vista.',
-      'En tu carta privada, la app te dice tu papel: o bien te resalta la palabra SECRETA (eres del grupo), o bien te avisa de que eres el CAMALEÓN y no la conoces.',
-      'Míralo a solas y confirma. El Camaleón ve la rejilla igual que los demás: por eso puede fingir.',
+      'Tu carta privada te dice tu papel: o te escribe la palabra SECRETA (eres del grupo), o te avisa de que eres el CAMALEÓN y no la conoces. En la rejilla pública no se marca nada: la palabra solo aparece en tu carta.',
+      'Míralo a solas y confirma. Puedes volver a mirar tu carta cuando quieras con el botón redondo de la esquina, el de la carta, o con el botón de ver mi carta que hay bajo cada fase.',
+      'El Camaleón ve la rejilla igual que los demás: por eso puede fingir.',
     ],
   },
   {
     heading: '🗣️ Las pistas',
     items: [
-      'Por turnos (empezando por quien indique la app), cada jugador dice EN VOZ ALTA una sola palabra relacionada con la secreta.',
+      'Por turnos, cada jugador dice EN VOZ ALTA una sola palabra relacionada con la secreta. La app marca de quién es el turno y quién va después.',
+      'Cuando acabas de decir la tuya, alguien lo confirma en el móvil y el turno pasa al siguiente. Si se salta un turno por error, el botón de atrás lo devuelve.',
       'El equilibrio es el juego: si tu pista es demasiado obvia, el Camaleón deducirá la palabra; si es demasiado vaga o rara, sospecharán que el Camaleón eres tú.',
       'El Camaleón improvisa una palabra que encaje sin saber cuál es la secreta: escuchar bien las anteriores es su única baza.',
     ],
@@ -37,22 +39,25 @@ export const HOW_TO: HelpSection[] = [
   {
     heading: '👉 La votación',
     items: [
-      'Tras las pistas se debate y luego TODOS señalan a la vez, en secreto, a quien creen el Camaleón. La app destapa el recuento.',
-      'Si un jugador reúne más votos que nadie, queda señalado. Si hay EMPATE en cabeza, la mesa no se aclara y el Camaleón escapa (gana).',
+      'Cuando ha hablado toda la mesa, cualquiera pulsa el botón de votar. Antes de señalar se comentan las pistas en voz alta: ese debate es media partida.',
+      'Luego TODOS señalan a la vez, en secreto, a quien creen el Camaleón (a uno mismo no se puede). La app destapa el recuento: quién votó a quién.',
+      'Si un jugador reúne más votos que nadie, queda señalado. Si hay EMPATE en cabeza, la mesa no se aclara y el Camaleón escapa: gana 2 puntos.',
+      'Y ojo con el final más habitual: si el señalado NO es el Camaleón, la ronda acaba ahí mismo. El Camaleón gana 2 puntos sin tener que adivinar nada.',
     ],
   },
   {
     heading: '🎯 Si pillan al Camaleón',
     items: [
-      'Aún tiene una salida: debe señalar en la rejilla cuál cree que era la palabra secreta.',
+      'Solo si el señalado ES el Camaleón hay última bala: debe señalar en la rejilla cuál cree que era la palabra secreta.',
       'Si ACIERTA, escapa por la puerta grande y gana igualmente. Si falla, el grupo se lleva la ronda.',
     ],
   },
   {
     heading: '🏆 Puntos (varias rondas)',
     items: [
-      'Camaleón sin ser pillado: +2 para él. Pillado pero adivina la palabra: +1 para él.',
-      'Camaleón pillado y falla: +1 para cada jugador del grupo. Jugad las rondas que queráis; el tema no se repite hasta agotarse.',
+      'Si el Camaleón no cae, se lleva 2 puntos. Si lo pilláis pero acierta la palabra, se lleva 1 punto.',
+      'Si lo pilláis y falla, gana el grupo: 1 punto para cada jugador que no era el Camaleón.',
+      'Jugad las rondas que queráis. Cada ronda hay tema nuevo y Camaleón nuevo: nunca repite el de la ronda anterior.',
     ],
   },
 ];
@@ -62,10 +67,18 @@ export const HOW_TO: HelpSection[] = [
 export const CH_INTRO =
   'El Camaleón acecha entre las palabras. Mirad vuestra carta: unos sabéis la palabra secreta; uno de vosotros, no. Que nadie enseñe su pantalla.';
 
+/** Rondas 2 en adelante: sin esto, el reparto era mudo y nadie sabía si mirar. */
+export const NEW_ROUND_LINE =
+  'Nueva ronda: tema nuevo y Camaleón nuevo. Mirad otra vez vuestra carta, que la palabra secreta ha cambiado.';
+
 export function roundLine(topic: string, starter: string): string {
-  return `Tema de esta ronda: ${topic}. Da la primera pista ${starter}; una palabra cada uno, con astucia.`;
+  return `Tema de esta ronda: ${topic}. Empieza ${starter}, dando la primera pista; luego seguís por orden, una palabra cada uno.`;
 }
-export const VOTE_LINE = 'Se acabaron las pistas. Debatid y luego señalad todos a la vez, en secreto, a quien creáis el Camaleón.';
+export const VOTE_LINE = 'Se acabaron las pistas. Comentad lo que habéis oído y luego señalad todos a la vez, en secreto, a quien creáis el Camaleón.';
+/** El momento más dramático de la partida: la mesa acaba de cazar a alguien. */
+export function caughtLine(chameleon: string): string {
+  return `¡${chameleon} era el Camaleón! Pero aún puede escapar: que señale en la rejilla la palabra secreta.`;
+}
 export function outcomeLine(winner: 'chameleon' | 'group', chameleon: string, caught: boolean, guessedRight: boolean): string {
   if (winner === 'group') return `El Camaleón era ${chameleon}, lo habéis cazado y no supo la palabra. Gana el grupo.`;
   if (caught && guessedRight) return `Cazasteis a ${chameleon}… pero adivinó la palabra y escapa. Gana el Camaleón.`;
@@ -79,5 +92,5 @@ function helpPieces(): string[] {
 }
 
 export function allChameleonStaticPieces(): string[] {
-  return [CH_INTRO, VOTE_LINE, ...helpPieces()];
+  return [CH_INTRO, NEW_ROUND_LINE, VOTE_LINE, ...helpPieces()];
 }

@@ -229,6 +229,33 @@ test('infectado: la noche del mordisco y una sin infección suenan IGUAL (señue
   expect((fakeCall.match(/d\d+/g) || []).length).toBe(1);
 });
 
+test('encantados: la llamada espera a las marcas del Gaitero (guardia anti-carrera)', async () => {
+  // El doc de la partida (acts.gaiteroTargets) puede llegar ANTES que los docs
+  // de jugador con `charmed`: sin la espera, el paso se saltaba sin llamar a
+  // nadie y el encantado no se enteraba jamás.
+  const world = makeWorld(mkSnap({
+    steps: ['durmiendo', 'gaitero', 'encantados', 'amanecer'] as GameState['steps'],
+    stepIdx: 2,
+    keywordsActive: true,
+    composition: { gaitero: 1, aldeano: 2 },
+    kwDecoys: ['d1', 'd2', 'd3', 'd4', 'd5', 'd6'],
+    acts: { gaiteroTargets: ['p-a'] },
+  }, [
+    { id: 'p-g', name: 'Gala', role: 'gaitero', alive: true, inGame: true, order: 1, powers: {}, keyword: 'Luna de Plata' },
+    { id: 'p-a', name: 'Aldo', role: 'aldeano', alive: true, inGame: true, order: 2, powers: {}, keyword: 'Búho de Niebla' },
+  ]));
+  world.narrator.tick();
+  await vi.advanceTimersByTimeAsync(5000);
+  expect(world.timeline).toEqual([]); // ni locución ni avance: se espera la marca
+
+  world.patch((s) => { s.players.find((p) => p.id === 'p-a')!.charmed = true; });
+  await vi.advanceTimersByTimeAsync(1000);
+  expect(world.displays[0]).toContain('Búho de Niebla');
+  world.patch((s) => { s.group!.game!.acts.encantadosSeen = { 'p-a': true }; });
+  await vi.advanceTimersByTimeAsync(20000);
+  expect(world.timeline.map(([e]) => e)).toEqual(['▶call', '■call', '▶outro', '■outro', 'advance']);
+});
+
 test('infectado con la víctima protegida por el Defensor: suenan señuelos (no hubo mordisco)', async () => {
   const world = makeWorld(mkSnap({
     steps: ['durmiendo', 'lobos', 'infecto_decision', 'infectado', 'amanecer'] as GameState['steps'],

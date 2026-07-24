@@ -43,15 +43,23 @@ export interface TwoRoomsState {
   room: Record<string, 0 | 1>;
   seen: Record<string, boolean>;
   durationMs: number;
-  /** Fin del reloj de la ronda (epoch); null salvo en 'discuss'. */
+  /** Fin del reloj (epoch): el de la ronda en 'discuss' y el del voto de rehén
+   *  en 'hostages' (sin plazo, un móvil muerto congelaba la partida). */
   deadline: number | null;
   /** Voto de rehén: votante → señalado (mismo cuarto). Se vacía cada ronda. */
   hVotes: Record<string, string>;
-  /** Rehén ya decidido por cada sala esta ronda ([sala0, sala1]); null si falta. */
-  pick: [string | null, string | null];
+  /**
+   * Rehenes ya decididos por cada sala esta ronda; `null` mientras esa sala no
+   * ha cerrado su votación. Es un MAPA por sala y no un array de arrays porque
+   * Firestore no admite arrays anidados.
+   */
+  picks: { 0: string[] | null; 1: string[] | null };
   /** Historial de intercambios (para la crónica). */
-  swaps: { round: number; from0: string; from1: string }[];
+  swaps: { round: number; from0: string[]; from1: string[] }[];
   winner: Team | null;
+  /** Por qué acabó así (el cartel final): el desenlace normal, pero también una
+   *  rendición por abandono, donde «¡BOOM!» sería mentira. */
+  winReason?: string | null;
   scores: Record<string, number>;
   paused?: { by: string; name?: string; at: number } | null;
   repeatNonce?: number;

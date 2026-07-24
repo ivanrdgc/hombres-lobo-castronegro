@@ -99,8 +99,12 @@ function endTurn(game: CodenamesState): void {
   game.turn = other(game.turn);
   game.clue = null;
   game.guessesLeft = 0;
+  game.guessesMade = 0;
   game.phase = 'clue';
-  log(game, `↪️ Turno del equipo ${game.turn === 'red' ? 'ROJO' : 'AZUL'}.`);
+  game.clueAt = Date.now();
+  // La línea dice a QUIÉN le toca actuar: es lo único que oye la mesa cuando el
+  // altavoz está lejos, y evita el «¿y ahora quién?» entre turno y turno.
+  log(game, `↪️ Turno del equipo ${game.turn === 'red' ? 'ROJO' : 'AZUL'}. El Jefe ${nm(game, game.spymaster[game.turn])} prepara su pista.`);
 }
 
 function win(game: CodenamesState, winner: Team, reason: string): void {
@@ -112,15 +116,71 @@ function win(game: CodenamesState, winner: Team, reason: string): void {
   log(game, `🏆 ${WIN_LABELS(winner)} ${reason}`);
 }
 
-/** El Jefe del equipo de turno da su pista (palabra opcional + número 1..9). */
-export function giveClue(game: CodenamesState, pid: string, word: string, num: number): boolean {
+/** Compara palabras ignorando mayúsculas y tildes («volcan» = «Volcán»). */
+const norm = (s: string): string =>
+  s.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/gu, '');
+
+/**
+ * ¿Qué le pasa a esta pista? Devuelve el motivo del rechazo o null si vale.
+ * Reglas oficiales: UNA sola palabra y que NO esté en el tablero (decir una
+ * palabra del tablero regala información y arruina la partida). Se valida en el
+ * motor —no solo en la pantalla— porque una pista mal dada es irreversible.
+ */
+export function clueProblem(game: CodenamesState, word: string): string | null {
+  const clean = (word || '').trim();
+  if (!clean) return 'Escribe la palabra de la pista.';
+  if (/\s/u.test(clean)) return 'La pista es UNA sola palabra.';
+  if (clean.length > 24) return 'La pista es demasiado larga.';
+  const hit = game.words.find((w) => norm(w) === norm(clean));
+  if (hit) return `«${hit}» está en el tablero: elige otra palabra.`;
+  return null;
+}
+
+/** ¿Esta pista deja tocar sin límite? El 0 y el ∞ del juego original. */
+const isUnlimited = (num: number, unlimited: boolean): boolean => unlimited || num === 0;
+
+/**
+ * El Jefe del equipo de turno da su pista: palabra + número 0..9 (o ∞).
+ * El 0 («ninguna de las mías se parece a esto») y el ∞ («seguid con lo que os
+ * quedó pendiente») no acotan los toques: el equipo toca hasta fallar o pasar.
+ */
+export function giveClue(
+  game: CodenamesState, pid: string, word: string, num: number, unlimited = false,
+): boolean {
   if (game.phase !== 'clue' || game.spymaster[game.turn] !== pid) return false;
-  const n = Math.max(1, Math.min(9, Math.floor(num)));
-  const clean = (word || '').trim().slice(0, 24);
-  game.clue = { word: clean, num: n, by: pid };
-  game.guessesLeft = n + 1; // el clásico «+1»
+  if (clueProblem(game, word)) return false;
+  const n = Math.max(0, Math.min(9, Math.floor(num)));
+  const free = isUnlimited(n, unlimited);
+  const clean = word.trim();
+  game.clue = { word: clean, num: n, by: pid, ...(unlimited ? { unlimited: true } : {}) };
+  game.guessesLeft = free ? -1 : n + 1; // el clásico «+1»; -1 = sin límite
+  game.guessesMade = 0;
   game.phase = 'guess';
-  log(game, `💬 El Jefe ${game.turn === 'red' ? 'rojo' : 'azul'} da una pista${clean ? ` («${clean}»)` : ''} para ${n} palabra${n === 1 ? '' : 's'}.`);
+  const who = `El Jefe ${game.turn === 'red' ? 'rojo' : 'azul'} da la pista «${clean}»`;
+  log(game, unlimited
+    ? `💬 ${who}, ilimitada: su equipo puede tocar sin límite.`
+    : n === 0
+      ? `💬 ${who}, para 0 palabras: ninguna casilla suya se relaciona con ella.`
+      : `💬 ${who}, para ${n} palabra${n === 1 ? '' : 's'}.`);
+  return true;
+}
+
+/** Cuánto aguanta la mesa a un Jefe callado antes de poder saltarle el turno. */
+export const CLUE_STALL_MS = 90_000;
+
+/** ¿La fase de pista lleva parada tanto que conviene ofrecer saltarla? */
+export const clueStalled = (game: CodenamesState, now: number, ms = CLUE_STALL_MS): boolean =>
+  game.phase === 'clue' && !game.paused && now - (game.clueAt || game.startedAt) > ms;
+
+/**
+ * Escotilla anti-bloqueo: si el Jefe de turno no puede dar su pista (se ha ido
+ * de la mesa, se quedó sin batería…), cualquiera cede el turno al otro equipo.
+ * Sin esto la partida se queda muerta: en fase de pista solo actúa el Jefe.
+ */
+export function skipClue(game: CodenamesState, pid: string): boolean {
+  if (game.phase !== 'clue') return false;
+  log(game, `⏭️ ${nm(game, pid)} salta el turno del Jefe ${game.turn === 'red' ? 'rojo' : 'azul'}.`);
+  endTurn(game);
   return true;
 }
 
@@ -130,40 +190,50 @@ export function reveal(game: CodenamesState, pid: string, cell: number): boolean
   if (cell < 0 || cell >= BOARD || game.revealed[cell]) return false;
   const color = game.map[cell];
   game.revealed[cell] = true;
+  game.guessesMade += 1;
   const turn = game.turn;
-  log(game, `👉 ${nm(game, pid)} destapa «${game.words[cell]}»: ${labelOf(color)}.`);
+  const who = nm(game, pid);
+  const word = game.words[cell];
+  // Una sola línea por toque, redactada para oírse (la voz lee esto): quién
+  // toca, qué palabra y en qué acaba. Nada de telegramas «Ana: Volcán rojo».
   if (color === 'assassin') {
-    win(game, other(turn), `El equipo ${turn === 'red' ? 'rojo' : 'azul'} tocó al ASESINO.`);
+    log(game, `💀 ${who} destapa «${word}»… ¡y era el ASESINO!`);
+    win(game, other(turn), `El equipo ${turn === 'red' ? 'rojo' : 'azul'} tocó al asesino.`);
     return true;
   }
   if (color === 'neutral') {
-    log(game, '🌫️ Transeúnte: fin del turno.');
+    log(game, `⬜ ${who} destapa «${word}» y era un transeúnte: se acaba el turno.`);
     endTurn(game);
     return true;
   }
   // Casilla de un equipo.
+  const colorName = color === 'red' ? 'roja' : 'azul';
   game.remaining[color] = Math.max(0, game.remaining[color] - 1);
   if (game.remaining[color] === 0) {
-    win(game, color, `${color === 'red' ? 'El rojo' : 'El azul'} ha destapado todas sus casillas.`);
+    log(game, `${color === turn ? '👉' : '😬'} ${who} destapa «${word}» y era la ÚLTIMA casilla ${colorName}.`);
+    win(game, color, color === turn
+      ? `El equipo ${color === 'red' ? 'rojo' : 'azul'} ha destapado todas sus casillas.`
+      : `El equipo ${turn === 'red' ? 'rojo' : 'azul'} le regaló la última casilla que le quedaba.`);
     return true;
   }
   if (color === turn) {
-    game.guessesLeft -= 1;
-    if (game.guessesLeft <= 0) {
+    log(game, `👉 ${who} destapa «${word}» y era ${colorName}: ¡acierto!`);
+    if (game.guessesLeft > 0) game.guessesLeft -= 1; // -1 (pista de 0 o ∞) no gasta intentos
+    if (game.guessesLeft === 0) {
       log(game, '✋ Se agotan los intentos: fin del turno.');
       endTurn(game);
     }
     return true;
   }
   // Regaló una casilla al rival.
-  log(game, '😬 Era del rival: fin del turno.');
+  log(game, `😬 ${who} destapa «${word}» y era ${colorName}, del rival: casilla regalada y fin del turno.`);
   endTurn(game);
   return true;
 }
 
 /** ¿Puede el equipo de turno pasar ya? Regla oficial: al menos UN toque antes. */
 export function canPass(game: CodenamesState): boolean {
-  return game.phase === 'guess' && !!game.clue && game.guessesLeft < game.clue.num + 1;
+  return game.phase === 'guess' && !!game.clue && game.guessesMade > 0;
 }
 
 /** El equipo de turno decide no arriesgar más y pasa (tras al menos un toque). */
@@ -174,10 +244,7 @@ export function pass(game: CodenamesState, pid: string): boolean {
   return true;
 }
 
-function labelOf(c: CellKind): string {
-  return c === 'red' ? '🔴 rojo' : c === 'blue' ? '🔵 azul' : c === 'neutral' ? '⬜ transeúnte' : '💀 ASESINO';
-}
-
+/** Revancha: tablero, mapa, EQUIPOS y Jefes nuevos. El marcador se acumula. */
 export function resetForRematch(game: CodenamesState, seed: number): void {
   const deal = dealGame(game.playerIds, seed);
   game.seed = seed;
@@ -191,6 +258,8 @@ export function resetForRematch(game: CodenamesState, seed: number): void {
   game.turn = deal.starting;
   game.clue = null;
   game.guessesLeft = 0;
+  game.guessesMade = 0;
+  game.clueAt = Date.now();
   game.remaining = deal.remaining;
   game.winner = null;
   game.winReason = null;

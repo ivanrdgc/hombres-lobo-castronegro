@@ -226,10 +226,16 @@ async function nightStepScene(ctx: Ctx, stepId: StepId, stepIdx: number): Promis
     const game = g(ctx);
     // ¿El Gaitero encantó esta noche? (aunque ya hayan confirmado todos)
     const acted = (game.acts.gaiteroTargets || []).length > 0;
+    // Guardia anti-carrera: las marcas `charmed` viajan en los docs de jugador
+    // y pueden llegar DESPUÉS del doc de la partida. Sin esta espera, targets
+    // saldría vacío y el paso se saltaría sin llamar a nadie.
+    if (acted && !ps(ctx).some((p) => p.charmed)) {
+      await ctx.waitFor((s) => inGame(s.players).some((p) => p.charmed));
+    }
     // La llamada nombra a TODOS los que deben despertar (encantados de esta
     // noche y de las anteriores): el juego real los reconoce a todos juntos,
     // y por eso sus palabras rotan tras cada confirmación.
-    const targets = !acted ? [] : (stepActors('encantados', game, ps(ctx)) || [])
+    const targets = !acted ? [] : (stepActors('encantados', g(ctx), ps(ctx)) || [])
       .map((id) => ps(ctx).find((p) => p.id === id))
       .filter((p): p is PlayerDoc => !!p);
     if (targets.length) {

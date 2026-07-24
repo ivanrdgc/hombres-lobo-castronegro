@@ -1,7 +1,8 @@
 // E2E de «Skull»: 3 jugadores (Ana narra y juega). God-view (el doc tiene las
 // pilas ocultas): catálogo → empezar → colocación de salida → apuesta y pujas →
-// revelado (flor a flor) → dos retos → victoria. Verifica también la FUGA: solo
-// ves tu propia pila.
+// revelado (flor a flor) → dos retos → victoria. Cubre los DOS caminos: el reto
+// ganado y el fallado (subida de apuesta, calavera y pérdida de disco).
+// Verifica también la FUGA: solo ves tu propia pila.
 import { chromium } from 'playwright';
 const BASE = process.env.BASE; if (!BASE) { console.error('Define BASE=https://tu-sitio.web.app'); process.exit(1); }
 let fail = 0;
@@ -22,7 +23,7 @@ const hlc = (page) => page.evaluate(() => {
   return !g ? null : {
     phase: g.phase, round: g.round, playerIds: g.playerIds, names: g.names,
     turn: g.turn, starter: g.starter, bid: g.bid, passed: g.passed, reveal: g.reveal,
-    stacks: g.stacks, marks: g.marks, alive: g.alive, winner: g.winner,
+    stacks: g.stacks, inv: g.inv, marks: g.marks, alive: g.alive, winner: g.winner,
     lastResult: g.lastResult, log: (g.log || []).map((l) => l.txt),
   };
 });
@@ -35,6 +36,12 @@ async function waitState(page, fn, what, timeout = 30000) {
 let NAMES = {};
 const pg = (pid) => pages[(NAMES[pid] || pid).toLowerCase()];
 const st = () => hlc(pages.ana);
+
+// Pasar es irreversible: la interfaz pide un segundo toque (B25/B26).
+async function pass(pid, timeout = 15000) {
+  await pg(pid).click('[data-a=sk-pass-ask]', { timeout });
+  await pg(pid).click('[data-a=sk-pass]', { timeout });
+}
 
 // Coloca la salida de todos con FLORES (así el revelado propio siempre acierta).
 async function placeAllFlowers(s) {
@@ -61,7 +68,7 @@ async function winARound() {
     s = await st();
     if (s.phase !== 'bid') break;
     const bidder = s.turn;
-    await pg(bidder).click('[data-a=sk-pass]', { timeout: 15000 });
+    await pass(bidder);
     s = await waitState(pages.ana, (x) => x.turn !== bidder || x.phase !== 'bid', 'pasa la puja');
   }
   s = await waitState(pages.ana, (x) => x.phase === 'reveal', 'a revelar');
@@ -122,7 +129,7 @@ try {
     s = await st();
     if (s.phase !== 'bid') break;
     const b = s.turn;
-    await pg(b).click('[data-a=sk-pass]');
+    await pass(b);
     s = await waitState(ana, (x) => x.phase !== 'bid' || x.turn !== b, 'pasa');
   }
   s = await waitState(ana, (x) => x.phase === 'reveal', 'revelar');
@@ -131,7 +138,63 @@ try {
   check(s.marks[starter] === 1, 'el reto suma una marca');
   ok('turno 1: apuesta, pujas, revelado y marca');
 
-  // ——— Segunda ronda: gana el segundo reto y la partida ———
+  // ——— Ronda 2: el camino AMARGO (subir la apuesta, calavera y perder disco) ———
+  await pg(starter).click('[data-a=sk-next-round]');
+  s = await waitState(ana, (x) => x.phase === 'setup' && x.round === 2, 'ronda 2');
+  check(s.starter === starter, 'la ronda siguiente la empieza quien ganó el reto');
+  // Esta vez el jugador siguiente al inicial siembra su CALAVERA; los demás, flores.
+  const skullPid = s.playerIds[(s.playerIds.indexOf(starter) + 1) % s.playerIds.length];
+  for (const pid of s.playerIds) {
+    await pg(pid).click(pid === skullPid ? '[data-a=sk-place-skull]' : '[data-a=sk-place-flower]', { timeout: 15000 });
+    await waitState(ana, (x) => (x.stacks[pid] || []).length >= 1, `${NAMES[pid]} coloca`);
+  }
+  s = await waitState(ana, (x) => x.phase === 'play', 'turno del inicial (ronda 2)');
+  await pg(starter).click('[data-a=sk-bid-num][data-p="1"]').catch(() => {});
+  await pg(starter).click('[data-a=sk-bid-open]');
+  s = await waitState(ana, (x) => x.phase === 'bid', 'apuesta 1 abierta');
+  // El siguiente SUBE a 2 y el tercero pasa (se ve en el tablero quién pasó).
+  const raiser = s.turn;
+  await pg(raiser).click('[data-a=sk-raise-num][data-p="2"]');
+  await pg(raiser).click('[data-a=sk-raise]');
+  s = await waitState(ana, (x) => x.bid?.n === 2, 'sube la apuesta a 2');
+  check(s.bid.by === raiser, 'subir la apuesta cambia de apostador');
+  const passer = s.turn;
+  // Lo público de la puja, en pantalla (B25/B26): tope, apuesta y quién sigue.
+  const facts = await pg(passer).locator('.skfacts').innerText().catch(() => '');
+  check(/Discos en la mesa/.test(facts) && /Siguen en la subasta/.test(facts) && /Ya han pasado/.test(facts),
+    'la puja enseña discos en la mesa (tope), apuesta a batir y quién sigue vivo en la subasta');
+  const row0 = await pg(passer).locator('.skrow').first().innerText().catch(() => '');
+  check(/en la mesa/.test(row0) && /✋/.test(row0), 'cada fila del tablero dice la altura de la pila y los discos en mano');
+  // Pasar pide un segundo toque y se puede echar atrás: primero lo cancelamos.
+  await pg(passer).click('[data-a=sk-pass-ask]');
+  await pg(passer).waitForSelector('[data-a=sk-pass-cancel]', { timeout: 8000 });
+  await pg(passer).click('[data-a=sk-pass-cancel]');
+  check(!(await st()).passed[passer], 'cancelar la confirmación NO te saca de la subasta');
+  await pass(passer);
+  s = await waitState(ana, (x) => !!x.passed[passer], 'el tercero pasa');
+  const passChip = await pg(starter).waitForSelector(`[data-a=sk-passed][data-p="${passer}"]`, { timeout: 8000 }).catch(() => null);
+  check(!!passChip, 'el tablero marca con «🤐 pasó» a quien ya ha pasado');
+  // Le vuelve el turno al inicial: sube al TOPE (3 discos) y se revela sin más pujas.
+  s = await waitState(ana, (x) => x.turn === starter && x.phase === 'bid', 'turno de puja del inicial');
+  await pg(starter).click('[data-a=sk-raise-num][data-p="3"]');
+  await pg(starter).click('[data-a=sk-raise]');
+  s = await waitState(ana, (x) => x.phase === 'reveal', 'apostar al tope revela sin más pujas');
+  check(s.reveal.by === starter, 'quien pujó al tope es quien se la juega');
+  // Levanta la suya (flor) y sigue por la pila con la calavera: falla.
+  await pg(starter).click(`[data-a=sk-flip][data-p="${starter}"]`);
+  await waitState(ana, (x) => (x.reveal?.flipped || []).length >= 1, 'levanta su propia flor');
+  await pg(starter).click(`[data-a=sk-flip][data-p="${skullPid}"]`);
+  s = await waitState(ana, (x) => x.phase === 'roundEnd', 'reto fallado');
+  check(s.lastResult?.success === false, 'topar una calavera falla el reto');
+  check(s.inv[starter].flowers + s.inv[starter].skulls === 3, 'quien falla pierde un disco (de 4 a 3)');
+  check(s.starter === starter, 'tras fallar, empieza la ronda quien perdió el disco');
+  // El 🎴 debe abrirse aunque la pila siga en la mesa con el inventario ya bajado.
+  await pg(starter).click('[data-a=open-mycard]');
+  await pg(starter).waitForSelector('text=/Tus discos/');
+  await pg(starter).click('.modal [data-a=close-modal]');
+  ok('ronda 2: subida de apuesta, calavera, pérdida de disco y 🎴 sano');
+
+  // ——— Ronda 3: gana el segundo reto y la partida ———
   await pg(starter).click('[data-a=sk-next-round]');
   const r2 = await winARound();
   s = r2.s;
@@ -140,8 +203,9 @@ try {
   await ana.waitForSelector('text=/Marcador/');
   ok('partida completa de Skull');
 
-  // Limpieza.
+  // Limpieza (y de paso, el rescate «🪑 La mesa» del menú ⋯).
   await ana.click('[data-a=game-menu]');
+  check(await ana.locator('[data-a=table-open]').count() === 1, 'el menú ⋯ ofrece «🪑 La mesa»');
   await ana.click('[data-a=sk-end-open]');
   await ana.waitForSelector('[data-a=sk-end-confirm]');
   await ana.click('[data-a=sk-end-confirm]');

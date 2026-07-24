@@ -34,12 +34,29 @@ export function factionCounts(n: number): { hunter: number; shadow: number; neut
   return { hunter: 3, shadow: 3, neutral: 2 };
 }
 
+/** El reparto es PÚBLICO (como en el juego de mesa): lo secreto es quién es
+ *  quién, no cuántos hay de cada bando. Se pinta en el tablero y en el 🎴 para
+ *  que una mesa novata no tenga que preguntarlo. */
+export function factionSummary(n: number): string {
+  const c = factionCounts(n);
+  const neutral = c.neutral === 0 ? 'ningún neutral'
+    : c.neutral === 1 ? '1 🧭 neutral' : `${c.neutral} 🧭 neutrales`;
+  return `Sois ${n}: ${c.hunter} 🏹 Cazadores, ${c.shadow} 🌑 Sombras y ${neutral}.`;
+}
+
 export const HUNTERS = ['georg', 'franklin', 'fuka'];
 export const SHADOWS = ['vampiro', 'licantropo', 'valquiria'];
 export const NEUTRALS = ['allie', 'bob'];
 
 export const FACTION_LABEL: Record<Faction, string> = {
   hunter: '🏹 los Cazadores', shadow: '🌑 las Sombras', neutral: '🧭 neutral',
+};
+
+/** Etiqueta corta para las pastillas del tablero: «🧛 Vampiro · 🌑 Sombra».
+ *  Sin ella había que recordar de memoria a qué bando pertenece cada uno de los
+ *  ocho personajes, que es justo la información por la que se juega. */
+export const FACTION_SHORT: Record<Faction, string> = {
+  hunter: '🏹 Cazador', shadow: '🌑 Sombra', neutral: '🧭 Neutral',
 };
 
 export interface PistaDef {
@@ -65,4 +82,35 @@ export function pistaApplies(p: PistaDef, f: Faction): boolean {
   if (p.cond === 'not-hunter') return f !== 'hunter';
   if (p.cond === 'not-shadow') return f !== 'shadow';
   return p.cond === f;
+}
+
+/** Filas «emoji · nombre · nota · efecto» para la referencia (B21). Se usan en
+ *  el modal 🎴 y, plegadas, DENTRO del panel de acción: nadie debería salir de
+ *  la pantalla en la que está decidiendo para consultar la chuleta. */
+export interface RefRowData { emoji: string; name: string; note?: string; desc: string }
+
+/** El poder SIN el «Al revelarte:» de cabecera, para incrustarlo en una frase
+ *  («…usas TU poder, de un solo uso: 2 de daño a quien elijas»). */
+export function powerEffect(ch: CharDef): string {
+  return ch.power.replace(/^Al revelarte:\s*/i, '');
+}
+
+export function charRefRows(): RefRowData[] {
+  return Object.values(CHARS).map((ch) => ({
+    emoji: ch.emoji,
+    name: ch.name,
+    note: FACTION_SHORT[ch.faction],
+    desc: ch.power + (ch.goal ? ` Objetivo: ${ch.goal}` : ''),
+  }));
+}
+
+export function pistaRefRows(): RefRowData[] {
+  return PISTAS.map((p) => {
+    const [cond, eff] = p.text.split(/,\s*/);
+    return {
+      emoji: p.effect === 'damage1' ? '💥' : '💚',
+      name: cond,
+      desc: eff ? eff.charAt(0).toUpperCase() + eff.slice(1) : p.text,
+    };
+  });
 }

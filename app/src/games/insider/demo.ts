@@ -14,20 +14,22 @@ export const DEMO: DemoScript = {
         'Jugáis TÚ, Bea, Carlos y David. Es cooperativo… con un topo: el equipo debe adivinar una palabra secreta con preguntas de SÍ o NO, contrarreloj.',
         'Bea es la MAESTRA (público, rota cada ronda): conoce la palabra y responde. Y uno de vosotros es el INSIDER: también la conoce y os empuja hacia ella… sin que se le note. Si el tiempo se agota sin palabra, PERDÉIS TODOS.',
       ],
-      visual: { kind: 'chips', chips: [{ name: 'Bea', emoji: '🎓', badge: 'Maestra', hl: true }, { name: 'TÚ', badge: '¿común?' }, { name: 'Carlos', badge: '¿común?' }, { name: 'David', badge: '¿insider?' }], caption: 'La Maestra es pública; el Insider, secreto.' },
+      // Las fichas van con «¿?» a propósito: antes David llevaba «¿insider?» y
+      // el tutorial se destripaba solo en el primer paso. Se revela en el 5.
+      visual: { kind: 'chips', chips: [{ name: 'Bea', emoji: '🎓', badge: 'Maestra', hl: true }, { name: 'TÚ', badge: '¿?' }, { name: 'Carlos', badge: '¿?' }, { name: 'David', badge: '¿?' }], caption: 'La Maestra es pública; el Insider, secreto: podría ser cualquiera de los tres.' },
     },
     {
       icon: '🎴',
       title: 'El reparto: quién sabe la palabra',
       who: { actor: 'TODOS miráis vuestra carta a la vez y confirmáis', others: 'nadie enseña la pantalla: ser (o no) el Insider es secreto hasta el final.' },
       text: [
-        'Tú eres común: sabes que NO sabes. Bea (Maestra) y David (Insider, aunque nadie lo sabe) ven la palabra: «brújula».',
+        'Tú eres común: sabes que NO sabes. Bea, la Maestra, ve la palabra: «brújula». Y el Insider —Carlos o David, aún no puedes saberlo— la ve también en su carta.',
       ],
       visual: {
         kind: 'screens',
         panes: [
           { title: 'TÚ (común)', lines: ['👤 Eres del equipo', 'No conoces la palabra: pregunta y deduce.'] },
-          { title: 'David (tú no lo ves)', lines: ['🕵️ Es el INSIDER', 'La palabra es: «brújula»', 'Debe guiaros hacia ella… con disimulo.'] },
+          { title: 'El INSIDER (no ves quién)', lines: ['🕵️ Eres el INSIDER', 'La palabra es: «brújula»', 'Debe guiaros hacia ella… con disimulo.'] },
         ],
       },
     },
@@ -36,22 +38,28 @@ export const DEMO: DemoScript = {
       title: 'El interrogatorio contrarreloj',
       who: { actor: 'Bea (Maestra) pulsa el reloj y responde; TODOS preguntáis en voz alta, sin turnos', others: 'el temporizador corre en todas las pantallas.' },
       text: [
-        'Bea pone en marcha el reloj (3, 5 u 8 min, elegido al empezar). Empieza preguntando quien indique la app y luego pregunta cualquiera: «¿es un objeto?» — «Sí». «¿Se come?» — «No».',
+        'Bea pone en marcha el reloj (3, 5 u 8 min, elegido al empezar; si su móvil falla, lo arranca cualquiera). Empieza preguntando quien indique la app —nunca la Maestra— y luego pregunta cualquiera: «¿es un objeto?» — «Sí». «¿Se come?» — «No».',
         'La Maestra solo puede responder «sí», «no» o «no lo sé»: ni pistas ni medias palabras.',
+        'Tu carta no se pierde de vista: el botón redondo con una carta 🎴, abajo a la derecha, la vuelve a abrir cuando quieras —tu papel y, si la conoces, la palabra— y se oculta sola a los pocos segundos. Nadie tiene que preguntar en voz alta «¿yo qué era?».',
       ],
       visual: {
         kind: 'screens',
         panes: [
           { title: 'Bea (Maestra)', lines: ['Ve la palabra: «brújula»', 'Responde en voz alta a cada pregunta.'], buttons: [{ label: '✅ ¡Palabra adivinada!', kind: 'primary' }] },
-          { title: 'TÚ (equipo)', lines: ['⏱️ 3:41', 'Preguntas en voz alta; el móvil solo muestra el reloj.'] },
+          { title: 'TÚ (equipo)', lines: ['⏱️ 3:41', 'Preguntas en voz alta.', 'Botón 🎴: tu carta, cuando quieras.'] },
         ],
       },
     },
     {
       icon: '🤔',
       title: 'Ponte a prueba (si fueras el Insider)',
-      who: { actor: 'David (Insider) pregunta como uno más… sabiendo la respuesta', others: 'nadie sospecha aún: sus preguntas parecen normales.' },
-      text: ['Queda un minuto y el equipo anda perdido preguntando por animales (la palabra es «brújula»).'],
+      who: { actor: 'Te pones un momento en la piel del Insider: pregunta como uno más… sabiendo la respuesta', others: 'nadie sospecha aún: sus preguntas parecen normales.' },
+      // La moraleja vive en el texto, no solo en las respuestas: quien ESCUCHA
+      // el tutorial (▶️) no toca las opciones y antes se quedaba sin la lección.
+      text: [
+        'Queda un minuto y el equipo anda perdido preguntando por animales (la palabra es «brújula»).',
+        'El arte del Insider es la pregunta que REENCAMINA sin cantarte: «¿sirve para orientarse?» parece una más y de un tajo saca a la mesa del bosque. La pregunta quirúrgica («¿tiene una aguja que apunta al norte?») acierta, pero te delata: luego no sabrás explicar cómo lo sabías. Y callarte tampoco salva, porque si se agota el tiempo pierdes TÚ también… y un jugador mudo canta tanto como uno certero.',
+      ],
       ask: {
         prompt: 'Eres el Insider. ¿Qué haces?',
         choices: [
@@ -67,12 +75,13 @@ export const DEMO: DemoScript = {
       who: { actor: 'Carlos grita «¡brújula!» y Bea pulsa «✅ ¡Palabra adivinada!»', others: 'el reloj se para; se abre un breve debate: ¿quién preguntó con demasiada puntería?' },
       text: [
         'Primera parte superada. Ahora TODOS votáis a la vez, en secreto — también la Maestra. No puedes votarte a ti mismo ni a la Maestra (es pública, no puede ser el Insider).',
+        'Tú sospechas de David: fue quien preguntó «¿sirve para orientarse?» justo cuando la mesa se perdía. Y aciertas: David era el Insider. La pantalla dice quién falta por votar, y si alguien se quedó sin móvil la Maestra puede cerrar el recuento con los votos que haya.',
       ],
       visual: {
         kind: 'screens',
         panes: [
           { title: 'TÚ (votando)', lines: ['¿Quién guiaba demasiado bien?', 'Tocas a David.'], buttons: [{ label: '👉 Señalar a David', kind: 'danger' }] },
-          { title: 'David (Insider, votando)', lines: ['Vota a otro para despistar.', 'Han votado 3/4…'] },
+          { title: 'David (Insider, votando)', lines: ['Vota a otro para despistar.', 'Falta por votar: Carlos'] },
         ],
       },
     },
