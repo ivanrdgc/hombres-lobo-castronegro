@@ -1,5 +1,6 @@
 // Corpus de «Secret Hitler»: lobby (▶️), ayuda y voz del narrador. Las
 // piezas sin nombres son estáticas → clips (allSecretHitlerStaticPieces).
+import { cleanForSpeech } from '../../core/util/speech';
 import type { PowerType } from './roles';
 
 export const INTRO_LOBBY: string[] = [
@@ -42,7 +43,7 @@ export const HOW_TO: HelpSection[] = [
       'Con el gobierno aprobado, la app da al PRESIDENTE tres decretos que solo ve él: descarta uno y pasa los otros dos al Canciller.',
       'El CANCILLER ve esos dos (tampoco los ve nadie más): promulga uno y descarta el otro. Solo el decreto PROMULGADO es público; los descartes quedan en secreto.',
       'Ahí está la miga: un fascista puede jurar que «solo le llegaron decretos fascistas»… y quizá mienta. El mazo se rebaraja solo cuando se agota.',
-      'Con 5 decretos fascistas se desbloquea el VETO: el Canciller puede proponer descartar la agenda entera y, si el Presidente acepta, no se promulga nada (cuenta como gobierno caído hacia el caos).',
+      'Con 5 decretos fascistas se desbloquea el VETO: el Canciller puede proponer descartar la agenda entera y, si el Presidente acepta, no se promulga nada (cuenta como gobierno caído hacia el caos). Si el Presidente lo rechaza, el Canciller queda OBLIGADO a promulgar: no puede re-vetar.',
     ],
   },
   {
@@ -100,6 +101,12 @@ export function endLine(winner: 'liberal' | 'fascist', reason: string): string {
   return `${winner === 'liberal' ? 'La República resiste.' : 'Cae la República.'} ${reason}`;
 }
 
+/** Textos del lobby y la ayuda, limpios tal y como los lee el ▶️ local. */
+function helpPieces(): string[] {
+  return [...INTRO_LOBBY, ...HOW_TO.flatMap((s) => [s.heading, ...s.items])]
+    .map(cleanForSpeech).filter(Boolean);
+}
+
 export function allSecretHitlerStaticPieces(): string[] {
-  return [SH_INTRO, LISTOS, CHAOS_LINE];
+  return [SH_INTRO, LISTOS, CHAOS_LINE, ...helpPieces()];
 }

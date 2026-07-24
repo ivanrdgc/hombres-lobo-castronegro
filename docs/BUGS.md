@@ -179,3 +179,18 @@ Estados: 🔴 abierto · 🟢 arreglado (con commit) · 🟡 re-reportado tras u
   coherencia, al `canPlay` idéntico de la ayuda de Una Noche. El ▶️ sigue en el LOBBY (leer las
   reglas en alto antes de empezar es lo suyo). E2E: detalle in-game sin ▶️ en `e2e.mjs` (HL) y
   `e2e-una-noche.mjs` (Una Noche); el detalle del lobby lo conserva.
+
+## B14 · Lecturas en voz alta: el título de sección se funde con su contenido (sin pausa)
+- **2026-07-24 · reporte.** «Algunos cómo jugar con títulos de secciones no hacen pausa entre el
+  título de la sección y su contenido.» Al leer en voz alta la explicación/«cómo se juega», el
+  título («Cómo se juega», «De qué va»…) sonaba pegado al primer párrafo.
+- **Diagnóstico.** Dos causas que se suman: (1) TODA síntesis pasa por `buildSsml()`, que solo
+  inserta `<break>` tras `. ! ? …` — y los títulos no llevan punto, así que se funden con la
+  frase siguiente; el SSML fino de `buildExplainSpeech()` (pausas de 450–1100 ms por sección)
+  se DESCARTA en runtime: `toggleExplainAudio` pasa solo `segments[].text` (párrafos agregados
+  en bloques de ≤3200 chars) y el clip se sintetiza desde texto plano. (2) En los «cómo se
+  juega» de los 8 juegos por apartados, el ▶️ ni siquiera leía el título (solo `sec.items`).
+- **2026-07-24 · 🟢 arreglado** (este commit): la explicación se locuta por PIEZAS (párrafo a
+  párrafo) con segmentos `gap` reales entre ellas (el título, con su propia pausa); los ▶️ por
+  apartado leen ahora `[título, …párrafos]` con pausa de 550 ms entre piezas. De paso, todos los
+  textos de ayuda/lobby/demos se pregeneran como clips (antes se sintetizaban en vivo al tocar ▶️).

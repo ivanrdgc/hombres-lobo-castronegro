@@ -2,13 +2,14 @@
 // pieza (sin las variantes deterministas de Los Hombres Lobo: el juego es
 // corto y la gracia está en el orden de llamadas). Todas las piezas son
 // estáticas → se pregeneran como clips (allUnaNocheStaticPieces).
+import { cleanForSpeech } from '../../core/util/speech';
 import type { StepId, WinnerId } from './types';
 
 export const WELCOME =
   'Bienvenidos a Castronegro… solo por esta noche. Mirad vuestra carta en secreto, memorizadla y confirmad. Recordad: alguien podría cambiárosla mientras dormís.';
 
 // Textos de LOBBY para leer en voz alta en el propio dispositivo (▶️), como en
-// el juego original. Se sintetizan en runtime (no son clips pregenerados).
+// el juego original. Se pregeneran como clips (helpPieces, abajo).
 export const INTRO_LOBBY: string[] = [
   'Una sola noche. Los roles se despiertan por turnos y, a oscuras, miran y se roban e intercambian las cartas unos a otros: al amanecer puede que ya no seas quien empezaste… y quizá ni lo sepas.',
   'De día se debate una sola vez y todos señalan a la vez a quien creen hombre lobo. Gana el Pueblo si cae un lobo; ganan los Lobos si ninguno cae; y el Curtidor gana si logra que lo linchen a él.',
@@ -130,6 +131,12 @@ export const END: Record<WinnerId, string> = {
   nadie: 'Se acabó… y esta vez no gana nadie. Castronegro se queda con la duda.',
 };
 
+/** Textos del lobby y la ayuda, limpios tal y como los lee el ▶️ local. */
+function helpPieces(): string[] {
+  return [...INTRO_LOBBY, ...HOW_TO.flatMap((s) => [s.heading, ...s.items])]
+    .map(cleanForSpeech).filter(Boolean);
+}
+
 /** Todas las piezas estáticas del juego (para pregenerar clips en la F6). */
 export function allUnaNocheStaticPieces(): string[] {
   return [
@@ -139,5 +146,6 @@ export function allUnaNocheStaticPieces(): string[] {
     ...Object.values(STEP_NAG).filter((t): t is string => !!t),
     ...NAG_FORGOT,
     ...Object.values(END),
+    ...helpPieces(),
   ];
 }

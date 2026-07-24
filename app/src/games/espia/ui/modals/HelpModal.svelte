@@ -19,7 +19,7 @@
     {:else if st === 'loading'}
       <button class="small ghost" aria-label="Preparando la voz" disabled><span class="spinner"></span></button>
     {:else}
-      <button class="small ghost" data-a="espia-play-help" data-p={String(i)} aria-label="Escuchar este apartado" title="Escuchar" style="font-size:1.05rem;line-height:1" onclick={() => toggleLocalSpeech(keyOf(i), s.body)}>▶️</button>
+      <button class="small ghost" data-a="espia-play-help" data-p={String(i)} aria-label="Escuchar este apartado" title="Escuchar" style="font-size:1.05rem;line-height:1" onclick={() => toggleLocalSpeech(keyOf(i), [s.title, ...s.body])}>▶️</button>
     {/if}
   </div>
   {#each s.body as p, j (j)}<p class="small-note" style="margin:7px 0">{p}</p>{/each}

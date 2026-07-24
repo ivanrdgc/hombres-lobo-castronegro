@@ -1,5 +1,6 @@
 // Textos de El Espía: introducción del lobby, «cómo se juega» y el guion del
 // narrador (piezas estáticas pregenerables + líneas dinámicas con nombres).
+import { cleanForSpeech } from '../../core/util/speech';
 import type { EspiaOutcome, EspiaState } from './types';
 import { locationById } from './locations';
 
@@ -20,6 +21,7 @@ export const HOW_TO: HelpSection[] = [
     title: '🎴 El reparto',
     body: [
       'Cada ronda, todos reciben en su móvil la MISMA localización con un papel distinto (médico de a bordo, crupier, becario…). Uno recibe en su lugar la carta de ESPÍA: no sabe dónde está.',
+      'Mira tu carta a solas y confirma; cuando todos han confirmado, cualquiera pone el reloj en marcha.',
       'La lista completa de localizaciones es pública: consultadla cuando queráis. El espía la necesita para adivinar; los agentes, para no pasarse de listos con las respuestas.',
     ],
   },
@@ -33,7 +35,7 @@ export const HOW_TO: HelpSection[] = [
   {
     title: '🛑 Parar el reloj',
     body: [
-      'Una vez por ronda, cada jugador puede parar el reloj y acusar a alguien de ser el espía. Votan todos los demás (menos el acusado): si hay unanimidad, la carta se revela y la ronda TERMINA, sea espía o no. Si alguien discrepa, el reloj sigue.',
+      'Una vez por ronda, cada jugador puede parar el reloj y acusar a alguien de ser el espía. Votan los demás (el acusador ya cuenta como «sí»; el acusado no vota): si hay unanimidad, la carta se revela y la ronda TERMINA, sea espía o no. Si alguien discrepa, el reloj sigue.',
       'El espía puede, en cualquier momento (nunca durante una votación), revelarse e intentar adivinar la localización. Acierte o falle, la ronda termina.',
     ],
   },
@@ -79,9 +81,15 @@ export const TIMEUP_LINE = '¡Se acabó el tiempo! Nadie hable más del caso. Ll
 
 export const VOTE_HINT = 'Votad todos: cualquier discrepancia devuelve el reloj a la mesa.';
 
+/** Textos del lobby y la ayuda, limpios tal y como los lee el ▶️ local. */
+function helpPieces(): string[] {
+  return [...INTRO_LOBBY, ...HOW_TO.flatMap((s) => [s.title, ...s.body])]
+    .map(cleanForSpeech).filter(Boolean);
+}
+
 /** Todas las piezas estáticas del guion (para pregenerar clips y su test). */
 export function allEspiaStaticPieces(): string[] {
-  return [ESPIA_INTRO, ...RONDA_START, LISTOS_PROMPT, ...RELOJ_START, WARN_HALF, WARN_MIN, WARN_10S, TIMEUP_LINE, VOTE_HINT];
+  return [ESPIA_INTRO, ...RONDA_START, LISTOS_PROMPT, ...RELOJ_START, WARN_HALF, WARN_MIN, WARN_10S, TIMEUP_LINE, VOTE_HINT, ...helpPieces()];
 }
 
 // ——— Líneas dinámicas (síntesis en vivo, con precalentamiento) ———

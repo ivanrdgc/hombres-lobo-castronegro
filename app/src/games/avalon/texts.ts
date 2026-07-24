@@ -2,6 +2,7 @@
 // del narrador. Las piezas SIN nombres son estáticas → se pregeneran como clips
 // (allAvalonStaticPieces); las que llevan nombres se sintetizan en runtime (su
 // latencia no delata nada: son anuncios públicos de día).
+import { cleanForSpeech } from '../../core/util/speech';
 import type { Team } from './roles';
 
 export const INTRO_LOBBY: string[] = [
@@ -42,7 +43,7 @@ export const HOW_TO: HelpSection[] = [
     heading: '🗳️ Fase 2 · Todos votan el equipo',
     items: [
       'TODA la mesa (vayan o no en la misión) vota en secreto: 👍 aprobar o 👎 rechazar ESE equipo. Nadie ve los votos ajenos hasta que han votado todos.',
-      'La app los destapa A LA VEZ, y son públicos (como en el juego de mesa): se ve quién aprobó y quién rechazó — información valiosísima para deducir.',
+      'La app los destapa A LA VEZ, y son públicos (como en el juego de mesa): se ve quién aprobó y quién rechazó — información valiosísima para deducir. Tras leerlo, cualquiera pulsa «▶️ Continuar».',
       'Si hay mayoría de aprobación, el equipo parte a la misión. Si hay empate o mayoría de rechazo, el liderazgo pasa al siguiente jugador y se vuelve a proponer.',
       '⚠️ Cuidado: si se rechazan CINCO propuestas seguidas en la misma misión, el reino cae en el caos y gana el Mal. No bloqueéis eternamente.',
     ],
@@ -105,7 +106,13 @@ export function endLine(winner: Team, reason: string): string {
   return `${head} ${reason}`;
 }
 
+/** Textos del lobby y la ayuda, limpios tal y como los lee el ▶️ local. */
+function helpPieces(): string[] {
+  return [...INTRO_LOBBY, ...HOW_TO.flatMap((s) => [s.heading, ...s.items])]
+    .map(cleanForSpeech).filter(Boolean);
+}
+
 /** Todas las piezas ESTÁTICAS (sin nombres) para pregenerar clips en la F6. */
 export function allAvalonStaticPieces(): string[] {
-  return [AV_INTRO, LISTOS, ASSASSIN_LINE];
+  return [AV_INTRO, LISTOS, ASSASSIN_LINE, ...helpPieces()];
 }

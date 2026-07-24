@@ -121,8 +121,10 @@ function ssmlEscape(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-interface SpeechToken {
+export interface SpeechToken {
+  /** Texto de la pieza (ya limpio para la voz). */
   t: string;
+  /** Silencio ANTES de la pieza, en ms. */
   pause: number;
 }
 
@@ -168,20 +170,19 @@ function segmentTokens(clean: SpeechToken[]): ExplainSpeech {
   return { text, segments };
 }
 
-// Locución de la explicación a partir del MISMO texto que se muestra. Añade
-// pausas entre secciones y párrafos, y una pausa tras cada encabezado, para que
-// suene como un narrador humano. El SSML lo aprovecha la voz neuronal; el texto
-// plano queda para la voz del dispositivo. Se trocea en segmentos encadenados.
-// `part` selecciona qué leer; 'all' (por defecto) mantiene la voz completa e
-// idéntica a la v1 (golden). Devuelve { text, segments: [{ text, ssml }] }.
-export function buildExplainSpeech(group: ExplainGroup = {}, part: ExplainPart = 'all'): ExplainSpeech {
+// Piezas de la locución de la explicación, párrafo a párrafo, con la pausa que
+// precede a cada una. Es la fuente ÚNICA de la lectura en voz alta: la lectura
+// local las reproduce como clips con silencios `gap` reales entre ellas (los
+// títulos, sin punto final, necesitan su pausa explícita: la voz neuronal solo
+// pausa sola tras . ! ? …). `part` selecciona qué leer.
+export function explainSpeechPieces(group: ExplainGroup = {}, part: ExplainPart = 'all'): SpeechToken[] {
   const ex = EXPLANATIONS[group.currentGame || ''] || EXPLANATIONS.hombres_lobo;
   const allSecs = explainSections(group);
   const secs = part === 'all' ? allSecs
     : part === 'howto' ? allSecs.filter((s) => s.id !== 'intro')
       : allSecs.filter((s) => s.id === part); // 'intro' o una sección concreta
-  // tokens: { t: texto, pause: ms de silencio antes }. El título solo encabeza
-  // la voz completa y la introducción; las demás partes arrancan en su sección.
+  // El título solo encabeza la voz completa y la introducción; las demás partes
+  // arrancan en su sección.
   const tokens: SpeechToken[] = part === 'all' || part === 'intro' ? [{ t: toSpeech(ex.title), pause: 0 }] : [];
   secs.forEach((sec, si) => {
     if (sec.heading) tokens.push({ t: toSpeech(sec.heading), pause: si === 0 ? 900 : 1100 });
@@ -194,5 +195,36 @@ export function buildExplainSpeech(group: ExplainGroup = {}, part: ExplainPart =
       tokens.push({ t, pause });
     });
   });
-  return segmentTokens(tokens.filter((x) => x.t));
+  return tokens.filter((x) => x.t);
+}
+
+// Locución de la explicación a partir del MISMO texto que se muestra, agregada
+// en segmentos grandes con SSML (pausas <break> incrustadas). Se conserva como
+// contrato del golden de la v1 y para la voz del dispositivo (texto completo);
+// la lectura local ya no la usa (reproduce explainSpeechPieces con gaps).
+export function buildExplainSpeech(group: ExplainGroup = {}, part: ExplainPart = 'all'): ExplainSpeech {
+  return segmentTokens(explainSpeechPieces(group, part));
+}
+
+/**
+ * Piezas ESTÁTICAS de la explicación (para pregenerar clips): título, párrafos,
+ * encabezados, la ficha de cada rol y las líneas de ajustes en sus dos formas.
+ * Quedan fuera las líneas con números libres (nº de lobos/aldeanos): esas pocas
+ * van por síntesis en vivo.
+ */
+export function allExplainStaticPieces(): string[] {
+  const out = new Set<string>();
+  for (const ex of Object.values(EXPLANATIONS)) {
+    out.add(toSpeech(ex.title));
+    for (const p of [...ex.intro, ...ex.how]) out.add(toSpeech(p));
+  }
+  for (const sec of explainSections({})) if (sec.heading) out.add(toSpeech(sec.heading));
+  for (const r of Object.values(ROLES)) out.add(toSpeech(`${r.emoji} ${r.name} — ${r.desc}`));
+  const allOn = settingsSummary({
+    revealDead: true, showComposition: true, primeraNocheTranquila: true,
+    videnteSoloBando: true, ocultarCausas: true, alguacil: true, casual: true,
+  });
+  const allOff = settingsSummary({ revealDead: false, showComposition: false });
+  for (const line of [...allOn, ...allOff]) out.add(toSpeech(line));
+  return [...out].filter(Boolean);
 }

@@ -21,7 +21,7 @@
       {:else if st === 'loading'}
         <button class="small ghost" aria-label="Preparando la voz" disabled><span class="spinner"></span></button>
       {:else}
-        <button class="small ghost" data-a="ch-play-howto" data-p={String(i)} aria-label="Escuchar este apartado" title="Escuchar" style="font-size:1.05rem;line-height:1" onclick={() => toggleLocalSpeech(keyOf(i), sec.items)}>▶️</button>
+        <button class="small ghost" data-a="ch-play-howto" data-p={String(i)} aria-label="Escuchar este apartado" title="Escuchar" style="font-size:1.05rem;line-height:1" onclick={() => toggleLocalSpeech(keyOf(i), [sec.heading, ...sec.items])}>▶️</button>
       {/if}
     {/if}
   </div>

@@ -1,6 +1,7 @@
 // Corpus de «Insider»: intro del lobby (▶️), «cómo se juega» por apartados y la
 // voz del narrador. La PALABRA secreta NUNCA se dice en voz alta; el Maestro sí
 // es público (la voz lo anuncia por su nombre).
+import { cleanForSpeech } from '../../core/util/speech';
 import type { InsiderState } from './types';
 
 // ——— Lobby ———
@@ -95,8 +96,14 @@ export function outcomeSpeech(game: InsiderState): string {
   return `El Insider era ${nm(game.insiderId)}. Se acabó el tiempo sin dar con la palabra: esta vez no gana nadie.`;
 }
 
+/** Textos del lobby y la ayuda, limpios tal y como los lee el ▶️ local. */
+function helpPieces(): string[] {
+  return [...INTRO_LOBBY, ...HOW_TO.flatMap((s) => [s.heading, ...s.items])]
+    .map(cleanForSpeech).filter(Boolean);
+}
+
 /** Piezas SIN nombres ni palabra: se pregeneran como clips (el resto va por
  *  síntesis en vivo, donde la latencia no delata nada). */
 export function allInsiderStaticPieces(): string[] {
-  return [INSIDER_INTRO, QUESTION_START, GUESSED_LINE, VOTE_HINT, TIMEOUT_LINE, WARN_HALF, WARN_MIN, WARN_10S];
+  return [INSIDER_INTRO, QUESTION_START, GUESSED_LINE, VOTE_HINT, TIMEOUT_LINE, WARN_HALF, WARN_MIN, WARN_10S, ...helpPieces()];
 }

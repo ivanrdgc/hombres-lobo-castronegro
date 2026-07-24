@@ -1,5 +1,6 @@
 // Corpus de «El Camaleón»: lobby (▶️), ayuda por apartados y voz del narrador.
 // La palabra secreta NUNCA se dice en voz alta (el tema sí es público).
+import { cleanForSpeech } from '../../core/util/speech';
 
 export const INTRO_LOBBY: string[] = [
   'El Camaleón: todos veis la misma rejilla de 16 palabras y sabéis cuál es la SECRETA… menos uno, el Camaleón, que solo ve la rejilla y tiene que fingir.',
@@ -71,6 +72,12 @@ export function outcomeLine(winner: 'chameleon' | 'group', chameleon: string, ca
   return `Nadie lo vio venir: ${chameleon} era el Camaleón y se escurre sin castigo. Gana el Camaleón.`;
 }
 
+/** Textos del lobby y la ayuda, limpios tal y como los lee el ▶️ local. */
+function helpPieces(): string[] {
+  return [...INTRO_LOBBY, ...HOW_TO.flatMap((s) => [s.heading, ...s.items])]
+    .map(cleanForSpeech).filter(Boolean);
+}
+
 export function allChameleonStaticPieces(): string[] {
-  return [CH_INTRO, VOTE_LINE];
+  return [CH_INTRO, VOTE_LINE, ...helpPieces()];
 }
