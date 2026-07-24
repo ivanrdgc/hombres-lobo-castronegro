@@ -31,6 +31,7 @@ const DEFAULT_SUITES = [
   'e2e-codenames.mjs',
   'e2e-decrypto.mjs',
   'e2e-good-cop.mjs',
+  'e2e-shadow-hunters.mjs',
   'e2e-skull.mjs',
   'e2e-love-letter.mjs',
   'e2e-demos.mjs',

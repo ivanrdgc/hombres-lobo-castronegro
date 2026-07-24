@@ -15,12 +15,13 @@ import { DEMO as skull } from '../../games/skull/demo';
 import { DEMO as loveLetter } from '../../games/love-letter/demo';
 import { DEMO as decrypto } from '../../games/decrypto/demo';
 import { DEMO as goodCop } from '../../games/good-cop/demo';
+import { DEMO as shadowHunters } from '../../games/shadow-hunters/demo';
 import { DEMO as espia } from '../../games/espia/demo';
 import { demoSpeechPieces } from './types';
 import type { DemoScript } from './types';
 
 export const ALL_DEMOS: DemoScript[] = [
-  hombresLobo, unaNoche, avalon, secretHitler, chameleon, insider, coup, twoRooms, codenames, decrypto, goodCop, wavelength, skull, loveLetter, espia,
+  hombresLobo, unaNoche, avalon, secretHitler, chameleon, insider, coup, twoRooms, codenames, decrypto, goodCop, shadowHunters, wavelength, skull, loveLetter, espia,
 ];
 
 /** Todas las piezas de voz de todos los tutoriales (pregenerables). */

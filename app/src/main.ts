@@ -25,6 +25,7 @@ import { installSkullNarrator } from './games/skull/narrator/install';
 import { installLoveLetterNarrator } from './games/love-letter/narrator/install';
 import { installDecryptoNarrator } from './games/decrypto/narrator/install';
 import { installGoodCopNarrator } from './games/good-cop/narrator/install';
+import { installShadowHNarrator } from './games/shadow-hunters/narrator/install';
 
 installUnlockGestures();
 // Refleja en el estado global si el audio SUENA ya (AudioContext 'running'):
@@ -54,6 +55,7 @@ installSkullNarrator();
 installLoveLetterNarrator();
 installDecryptoNarrator();
 installGoodCopNarrator();
+installShadowHNarrator();
 installPresence();
 
 window.addEventListener('popstate', applyRoute);
