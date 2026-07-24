@@ -473,6 +473,7 @@ export async function requestRepeat(): Promise<void> {
 registerMatchTools('una_noche', {
   leave: (mid) => endUnaNoche(mid),
   end: (mid) => endUnaNoche(mid),
+  leaveEndsMatch: true,
 });
 
 /** El pid de El Doble en la partida en curso (para la UI). */

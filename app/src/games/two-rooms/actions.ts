@@ -14,7 +14,7 @@ import {
 import type { GroupDoc, MatchDoc } from '../../core/sync/schema';
 import {
   MIN_PLAYERS, MAX_PLAYERS, TOTAL_ROUNDS, dealGame, minutesForRound, roomOf, roomMembers,
-  allVotedInRoom, tallyRoom, decideWinner, presidentId, bomberId, playersOf,
+  allVotedInRoom, tallyRoom, decideWinner, presidentId, bomberId, playersOf, leavePlayer,
 } from './engine';
 import type { TwoRoomsState } from './types';
 
@@ -144,15 +144,21 @@ export async function castHostageVote(target: string): Promise<void> {
     const r = roomOf(game, me);
     if (roomOf(game, target) !== r || !game.playerIds.includes(target)) return null;
     game.hVotes = { ...game.hVotes, [me]: target };
-    // ¿Ha terminado de votar la sala del votante? Fija su rehén.
-    if (allVotedInRoom(game, r) && game.pick[r] === null) {
+    return maybeCloseRooms(game);
+  });
+}
+
+// Fija el rehén de cada sala que haya terminado de votar y, con las dos
+// decididas, intercambia (lo comparten el voto y las salidas a mitad de voto).
+function maybeCloseRooms(game: TwoRoomsState): TwoRoomsState {
+  for (const r of [0, 1] as const) {
+    if (game.pick[r] === null && allVotedInRoom(game, r)) {
       game.pick[r] = tallyRoom(game, r);
       game.log.push({ txt: `🗳️ La sala ${r + 1} manda de rehén a ${nameOf(game, game.pick[r])}.` });
     }
-    // ¿Han decidido ya las dos salas? Intercambio y siguiente ronda (o final).
-    if (game.pick[0] && game.pick[1]) return doSwap(game);
-    return game;
-  });
+  }
+  if (game.pick[0] && game.pick[1]) return doSwap(game);
+  return game;
 }
 
 function doSwap(game: TwoRoomsState): TwoRoomsState {
@@ -192,6 +198,7 @@ function finish(game: TwoRoomsState): TwoRoomsState {
 export async function playAgain(): Promise<void> {
   await tx((game) => {
     if (game.phase !== 'end') return null;
+    if (game.playerIds.length < MIN_PLAYERS) return null; // sin quórum no hay revancha
     const seed = (game.seed || 0) + 101;
     const deal = dealGame(game.playerIds, seed);
     game.seed = seed;
@@ -241,8 +248,36 @@ export async function requestRepeat(): Promise<void> {
   await tx((game) => { game.repeatNonce = (game.repeatNonce || 0) + 1; return game; }, undefined, { allowPaused: true });
 }
 
+/** Dejar la partida (o sacar a otro desde la mesa): salida elegante — el juego
+ *  sigue para los demás (rinde su bando si era Presidente/Bombardero; re-reparte
+ *  en el reparto; se disuelve por debajo del mínimo). */
+export async function leaveTwoRooms(targetPid?: string, mid?: string): Promise<void> {
+  const me = targetPid || myPid();
+  await tx((game, m) => {
+    const members = m.members || [];
+    if (!members.includes(me)) return null;
+    const dropMembers = members.filter((x) => x !== me);
+    const wasMaster = m.masterId === me;
+    // La voz no se queda huérfana: si sale el altavoz principal, el mando pasa
+    // a otro miembro (preferiblemente uno que juegue).
+    const masterPatch = !wasMaster ? undefined
+      : dropMembers.find((x) => game.playerIds.includes(x)) ?? dropMembers[0] ?? null;
+    if (game.roomSpeakers[0] === me) game.roomSpeakers[0] = masterPatch ?? null;
+    if (game.roomSpeakers[1] === me) game.roomSpeakers[1] = null;
+    const outcome = leavePlayer(game, me);
+    if (outcome === 'not-player') {
+      // Altavoz puro (no juega): sale sin tocar la partida.
+      const who = state.players.find((p) => p.id === me)?.name || 'Un altavoz';
+      game.log.push({ txt: `🚪 ${who} deja la partida.` });
+    }
+    // Su salida puede completar el voto de rehén de su sala (o de la otra).
+    const g2 = game.phase === 'hostages' ? maybeCloseRooms(game) : game;
+    return wasMaster ? { game: g2, members: dropMembers, masterPatch } : { game: g2, members: dropMembers };
+  }, mid, { allowPaused: true });
+}
+
 registerMatchTools('two_rooms', {
-  leave: (mid) => endTwoRooms(mid),
+  leave: (mid, pid) => leaveTwoRooms(pid, mid),
   end: (mid) => endTwoRooms(mid),
 });
 

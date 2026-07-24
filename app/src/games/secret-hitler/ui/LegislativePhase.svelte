@@ -44,8 +44,10 @@
           </button>
         {/each}
       </div>
-      {#if game.vetoUnlocked}
+      {#if game.vetoUnlocked && !game.vetoRefused}
         <button class="ghost block" data-a="sh-veto" onclick={() => guard(A.requestVeto)}>✋ Proponer VETO de esta agenda</button>
+      {:else if game.vetoUnlocked && game.vetoRefused}
+        <p class="hint">✋ Veto rechazado por el Presidente: estás obligado a promulgar.</p>
       {/if}
     </div>
   {:else}

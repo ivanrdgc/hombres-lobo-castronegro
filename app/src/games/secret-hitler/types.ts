@@ -52,6 +52,9 @@ export interface SHState {
   chancellorDraw: PolicyId[] | null;
   vetoUnlocked: boolean;
   vetoRequested: boolean;
+  /** El Presidente ya rechazó un veto en ESTA sesión legislativa: el Canciller
+   *  está obligado a promulgar (regla oficial: no se puede re-vetar). */
+  vetoRefused?: boolean;
   lastEnacted: PolicyId | null;
   /** Poder en curso (quién lo ejerce). */
   power: { type: PowerType; by: string } | null;

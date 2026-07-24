@@ -3,7 +3,7 @@
   // Bombardero junto al Presidente?). Marcador acumulado y revancha.
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
-  import { WIN_LABELS, presidentId, bomberId, roomOf } from '../engine';
+  import { MIN_PLAYERS, WIN_LABELS, presidentId, bomberId, roomOf } from '../engine';
   import type { PlayerDoc } from '../../../core/sync/schema';
   import type { TwoRoomsState } from '../types';
   import RoomsBoard from './RoomsBoard.svelte';
@@ -13,12 +13,15 @@
   const pres = $derived(presidentId(game));
   const bomb = $derived(bomberId(game));
   const ranked = $derived([...game.playerIds].sort((a, b) => (game.scores[b] || 0) - (game.scores[a] || 0)));
+  const canRematch = $derived(game.playerIds.length >= MIN_PLAYERS);
 </script>
 
 <div class="card" style="text-align:center">
-  <span class="moon">{game.winner === 'red' ? '💥' : '🕊️'}</span>
-  <h3 style="margin:6px 0">{game.winner ? WIN_LABELS[game.winner] : ''}</h3>
-  <p class="small-note">Presidente: <b>{nm(pres)}</b> (Sala {pres ? roomOf(game, pres) + 1 : '?'}). Bombardero: <b>{nm(bomb)}</b> (Sala {bomb ? roomOf(game, bomb) + 1 : '?'}).</p>
+  <span class="moon">{game.winner === 'red' ? '💥' : game.winner === 'blue' ? '🕊️' : '🚪'}</span>
+  <h3 style="margin:6px 0">{game.winner ? WIN_LABELS[game.winner] : 'Partida disuelta: quedasteis menos de los necesarios.'}</h3>
+  {#if pres || bomb}
+    <p class="small-note">Presidente: <b>{nm(pres)}</b> (Sala {pres && game.room[pres] !== undefined ? roomOf(game, pres) + 1 : '?'}). Bombardero: <b>{nm(bomb)}</b> (Sala {bomb && game.room[bomb] !== undefined ? roomOf(game, bomb) + 1 : '?'}).</p>
+  {/if}
 </div>
 
 <div class="card"><h3>🚪 Cómo quedaron las salas</h3>
@@ -34,5 +37,6 @@
   {/each}
 </div>
 
-<button class="primary block" data-a="tr-again" onclick={() => guard(A.playAgain)}>🔁 Otra partida</button>
+{#if !canRematch}<p class="small-note" style="text-align:center">Sois menos de {MIN_PLAYERS}: no hay revancha con este grupo.</p>{/if}
+<button class="primary block" data-a="tr-again" disabled={!canRematch} onclick={() => guard(A.playAgain)}>🔁 Otra partida</button>
 <button class="ghost block" data-a="tr-back-lobby" onclick={() => guard(() => A.endTwoRooms())}>🏁 Terminar y volver al lobby</button>

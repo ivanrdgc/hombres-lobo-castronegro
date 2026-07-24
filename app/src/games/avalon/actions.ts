@@ -325,6 +325,7 @@ export async function requestRepeat(): Promise<void> {
 registerMatchTools('avalon', {
   leave: (mid) => endAvalon(mid),
   end: (mid) => endAvalon(mid),
+  leaveEndsMatch: true,
 });
 
 /** Utilidades para la UI. */

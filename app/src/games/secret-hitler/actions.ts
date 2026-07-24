@@ -195,6 +195,7 @@ export async function presidentDiscard(index: number): Promise<void> {
     game.discard.push(draw[index]);
     game.chancellorDraw = draw.filter((_, i) => i !== index);
     game.presidentDraw = null;
+    game.vetoRefused = false; // sesión nueva, derecho a veto fresco
     game.phase = 'legislativeChancellor';
     game.log.push({ txt: `📜 ${nameOf(game, me)} pasa dos decretos al Canciller.` });
     return game;
@@ -246,7 +247,7 @@ export async function requestVeto(): Promise<void> {
   const me = myPid();
   await tx((game) => {
     if (game.phase !== 'legislativeChancellor' || me !== game.nominatedChancellor) return null;
-    if (!game.vetoUnlocked) return null;
+    if (!game.vetoUnlocked || game.vetoRefused) return null; // rechazado una vez: obligado a promulgar
     game.vetoRequested = true;
     game.phase = 'vetoDecision';
     game.log.push({ txt: `✋ El Canciller propone VETAR esta agenda. Decide el Presidente.` });
@@ -270,8 +271,9 @@ export async function decideVeto(agree: boolean): Promise<void> {
       game.nominatedChancellor = null;
       return game;
     }
-    // Rechazado: el Canciller DEBE promulgar (ya sin veto).
+    // Rechazado: el Canciller DEBE promulgar (sin derecho a re-vetar).
     game.vetoRequested = false;
+    game.vetoRefused = true;
     game.phase = 'legislativeChancellor';
     game.log.push({ txt: `↩️ El Presidente rechaza el veto: el Canciller debe promulgar.` });
     return game;
@@ -412,6 +414,7 @@ export async function requestRepeat(): Promise<void> {
 registerMatchTools('secret_hitler', {
   leave: (mid) => endSecretHitler(mid),
   end: (mid) => endSecretHitler(mid),
+  leaveEndsMatch: true,
 });
 
 export { playersOf, presidentId, pendingActors, eligibleChancellors, aliveCount };

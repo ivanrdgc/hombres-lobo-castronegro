@@ -73,12 +73,20 @@ export interface MatchTools {
   leave: (mid: string, pid: string) => Promise<void>;
   /** Terminar la partida desde fuera (la mesa) o dentro. */
   end: (mid: string) => Promise<void>;
+  /** true si `leave` TERMINA la partida para todos (el reparto completo no
+   *  sobrevive a una baja); la mesa lo avisa antes de sacar a nadie. */
+  leaveEndsMatch?: boolean;
 }
 
 const MATCH_TOOLS: Record<string, MatchTools> = {};
 
 export function registerMatchTools(gameId: string, tools: MatchTools): void {
   MATCH_TOOLS[gameId] = tools;
+}
+
+/** ¿Sacar a alguien de una partida de este juego la termina para todos? */
+export function leaveEndsMatch(gameId: string): boolean {
+  return !!MATCH_TOOLS[gameId]?.leaveEndsMatch;
 }
 
 /** Sacar a un jugador de la partida que lo ocupa (cualquiera puede, es la mesa de casa). */

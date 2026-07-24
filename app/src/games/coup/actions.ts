@@ -166,6 +166,7 @@ export async function requestRepeat(): Promise<void> {
 registerMatchTools('coup', {
   leave: (mid) => endCoup(mid),
   end: (mid) => endCoup(mid),
+  leaveEndsMatch: true,
 });
 
 export { playersOf, isAlive, influenceCount, aliveIds };

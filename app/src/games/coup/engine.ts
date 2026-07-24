@@ -268,6 +268,22 @@ function settle(game: CoupState): void {
   const resume = game.resume;
   game.resume = null;
   if (resume === 'exchange') { beginExchange(game); return; }
+  if (resume === 'block') { reopenBlock(game); return; }
+  endTurn(game);
+}
+
+// Reabre la ventana de bloqueo de la víctima tras un desafío superado (regla
+// oficial: desafiar y perder NO quita el derecho a bloquear, ni a la víctima ni
+// cuando el que dudó fue un tercero). Si la víctima cayó con el propio desafío,
+// la jugada se queda sin destinatario y el turno pasa.
+function reopenBlock(game: CoupState): void {
+  const p = game.pending!;
+  if (p.target && isAlive(game, p.target)) {
+    game.reactions = {};
+    game.phase = 'block';
+    log(game, `🤔 Superado el desafío, la jugada sigue en pie. ${nm(game, p.target)}, ¿bloqueas?`);
+    return;
+  }
   endTurn(game);
 }
 
@@ -383,9 +399,16 @@ function resolveActionChallenge(game: CoupState, challenger: string): boolean {
     log(game, `✅ ${nm(game, p.actor)} SÍ era ${charName(claim)}: lo enseña y roba otra carta.`);
     proveAndRedraw(game, p.actor, claim);
     enqueueLoss(game, challenger, 'desafio'); // el que desafió en falso pierde influencia
-    game.resume = p.type === 'intercambiar' ? 'exchange' : 'endTurn';
-    applyActionEffect(game); // la acción sale adelante (desafiar renuncia al bloqueo)
-    settle(game);
+    if (p.type === 'asesinar' || p.type === 'robar') {
+      // Regla oficial: superado el desafío, la víctima CONSERVA su derecho a
+      // bloquear (Condesa / Capitán·Embajador), incluso si la que dudó fue ella.
+      game.resume = 'block';
+      settle(game);
+    } else {
+      game.resume = 'endTurn';
+      applyActionEffect(game); // impuestos cobra; intercambiar difiere a 'exchange'
+      settle(game);
+    }
   } else {
     log(game, `🤥 ${nm(game, p.actor)} mentía: no era ${charName(claim)}. La acción se cae.`);
     enqueueLoss(game, p.actor, 'desafio');

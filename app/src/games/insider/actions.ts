@@ -229,6 +229,7 @@ export async function requestRepeat(): Promise<void> {
 registerMatchTools('insider', {
   leave: (mid) => endInsider(mid),
   end: (mid) => endInsider(mid),
+  leaveEndsMatch: true,
 });
 
 export { playersOf, roleOf };

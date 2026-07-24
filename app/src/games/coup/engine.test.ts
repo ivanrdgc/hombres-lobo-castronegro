@@ -181,23 +181,49 @@ describe('asesinar (Asesino / Condesa)', () => {
     chooseLoss(g, 'p-b', 0);
     expect(influenceCount(g, 'p-b')).toBe(1);
   });
-  it('desafío perdido con retador ≠ víctima: pierden AMBOS (desafío + asesinato)', () => {
+  it('desafío perdido con retador ≠ víctima: la víctima CONSERVA su bloqueo (regla oficial)', () => {
     const g = mk({ coins: { 'p-a': 3, 'p-b': 2, 'p-c': 2, 'p-d': 2 } });
     declareAction(g, 'p-a', 'asesinar', 'p-b');
-    doChallenge(g, 'p-c'); // p-a tiene Asesino → p-c pierde por desafío, y el asesinato sigue
-    expect(g.losing.map((l) => l.pid)).toEqual(['p-c', 'p-b']);
+    doChallenge(g, 'p-c'); // p-a tiene Asesino → p-c pierde por desafío…
+    expect(g.losing.map((l) => l.pid)).toEqual(['p-c']);
     chooseLoss(g, 'p-c', 0);
-    chooseLoss(g, 'p-b', 0);
+    expect(g.phase).toBe('block'); // …y la ventana de bloqueo vuelve a la víctima
+    doBlock(g, 'p-b', 'condesa'); // la tiene de verdad
+    passWindow(g); // nadie desafía el bloqueo
     expect(influenceCount(g, 'p-c')).toBe(1);
-    expect(influenceCount(g, 'p-b')).toBe(1);
+    expect(influenceCount(g, 'p-b')).toBe(2); // ilesa: el desafío de un tercero no le roba el bloqueo
     expect(g.phase).toBe('turn');
   });
-  it('la víctima desafía y pierde: pierde sus DOS cartas (queda eliminada)', () => {
+  it('la víctima desafía, pierde… y aún salva la vida con su Condesa real', () => {
     const g = mk({ coins: { 'p-a': 3, 'p-b': 2, 'p-c': 2, 'p-d': 2 } });
     declareAction(g, 'p-a', 'asesinar', 'p-b');
-    doChallenge(g, 'p-b'); // p-b pierde por desafío y además el asesinato
-    chooseLoss(g, 'p-b', 0); // primera (por el desafío)
-    expect(isAlive(g, 'p-b')).toBe(false); // la segunda (asesinato) es automática
+    doChallenge(g, 'p-b'); // p-a era Asesino: p-b paga el desafío…
+    chooseLoss(g, 'p-b', 0); // pierde el Capitán
+    expect(g.phase).toBe('block'); // …pero conserva su derecho a bloquear
+    doBlock(g, 'p-b', 'condesa'); // la tiene de verdad
+    passWindow(g);
+    expect(influenceCount(g, 'p-b')).toBe(1); // sobrevive con una carta
+    expect(g.phase).toBe('turn');
+  });
+  it('la víctima desafía, pierde y no bloquea: pierde sus DOS cartas (eliminada)', () => {
+    const g = mk({ coins: { 'p-a': 3, 'p-b': 2, 'p-c': 2, 'p-d': 2 } });
+    declareAction(g, 'p-a', 'asesinar', 'p-b');
+    doChallenge(g, 'p-b');
+    chooseLoss(g, 'p-b', 1); // pierde su Condesa (mala idea)
+    expect(g.phase).toBe('block');
+    doPass(g, 'p-b'); // sin Condesa ya no bloquea
+    expect(isAlive(g, 'p-b')).toBe(false); // el asesinato remata (auto: le quedaba una)
+    expect(g.phase).toBe('turn');
+  });
+  it('doble muerte oficial: desafía, pierde, farolea la Condesa y lo cazan', () => {
+    const g = mk({ coins: { 'p-a': 3, 'p-b': 2, 'p-c': 2, 'p-d': 2 } });
+    declareAction(g, 'p-a', 'asesinar', 'p-b');
+    doChallenge(g, 'p-b');
+    chooseLoss(g, 'p-b', 1); // pierde su Condesa real: le queda el Capitán
+    expect(g.phase).toBe('block');
+    doBlock(g, 'p-b', 'condesa'); // farol desesperado
+    doChallenge(g, 'p-a');
+    expect(isAlive(g, 'p-b')).toBe(false); // cazado: pierde la última
     expect(g.phase).toBe('turn');
   });
   it('bloqueado con Condesa (aceptado): la víctima sobrevive', () => {

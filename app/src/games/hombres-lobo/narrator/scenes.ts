@@ -348,7 +348,19 @@ async function nightStepScene(ctx: Ctx, stepId: StepId, stepIdx: number): Promis
 
   // ——— Paso silencioso (decisión del Infecto): sin locución de entrada ———
   if (stepId === 'infecto_decision') {
-    await ctx.waitFor((s) => !actorsPending(stepId, g(ctx), inGame(s.players)));
+    // La espera es muda (ni avisos: el tiempo no debe delatar al Infecto), pero
+    // NO infinita: si su dispositivo no responde, se escala al repaso de roles
+    // como cualquier otro paso — la mesa ve que algo se ha atascado y puede
+    // reconectarlo o sacarlo, en vez de quedarse en un silencio sin pistas.
+    const res = await ctx.waitOrNag((s) => !actorsPending(stepId, g(ctx), inGame(s.players)), {
+      nagKey: uid('nags'),
+      escalateAfter: NAG_ESCALATE_COUNT,
+      nag: () => null, // silencio: solo cuenta hacia la escalada
+    });
+    if (res === 'escalate') {
+      await A.startRoleRefresh();
+      return;
+    }
     await ctx.pause('deadSkip');
     const ou = outroUtterance(g(ctx), stepId, den(ctx));
     if (ou) await ctx.sayOnce(uid('outro'), () => ou);

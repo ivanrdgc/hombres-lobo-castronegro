@@ -890,7 +890,11 @@ export async function hunterShoot(targetId: string | null): Promise<void> {
   await gameTx((game, players, g) => {
     const head = (game.pending || [])[0];
     if (!head || head.type !== 'cazador') return null;
-    if (myPid() !== head.pid && myPid() !== g.masterId) return null;
+    // Lo resuelve el propio Cazador o el máster; y, de respaldo, cualquier VIVO
+    // (si el móvil del caído no responde, el Cazador lo dice en voz alta y la
+    // mesa lo registra — la UI solo lo ofrece tras una espera prudente).
+    if (myPid() !== head.pid && myPid() !== g.masterId
+      && !players.some((p) => p.id === myPid() && p.inGame && p.alive)) return null;
     const ps = inGamePlayers(players);
     const hunter = ps.find((p) => p.id === head.pid);
     game.pending = game.pending.slice(1);
@@ -931,7 +935,10 @@ export async function pickAlguacil(pid: string): Promise<void> {
     const head = (game.pending || [])[0];
     if (!head || (head.type !== 'alguacil_elect' && head.type !== 'alguacil_pick')) return null;
     const caller = myPid();
-    if (head.type === 'alguacil_pick' && caller !== head.pid && caller !== g.masterId) return null;
+    // La sucesión la registra el alguacil caído o el máster; de respaldo,
+    // cualquier vivo (mismo criterio que la flecha del Cazador).
+    if (head.type === 'alguacil_pick' && caller !== head.pid && caller !== g.masterId
+      && !players.some((p) => p.id === caller && p.inGame && p.alive)) return null;
     if (head.type === 'alguacil_elect') {
       const voter = players.find((p) => p.id === caller);
       if ((!voter || !voter.alive) && caller !== g.masterId) return null;
@@ -950,7 +957,9 @@ export async function cabezaPick(pid: string | null): Promise<void> {
   await gameTx((game, players, g) => {
     const head = (game.pending || [])[0];
     if (!head || head.type !== 'cabeza_pick') return null;
-    if (myPid() !== head.pid && myPid() !== g.masterId) return null;
+    // Ídem: el Cabeza de Turco, el máster o (de respaldo) cualquier vivo.
+    if (myPid() !== head.pid && myPid() !== g.masterId
+      && !players.some((p) => p.id === myPid() && p.inGame && p.alive)) return null;
     game.pending = game.pending.slice(1);
     if (pid) {
       const t = players.find((p) => p.id === pid);

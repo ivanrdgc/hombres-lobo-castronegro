@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   dealGame, roomMembers, allVotedInRoom, tallyRoom, decideWinner, minutesForRound,
-  presidentId, bomberId, narrates, MIN_PLAYERS, MAX_PLAYERS, TOTAL_ROUNDS,
+  presidentId, bomberId, narrates, leavePlayer, MIN_PLAYERS, MAX_PLAYERS, TOTAL_ROUNDS,
 } from './engine';
 import type { TwoRoomsState } from './types';
 
@@ -116,5 +116,73 @@ describe('utilidades', () => {
     expect(MIN_PLAYERS).toBe(6);
     expect(MAX_PLAYERS).toBe(30);
     expect(TOTAL_ROUNDS).toBe(3);
+  });
+});
+
+describe('leavePlayer (salidas a mitad de partida)', () => {
+  it('un altavoz que no juega no toca el estado', () => {
+    const g = base();
+    expect(leavePlayer(g, 'p-x')).toBe('not-player');
+    expect(g.playerIds).toHaveLength(6);
+  });
+  it('en el reparto: re-reparte entre los que quedan y todos vuelven a confirmar', () => {
+    const g = base({ phase: 'reveal', playerIds: [...IDS, 'p-g'], seen: { 'p-a': true } });
+    g.names['p-g'] = 'P-G'; g.teams['p-g'] = 'red'; g.roles['p-g'] = 'none'; g.room['p-g'] = 1;
+    expect(leavePlayer(g, 'p-g')).toBe('redeal');
+    expect(g.playerIds).toHaveLength(6);
+    expect(g.seen).toEqual({});
+    expect(presidentId(g)).toBeTruthy();
+    expect(bomberId(g)).toBeTruthy();
+    expect(g.teams[presidentId(g)!]).toBe('blue');
+  });
+  it('en el reparto por debajo del mínimo: se disuelve sin ganador', () => {
+    const g = base({ phase: 'reveal' });
+    expect(leavePlayer(g, 'p-b')).toBe('dissolved');
+    expect(g.phase).toBe('end');
+    expect(g.winner).toBeNull();
+  });
+  it('si abandona el Presidente a mitad de ronda, el azul se rinde: gana el rojo', () => {
+    const g = base({ phase: 'discuss', deadline: 999, playerIds: [...IDS, 'p-g'] });
+    g.names['p-g'] = 'P-G'; g.teams['p-g'] = 'blue'; g.roles['p-g'] = 'none'; g.room['p-g'] = 0;
+    expect(leavePlayer(g, 'p-a')).toBe('forfeit');
+    expect(g.phase).toBe('end');
+    expect(g.winner).toBe('red');
+    expect(g.scores['p-d']).toBe(1); // el bando rojo puntúa
+    expect(g.scores['p-b'] || 0).toBe(0);
+    expect(g.deadline).toBeNull();
+  });
+  it('si abandona el Bombardero, gana el azul', () => {
+    const g = base({ phase: 'hostages', playerIds: [...IDS, 'p-g'] });
+    g.names['p-g'] = 'P-G'; g.teams['p-g'] = 'blue'; g.roles['p-g'] = 'none'; g.room['p-g'] = 0;
+    expect(leavePlayer(g, 'p-d')).toBe('forfeit');
+    expect(g.winner).toBe('blue');
+    expect(g.scores['p-a']).toBe(1);
+  });
+  it('un jugador normal sale del voto de rehén: sus votos y los votos hacia él caen', () => {
+    const g = base({
+      phase: 'hostages', playerIds: [...IDS, 'p-g'],
+      hVotes: { 'p-b': 'p-c', 'p-c': 'p-b', 'p-g': 'p-b' },
+    });
+    g.names['p-g'] = 'P-G'; g.teams['p-g'] = 'blue'; g.roles['p-g'] = 'none'; g.room['p-g'] = 0;
+    expect(leavePlayer(g, 'p-b')).toBe('removed');
+    expect(g.playerIds).not.toContain('p-b');
+    expect(g.hVotes['p-b']).toBeUndefined(); // su voto cae
+    expect(g.hVotes['p-c']).toBeUndefined(); // votaba al que se fue: vuelve a votar
+    expect(g.hVotes['p-g']).toBeUndefined(); // ídem
+  });
+  it('si el que se va ya era el rehén elegido, su sala vuelve a quedar sin decisión', () => {
+    const g = base({
+      phase: 'hostages', playerIds: [...IDS, 'p-g'],
+      pick: ['p-b', null], hVotes: { 'p-a': 'p-b', 'p-b': 'p-b', 'p-c': 'p-b', 'p-g': 'p-b' },
+    });
+    g.names['p-g'] = 'P-G'; g.teams['p-g'] = 'blue'; g.roles['p-g'] = 'none'; g.room['p-g'] = 0;
+    expect(leavePlayer(g, 'p-b')).toBe('removed');
+    expect(g.pick[0]).toBeNull();
+  });
+  it('con la partida acabada solo sale del censo (sin tocar el marcador de otros)', () => {
+    const g = base({ phase: 'end', winner: 'blue', scores: { 'p-a': 2, 'p-b': 1 } });
+    expect(leavePlayer(g, 'p-f')).toBe('roster');
+    expect(g.playerIds).toHaveLength(5);
+    expect(g.scores['p-a']).toBe(2);
   });
 });

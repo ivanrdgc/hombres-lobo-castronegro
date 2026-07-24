@@ -80,8 +80,9 @@ export interface CoupState {
   reactions: Record<string, 'challenge' | 'block' | 'pass'>;
   /** Cola de pérdidas de influencia pendientes (se procesan una a una). */
   losing: PendingLoss[];
-  /** Qué hacer cuando la cola de pérdidas se vacíe (continuación diferida). */
-  resume: 'endTurn' | 'exchange' | null;
+  /** Qué hacer cuando la cola de pérdidas se vacíe (continuación diferida).
+   *  'block' reabre la ventana de bloqueo de la víctima (desafío superado). */
+  resume: 'endTurn' | 'exchange' | 'block' | null;
   /** Intercambio en curso: cartas que se ofrecen al Embajador para elegir. */
   exchange: { pid: string; options: Character[]; keep: number } | null;
   winner: string | null;

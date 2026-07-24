@@ -35,7 +35,10 @@
   {#if inactive}<p class="small-note">💤 Este dispositivo lleva un rato sin dar señales (pantalla apagada, otra pestaña o sin conexión).</p>{/if}
   {#if busy && busyDef}
     <p class="small-note">{busyDef.emoji} Está en una partida de <b>{busyDef.name}</b>.</p>
-    <button class="violet block" data-a="kick-from-match" data-p={p.id} onclick={kickFromMatch}>⛔ Sacarlo de la partida</button>
+    {#if A.leaveEndsMatch(busy.gameId)}
+      <p class="small-note">⚠️ En {busyDef.name} el reparto no sobrevive a una baja: sacarlo <b>termina la partida para todos</b>. (Si solo se le apagó el móvil, mejor «Reconectar como {p.name}» desde otro dispositivo.)</p>
+    {/if}
+    <button class="violet block" data-a="kick-from-match" data-p={p.id} onclick={kickFromMatch}>⛔ Sacarlo de la partida{A.leaveEndsMatch(busy.gameId) ? ' (la termina)' : ''}</button>
   {/if}
   {#if self}
     <button class="danger block" data-a="leave" onclick={() => (app.ui.modal = { type: 'confirm-leave' })}>🚪 Abandonar la mesa</button>

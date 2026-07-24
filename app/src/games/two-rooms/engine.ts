@@ -125,6 +125,90 @@ export const WIN_LABELS: Record<Team, string> = {
   blue: '🕊️ El Presidente sobrevive: el Bombardero quedó en la otra sala. Gana el equipo AZUL.',
 };
 
+// ——— Salida a mitad de partida ———
+
+// Quita las huellas de un jugador del estado (sus votos y su sitio); su nombre
+// se conserva para que el diario siga legible.
+function stripPlayer(game: TwoRoomsState, pid: string): void {
+  delete game.teams[pid];
+  delete game.roles[pid];
+  delete game.room[pid];
+  delete game.hVotes[pid];
+  delete game.seen[pid];
+}
+
+// La partida se queda sin quórum: se disuelve sin ganador ni puntos.
+function dissolve(game: TwoRoomsState): 'dissolved' {
+  game.phase = 'end';
+  game.deadline = null;
+  game.winner = null;
+  game.log.push({ txt: `🚪 Quedan menos de ${MIN_PLAYERS} jugadores: la partida se disuelve sin ganador y se destapan las cartas.` });
+  return 'dissolved';
+}
+
+export type LeaveOutcome = 'not-player' | 'roster' | 'redeal' | 'dissolved' | 'forfeit' | 'removed';
+
+/**
+ * Salida a mitad de partida (abandono o «sacar de la partida» desde la mesa).
+ * Mutador puro sobre el estado del juego (members/masterId van aparte):
+ *  - en el reparto, se reparte de nuevo entre los que quedan;
+ *  - si se va el PRESIDENTE o el BOMBARDERO, su bando se rinde y gana el otro
+ *    (anti-abandono, como el espía que huye en El Espía);
+ *  - un jugador normal simplemente sale (sus votos de rehén se anulan y, si ya
+ *    era el rehén elegido, su sala vuelve a decidir);
+ *  - por debajo del mínimo, la partida se disuelve sin ganador.
+ */
+export function leavePlayer(game: TwoRoomsState, pid: string): LeaveOutcome {
+  if (!game.playerIds.includes(pid)) return 'not-player';
+  const name = game.names[pid] || '¿?';
+  if (game.phase === 'end') {
+    game.playerIds = game.playerIds.filter((x) => x !== pid);
+    stripPlayer(game, pid);
+    game.log.push({ txt: `🚪 ${name} deja la partida.` });
+    return 'roster';
+  }
+  if (game.phase === 'reveal') {
+    game.playerIds = game.playerIds.filter((x) => x !== pid);
+    stripPlayer(game, pid);
+    if (game.playerIds.length < MIN_PLAYERS) return dissolve(game);
+    const deal = dealGame(game.playerIds, (game.seed || 0) + 977);
+    game.teams = deal.teams;
+    game.roles = deal.roles;
+    game.room = deal.room;
+    game.seen = {};
+    game.log.push({ txt: `🚪 ${name} deja la partida. Bandos, roles y salas se reparten de nuevo: mirad vuestra carta otra vez.` });
+    return 'redeal';
+  }
+  // discuss / hostages
+  const role = game.roles[pid];
+  game.playerIds = game.playerIds.filter((x) => x !== pid);
+  const wasPick0 = game.pick[0] === pid;
+  const wasPick1 = game.pick[1] === pid;
+  stripPlayer(game, pid);
+  if (role === 'president' || role === 'bomber') {
+    const winner: Team = role === 'president' ? 'red' : 'blue';
+    game.phase = 'end';
+    game.deadline = null;
+    game.winner = winner;
+    for (const p of game.playerIds) if (game.teams[p] === winner) game.scores[p] = (game.scores[p] || 0) + 1;
+    game.log.push({ txt: role === 'president'
+      ? `🚪 ¡${name} era el PRESIDENTE y abandona! El azul se rinde: gana el equipo ROJO.`
+      : `🚪 ¡${name} era el BOMBARDERO y abandona! La bomba se va con él: gana el equipo AZUL.` });
+    return 'forfeit';
+  }
+  game.log.push({ txt: `🚪 ${name} deja la partida.` });
+  if (game.playerIds.length < MIN_PLAYERS) return dissolve(game);
+  if (game.phase === 'hostages') {
+    if (wasPick0) game.pick[0] = null;
+    if (wasPick1) game.pick[1] = null;
+    // Los votos que lo señalaban caen: esos vecinos vuelven a votar.
+    for (const [voter, target] of Object.entries(game.hVotes)) {
+      if (target === pid) delete game.hVotes[voter];
+    }
+  }
+  return 'removed';
+}
+
 export const teamLabel = (t: Team): string => (t === 'red' ? '🔴 Rojo' : '🔵 Azul');
 
 export const VOICE_MODES = ['single', 'perRoom', 'all'] as const;

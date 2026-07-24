@@ -329,15 +329,17 @@ export async function leaveRound(targetPid?: string, mid?: string): Promise<void
       return out(game);
     }
     if (game.phase === 'reveal') {
-      // Aún sin empezar: se reparte de nuevo entre los que quedan (mismo lugar
-      // no garantizado: reparto nuevo completo) y todos vuelven a confirmar.
-      const deal = dealRound(game.playerIds, game.round, game.usedLocations.slice(0, -1), Date.now());
+      // Aún sin empezar: se reparte de nuevo entre los que quedan y todos
+      // vuelven a confirmar. La localización abortada se queda en usedLocations
+      // a propósito: alguien pudo llegar a verla al confirmar, y si reapareciera
+      // con otro espía, ese espía podría conocerla.
+      const deal = dealRound(game.playerIds, game.round, game.usedLocations, Date.now());
       game.dealerId = deal.dealerId;
       game.spyId = deal.spyId;
       game.locationId = deal.locationId;
       game.roles = deal.roles;
       game.seen = {};
-      game.usedLocations = [...game.usedLocations.slice(0, -1), deal.locationId];
+      game.usedLocations = [...game.usedLocations, deal.locationId];
       game.log.push({ txt: '🔀 Se reparten identidades nuevas entre los que quedan.' });
       return out(game);
     }

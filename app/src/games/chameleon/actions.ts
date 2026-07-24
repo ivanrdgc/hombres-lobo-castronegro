@@ -117,6 +117,7 @@ export async function castVote(target: string): Promise<void> {
   await tx((game) => {
     if (game.phase !== 'vote' || !game.playerIds.includes(me)) return null;
     if (game.votes[me] !== undefined || !game.playerIds.includes(target)) return null;
+    if (target === me) return null; // a uno mismo no (como en Insider)
     game.votes = { ...game.votes, [me]: target };
     if (!allVoted(game)) return game;
     // Todos han votado: se destapa el recuento.
@@ -220,6 +221,7 @@ export async function requestRepeat(): Promise<void> {
 registerMatchTools('chameleon', {
   leave: (mid) => endChameleon(mid),
   end: (mid) => endChameleon(mid),
+  leaveEndsMatch: true,
 });
 
 export { playersOf, isChameleon };
