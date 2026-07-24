@@ -25,6 +25,7 @@ import { allCodenamesStaticPieces } from '../src/games/codenames/texts';
 import { allSkullStaticPieces } from '../src/games/skull/texts';
 import { allLoveLetterStaticPieces } from '../src/games/love-letter/texts';
 import { allDecryptoStaticPieces } from '../src/games/decrypto/texts';
+import { allGoodCopStaticPieces } from '../src/games/good-cop/texts';
 import { allDemoStaticPieces } from '../src/shell/demo/all-demos';
 import { buildSsml, ttsCacheKey } from '../src/core/audio/tts';
 
@@ -66,7 +67,7 @@ interface Manifest {
 
 async function main(): Promise<void> {
   const kwTexts = allKeywordCombos().flatMap((kw) => [kwClip(kw, true), kwClip(kw, false)]);
-  const texts = [...new Set([...allStaticPieces().map((p) => p.text), ...kwTexts, ...allExplainStaticPieces(), ...allEspiaStaticPieces(), ...allUnaNocheStaticPieces(), ...allAvalonStaticPieces(), ...allSecretHitlerStaticPieces(), ...allChameleonStaticPieces(), ...allInsiderStaticPieces(), ...allCoupStaticPieces(), ...allTwoRoomsStaticPieces(), ...allWavelengthStaticPieces(), ...allCodenamesStaticPieces(), ...allSkullStaticPieces(), ...allLoveLetterStaticPieces(), ...allDecryptoStaticPieces(), ...allDemoStaticPieces()])];
+  const texts = [...new Set([...allStaticPieces().map((p) => p.text), ...kwTexts, ...allExplainStaticPieces(), ...allEspiaStaticPieces(), ...allUnaNocheStaticPieces(), ...allAvalonStaticPieces(), ...allSecretHitlerStaticPieces(), ...allChameleonStaticPieces(), ...allInsiderStaticPieces(), ...allCoupStaticPieces(), ...allTwoRoomsStaticPieces(), ...allWavelengthStaticPieces(), ...allCodenamesStaticPieces(), ...allSkullStaticPieces(), ...allLoveLetterStaticPieces(), ...allDecryptoStaticPieces(), ...allGoodCopStaticPieces(), ...allDemoStaticPieces()])];
   const outDir = join(APP, 'public', 'clips', VOICE);
   mkdirSync(outDir, { recursive: true });
 

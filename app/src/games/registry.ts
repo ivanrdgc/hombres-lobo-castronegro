@@ -18,6 +18,7 @@ import { codenames } from './codenames';
 import { skull } from './skull';
 import { loveLetter } from './love-letter';
 import { decrypto } from './decrypto';
+import { goodCop } from './good-cop';
 
 /** Props que reciben las pantallas principales de un juego. */
 export type GameScreenProps = { group: GroupDoc; my: PlayerDoc };
@@ -42,7 +43,7 @@ export interface GameDefinition {
   modals: Record<string, Component<any>>;
 }
 
-export const GAME_DEFS: GameDefinition[] = [hombresLobo, unaNoche, avalon, secretHitler, chameleon, insider, coup, twoRooms, codenames, decrypto, wavelength, skull, loveLetter, espia];
+export const GAME_DEFS: GameDefinition[] = [hombresLobo, unaNoche, avalon, secretHitler, chameleon, insider, coup, twoRooms, codenames, decrypto, goodCop, wavelength, skull, loveLetter, espia];
 
 /** Definición del juego seleccionado en el grupo (por defecto, el primero). */
 export function gameDef(id: string | null | undefined): GameDefinition {
