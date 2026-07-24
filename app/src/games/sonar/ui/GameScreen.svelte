@@ -36,7 +36,7 @@
 </script>
 
 <div class="topbar">
-  <h2>📡 {group.name}</h2>
+  <h2>⚓ {group.name}</h2>
   <GameMenu {game} {my} />
 </div>
 <Flash />

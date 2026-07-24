@@ -74,7 +74,7 @@ export async function startSonar(
     voiceMode, teamSpeakers: [speaker, voiceMode === 'perRoom' ? speakerBlue : null],
     winner: null, winReason: null,
     scores: Object.fromEntries(playerIds.map((p) => [p, 0])), paused: null, repeatNonce: 0,
-    log: [{ txt: '📡 Comienza Captain Sonar. Dos submarinos con posición SECRETA: cada rumbo se anuncia en voz alta y el rival lo apunta para triangularte. Cargad energía navegando… y hundidlo.' }],
+    log: [{ txt: '⚓ Comienza Captain Sonar. Dos submarinos con posición SECRETA: cada rumbo se anuncia en voz alta y el rival lo apunta para triangularte. Cargad energía navegando… y hundidlo.' }],
   };
   const members = [...new Set([...playerIds, speaker, ...(voiceMode === 'perRoom' && speakerBlue ? [speakerBlue] : [])])];
   await txWithRetry(async (t) => {

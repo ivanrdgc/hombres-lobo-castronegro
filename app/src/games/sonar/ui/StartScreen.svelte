@@ -57,7 +57,7 @@
 
 <div class="topbar">
   <button class="small ghost" data-a="back-lobby-game" aria-label="Volver" title="Volver" style="font-size:1.25rem;line-height:1;padding:6px 12px" onclick={() => navigate(`/g/${group.id}/sonar`)}>←</button>
-  <h2>📡 Empezar partida</h2>
+  <h2>⚓ Empezar partida</h2>
 </div>
 <Flash />
 
@@ -106,9 +106,9 @@
 </div>
 
 <div class="card">
-  <p class="small-note" style="margin-top:0">📡 Jugarán <b>{n}</b>{n ? ': ' : ''}<span style="opacity:.75">{chosen.map((p) => p.name).join(', ')}</span></p>
+  <p class="small-note" style="margin-top:0">⚓ Jugarán <b>{n}</b>{n ? ': ' : ''}<span style="opacity:.75">{chosen.map((p) => p.name).join(', ')}</span></p>
   {#if n < MIN_PLAYERS}<p class="small-note">⚠️ Captain Sonar necesita al menos {MIN_PLAYERS} jugadores.</p>{/if}
   {#if n > MAX_PLAYERS}<p class="small-note">⚠️ Máximo {MAX_PLAYERS} jugadores.</p>{/if}
   <div id="form-error">{#if app.ui.formError}<div class="flash error">{app.ui.formError}</div>{/if}</div>
-  <button class="primary block" disabled={!okStart} data-a="sn-start" onclick={startNow}>📡 ¡Inmersión!</button>
+  <button class="primary block" disabled={!okStart} data-a="sn-start" onclick={startNow}>⚓ ¡Inmersión!</button>
 </div>

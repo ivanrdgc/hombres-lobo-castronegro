@@ -5,7 +5,7 @@ import type { DemoScript } from '../../shell/demo/types';
 export const DEMO: DemoScript = {
   id: 'sonar',
   name: 'Captain Sonar',
-  emoji: '📡',
+  emoji: '⚓',
   steps: [
     {
       icon: '🎯',
@@ -79,7 +79,7 @@ export const DEMO: DemoScript = {
       who: { actor: 'Quien deja al rival a 0 ❤️ gana en el acto', others: 'la app revela entonces las posiciones de los dos submarinos.' },
       text: [
         'Otro torpedo y el Azul se hunde: ¡victoria de vuestra tripulación! Si os hundís con vuestra propia onda, la victoria es suya.',
-        'Consejo de a bordo: decidid en voz baja (¡el rival está en la misma sala!), y consultad el 🎴 para costes y reglas. 📡',
+        'Consejo de a bordo: decidid en voz baja (¡el rival está en la misma sala!), y consultad el 🎴 para costes y reglas. ⚓',
       ],
       visual: { kind: 'log', lines: ['🚀 Torpedo de 🔴 el submarino Rojo contra E4: ¡IMPACTO DIRECTO a 🔵 el submarino Azul! (2 de daño, le quedan 0).', '🏆 ¡Gana 🔴 el submarino Rojo! 🔵 el submarino Azul se hunde.', '📍 Posiciones finales: Rojo en D3, Azul en E4.'] },
     },
