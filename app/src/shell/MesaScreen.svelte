@@ -191,6 +191,11 @@
   <p class="small-note">Arrastra el asa ⠿ para ordenar la mesa (sentido horario, como estáis sentados); se recuerda para todas las partidas. Toca un dispositivo para expulsarlo{app.matches.length ? ' o sacarlo de su partida' : ''}; toca el TUYO para abandonar la mesa.</p>
 </div>
 <div class="card">
+  <h3>🗣️ Voz del narrador</h3>
+  <p class="small-note" style="margin-top:0">Prueba y ajusta la voz de este dispositivo (motor, voz, velocidad y ambiente). Déjalo a punto aquí y las partidas sonarán sin cortes cuando le deis a jugar.</p>
+  <button class="ghost block" data-a="voice-open" onclick={() => { app.ui.modal = { type: 'voice' }; app.ui.voiceTest = null; }}>🗣️ Probar o configurar la voz de este dispositivo</button>
+</div>
+<div class="card">
   <h3>🎮 ¿A qué jugamos?</h3>
   {#each GAME_DEFS as j (j.id)}
     <div class="card" style="margin:10px 0 4px">

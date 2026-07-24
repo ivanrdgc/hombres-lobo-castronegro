@@ -119,7 +119,6 @@
       {#if narratorP && seat.chosen.includes(narratorP.id)}🔊 <b>{narratorP.name}</b> pone la voz y también juega (mismo móvil).{:else if narratorP}🔊 <b>{narratorP.name}</b> solo pone la voz (tele o altavoz): no recibe carta.{/if}
       Mantened ese dispositivo con la pantalla encendida y volumen alto.
     </p>
-    <button class="ghost block" data-a="voice-open" onclick={() => { app.ui.modal = { type: 'voice' }; app.ui.voiceTest = null; }}>🗣️ Probar o configurar la voz de este dispositivo</button>
   {:else}
     <p class="small-note" style="margin-top:10px">📖 Narras tú (<b>{meName}</b>) desde este dispositivo y no recibes carta.</p>
   {/if}
