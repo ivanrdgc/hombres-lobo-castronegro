@@ -86,6 +86,37 @@ ok('recargar mantiene la pantalla de empezar');
 await ana.click('[data-a=back-lobby-game]');
 await ana.waitForSelector('[data-a=open-roles]');
 
+// 2.5 Renombrar desde la mesa (B31), en el mismo menú de expulsar/abandonar.
+await bruno.goto(url);
+await bruno.waitForSelector('text=/Dispositivos/');
+await bruno.click('.player[data-a=player-menu]:has(.badge.you)');
+await bruno.click('[data-a=rename-open]');
+await bruno.fill('#inp-rename', 'Ana'); // colisión: ese nombre ya está en la mesa
+await bruno.click('[data-a=rename-save]');
+await bruno.waitForSelector('.flash.error', { timeout: 5000 });
+ok('no deja ponerse el nombre de otro de la mesa');
+await bruno.fill('#inp-rename', 'Brunilda');
+await bruno.click('[data-a=rename-save]');
+await bruno.waitForSelector('text=Brunilda', { timeout: 8000 });
+ok('me cambio el nombre desde el menú de la mesa');
+// Antes de recargar, esperar a que OTRO dispositivo lo vea: así sabemos que la
+// escritura llegó al servidor y no estamos leyendo el eco local de Firestore.
+await ana.goto(url);
+await ana.waitForSelector('text=Brunilda', { timeout: 12000 });
+ok('el nombre nuevo llega a los demás dispositivos');
+await bruno.reload();
+await bruno.waitForSelector('text=Brunilda', { timeout: 10000 });
+ok('el nombre nuevo sobrevive a recargar (sesión actualizada)');
+await ana.waitForSelector('text=/Dispositivos/');
+await ana.click('.player[data-a=player-menu][data-p="p-coco"]');
+await ana.click('[data-a=rename-open]');
+await ana.fill('#inp-rename', 'Cocó');
+await ana.click('[data-a=rename-save]');
+await ana.waitForSelector('text=Cocó', { timeout: 8000 });
+ok('puedo renombrar a otro dispositivo de la mesa');
+await ana.click('button[data-a=select-game]');
+await ana.waitForSelector('[data-a=open-roles]');
+
 // 3. Al EMPEZAR la partida, todos convergen — incluido Bruno, que sigue en el
 //    catálogo. Modo casual (3 jugadores); Ana narra y juega desde su móvil.
 await ana.click('[data-a=open-settings]');
@@ -103,6 +134,17 @@ await ana.waitForTimeout(600);
 const inGameUrls = [ana, bruno, coco].map((p) => new URL(p.url()).pathname);
 if (inGameUrls.every((u) => /\/hombres_lobo\/partida\/[a-z0-9]+$/.test(u))) ok('la partida tiene URL propia en todos: …/partida/<id>'); else bad('URLs inesperadas en partida: ' + inGameUrls.join(' '));
 if (new Set(inGameUrls).size === 1) ok('los tres comparten la URL de SU partida'); else bad('URLs de partida divergentes: ' + inGameUrls.join(' '));
+
+// 5. En partida, la mesa solo se alcanza por «🪑 La mesa» del menú ⋯ (la URL de
+//    un miembro se recoloca sola a su partida): comprobamos que el camino existe
+//    y lleva al menú de cada dispositivo, donde vive «Cambiar el nombre».
+await bruno.click('[data-a=game-menu]');
+await bruno.click('[data-a=table-open]');
+await bruno.waitForSelector('[data-a=table-player]', { timeout: 8000 });
+ok('desde la partida se llega a la mesa por el menú ⋯');
+await bruno.click('.player[data-a=table-player]:has(.badge.you)');
+await bruno.waitForSelector('[data-a=rename-open]', { timeout: 8000 });
+ok('y desde ahí se puede cambiar el nombre a media partida');
 
 await browser.close();
 console.log(fail ? `✖ navegación: ${fail} fallos` : '✔ navegación libre OK');

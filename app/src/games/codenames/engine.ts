@@ -87,8 +87,14 @@ export const teamMembers = (game: CodenamesState, t: Team): string[] =>
 
 export const TEAM_LABEL: Record<Team, string> = { red: '🔴 Rojo', blue: '🔵 Azul' };
 
+/** El titular del final, SIN emoji: la pantalla ya pinta el color en grande y
+ *  no tiene por qué repetirlo dos veces seguidas. */
+export const WIN_TITLE = (winner: Team): string =>
+  winner === 'red' ? '¡Gana el equipo ROJO!' : '¡Gana el equipo AZUL!';
+
+/** El mismo titular con su emoji delante: es lo que va al diario y a la voz. */
 export const WIN_LABELS = (winner: Team): string =>
-  `${winner === 'red' ? '🔴 ¡Gana el equipo ROJO!' : '🔵 ¡Gana el equipo AZUL!'}`;
+  `${winner === 'red' ? '🔴' : '🔵'} ${WIN_TITLE(winner)}`;
 
 // ——— Mutadores (devuelven boolean: true si aplicaron) ———
 

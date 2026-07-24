@@ -23,6 +23,10 @@ export interface TableSettings {
   espiaMin?: number;
   /** Insider: duración del interrogatorio en minutos (oficial: 5). */
   insiderMin?: number;
+  /** Love Letter: ¿la app lleva la cuenta de qué cartas han salido? Apagarlo es
+   *  el «modo difícil»: sigue diciendo cuántas quedan por robar, pero no cuáles
+   *  (B33). Por defecto, encendido. */
+  llTrack?: boolean;
   /** Una Noche: mazo elegido (rol → nº de cartas). Se recuerda entre partidas. */
   unaNoche?: Record<string, number>;
   /** Ávalon: roles opcionales activados (lista de ids). Se recuerda entre partidas. */

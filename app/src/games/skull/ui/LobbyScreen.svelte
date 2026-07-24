@@ -41,7 +41,7 @@
 
   <div class="btnrow" style="gap:8px">
     <button data-a="open-demo" style="flex:1" onclick={() => (app.ui.modal = { type: 'sk-demo' })}>🎓 Aprender jugando</button>
-    <button data-a="sk-open-help" style="flex:1" onclick={() => (app.ui.modal = { type: 'sk-help' })}>🎲 Cómo se juega</button>
+    <button data-a="sk-open-help" style="flex:1" onclick={() => (app.ui.modal = { type: 'sk-help' })}>📖 Cómo se juega</button>
   </div>
   <button class="primary block" style="margin-top:8px" data-a="open-start" onclick={() => navigate(`/g/${group.id}/skull/empezar`)}>💀 Empezar partida</button>
 </div>

@@ -4,6 +4,10 @@
   // cierra sola. Antes la carta se desplegaba en la pantalla de la fase, teñida
   // por bando y más larga para los fascistas: el chivato más caro de la partida,
   // porque aquí es cuando todo el mundo mira los móviles de al lado.
+  //
+  // Es la ÚNICA pantalla con botón propio a tu carta (excepción de B34): aquí
+  // memorizarla y confirmarla ES el trabajo. En cuanto empieza la partida, la
+  // única puerta es la pastilla 🎴 de abajo.
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
   import { presidentId } from '../engine';
@@ -31,8 +35,8 @@
   <div class="actionpanel">
     <h3>🎴 Tu carta está repartida</h3>
     <p class="hint">Coge el móvil, tápalo con la mano y ábrelo: tu bando —y a quién conoces— solo aparece mientras lo miras y se oculta solo. <b>Todos los móviles enseñan esta misma tarjeta</b>, así que de reojo no se deduce nada.</p>
-    <button class="primary block" data-a="sh-reveal" onclick={() => (open = true)}>👁 Ver mi carta en secreto</button>
-    <p class="why">{seen ? '✅ Ya la has confirmado.' : '⏳ Ábrela y confirma para que empiece la partida.'}{pend.length ? ` Faltan: ${pend.join(', ')}.` : ' Todos listos.'}</p>
+    <button class="primary block" data-a="sh-reveal" onclick={() => (open = true)}>👁 Ver mi carta</button>
+    <p class="why">{seen ? '✅ Ya la has confirmado.' : '⏳ Ábrela y confirma para que empiece la partida.'}{pend.length ? ` Faltan: ${pend.join(', ')}.` : ' Todos listos.'} Luego la tendrás siempre en la pastilla 🎴 de abajo.</p>
   </div>
 {:else if pend.length}
   <div class="waitlist">Esperando a que confirmen: {pend.join(', ')}</div>
@@ -52,7 +56,7 @@
     {#if !seen}
       <button class="primary block" data-a="sh-seen" onclick={memorized}>✅ Lo he memorizado</button>
     {:else}
-      <p class="small-note" style="margin-top:10px">Ya la habías confirmado: repásala y vuelve a ocultarla. El 🎴 de la esquina te la devuelve en cualquier momento.</p>
+      <p class="small-note" style="margin-top:10px">Ya la habías confirmado: repásala y vuelve a ocultarla. La pastilla 🎴 de abajo te la devuelve en cualquier momento, en cualquier fase.</p>
     {/if}
   </PrivacySheet>
 {/if}

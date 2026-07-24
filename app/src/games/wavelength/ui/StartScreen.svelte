@@ -1,7 +1,7 @@
 <script lang="ts">
   // «Empezar partida» de Wavelength: tres decisiones en orden de importancia
   // —quién juega, hasta cuándo jugáis y dónde suena la voz— y el botón de
-  // repartir al final, con el recuento de quién entra.
+  // arrancar al final, con el recuento de quién entra.
   import { app, matchOf, me, navigate } from '../../../core/sync/store.svelte';
   import { guard } from '../../../core/sync/guard';
   import { isActiveDevice } from '../../../core/sync/presence';
@@ -34,8 +34,8 @@
   const narratorP = $derived(app.players.find((p) => p.id === narrator));
   const okStart = $derived(n >= MIN_PLAYERS && n <= MAX_PLAYERS);
 
-  // Meta: sin ella la partida no terminaba nunca y «Terminar» borraba el
-  // marcador sin resumen. Índice 0 = una vuelta a la mesa (lo que espera todo
+  // Meta: sin ella la partida no terminaba nunca y «Terminar» borraba los
+  // puntos sin resumen. Índice 0 = una vuelta a la mesa (lo que espera todo
   // el mundo: que cada uno haya sido Psíquico una vez).
   let goalIdx = $state(0);
   const goals = $derived(goalOptions(Math.max(n, MIN_PLAYERS)));
@@ -61,9 +61,9 @@
 <div class="card">
   <h3>🎮 ¿Quién juega?</h3>
   <SeatPicker {group} {meId} gameId="wavelength" onState={(s) => (seat = s)} />
+  <!-- El aviso de «faltan jugadores» NO se repite aquí: vive pegado al botón
+       de empezar, que es lo que se queda bloqueado. -->
   <p class="small-note">Por ese orden rotará el Psíquico, uno por ronda.</p>
-  {#if n < MIN_PLAYERS}<p class="small-note">⚠️ Hacen falta al menos {MIN_PLAYERS}: con menos no hay equipo que debata.</p>{/if}
-  {#if n > MAX_PLAYERS}<p class="small-note">⚠️ Como mucho {MAX_PLAYERS}.</p>{/if}
 </div>
 
 <div class="card">
@@ -92,4 +92,14 @@
 
 <p class="small-note" style="text-align:center;margin-top:14px">📡 Jugarán <b>{n}</b>{n ? ': ' : ''}<span style="opacity:.75">{chosen.map((p) => p.name).join(', ')}</span></p>
 <div id="form-error">{#if app.ui.formError}<div class="flash error">{app.ui.formError}</div>{/if}</div>
-<button class="primary block" disabled={!okStart} data-a="wl-start" onclick={startNow}>📡 Repartir y empezar la ronda 1</button>
+<!-- Aquí no se reparte nada (ni cartas ni roles): lo que arranca es la primera
+     ronda. Y si el botón está apagado, el motivo va justo debajo, no en un
+     aviso a media pantalla de distancia (B25). -->
+<button class="primary block" disabled={!okStart} data-a="wl-start" onclick={startNow}>📡 Empezar la ronda 1</button>
+{#if !okStart}
+  <p class="small-note" style="text-align:center;margin:6px 0 0">
+    ⚠️ {n < MIN_PLAYERS
+      ? `Faltan ${MIN_PLAYERS - n} para empezar: hacen falta ${MIN_PLAYERS} (con menos no hay equipo que debata).`
+      : `Sobran ${n - MAX_PLAYERS}: como mucho juegan ${MAX_PLAYERS}.`}
+  </p>
+{/if}

@@ -1,9 +1,9 @@
 <script lang="ts">
   // La ronda en marcha. Es un juego de MESA (B28): el móvil se queda plano y
   // manda la conversación, así que la pantalla en reposo es la MISMA en todos
-  // los dispositivos —reloj, turno, mesa y el 🛑 de acusar— y nada que dependa
-  // de tu carta aparece aquí: eso vive en PrivatePanel, tras el mismo gesto
-  // para el espía y para un agente.
+  // los dispositivos —reloj, turno, mesa, la libreta y el 🛑 de acusar— y nada
+  // que dependa de tu carta aparece aquí: tu carta se abre SOLO por la pastilla
+  // flotante 🎴 (B34), idéntica para el espía y para un agente.
   // Cualquier dispositivo intenta timeUp() cuando el reloj llega a cero
   // (transacción «primero gana»: sin conductor único).
   import { guard } from '../../../core/sync/guard';
@@ -12,7 +12,7 @@
   import type { EspiaState } from '../types';
   import Timer from './Timer.svelte';
   import MesaStrip from './MesaStrip.svelte';
-  import PrivatePanel from './PrivatePanel.svelte';
+  import Libreta from './Libreta.svelte';
 
   const { game, my, spectator }: { game: EspiaState; my: PlayerDoc; spectator: boolean } = $props();
 
@@ -54,7 +54,10 @@
 </script>
 
 <Timer {game} />
-{#if game.phase === 'play'}
+<!-- El recordatorio de cómo se pregunta solo cuando toca preguntar: con una
+     votación abierta o en pausa manda ese panel, y dejarlo aquí decía a la mesa
+     que siguiera el interrogatorio con el reloj congelado. -->
+{#if live}
   {#if opening}
     <div class="narration">❓ Abre el interrogatorio <b>{game.names[game.dealerId] || '¿?'}</b>, llamando a alguien por su nombre. Quien responde, pregunta después.</div>
   {:else}
@@ -65,7 +68,7 @@
 <MesaStrip {game} myId={my.id} />
 
 {#if inRound}
-  <PrivatePanel {game} {my} />
+  <Libreta {game} />
 
   {#if canAccuse}
     <div class="actionpanel"><h3>🛑 ¿Sospechas de alguien?</h3>
@@ -82,11 +85,8 @@
             </div>
           {/each}
         </div>
-        <!-- El 🛑 de la lista se leía como «este es sospechoso»: en móvil no hay
-             title que valga, así que la marca se explica a la vista. -->
-        {#if game.playerIds.some((id) => id !== my.id && game.accusedUsed[id])}
-          <p class="small-note" style="margin:8px 0 0">🛑 ya acusó = ya gastó SU acusación. No dice nada de su culpa: puedes acusarla igual.</p>
-        {/if}
+        <!-- El 🛑 de la lista NO se explica aquí otra vez: la tira de la mesa,
+             justo encima, ya dice qué significa (un dato, un sitio · B29). -->
       {:else}
         <div class="plan">
           <p class="pnow">▶️ Vas a parar el reloj y acusar a <b>{pickName}</b>.</p>

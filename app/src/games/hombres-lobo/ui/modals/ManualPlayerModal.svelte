@@ -1,6 +1,7 @@
 <script lang="ts">
-  // Menú del máster sobre un jugador en modo manual (port de manualPlayerModal
-  // de la v1): muerte/vida, rol a pantalla completa, enamorado y Ladrón.
+  // Menú del narrador sobre un jugador en modo manual (port de
+  // manualPlayerModal de la v1): muerte/vida, carta a pantalla completa,
+  // enamorado y Ladrón.
   import { app, viewGroup } from '../../../../core/sync/store.svelte';
   import { guard } from '../../../../core/sync/guard';
   import * as A from '../../actions';
@@ -29,7 +30,7 @@
   <h3>{r?.emoji || ''} {p.name} — {r?.name || ''}{p.lover ? ' 💘' : ''}{p.alive === false ? ' 💀' : ''}</h3>
   <p class="small-note">{r?.desc || ''}</p>
   <button class={p.alive ? 'danger block' : 'violet block'} data-a="manual-toggle-dead" data-p={p.id} onclick={toggleDead}>{p.alive ? '💀 Marcar como muerto' : '✨ Revivir'}</button>
-  <button class="block" data-a="show-role-full" data-p={p.id} onclick={() => (app.ui.modal = { type: 'show-role', pid })}>👁 Mostrar su rol a pantalla completa</button>
+  <button class="block" data-a="show-role-full" data-p={p.id} onclick={() => (app.ui.modal = { type: 'show-role', pid })}>👁 Enseñarle su carta a pantalla completa</button>
   {#if hasCupido}
     <button class="block" data-a="manual-toggle-lover" data-p={p.id} onclick={toggleLover}>{p.lover ? '💔 Quitar la marca de enamorado' : '💘 Marcar como enamorado'}</button>
   {/if}

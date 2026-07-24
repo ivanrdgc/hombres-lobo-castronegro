@@ -194,9 +194,12 @@ export const WIN_LABELS: Record<Faction, string> = {
   fascist: '🐷 ¡Ganan los Fascistas! Las botas resuenan en Castronegro.',
 };
 
+/** El nombre de cada poder, uno solo para toda la app (B34 §3): tablero,
+ *  narración, panel del Presidente y chuleta de reglas lo llaman igual. El
+ *  detalle («los tres de arriba», «Hitler sale fascista») va donde se usa. */
 export const POWER_LABEL: Record<PowerType, string> = {
-  peek: '🔮 Mirar los tres decretos de arriba',
-  investigate: '🔎 Investigar la lealtad de un jugador',
+  peek: '🔮 Mirar el mazo',
+  investigate: '🔎 Investigar una lealtad',
   special: '🗳️ Convocar una elección especial',
   execution: '💀 Ejecutar a un jugador',
 };

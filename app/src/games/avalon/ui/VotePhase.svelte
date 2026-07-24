@@ -9,7 +9,6 @@
   import { teamSize, requiredFails } from '../roles';
   import type { PlayerDoc } from '../../../core/sync/schema';
   import type { AvalonState } from '../types';
-  import RoleCard from './RoleCard.svelte';
 
   const { game, my }: { game: AvalonState; my: PlayerDoc } = $props();
 
@@ -46,14 +45,15 @@
       <button class="danger" data-a="av-vote" data-p="no" onclick={() => guard(() => A.voteTeam(false))}>👎 Rechazar</button>
     </div>
     <p class="small-note" data-a="av-vote-what-if">👍 <b>Aprobar</b>: si hay mayoría, el equipo parte a la misión {game.quest} y juega sus cartas en secreto.</p>
-    <p class="small-note {lastChance ? 'warn' : ''}">👎 <b>Rechazar</b>: con empate o mayoría de rechazo no hay misión, el liderazgo pasa al siguiente y se vuelve a proponer. {lastChance ? '⚠️ Sería el QUINTO rechazo seguido: gana el Mal ahí mismo.' : `Van ${game.voteTrack} de 5 rechazos seguidos; a las 5 gana el Mal.`}</p>
+    <!-- La consecuencia de TU voto, sin repetir el contador: ese está arriba, en
+         el tablero, con sus puntos encendidos (B29: un dato, un sitio). -->
+    <p class="small-note {lastChance ? 'warn' : ''}">👎 <b>Rechazar</b>: con empate o mayoría de rechazo no hay misión, el liderazgo pasa al siguiente y se vuelve a proponer. {lastChance ? '⚠️ Sería el QUINTO rechazo seguido: gana el Mal ahí mismo.' : 'Enciende otro punto del contador de rechazos de arriba; a los cinco seguidos, gana el Mal.'}</p>
   </div>
 {:else}
   <div class="card"><p class="hint">{iVoted ? '✅ Tu voto está echado.' : '👀 La mesa está votando.'} Han votado <b>{voted}/{total}</b>. Se destaparán todos a la vez.</p>
     {#if pend.length}<p class="small-note" data-a="av-vote-pending">⏳ Falta{pend.length === 1 ? '' : 'n'} por votar: <b>{pend.join(', ')}</b>.</p>{/if}
     <p class="small-note">Mientras tanto: fíjate en quién ha tardado y prepara tu argumento; los votos se leen en voz alta cuando se destapen.</p></div>
 {/if}
-{#if inGame}<RoleCard {game} pid={my.id} />{/if}
 
 <style>
   .reqbox {

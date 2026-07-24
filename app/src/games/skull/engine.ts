@@ -193,7 +193,9 @@ export function flip(game: SkullState, pid: string, target: string): boolean {
   const disc = placed(game, target)[idx];
   if (!disc) return false;
   r.flipped.push({ owner: target, disc });
-  log(game, `🃏 ${nm(game, pid)} levanta un disco de ${target === pid ? 'su propia pila' : nm(game, target)}: ${disc === 'skull' ? '💀 ¡CALAVERA!' : '🌸 flor'}.`);
+  // 👆 es el verbo «levantar» en toda la interfaz (botones y avisos): el diario
+  // usa el mismo icono para que se lean como la misma jugada.
+  log(game, `👆 ${nm(game, pid)} levanta un disco de ${target === pid ? 'su propia pila' : nm(game, target)}: ${disc === 'skull' ? '💀 ¡CALAVERA!' : '🌸 flor'}.`);
   if (disc === 'skull') { resolveFail(game); return true; }
   if (flippedFlowers(game) >= r.need) { resolveSuccess(game); return true; }
   return true;

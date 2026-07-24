@@ -15,6 +15,22 @@
   const busy = $derived(matchOf(pid));
   const busyDef = $derived(busy ? gameDef(busy.gameId) : null);
 
+  // Renombrar (B31): el id del doc no cambia, solo el nombre visible, así que
+  // funciona igual a media partida. El campo arranca con el nombre actual.
+  let renaming = $state(false);
+  let newName = $state('');
+  function openRename() {
+    newName = p?.name ?? '';
+    renaming = true;
+  }
+  function saveName() {
+    const id = pid;
+    const value = newName;
+    guard(() => A.renamePlayer(id, value), { form: true }).then(() => {
+      if (!app.ui.formError) app.ui.modal = null;
+    });
+  }
+
   // Ojo: pid es un $derived de app.ui.modal — hay que CAPTURARLO antes de
   // cerrar el modal, o llegaría vacío a la acción.
   function kick() {
@@ -40,10 +56,20 @@
     {/if}
     <button class="violet block" data-a="kick-from-match" data-p={p.id} onclick={kickFromMatch}>⛔ Sacarlo de la partida{A.leaveEndsMatch(busy.gameId) ? ' (la termina)' : ''}</button>
   {/if}
-  {#if self}
-    <button class="danger block" data-a="leave" onclick={() => (app.ui.modal = { type: 'confirm-leave' })}>🚪 Abandonar la mesa</button>
+  {#if renaming}
+    <label for="inp-rename">Nombre nuevo</label>
+    <input type="text" id="inp-rename" maxlength="24" autocomplete="off" bind:value={newName}
+      onkeydown={(e) => { if (e.key === 'Enter') saveName(); }} />
+    <div id="form-error">{#if app.ui.formError}<div class="flash error">{app.ui.formError}</div>{/if}</div>
+    <button class="primary block" data-a="rename-save" onclick={saveName}>✏️ Llamarse {newName.trim() || '…'}</button>
+    <button class="ghost block" data-a="rename-cancel" onclick={() => { renaming = false; app.ui.formError = null; }}>Cancelar</button>
   {:else}
-    <button class="danger block" data-a="kick" data-p={p.id} onclick={kick}>👢 Expulsar del grupo</button>
+    <button class="block" data-a="rename-open" data-p={p.id} onclick={openRename}>✏️ Cambiar el nombre{self ? '' : ` de ${p.name}`}</button>
+    {#if self}
+      <button class="danger block" data-a="leave" onclick={() => (app.ui.modal = { type: 'confirm-leave' })}>🚪 Abandonar la mesa</button>
+    {:else}
+      <button class="danger block" data-a="kick" data-p={p.id} onclick={kick}>👢 Expulsar del grupo</button>
+    {/if}
   {/if}
-  <button class="ghost block" data-a="close-modal" onclick={() => (app.ui.modal = null)}>Cancelar</button>
+  {#if !renaming}<button class="ghost block" data-a="close-modal" onclick={() => (app.ui.modal = null)}>Cerrar</button>{/if}
 {/if}

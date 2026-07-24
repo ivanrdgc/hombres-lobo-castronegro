@@ -34,8 +34,8 @@ export const DEMO: DemoScript = {
       visual: {
         kind: 'screens',
         panes: [
-          { title: 'Bea (Jefa roja 🔴)', lines: ['Toca «Ver mi mapa» y ya no lo suelta:', '🔴 Volcán, Rayo, Faro… (9)', '🔵 Nieve, Puente… (8)', '⬜ 7 transeúntes · 💀 Serpiente'] },
-          { title: 'TÚ (agente rojo 🔴)', lines: ['Las mismas 25 palabras…', '…todas sin color, en grande.', 'El botón 🎴 te recuerda tu papel.'] },
+          { title: 'Bea (Jefa roja 🔴)', lines: ['Toca «🗺️ Ver mi mapa» y ya no lo suelta:', '🔴 Volcán, Rayo, Faro… (9)', '🔵 Nieve, Puente… (8)', '⬜ 7 transeúntes · 💀 Serpiente'] },
+          { title: 'TÚ (agente rojo 🔴)', lines: ['Las mismas 25 palabras…', '…todas sin color, en grande.', 'Tu papel va siempre arriba, en la banda.'] },
         ],
       },
     },

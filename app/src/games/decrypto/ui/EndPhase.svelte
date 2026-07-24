@@ -5,13 +5,11 @@
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
   import { TEAM_LABEL, teamMembers } from '../engine';
-  import type { PlayerDoc } from '../../../core/sync/schema';
   import type { DecryptoState } from '../types';
 
-  const { game, my }: { game: DecryptoState; my: PlayerDoc } = $props();
+  const { game }: { game: DecryptoState } = $props();
   const nm = (pid: string) => game.names[pid] || '¿?';
   const ranked = $derived([...game.playerIds].sort((a, b) => (game.scores[b] || 0) - (game.scores[a] || 0)));
-  void my;
 </script>
 
 <div class="card" style="text-align:center">

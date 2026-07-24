@@ -3,15 +3,15 @@
   // turno, señalas a un sospechoso o pasas; cada acusación se vota igual, y la
   // mesa puede saltar el turno de quien no responde.
   // Como en la ronda, aquí no asoma nada que dependa de tu carta: la jugada del
-  // espía sigue viva, pero dentro de PrivatePanel, tras el gesto que usan
-  // todos (B28).
+  // espía sigue viva, pero dentro de la carta, que se abre SOLO por la pastilla
+  // flotante 🎴 que usan todos (B28/B34).
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
   import { timeupOrder } from '../engine';
   import type { PlayerDoc } from '../../../core/sync/schema';
   import type { EspiaState } from '../types';
   import MesaStrip from './MesaStrip.svelte';
-  import PrivatePanel from './PrivatePanel.svelte';
+  import Libreta from './Libreta.svelte';
 
   const { game, my }: { game: EspiaState; my: PlayerDoc } = $props();
 
@@ -38,7 +38,7 @@
 
 <MesaStrip {game} myId={my.id} />
 
-{#if inRound}<PrivatePanel {game} {my} />{/if}
+{#if inRound}<Libreta {game} />{/if}
 
 {#if myTurn}
   <div class="actionpanel"><h3>👉 Tu turno: acusa o pasa</h3>

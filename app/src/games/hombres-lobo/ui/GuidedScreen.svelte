@@ -19,7 +19,6 @@
   import RolesStrip from './RolesStrip.svelte';
   import NightActionPanel from './NightActionPanel.svelte';
   import RevealGate from './RevealGate.svelte';
-  import RoleCard from './RoleCard.svelte';
   import EndPhase from './EndPhase.svelte';
   import GameMenu from './GameMenu.svelte';
 
@@ -99,15 +98,15 @@
 {/snippet}
 
 {#if game.phase === 'end'}
-  <div class="topbar"><h2>🌕 Hombres Lobo</h2><PhaseChip game={game} /></div>
+  <div class="topbar"><h2>🐺 Hombres Lobo</h2><PhaseChip game={game} /></div>
   <EndPhase group={group} my={my} />
   <LogPanel game={game} />
 {:else if master}
   <!-- Narrador guiado: guion en pantalla y registro de decisiones. -->
-  <div class="topbar"><h2>🌕 Hombres Lobo</h2><PhaseChip game={game} /><GameMenu group={group} /></div>
+  <div class="topbar"><h2>🐺 Hombres Lobo</h2><PhaseChip game={game} /><GameMenu group={group} /></div>
   <Flash />
   <div class="card"><h3>📖 Narrador guiado</h3>
-    <p class="small-note">La app no habla: te va marcando los pasos y tú registras las decisiones. Los jugadores solo ven su carta. Herramientas (ver roles, terminar) en el menú ⋯ de arriba; las cartas en juego, abajo.</p>
+    <p class="small-note">La app no habla: te va marcando los pasos y tú registras las decisiones. Los jugadores solo tienen su carta, en la pastilla 🎴 de su móvil. Tus herramientas (ver los roles de todos, terminar) están en el menú ⋯ de arriba; las cartas en juego, abajo.</p>
   </div>
   {#if game.phase === 'reveal'}
     {@const pend = players.filter((p) => !p.roleSeen).map((p) => p.name)}
@@ -185,7 +184,7 @@
   <LogPanel game={game} />
 {:else if !my.inGame}
   <!-- Espectador: sigue la partida y puede terminarla desde el menú ⋯ si hace falta. -->
-  <div class="topbar"><h2>🌕 Hombres Lobo</h2><PhaseChip game={game} /><GameMenu group={group} /></div>
+  <div class="topbar"><h2>🐺 Hombres Lobo</h2><PhaseChip game={game} /><GameMenu group={group} /></div>
   <Flash />
   <div class="card" style="text-align:center">
     <span class="moon">👀</span>
@@ -196,15 +195,16 @@
   <RolesStrip game={game} />
   <LogPanel game={game} />
 {:else}
-  <!-- Jugador: solo su carta (oculta por defecto); el narrador dirige en persona. -->
-  <div class="topbar"><h2>🌕 Hombres Lobo</h2><PhaseChip game={game} /><GameMenu group={group} /></div>
+  <!-- Jugador: nada que tocar salvo su carta, tras la pastilla 🎴 (B34); el
+       narrador dirige en persona. -->
+  <div class="topbar"><h2>🐺 Hombres Lobo</h2><PhaseChip game={game} /><GameMenu group={group} /></div>
   {#if !my.alive && my.inGame && game.phase !== 'reveal'}<div class="flash">💀 Has muerto. Sigue mirando en silencio…</div>{/if}
   <Flash />
   {#if game.phase === 'reveal' && my.inGame && !my.roleSeen}
     <RevealGate group={group} my={my} />
   {:else}
     <div class="narration">📖 El narrador dirige la partida. Atiende a su voz… humana.</div>
-    {#if my.inGame}<RoleCard player={my} group={group} mini={true} />{/if}
+    {#if my.inGame}<p class="small-note">Tu carta, tu palabra clave y las reglas están abajo, en <b>🎴 Mi carta</b>.</p>{/if}
   {/if}
   <PlayersGrid players={players} title="🏘️ El pueblo" showAlguacil={game.alguacilId} viewer={my} />
   <RolesStrip game={game} />

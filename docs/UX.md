@@ -287,3 +287,30 @@ mejor. Reglas:
 8. **La primera pantalla de cada juego** (el lobby) tiene un solo trabajo:
    decir de qué va en dos líneas y dejar tres caminos claros — aprender
    (tutorial), consultar (cómo se juega) y jugar (empezar).
+
+---
+
+## Una sola puerta a tu carta (julio 2026 · B34)
+
+Iván: «algunos juegos siguen teniendo un botón "Ver mi carta" y otro "Mi carta y
+las reglas"». Regla, sin excepciones:
+
+1. **Tu carta se abre desde UN solo sitio en cada pantalla.** En los juegos de
+   **mesa** ese sitio es la pastilla flotante (`shell/CardFab`), que es idéntica
+   en todos los móviles y está en todas las fases: los juegos **no** añaden su
+   propio «👁 Ver mi carta» en el cuerpo. En los de **mano/equipo** es al revés:
+   la carta vive en la pantalla y el flotante es solo «📖 Reglas».
+2. **Actuar no es «ver mi carta».** Las cortinas de privacidad de B28 abren un
+   TURNO o una ACCIÓN, y se rotulan por lo que hacen («👁 Abrir mi turno»,
+   «🗡️ Abrir la mira»), nunca «ver mi carta». Si una pantalla necesita las dos
+   cosas, son dos verbos distintos y se nota.
+3. **Un nombre por cosa, en los 17 juegos.** «Mi carta» es tu identidad o tu
+   mano; «las reglas» es la referencia del juego; «la chuleta» no existe como
+   tercer nombre. Lo mismo en la voz, la ayuda y el tutorial.
+4. Ningún juego repite en su pantalla algo que ya esté en el flotante, ni al
+   revés: si la mano está en pantalla (mano/equipo), el flotante no la enseña.
+
+**Excepción única**: durante el REPARTO (la fase en la que cada uno memoriza su
+carta y confirma) la pantalla sí puede tener su propio botón grande, porque ahí
+la instrucción es el contenido de la pantalla. En cuanto empieza la partida, la
+única puerta es la pastilla.

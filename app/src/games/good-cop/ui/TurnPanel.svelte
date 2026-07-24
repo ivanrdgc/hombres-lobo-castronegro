@@ -36,7 +36,7 @@
   // QUÉ cartas has mirado ya (no lo que viste): sin esto se gastaba un turno en
   // mirar dos veces la misma. Es información PÚBLICA — el diario dice quién
   // investiga qué carta de quién —, así que puede estar en esta pantalla; el
-  // RESULTADO no aparece aquí jamás: vive tras el gesto 🎴.
+  // RESULTADO no aparece aquí jamás: vive en «🎴 Mi carta», su única puerta.
   const myPeeks = $derived(game.peeks?.[my.id] || []);
   const seenOf = (pid: string) => myPeeks.filter((p) => p.target === pid).map((p) => p.idx);
 
@@ -49,8 +49,9 @@
   const targetCards = $derived(tgt ? game.cards[tgt] : []);
   const back = () => (mode = 'menu');
 
-  /** Investigar y abrir TU 🎴 con el resultado: es el mismo toque tuyo, con el
-   *  móvil aún en la mano, y allí se tapa solo a los pocos segundos. */
+  /** Investigar y abrir «🎴 Mi carta» con el resultado: es el mismo toque tuyo,
+   *  con el móvil aún en la mano, y allí se tapa solo a los pocos segundos.
+   *  No es una segunda puerta: es dónde aterriza la acción que acabas de hacer. */
   function doInvestigate(target: string, idx: number) {
     back();
     guard(() => A.investigate(target, idx));
@@ -133,14 +134,17 @@
           </button>
         {/each}
       </div>
-      {#if seenOf(tgt).length}<p class="small-note" style="margin-top:6px">Lo ya mirado va marcado: eso lo dice el diario, o sea que la mesa también lo sabe. Lo que VISTE solo vive en tu 🎴.</p>{/if}
+      {#if seenOf(tgt).length}<p class="small-note" style="margin-top:6px">Lo ya mirado va marcado: eso lo dice el diario, o sea que la mesa también lo sabe. Lo que VISTE solo vive en «🎴 Mi carta».</p>{/if}
       <button class="primary block" data-a="gc-inv-confirm" disabled={pick === null}
         onclick={() => doInvestigate(tgt!, pick!)}>
         {pick === null ? '🔍 Elige una carta' : `🔍 Mirar a solas la carta ${pick + 1} de ${nm(tgt)}`}
       </button>
+      <!-- Repetir carta es legal pero regala el turno: se avisa antes, no se bloquea. -->
       <p class="small-note" style="margin-top:6px">{pick === null
         ? 'Toca una de sus tres cartas y el botón dirá exactamente lo que vas a hacer.'
-        : 'El resultado se abre en tu 🎴 y se tapa solo: nadie más lo verá nunca.'}</p>
+        : seenOf(tgt).includes(pick)
+          ? '⚠️ Esa ya la miraste: verás lo mismo y habrás gastado el turno. Lo que viste sigue en «🎴 Mi carta».'
+          : 'El resultado se abre en «🎴 Mi carta» y se tapa solo: nadie más lo verá nunca.'}</p>
     {/if}
 
   {:else if mode === 'arm'}
@@ -173,10 +177,12 @@
     <button class="ghost block" style="margin-top:8px" data-a="gc-back" onclick={back}>↩️ No, volver</button>
   {/if}
 
-  <!-- La referencia, aquí mismo: nadie debería salir de la pantalla en la que decide. -->
+  <!-- Las reglas, aquí mismo y plegadas: nadie debería salir de la pantalla en la
+       que decide. Se llaman igual que dentro de «Mi carta» (B34: un nombre por
+       cosa; «la chuleta» no existe). -->
   <details class="gcref">
-    <summary data-a="gc-ref">📖 Chuleta: bandos, líderes y qué hace cada acción</summary>
-    <RefRows title="🧮 Esto lo sabe toda la mesa" rows={refRows(game.playerIds.length)} />
+    <summary data-a="gc-ref">📖 Las reglas: bandos, líderes y qué hace cada acción</summary>
+    <RefRows title="🧮 Todo esto es público: lo sabe la mesa entera" rows={refRows(game.playerIds.length)} />
   </details>
 </div>
 

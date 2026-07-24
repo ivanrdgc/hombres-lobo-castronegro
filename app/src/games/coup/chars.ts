@@ -120,12 +120,13 @@ export function claimLine(a: ActionType): string {
     : '🗣️ No dices tener ningún personaje · nadie puede desafiarla';
 }
 
-/** «Quién puede impedirla» — bloqueos posibles. */
+/** «Quién puede impedirla» — bloqueos posibles. Una sola forma de decir que no
+ *  se puede: dos redacciones para lo mismo se leían como dos reglas (B34·3). */
 export function blockLine(a: ActionType): string {
   const b = blockersFor(a);
   if (b.length) {
     const who = a === 'ayuda' ? 'Cualquiera' : 'Tu víctima';
     return `🛡️ ${who} puede bloquearla con ${b.map(charLabel).join(' o ')}`;
   }
-  return a === 'golpe' || a === 'renta' ? '🚫 Nadie puede bloquearla' : '🛡️ No se puede bloquear';
+  return '🚫 Nadie puede bloquearla';
 }

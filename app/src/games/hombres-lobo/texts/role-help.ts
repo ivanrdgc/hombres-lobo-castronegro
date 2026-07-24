@@ -184,7 +184,7 @@ export const ROLE_HELP: Record<RoleId, RoleHelp> = {
     when: 'De día (una vez)',
     steps: [
       'No te despiertas de noche.',
-      'De día, tu botón secreto está DENTRO de tu carta: abre «👁 Ver mi carta» con disimulo (todas las pantallas se ven iguales) y púlsalo ANTES de que acabe el juicio para exigir una segunda votación inmediata (una vez por partida).',
+      'De día, tu botón secreto está DENTRO de tu carta: abre «🎴 Mi carta» con disimulo (todas las pantallas se ven iguales) y púlsalo ANTES de que acabe el juicio para exigir una segunda votación inmediata (una vez por partida).',
       'Nadie sabrá que fuiste tú: la app lo anuncia como caído del cielo.',
     ],
   },
@@ -192,7 +192,7 @@ export const ROLE_HELP: Record<RoleId, RoleHelp> = {
     when: 'Cuando linchan a alguien',
     steps: [
       'No actúas de noche.',
-      'Cuando el pueblo condena a alguien, la aldea se detiene unos segundos: abre tu carta con disimulo («👁 Ver mi carta» — todas las pantallas se ven iguales) y decide AHÍ dentro, antes de que acabe la cuenta atrás, si sacrificas tu carta y asumes su rol.',
+      'Cuando el pueblo condena a alguien, la aldea se detiene unos segundos: abre tu carta con disimulo («🎴 Mi carta» — todas las pantallas se ven iguales, y se pide abrirla a TODA la mesa) y decide AHÍ dentro, antes de que acabe la cuenta atrás, si sacrificas tu carta y asumes su rol.',
       'Si aceptas, se anuncia tu sacrificio (no el rol heredado) y empiezas de cero con la carta del condenado.',
     ],
   },
@@ -225,7 +225,7 @@ export const ROLE_HELP: Record<RoleId, RoleHelp> = {
       'Mientras tu modelo viva, eres del pueblo. Si muere (de noche o linchado), te transformas en hombre lobo EN SECRETO. Nadie te avisará: solo tú sabes quién era tu modelo, así que solo tú lo sabes.',
       'Desde la noche siguiente, cuando la voz despierte a los hombres lobo, abre los ojos con ellos: tu móvil te enseñará a tu nueva manada y os reconoceréis en silencio.',
     ],
-    tip: 'Tu carta (👁 Ver mi carta) te recuerda si ya estás transformado.',
+    tip: 'Tu carta (🎴 Mi carta) te recuerda si ya estás transformado.',
   },
   lobo_albino: {
     when: 'Cada noche (traición alterna)',

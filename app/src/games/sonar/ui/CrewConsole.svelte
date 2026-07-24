@@ -26,7 +26,7 @@
     DIR_LABEL, DIR_ARROW, cellName, stepTo, inBounds, isIsland, sameCell, manhattan, chebyshev,
     quadrantOf, type Cell, type Dir,
   } from '../map';
-  import { ACTION_REF } from '../texts';
+  import { ACTION_REF, ACTIONS_TITLE } from '../texts';
   import type { SonarState, Team } from '../types';
   import MapGrid from './MapGrid.svelte';
   import Notebook from './Notebook.svelte';
@@ -84,22 +84,26 @@
     return out;
   });
 
+  // UN SOLO NOMBRE por acción (B34): el mismo en el menú, en el paso 2, en la
+  // referencia 📖, en el «cómo se juega» y en lo que canta la voz («Torpedo del
+  // submarino Rojo…»). Los VERBOS se reservan para el botón de confirmar, que
+  // es el que nombra la consecuencia («💥 Disparar a D4»).
   const SYS = $derived([
     {
-      k: 'torpedo' as const, emoji: '🚀', name: 'Disparar un torpedo', cost: `${COST_TORPEDO} ⚡`,
+      k: 'torpedo' as const, emoji: '🚀', name: 'Torpedo', cost: `${COST_TORPEDO} ⚡`,
       desc: `A una casilla a ${TORPEDO_RANGE} o menos en línea recta: 2 de daño en el blanco y 1 en las 8 de alrededor… también a vosotros si disparáis pegados.`,
       why: lack(COST_TORPEDO) ? short(COST_TORPEDO) : '',
     },
     {
-      k: 'drone' as const, emoji: '🛰️', name: 'Soltar el dron', cost: `${COST_DRONE} ⚡`,
+      k: 'drone' as const, emoji: '🛰️', name: 'Dron', cost: `${COST_DRONE} ⚡`,
       desc: `La app canta EN ALTO en cuál de los 4 cuadrantes está el ${foe}. Vosotros no os movéis.`,
       why: lack(COST_DRONE) ? short(COST_DRONE) : '',
     },
     {
-      k: 'silence' as const, emoji: '🤫', name: 'Maniobrar en silencio', cost: `${COST_SILENCE} ⚡`,
+      k: 'silence' as const, emoji: '🤫', name: 'Silencio', cost: `${COST_SILENCE} ⚡`,
       desc: `1 o ${SILENCE_MAX_STEPS} casillas en recta SIN cantar el rumbo: lo único que rompe su triangulación. No carga energía.`,
       why: lack(COST_SILENCE) ? short(COST_SILENCE)
-        : !slips.length ? '⛔ No hay hueco por ningún rumbo (islas, bordes o vuestra estela). Toca ⏫ emerger.' : '',
+        : !slips.length ? '⛔ No hay hueco por ningún rumbo (islas, bordes o vuestra estela). Solo os queda ⏫ Emerger.' : '',
     },
     {
       k: 'surface' as const, emoji: '⏫', name: 'Emerger', cost: 'gratis',
@@ -186,10 +190,13 @@
 </div>
 
 {#if covered}
+  <!-- Cortina de PRIVACIDAD, no «ver mi carta» (B34 · 2): se rotula por lo que
+       hace —tapar y destapar la consola— y no promete nada más. -->
   <button class="sncover" data-a="sn-uncover" onclick={() => (covered = false)}>
     <span class="snlock">🔒</span>
-    <b>Tapado</b>
-    <span class="small-note" style="margin:0">Aquí debajo están vuestra posición, vuestra estela y vuestro cuaderno: no giréis la pantalla ni la dejéis boca arriba. Tocad para abrir la consola{active ? ' — os toca jugar' : ''}.</span>
+    <b>Consola tapada</b>
+    <span class="small-note" style="margin:0">Debajo están vuestra posición, vuestra estela y vuestro cuaderno de sonar: no giréis la pantalla ni la dejéis boca arriba.</span>
+    <span class="snopen">👉 Tocad para abrir la consola{active ? ' — os toca jugar' : ''}</span>
   </button>
 {:else}
   <div class="card snconsole" bind:this={mapEl}>
@@ -199,7 +206,8 @@
 
   {#if active}
     <div class="actionpanel">
-      <h3>🎬 Vuestro turno</h3>
+      <!-- «Os toca» ya lo dice la barra de arriba: aquí se dice qué HACER. -->
+      <h3>🎬 Vuestra jugada</h3>
       {#if step}
         <p class="hint" style="margin-top:0">Repasad y confirmad, o cambiad de acción.</p>
         <div class="snplan">
@@ -210,7 +218,7 @@
         <button class="primary block" data-a={step.a} disabled={!step.ready} onclick={step.run}>{step.label}</button>
         <button class="ghost block small" data-a="sn-back" onclick={back}>↩️ Elegir otra acción</button>
       {:else}
-        <p class="hint" style="margin-top:0">UNA acción y el turno pasa al {foe}.</p>
+        <p class="hint" style="margin-top:0">Elegid UNA acción: al confirmarla, el turno pasa al {foe}.</p>
         <!-- Navegar va desplegado: la dirección ES la elección y es la acción de
              casi cada turno (no debería costar tres toques). -->
         <div class="snact">
@@ -226,7 +234,7 @@
             {/each}
           </div>
           {#if !dirs.length}
-            <p class="snwhy">⛔ Ningún rumbo legal: vuestra propia estela os encierra. Solo podéis ⏫ emerger (borra la estela).</p>
+            <p class="snwhy">⛔ Ningún rumbo legal: vuestra propia estela os encierra. Solo os queda ⏫ Emerger, que la borra.</p>
           {/if}
         </div>
 
@@ -243,8 +251,10 @@
         {/if}
       {/if}
 
+      <!-- La MISMA lista y el MISMO rótulo que abre la pastilla «📖 Reglas»
+           (B34 · un nombre por cosa): aquí a mano, para no salir del panel. -->
       <details class="snref">
-        <summary data-a="sn-ref">📖 Las 5 acciones, sus costes y sus reglas</summary>
+        <summary data-a="sn-ref">{ACTIONS_TITLE}</summary>
         {#each ACTION_REF as r (r.name)}
           <div class="settingrow">
             <div class="sinfo">
@@ -256,8 +266,15 @@
       </details>
     </div>
   {:else if !game.paused}
-    <!-- Si está en pausa, ya lo dice la tarjeta de arriba: aquí no se repite. -->
-    <div class="narration">🎧 Decide el {foe}. Vosotros, a triangular: apuntad su último rumbo en el cuaderno.</div>
+    <!-- Si está en pausa, ya lo dice la tarjeta de arriba: aquí no se repite.
+         Nunca una pantalla sin salida (B25 · 8): mientras decide el rival, se
+         dice qué se puede ir haciendo… y si le llega para un torpedo. -->
+    <div class="narration">
+      🎧 Decide el {foe}. Vosotros, a triangular: apuntad su último rumbo en el cuaderno de sonar.
+      {#if game.subs[rival(team)].energy >= COST_TORPEDO}
+        <br />⚠️ Le llega para un torpedo 🚀: no os quedéis donde os oyó por última vez.
+      {/if}
+    </div>
   {/if}
 
   <Notebook {game} {team} />
@@ -272,6 +289,7 @@
   .snsecret button { flex: 0 0 auto; }
   .sncover { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 100%; min-height: 220px; justify-content: center; margin: 12px 0; padding: 24px 18px; border-radius: var(--r-2); border: 1px dashed var(--line-2); background: var(--bg2); color: var(--text); text-align: center; font-family: inherit; }
   .sncover b { font-size: 1.1rem; color: var(--moon); }
+  .snopen { margin-top: 6px; font-size: 0.85rem; font-weight: 700; color: var(--accent); }
   .snlock { font-size: 2.6rem; }
   /* La barra de estado es pegajosa: al subir al mapa hay que dejarle su sitio. */
   .snconsole { scroll-margin-top: 150px; }

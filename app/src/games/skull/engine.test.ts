@@ -109,7 +109,7 @@ describe('revelado', () => {
   it('tras perder un disco, lo que queda en mano nunca es negativo', () => {
     // Regresión: el inventario baja al fallar pero la pila sigue en la mesa
     // hasta `nextRound`; con 3 flores puestas y una perdida, inHand daba -1 y
-    // el '🌸'.repeat(-1) del modal 🎴 reventaba (RangeError).
+    // el '🌸'.repeat(-1) de tu mano en pantalla reventaba (RangeError).
     const g = inPlay(
       { 'p-a': ['flower', 'flower', 'flower'], 'p-b': ['skull'] },
       { alive: { 'p-a': true, 'p-b': true, 'p-c': false }, inv: { 'p-a': { flowers: 3, skulls: 0 }, 'p-b': { flowers: 3, skulls: 1 }, 'p-c': { flowers: 0, skulls: 0 } } },

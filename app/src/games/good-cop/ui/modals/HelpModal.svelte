@@ -7,7 +7,8 @@
   const keyOf = (i: number) => 'gc-howto:' + i;
 </script>
 
-<h3 style="margin:0 0 4px">🚔 Cómo se juega</h3>
+<!-- Mismo rótulo que los dos botones que lo abren (lobby y menú ⋯). -->
+<h3 style="margin:0 0 4px">🎲 Cómo se juega</h3>
 
 {#each HOW_TO as sec, i (i)}
   {@const st = localAudioState(keyOf(i))}

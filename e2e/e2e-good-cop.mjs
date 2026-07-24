@@ -112,8 +112,16 @@ try {
   const someone = s.playerIds.find((p) => p !== s.turn);
   const backs = await pg(someone).locator('.gccard.back').count();
   check(backs === s.playerIds.length * 3, `todas las cartas van tapadas en el tablero, también las tuyas (${backs} dorsos)`);
+  // Una sola puerta a lo tuyo (B34): la pastilla flotante, y el modal que abre
+  // se llama IGUAL que ella («Mi carta»). En el cuerpo no hay otro «ver mi carta».
+  check(await pg(someone).locator('[data-a=open-mycard]').count() === 1, 'una sola puerta a tu carta: la pastilla flotante');
   await pg(someone).click('[data-a=open-mycard]');
-  await pg(someone).waitForSelector('text=/Lo tuyo, a solas/');
+  await pg(someone).waitForSelector('.modal [data-a=gc-hide]', { timeout: 9000 });
+  const myCardText = await pg(someone).locator('.modal').innerText();
+  check(/🎴 Mi carta/.test(myCardText), 'y se llama «Mi carta», como la pastilla');
+  // Tus cartas van numeradas 1) 2) 3): es como te las investiga la mesa y como
+  // las nombra el diario, así que sabes qué han visto de ti.
+  check(/1\)/.test(myCardText) && /3\)/.test(myCardText), 'tus 3 cartas van numeradas igual que en el tablero y el diario');
   check(await pg(someone).locator('.modal [data-a=gc-hide]').count() === 1, 'el 🎴 enseña tus cartas en cualquier momento… y se puede tapar de un toque');
   await pg(someone).click('.modal [data-a=close-modal]');
 
@@ -144,7 +152,8 @@ try {
     // El panel dice lo que hace cada acción y por qué las bloqueadas lo están.
     check(await p.locator('[data-a=gc-mode-aim][disabled]').count() === 1, 'sin arma, «apuntar» sale bloqueado');
     check(/Necesitas ir armado/.test(await p.locator('[data-a=gc-mode-aim]').innerText()), 'y el botón bloqueado explica POR QUÉ, en pantalla');
-    check(await p.locator('[data-a=gc-ref]').count() === 1, 'la chuleta se consulta desde el propio panel de acción');
+    check(await p.locator('[data-a=gc-ref]').count() === 1, 'las reglas se consultan desde el propio panel de acción');
+    check(/Las reglas/.test(await p.locator('[data-a=gc-ref]').innerText()), '…y se llaman «las reglas», igual que dentro de «Mi carta» (nunca «chuleta»)');
     await p.click('[data-a=gc-mode-investigate]');
     await p.click(`[data-a=gc-inv-target][data-p="${invTarget}"]`);
     await p.click('[data-a=gc-inv-card][data-p="0"]');

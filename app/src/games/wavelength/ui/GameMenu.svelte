@@ -24,7 +24,7 @@
       <button role="menuitem" data-a="wl-repeat" onclick={() => { guard(A.requestRepeat); close(); }}>🔁 Repetir la voz</button>
       <!-- Salida no destructiva (la tiene cualquiera): la ronda puede atascarse
            en el móvil del Psíquico y hasta ahora la única puerta era «Terminar»,
-           que borraba la partida y el marcador. -->
+           que borraba la partida y los puntos. -->
       {#if (game.phase === 'clue' || game.phase === 'guess') && !game.paused}
         <button role="menuitem" data-a="wl-skip-open" onclick={() => { app.ui.modal = { type: 'wl-skip' }; close(); }}>⏭️ Saltar ronda</button>
       {/if}
@@ -36,10 +36,11 @@
       {#if spectator}
         <button role="menuitem" data-a="back-to-mesa" onclick={() => { close(); navigate(`/g/${slug}`); }}>← Volver a la mesa</button>
       {/if}
-      {#if !spectator}
-        <button role="menuitem" class="danger-text" data-a="wl-leave-open" onclick={() => { app.ui.modal = { type: 'wl-leave' }; close(); }}>🚪 Dejar la partida</button>
-      {/if}
-      <button role="menuitem" class="danger-text" data-a="wl-end-open" onclick={() => { app.ui.modal = { type: 'wl-end' }; close(); }}>🏳️ Terminar</button>
+      <!-- UNA sola salida destructiva. Irse de una partida de Wavelength la
+           cierra para todos (el Psíquico tiene que poder rotar), así que
+           «Dejar la partida» y «Terminar» hacían exactamente lo mismo con dos
+           nombres y dos confirmaciones distintas. -->
+      <button role="menuitem" class="danger-text" data-a="wl-end-open" onclick={() => { app.ui.modal = { type: 'wl-end' }; close(); }}>🏳️ Terminar la partida</button>
     </div>
   {/if}
 </div>

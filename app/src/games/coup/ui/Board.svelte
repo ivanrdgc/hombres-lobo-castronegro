@@ -26,10 +26,12 @@
   });
 
   // Etiqueta del bolsillo: lo que ese montón de monedas le permite (público).
+  // Con la jugada escrita, no solo su emoji: «puede 💥» no se entendía sin tener
+  // las reglas delante.
   function purse(n: number): string {
-    if (n >= COUP_LIMIT) return 'obligado al 💥';
-    if (n >= ACTIONS.golpe.cost) return 'puede 💥';
-    if (n >= ACTIONS.asesinar.cost) return 'puede 🗡️';
+    if (n >= COUP_LIMIT) return 'obligado al 💥 golpe';
+    if (n >= ACTIONS.golpe.cost) return 'le llega al 💥 golpe';
+    if (n >= ACTIONS.asesinar.cost) return 'le llega a 🗡️ asesinar';
     return '';
   }
 </script>
@@ -56,7 +58,7 @@
           {#if card.lost}
             <span class="inf lost">{charLabel(card.char)}</span>
           {:else if showAll}
-            <span class="inf shown" title="influencia que conservaba">{charLabel(card.char)}</span>
+            <span class="inf shown">{charLabel(card.char)}</span>
           {:else}
             <span class="inf back">🂠</span>
           {/if}
@@ -68,6 +70,10 @@
 </div>
 {#if game.phase !== 'end'}
   <p class="boardnote">🂠 = influencia que le queda oculta · 💀 boca arriba: {faceUp || 'ninguna todavía'} · quedan {deckLeft} cartas en la corte</p>
+{:else}
+  <!-- La clave de lectura, escrita: el «title=» que la explicaba no existe en
+       un móvil (B26·9). -->
+  <p class="boardnote">Tachadas, las influencias que fue descubriendo; las demás son las que aún conservaba, farol incluido.</p>
 {/if}
 
 <style>

@@ -1,7 +1,9 @@
 <script lang="ts">
-  // Chuleta del tablero PLEGADA dentro del panel de acción: quien decide no
-  // tiene que salirse de la pantalla (ni abrir el 🎴) para recordar qué pasa al
-  // tocar un transeúnte o cuántas casillas le quedan a cada equipo.
+  // «Las reglas», plegadas DENTRO del panel de acción: quien decide no tiene
+  // que salirse de la pantalla (ni abrir el 📖 flotante) para recordar qué pasa
+  // al tocar un transeúnte o cuántas casillas le quedan a cada equipo.
+  // Mismo nombre y mismas filas que el modal del botón flotante: es una sola
+  // cosa consultable desde dos sitios, no dos referencias distintas (B34·3).
   import { boardRef } from '../texts';
   import type { CodenamesState } from '../types';
 
@@ -10,7 +12,7 @@
 </script>
 
 <details class="cnref">
-  <summary data-a="cn-ref">📖 Los colores y cómo va la pista</summary>
+  <summary data-a="cn-ref">📖 Las reglas</summary>
   {#each rows as r (r.name)}
     <div class="settingrow">
       <div class="sinfo">
@@ -23,5 +25,5 @@
 
 <style>
   .cnref { margin-top: 10px; }
-  .cnref summary { cursor: pointer; font-size: 0.82rem; opacity: 0.85; padding: 6px 0; }
+  .cnref summary { cursor: pointer; font-size: 0.82rem; opacity: 0.85; padding: 10px 0; }
 </style>

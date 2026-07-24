@@ -95,9 +95,9 @@
   </div>
   {#if !deckOk}
     <p class="small-note">⚠️ Para <b>{n}</b> jugadores el mazo debe sumar <b>{need}</b> ({n} + {CENTER_COUNT} al centro): {total < need ? `te faltan ${need - total}` : `te sobran ${total - need}`}.</p>
-    <button class="block" data-a="una-fix-deck" onclick={() => (app.ui.modal = { type: 'una-deck', targetN: n })}>🎴 Ajustar el mazo</button>
+    <button class="block" data-a="una-fix-deck" onclick={() => (app.ui.modal = { type: 'una-deck', targetN: n })}>🎴 Cambiar el mazo</button>
   {:else}
-    <p class="small-note">✅ Cuadra: {n} para repartir + {CENTER_COUNT} al centro. <button class="small ghost" data-a="una-fix-deck" onclick={() => (app.ui.modal = { type: 'una-deck', targetN: n })}>Cambiarlo</button></p>
+    <p class="small-note">✅ Cuadra: {n} para repartir + {CENTER_COUNT} al centro. <button class="small ghost" data-a="una-fix-deck" onclick={() => (app.ui.modal = { type: 'una-deck', targetN: n })}>🎴 Cambiar el mazo</button></p>
   {/if}
 </div>
 

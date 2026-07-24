@@ -25,13 +25,13 @@ export const HOW_TO: HelpSection[] = [
     items: [
       'Se baraja el mazo de 16 cartas, se aparta una boca abajo (y con 2 jugadores, 3 más boca arriba) y cada uno recibe una carta. Mírala sin que nadie la vea.',
       'En tu turno, la app te da la segunda carta: eliges cuál de las dos jugar (y su objetivo, si lo pide). La otra se queda en tu mano.',
-      'El botón flotante 🎴 (abajo a la derecha) te enseña cuando quieras tu carta, las 8 del mazo con sus copias y cuántas cartas quedan por robar.',
+      'Tu carta se queda siempre a la vista en tu pantalla: no hay nada que destapar ni que abrir. El botón flotante de las reglas, abajo a la derecha, recuerda qué hace cada carta y cuántas copias trae el mazo de cada una.',
     ],
   },
   {
     heading: '🃏 Las cartas',
     items: [
-      'Las 16 cartas del mazo, con cuántas copias hay de cada una: 5 Guardias, 2 Sacerdotes, 2 Barones, 2 Doncellas, 2 Príncipes, y una sola de Rey, Condesa y Princesa. Contar las que ya han salido es media partida.',
+      'Las 16 cartas del mazo, con cuántas copias hay de cada una: 5 Guardias, 2 Sacerdotes, 2 Barones, 2 Doncellas, 2 Príncipes, y una sola de Rey, Condesa y Princesa. Contar las que ya han salido es media partida: la app las va tachando por ti, salvo que la mesa elija el modo difícil, en el que solo dice cuántas cartas quedan por robar.',
       '💂 Guardia (1, cinco copias): señala a alguien y adivina su carta (no vale «Guardia»); si aciertas, queda fuera.',
       '⛪ Sacerdote (2, dos copias): miras en secreto la mano de otro. 🎩 Barón (3, dos copias): comparáis en duelo; el de carta menor cae y solo se destapa la suya.',
       '🛡️ Doncella (4, dos copias): quedas protegido hasta tu próximo turno (nadie puede elegirte). 🤴 Príncipe (5, dos copias): alguien (o tú) descarta su mano y roba otra.',

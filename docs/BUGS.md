@@ -468,3 +468,54 @@ Estados: 🔴 abierto · 🟢 arreglado (con commit) · 🟡 re-reportado tras u
   la partida en contexto: suena solo en el móvil que narra ESA partida, con el ajuste activo, sin
   pausa y sin partida terminada. Las 17 escenas se pueden auditar una a una en el laboratorio de
   audio.
+
+## B31 · No se podía cambiar el nombre de un jugador
+- **2026-07-24 · petición.** «¿Puedes permitir cambiar el nombre de un jugador (incluido yo mismo)
+  desde el menú principal en el menú de expulsar/salir?»
+- **2026-07-24 · 🟢 arreglado** (este commit): «✏️ Cambiar el nombre» en el menú del dispositivo
+  (mesa y también «🪑 La mesa» desde dentro de una partida), para ti y para cualquiera. El id del
+  doc NO cambia —es `p-<slug del nombre con el que entró>` y de él cuelgan la sesión, los asientos,
+  los miembros y el estado de juego—, así que renombrar es seguro a media partida; lo que sí se
+  actualiza es el nombre que la partida congeló al empezar (`game.names`), para que la voz y las
+  pantallas no sigan llamándole por el anterior. Rechaza nombres vacíos y los que ya usa otro.
+
+## B32 · Love Letter: la carta y el mazo salen en pantalla Y en el botón flotante
+- **2026-07-24 · reporte.** «En Love Letter veo el botón "mi carta / las reglas", pero también
+  aparece la baraja y mi carta abajo de la página sin necesidad de clicar a ese botón. Algo es
+  redundante.»
+- **Diagnóstico.** Efecto cruzado de B28: al pasar Love Letter a postura de MANO, la mano y el mazo
+  suben a la pantalla principal (bien), pero el botón flotante siguió rotulado «🎴 Mi carta / y las
+  reglas» y su modal siguió repitiéndolo. En los juegos de mano ese botón ya no es «mi carta»: es
+  la chuleta.
+
+## B33 · Love Letter: modo difícil (que la app no cuente las cartas por ti)
+- **2026-07-24 · petición.** «¿Puedes añadir una opción opcional en el juego de "marcar cartas
+  restantes"? Si la desactivas, que no te vaya diciendo la app las que ya han salido y las que
+  quedan (por ejemplo cuando el guardia adivina). Es como el modo difícil. Que siga saliendo cuántas
+  hay en el mazo, pero que no te diga cuál no puede ser y cuáles han salido, así la gente tiene que
+  estar más atenta. Permite ambos modos.»
+
+## B34 · Dos puertas a lo mismo: «👁 Ver mi carta» dentro Y la pastilla flotante
+- **2026-07-24 · reporte.** «Sigue siendo raro… algunos juegos siguen teniendo un botón "Ver mi
+  carta" y otro "Mi carta y las reglas". ¿Puedes darle otra pasada a hacer la UI/UX de todos los
+  juegos mejor?»
+- **Diagnóstico.** Deuda de las tres pasadas seguidas (B19 puso el flotante en los 17; B25/B26
+  reordenó; B28 metió cortinas de privacidad). Cada una añadió su entrada y ninguna quitó la
+  anterior: en varios juegos conviven la pastilla flotante y un «👁 Ver mi carta» en el cuerpo de la
+  pantalla, que abren lo mismo por dos caminos con dos nombres distintos.
+- **2026-07-24 · 🟢 arreglado** (este commit): contrato «Una sola puerta a tu carta» en `docs/UX.md`
+  y aplicado a los 17. La cosecha fue mayor de lo esperado: Shadow Hunters tenía **cuatro**
+  disparadores y cuatro nombres (uno de ellos DENTRO de la propia pastilla, así que abrir la única
+  puerta pedía dos gestos), El Camaleón cuatro, Una Noche tres en la noche y cuatro nombres,
+  Hombres Lobo tres por pantalla, Secret Hitler el botón al pie de cuatro fases más otro dentro del
+  modal, y Good Cop tres nombres encadenados. Muere «la chuleta» como tercer nombre en los 17.
+  De paso salieron fallos reales: en **Una Noche, Decrypto, Wavelength y Captain Sonar** el menú
+  tenía «🚪 Dejar la partida» y «🏳️ Terminar» llamando a la MISMA acción con dos nombres (quien
+  pulsaba «dejar» terminaba la partida de todos); en **El Espía**, el auto-tapado de la carta
+  comparaba identidades de objetos y, como cada snapshot de Firestore reemplaza el doc, la carta se
+  habría tapado al instante de abrirla; en **Coup**, perder influencia e intercambiar eran atascos
+  sin salida si ese móvil se iba; en **Codenames**, las 25 casillas eran botones deshabilitados en
+  casi todas las pantallas y el selector del número de la pista ocupaba seis filas; en **Ávalon**,
+  el mismo contador de rechazos daba dos cifras distintas en la misma pantalla y «el Bien no puede
+  sabotear» estaba escrito solo donde lo lee el equipo de la misión; y en **Hombres Lobo**, el juego
+  se llamaba 🌕 dentro de la partida y 🐺 en el catálogo.

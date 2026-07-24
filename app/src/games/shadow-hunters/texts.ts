@@ -19,9 +19,9 @@ export const HOW_TO: HelpSection[] = [
     heading: '🎯 De qué va',
     items: [
       'Cada jugador recibe un personaje SECRETO de una de tres facciones: 🏹 Cazadores, 🌑 Sombras o 🧭 neutrales (con objetivo propio). Solo tú ves el tuyo.',
-      'Se juega con el móvil PLANO sobre la mesa, hablando y acusando. Por eso todas las pantallas son iguales mientras nadie las toca: tu personaje solo sale cuando lo pides con el botón del ojo, y se vuelve a tapar solo a los pocos segundos.',
+      'Se juega con el móvil PLANO sobre la mesa, hablando y acusando. Por eso todas las pantallas son iguales mientras nadie las toca: tu personaje vive en un único sitio, la pastilla 🎴 Mi carta de abajo a la derecha, y se vuelve a tapar solo a los pocos segundos.',
       'El reparto es PÚBLICO y solo depende de cuántos seáis: con 4 o 5 jugadores hay 2 Cazadores y 2 Sombras; con 6 también 2 y 2; con 7 u 8, 3 y 3. Los neutrales son ninguno con 4, uno con 5 y con 7, y dos con 6 y con 8. Lo secreto es quién es quién, no cuántos hay de cada bando.',
-      'Los ocho personajes son: 🏹 Cazadores (Georg, Franklin y Fuka), 🌑 Sombras (Vampiro, Licántropo y Valquiria) y 🧭 neutrales (Allie y Bob). Cada uno con su poder; en el botón 🎴 tienes la ficha de todos.',
+      'Los ocho personajes son: 🏹 Cazadores (Georg, Franklin y Fuka), 🌑 Sombras (Vampiro, Licántropo y Valquiria) y 🧭 neutrales (Allie y Bob). Cada uno con su poder; en 🎴 Mi carta tienes la ficha de todos.',
       'Ganan los Cazadores si mueren TODAS las Sombras; ganan las Sombras si mueren TODOS los Cazadores. Los neutrales ganan aparte si cumplen su objetivo (la app lo comprueba sola).',
       'Todos empiezan con 8 puntos de vida. Quien llega a 0 queda eliminado y su personaje se destapa para todos.',
     ],
@@ -29,10 +29,10 @@ export const HOW_TO: HelpSection[] = [
   {
     heading: '🎲 Tu turno: una acción',
     items: [
-      'Cuando la pantalla diga que te toca, eliges UNA acción en tu móvil: 🔮 PISTA, ⚔️ ATACAR, 💊 DESCANSAR o 🎭 REVELARTE.',
-      '🔮 PISTA: eliges a alguien y la app le enseña EN SECRETO una carta del tipo «si eres Sombra, pierdes 1 punto de vida». La mesa solo ve el resultado (pierde vida, se cura o nada)… y de ahí se deduce mucho.',
-      'El aviso de que hay una carta de pista sin leer sale en TODAS las pantallas, para que su sola presencia no delate a quién le ha tocado: abrirla solo pueden quien la da y quien la recibe, y el texto se tapa solo.',
-      'El mazo de pistas son 8 cartas conocidas por todos (las tienes en el botón 🎴): cuatro quitan 1 punto de vida y cuatro lo curan, según el bando del que la recibe. Ojo: una pista también MATA si te deja a 0.',
+      'Cuando la pantalla diga que te toca, eliges UNA acción en tu móvil: 🔮 DAR UNA PISTA, ⚔️ ATACAR, 💊 DESCANSAR o 🎭 REVELARTE.',
+      '🔮 DAR UNA PISTA: eliges a alguien y la app le enseña EN SECRETO una del tipo «si eres Sombra, pierdes 1 punto de vida». La mesa solo ve el resultado (pierde vida, se cura o nada)… y de ahí se deduce mucho.',
+      'El aviso de que hay una pista sin leer sale en TODAS las pantallas, para que su sola presencia no delate a quién le ha tocado: leerla solo pueden quien la da y quien la recibe, y el texto se tapa solo.',
+      'Las pistas son 8 y las conoce todo el mundo (las tienes en 🎴 Mi carta): cuatro quitan 1 punto de vida y cuatro lo curan, según el bando del que la recibe. Ojo: una pista también MATA si te deja a 0.',
       '⚔️ ATACAR: eliges víctima y la app tira un dado de 6 y otro de 4; el daño es su DIFERENCIA, de 0 a 5, y 1 de cada 6 tiradas falla. No hace falta saber quién es: se puede atacar a ciegas… o por sospecha.',
       '💊 DESCANSAR: recuperas 1 punto de vida. Es la jugada discreta: no delata nada de ti.',
       'Al terminar tu acción, el turno pasa al siguiente jugador VIVO en el orden de la mesa.',
@@ -41,15 +41,15 @@ export const HOW_TO: HelpSection[] = [
   {
     heading: '🎭 Revelarte y tu poder',
     items: [
-      'Una vez por partida puedes REVELARTE en tu turno: tu identidad pasa a ser pública y usas el poder de tu personaje en el acto (curarte, dañar, robar vida…). Al elegir esa acción tienes ahí mismo el botón para repasar tu personaje y su poder antes de confirmar.',
-      'Desde que te revelas, tu carta ya no se esconde: se queda escrita en tu pantalla y en el tablero de todos, porque a partir de ahí es información pública.',
+      'Una vez por partida puedes REVELARTE en tu turno: tu identidad pasa a ser pública y usas el poder de tu personaje en el acto (curarte, dañar, robar vida…). Si no recuerdas cuál es tu poder, ábrelo en 🎴 Mi carta antes de confirmar: al cerrarla sigues en la misma acción.',
+      'Desde que te revelas, tu carta ya no se esconde: tu personaje y tu bando quedan escritos en el tablero de todos, porque a partir de ahí es información pública.',
       'Revelarte da miedo y poder a la vez: tu bando sabrá quién eres… y el rival también. Elige el momento.',
     ],
   },
   {
     heading: '🧠 Deducir sin destaparse',
     items: [
-      'Las pistas son la clave: si tras una pista alguien pierde vida «si no eres Cazador», ya sabes que NO es Cazador. Anuncia, miente o calla lo que viste: la carta de pista solo la leéis quien la dio y quien la recibió.',
+      'Las pistas son la clave: si tras una pista alguien pierde vida «si no eres Cazador», ya sabes que NO es Cazador. Anuncia, miente o calla lo que viste: la pista solo la leéis quien la dio y quien la recibió.',
       'Habla, acusa y alía: el juego es conversación. Pero recuerda que los neutrales mienten con más soltura: no les importa quién gane.',
     ],
   },

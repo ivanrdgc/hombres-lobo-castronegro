@@ -18,7 +18,6 @@
   import { narr } from '../texts/corpus';
   import { autoHide } from './autohide.svelte';
   import type { GroupDoc, PlayerDoc } from '../../../core/sync/schema';
-  import RoleCard from './RoleCard.svelte';
   import PlayersGrid from './PlayersGrid.svelte';
   import NightActionPanel from './NightActionPanel.svelte';
 
@@ -113,17 +112,14 @@
   <PlayersGrid {players} title="🏘️ El pueblo" viewer={my} />
 {:else if game.roleRefresh}
   <div class="narration">👁️ Pausa: todo Castronegro abre los ojos y revisa su rol y su palabra clave en secreto. La noche continuará donde estaba.</div>
-  <!-- El rol solo se despliega bajo demanda (móviles desbloqueados sobre la mesa). -->
+  <!-- Una sola puerta (B34): la carta se abre en la pastilla 🎴, como en
+       cualquier otra pantalla. Aquí el botón es el ACTO —confirmar— y por eso
+       lleva otro verbo: nada de un segundo «ver mi carta» en el cuerpo. -->
   {#if my.alive && my.inGame && !refreshConf}
-    {#if app.ui.refreshOpen}
-      <RoleCard player={my} {group} />
+    <div class="actionpanel"><h3>🔑 Repasa tu carta</h3>
+      <p class="hint">Ábrela abajo en <b>🎴 Mi carta</b>, memoriza rol y palabra clave, ciérrala y confirma aquí. La noche no sigue hasta que estéis todos.</p>
       <button class="primary block" data-a="confirm-role-refresh"
-        onclick={() => guard(async () => { await A.confirmRoleRefresh(); app.ui.refreshOpen = false; app.ui.roleOpen = false; })}>✅ Revisado, estoy listo</button>
-    {:else}
-      <div class="actionpanel"><h3>🔑 Repasa tu carta</h3>
-        <p class="hint">Ábrela, memoriza rol y palabra clave y confirma. La noche no sigue hasta que estéis todos.</p>
-        <button class="primary block" data-a="open-role-refresh" onclick={() => (app.ui.refreshOpen = true)}>👁 Abrir mi carta</button></div>
-    {/if}
+        onclick={() => guard(() => A.confirmRoleRefresh())}>✅ Repasada, estoy listo</button></div>
   {:else}
     <div class="actionpanel"><h3>⏳ {refreshPend.length ? `Se espera a ${refreshPend.length === 1 ? refreshPend[0] : `${refreshPend.length} jugadores`}` : '¡Listos!'}</h3>
       <p class="hint">{refreshPend.length ? `Falta${refreshPend.length > 1 ? 'n' : ''} por confirmar: ${refreshPend.join(', ')}. Tú ya estás: no toques nada más.` : 'Todo el mundo ha confirmado: la noche continúa donde estaba.'}</p></div>
@@ -153,9 +149,8 @@
     <div class="actionpanel"><h3>{rest.h}</h3>
       <p class="hint">{rest.p}</p>
       <button class="primary block" data-a="open-night-turn" onclick={openTurn}>👁 Abrir mi turno</button>
-      <p class="small-note">Toda la mesa ve esto mismo: nadie sabe a quién ha llamado la voz. Lo tuyo aparece al pedirlo y se oculta solo.</p></div>
+      <p class="small-note">Toda la mesa ve esto mismo: nadie sabe a quién ha llamado la voz. Lo tuyo aparece al pedirlo y se oculta solo. ¿Se te ha olvidado quién eres? Tu carta está siempre abajo, en <b>🎴 Mi carta</b>.</p></div>
   {/if}
-  <RoleCard player={my} {group} mini={true} />
   {#if !(turnOpen && acting)}
     <PlayersGrid {players} title="🏘️ El pueblo" viewer={my} />
   {/if}

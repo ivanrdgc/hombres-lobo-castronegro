@@ -92,7 +92,7 @@ const TEAM_SIZES: Record<number, number[]> = {
 };
 
 /** La fila completa de la tabla oficial para `n` jugadores (misiones 1..5).
- *  La comparten el motor, la ayuda y la chuleta en partida: una sola fuente. */
+ *  La comparten el motor, la ayuda y las reglas en partida: una sola fuente. */
 export function teamSizes(n: number): number[] {
   return TEAM_SIZES[Math.max(MIN_PLAYERS, Math.min(MAX_PLAYERS, n))].slice();
 }

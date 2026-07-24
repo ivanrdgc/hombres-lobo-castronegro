@@ -38,7 +38,7 @@ const pg = (pid) => pages[(hlcNames[pid] || pid).toLowerCase()];
 const vis = async (p, sel) => (await p.locator(sel).count()) > 0;
 const clk = async (p, sel) => { try { await p.locator(sel).first().click({ timeout: 4000 }); } catch { /* desapareció */ } };
 
-// B28 · postura 🍽️ MESA: el panel del paso vive tras «👁 Abrir mi panel».
+// B28 · postura 🍽️ MESA: el panel del paso vive tras «👁 Abrir mi turno».
 async function openPanel(p) {
   if (await vis(p, '[data-a=una-open]:not([disabled])')) { await clk(p, '[data-a=una-open]'); await p.waitForTimeout(120); }
 }

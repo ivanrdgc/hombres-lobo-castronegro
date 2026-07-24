@@ -30,9 +30,11 @@
 {:else if pend.length}
   <div class="waitlist">⏳ Falta por confirmar: {pend.join(', ')}</div>
 {:else}
+  <!-- El botón nombra la consecuencia y ya no se llama como el «Empezar partida»
+       del lobby, que hace otra cosa (B29·4). -->
   <div class="card"><h3 style="margin-top:0">▶️ Todos han visto su mano</h3>
-    <p class="small-note" style="margin-top:0">Abre <b>{starterName}</b> y después se juega por turnos, en el orden de la mesa.</p>
-    <button class="primary block" data-a="coup-begin" onclick={() => guard(A.beginPlay)}>▶️ Empezar la partida</button></div>
+    <p class="small-note" style="margin-top:0">Después se juega por turnos, en el orden de la mesa. Puede arrancar cualquiera.</p>
+    <button class="primary block" data-a="coup-begin" onclick={() => guard(A.beginPlay)}>▶️ Que empiece {starterName}</button></div>
 {/if}
 
 <style>

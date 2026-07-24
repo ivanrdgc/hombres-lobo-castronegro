@@ -295,6 +295,37 @@ export async function kickPlayer(pid: string): Promise<void> {
   await deleteDoc(pref(mySlug(), pid));
 }
 
+/**
+ * Cambia el nombre visible de un jugador (B31). El id del doc NO se toca —es
+ * `p-<slug del nombre con el que entró>` y cuelga de él la sesión, los asientos,
+ * los miembros de cada partida y el estado de juego—, así que renombrar es
+ * seguro a media partida. Lo que sí se actualiza es el nombre que la partida
+ * congeló al empezar (`game.names`), para que la voz y las pantallas no sigan
+ * llamándole por el anterior.
+ */
+export async function renamePlayer(pid: string, rawName: string): Promise<void> {
+  const name = rawName.trim().slice(0, 24);
+  if (!name) throw new Error('Escribe un nombre.');
+  if (!slugify(name)) throw new Error('Ese nombre no vale: pon alguna letra o número.');
+  const slug = mySlug();
+  const clash = state.players.find((p) => p.id !== pid && slugify(p.name || '') === slugify(name));
+  if (clash) throw new Error(`Ya hay alguien que se llama ${clash.name} en la mesa.`);
+  const player = state.players.find((p) => p.id === pid);
+  if (!player) throw new Error('Ese dispositivo ya no está en la mesa.');
+
+  // La sesión PRIMERO: es local e instantánea, y la pantalla ya enseña el
+  // nombre nuevo por el eco de Firestore antes de que vuelvan estas escrituras.
+  // Si se dejaba para el final, recargar en ese hueco la dejaba vieja.
+  if (state.session?.pid === pid) saveSession(slug, { ...state.session, name });
+  await updateDoc(pref(slug, pid), { name });
+  // Las partidas en curso llevan su propia copia de los nombres.
+  for (const m of state.matches) {
+    const names = (m.game as { names?: Record<string, string> } | undefined)?.names;
+    if (!m.members?.includes(pid) || !names || names[pid] === undefined) continue;
+    await updateDoc(mref(slug, m.id), { [`game.names.${pid}`]: name }).catch(() => { /* mejor esfuerzo */ });
+  }
+}
+
 export async function deleteGroup(): Promise<void> {
   const slug = mySlug();
   const ps = await getDocs(collection(db, 'groups', slug, 'players'));

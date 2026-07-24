@@ -2,20 +2,20 @@
   // Interrogatorio contrarreloj: son los cinco minutos centrales del juego y se
   // juegan HABLANDO, con los móviles planos sobre la mesa. La pantalla sostiene
   // lo que en la mesa real está a la vista —cuánto queda, quién responde, quién
-  // abrió— y, debajo, lo único que se toca: el botón del Maestro o tu carta.
+  // abrió— y, debajo, lo único que se toca: el botón del Maestro.
   // Cualquier dispositivo dispara el fin de tiempo (primero gana).
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
   import type { PlayerDoc } from '../../../core/sync/schema';
   import type { InsiderState } from '../types';
   import Timer from './Timer.svelte';
-  import MyCard from './MyCard.svelte';
   import RoundFacts from './RoundFacts.svelte';
   import RolesRef from './RolesRef.svelte';
 
-  const { game, my, spectator = false }: { game: InsiderState; my: PlayerDoc; spectator?: boolean } = $props();
-  const inGame = $derived(!spectator && game.playerIds.includes(my.id));
-  const amMaster = $derived(inGame && my.id === game.masterId);
+  // Solo lo pinta GameScreen a quien juega la ronda (los de fuera tienen su
+  // propia pantalla de espectador): aquí no hace falta un modo mirón.
+  const { game, my }: { game: InsiderState; my: PlayerDoc } = $props();
+  const amMaster = $derived(my.id === game.masterId);
 
   // «¡Adivinada!» corta el reloj y no tiene vuelta atrás: se pide confirmación
   // para que un roce en el bolsillo no liquide el interrogatorio.
@@ -46,29 +46,25 @@
       <p class="small-note">Al confirmar no hay marcha atrás: se acaban las preguntas y todos votáis en secreto a quien creáis el Insider.</p>
     {:else}
       <button class="primary block" data-a="ins-guessed-open" onclick={() => (confirming = true)}>✅ ¡Palabra adivinada!</button>
-      <p class="small-note">Púlsalo en cuanto alguien diga la palabra exacta: para el reloj y empieza la caza del Insider. Si el reloj llega a 0 antes, pierden todos.</p>
+      <p class="small-note">Púlsalo en cuanto alguien diga la palabra exacta: para el reloj y empieza la caza del Insider.</p>
     {/if}
   </div>
-{:else if inGame}
+{:else}
   <div class="card">
     <h3>🙋 Pregunta en voz alta</h3>
     <p class="small-note" style="margin-top:0">Sin turnos y de sí o no: «¿es un objeto?», «¿cabe en una mano?». Cuando creas saberla, <b>dila en voz alta</b>: solo cuenta si el Maestro la da por buena desde su móvil.</p>
   </div>
-{:else}
-  <div class="card"><p class="hint">👀 Miras de espectador: la mesa está cercando la palabra a preguntas.</p></div>
 {/if}
 
-<!-- TODOS los de la ronda ven la MISMA carta mini y el MISMO rótulo. Antes el
-     común veía una tarjeta de texto y el Insider un botón suelto: conocido el
-     Maestro, bastaba mirar de reojo el móvil del vecino para ficharlo. Ahora ni
-     abierta se distinguen: mismo emoji, mismos bloques y el mismo alto. -->
-{#if inGame}
-  <div class="card">
-    <h3>🎴 Tu papel</h3>
-    <p class="small-note" style="margin-top:0">Dice qué eres y, si la conoces, la palabra. Se oculta sola a los pocos segundos.</p>
-    <MyCard {game} pid={my.id} mini={true} />
-    <p class="small-note">🍽️ Móvil plano en la mesa: todas las pantallas se ven iguales —también la del Insider—, así que mirar la del vecino no sirve de nada.</p>
-  </div>
-{/if}
+<!-- UNA SOLA PUERTA a tu carta (B34): durante el interrogatorio no hay ningún
+     «👁 Ver mi carta» en el cuerpo —antes había una tarjeta entera—, solo la
+     pastilla 🎴, idéntica en todos los móviles y en todas las fases. Lo que
+     queda aquí no es una puerta, es la regla de mesa: la misma línea para todos,
+     así que no delata a nadie. -->
+<p class="small-note fabhint">🍽️ Móvil plano en la mesa. Tu carta vive en la pastilla 🎴 <b>Mi carta</b>: se abre solo a quien la pide, se oculta sola y todas las pantallas se ven iguales — pulsarla no delata a nadie.</p>
 
 <RolesRef />
+
+<style>
+  .fabhint { text-align: center; margin: 12px 4px 0; }
+</style>

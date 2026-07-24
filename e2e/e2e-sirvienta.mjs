@@ -138,11 +138,15 @@ try {
   st = await waitState(ana, (s) => s.pending[0]?.type === 'sirvienta', 'ventana de la Sirvienta abierta');
   // Todos ven la MISMA cuenta atrás neutral; la decisión vive DENTRO de su carta.
   check((await lp.locator('.actionpanel:has-text("El juicio se resuelve")').count()) >= 1, 'los demás solo ven la cuenta atrás neutral');
-  // B28: el gesto se le pide a TODA la mesa («abrid la carta»), no solo a quien
-  // decide — si lo hiciera solo ella, abrir la carta la delataría.
-  check(await lp.isVisible('[data-a=open-day-card]') && await sp.isVisible('[data-a=open-day-card]'),
+  // B28: el gesto se le pide a TODA la mesa («abrid todos vuestra carta»), no
+  // solo a quien decide — si lo hiciera solo ella, abrir la carta la delataría.
+  // B34: y se pide por la puerta de SIEMPRE (la pastilla 🎴), no por un botón
+  // que apareciera solo en este momento… que sería otro chivato.
+  check(await lp.isVisible('text=/Abrid todos vuestra carta/i') && await sp.isVisible('text=/Abrid todos vuestra carta/i'),
     'todos los móviles invitan a abrir la carta durante la ventana secreta');
-  await sp.click('button[data-a=toggle-rolecard]');
+  check((await lp.locator('[data-a=open-mycard]').count()) === 1 && (await sp.locator('[data-a=open-mycard]').count()) === 1,
+    'y la puerta es la misma pastilla 🎴 en los dos móviles: ninguna pantalla añade la suya');
+  await sp.click('[data-a=open-mycard]');
   await sp.waitForSelector('[data-a=sirvienta-yes]', { timeout: 15000 });
   await sp.click('[data-a=sirvienta-yes]');
   st = await waitState(ana, (s) => s.players.find((p) => p.id === sirvienta.id)?.role === 'aldeano', 'la Sirvienta asume el rol del condenado');

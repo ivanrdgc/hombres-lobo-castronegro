@@ -1,9 +1,12 @@
 <script lang="ts">
-  // Reparto: cada cual despliega su identidad bajo demanda, la memoriza y
-  // confirma; cuando todos han confirmado, cualquiera pone el reloj en marcha.
-  // La carta se auto-oculta a los pocos segundos (postura de MESA, B28): el
-  // móvil se queda boca arriba y una carta abierta olvidada es una ronda
-  // regalada. El botón de confirmar sobrevive al auto-ocultado.
+  // Reparto: cada cual destapa su carta bajo demanda, la memoriza y confirma;
+  // cuando todos han confirmado, cualquiera pone el reloj en marcha.
+  // Es la ÚNICA pantalla con su propio botón de ver la carta (excepción del
+  // reparto, B34): aquí la instrucción ES el contenido de la pantalla. En
+  // cuanto arranca la ronda, la única puerta es la pastilla 🎴.
+  // La carta se tapa sola a los pocos segundos (postura de MESA, B28): el móvil
+  // se queda boca arriba y una carta abierta olvidada es una ronda regalada.
+  // El botón de confirmar sobrevive al auto-tapado.
   import { app } from '../../../core/sync/store.svelte';
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
@@ -19,11 +22,11 @@
   const dealer = $derived(game.names[game.dealerId] || '¿?');
   const mins = $derived(Math.round(game.durationMs / 60000));
 
-  // `peeked` sobrevive al auto-ocultado: una vez la has visto, confirmar sigue
-  // a un toque (y la carta ya no está en pantalla para el vecino).
+  // `peeked` sobrevive al auto-tapado: una vez la has visto, confirmar sigue a
+  // un toque (y la carta ya no está en pantalla para el vecino).
   let peeked = $state(false);
   $effect(() => {
-    void game.round; // cada reparto se mira de nuevo: identidades nuevas
+    void game.round; // cada reparto se mira de nuevo: cartas nuevas
     peeked = false;
   });
   $effect(() => {
@@ -33,16 +36,16 @@
   });
 </script>
 
-<div class="narration">🕵️ Ronda {game.round} repartida: identidades nuevas para todos. El reloj arranca cuando hayáis confirmado.</div>
+<div class="narration">🕵️ Ronda {game.round} repartida: cartas nuevas para todos. El reloj arranca cuando hayáis confirmado.</div>
 
 {#if inRound && !game.seen[my.id]}
   <div class="actionpanel">
-    <h3>🎴 Mira tu identidad y memorízala</h3>
+    <h3>🎴 Mira tu carta y memorízala</h3>
     {#if app.ui.revealOpen}
       <SpyCard {game} pid={my.id} full={true} />
     {:else}
-      <p class="hint">Ábrela cuando nadie mire tu pantalla. Se cierra sola a los pocos segundos, y el 🎴 de la esquina te la devuelve durante toda la ronda.</p>
-      <button class="primary block" data-a="espia-reveal" onclick={() => { app.ui.revealOpen = true; peeked = true; }}>👁 Ver mi identidad</button>
+      <p class="hint">Destápala cuando nadie mire tu pantalla: se tapa sola a los pocos segundos. Durante toda la ronda la tienes en la pastilla <b>🎴 Mi carta</b> de abajo.</p>
+      <button class="primary block" data-a="espia-reveal" onclick={() => { app.ui.revealOpen = true; peeked = true; }}>👁 Ver mi carta</button>
     {/if}
     {#if peeked}
       <button class="{app.ui.revealOpen ? 'primary' : 'ghost'} block" data-a="espia-seen"

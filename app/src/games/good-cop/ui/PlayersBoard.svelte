@@ -13,7 +13,9 @@
   import type { PlayerDoc } from '../../../core/sync/schema';
   import type { GoodCopState } from '../types';
 
-  const { game, my }: { game: GoodCopState; my: PlayerDoc } = $props();
+  // `final` = partida acabada y todo boca arriba: la leyenda de dorsos y dianas
+  // ya no explica nada, así que se cambia por la lectura del reparto.
+  const { game, my, final = false }: { game: GoodCopState; my: PlayerDoc; final?: boolean } = $props();
   const nm = (pid: string) => game.names[pid] || '¿?';
   // Quién apunta a cada cual: con 6-8 filas, cruzar las dianas a ojo era
   // imposible. Antes esto solo salía en TU fila (y en rojo), que era un chivato
@@ -79,7 +81,9 @@
     </div>
   {/each}
 </div>
-<p class="gclegend">🂠 carta oculta · 1 2 3 el número con el que se investiga · 🔫 armado · 🎯 a quién apunta · ⚠️ quién lo apunta. Al caer, sus 3 cartas se destapan para todos.</p>
+<p class="gclegend">{final
+  ? 'Todas las cartas, boca arriba: el bando de cada uno era la mayoría de sus tres, y los líderes son el 🕵️ Agente (honestos) y el 👑 Jefe (corruptos).'
+  : '🂠 carta oculta · 1 2 3 el número con el que se investiga · 🔫 armado · 🎯 a quién apunta · ⚠️ quién lo apunta. Al caer, sus 3 cartas se destapan para todos.'}</p>
 
 <style>
   .gctally { display: flex; flex-wrap: wrap; gap: 6px; }

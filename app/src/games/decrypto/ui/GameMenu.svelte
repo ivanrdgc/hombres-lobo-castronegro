@@ -1,4 +1,11 @@
 <script lang="ts">
+  // Menú ⋯ de Decrypto: voz, repetir, pausar, la mesa y terminar. Es del GRUPO:
+  // cualquier dispositivo puede terminar.
+  //
+  // Aquí NO hay «dejar la partida»: con los equipos ya repartidos, irse es
+  // cerrarla, así que había dos entradas —«🚪 Dejar la partida» y «🏳️ Terminar»—
+  // que llamaban a la MISMA acción con dos nombres. Queda una, y su confirmación
+  // lo explica.
   import { app, matchOf, navigate } from '../../../core/sync/store.svelte';
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
@@ -20,8 +27,10 @@
     <div class="menu-pop" role="menu">
       <button role="menuitem" data-a="voice-open" onclick={() => { app.ui.modal = { type: 'voice' }; app.ui.voiceTest = null; close(); }}>{app.ui.muted ? '🔇 Voz' : '🗣️ Voz'}</button>
       <!-- Dentro de la partida la URL se recoloca sola: sin esta entrada no hay
-           forma de llegar al menú de un móvil apagado (el encriptador sin
-           batería deja la fase colgada) y sacarlo de la mesa. -->
+           forma de ver quién sigue conectado ni de llegar al menú de un móvil
+           apagado. Ojo: sacar a alguien de una partida por equipos la TERMINA;
+           si el que falla es el encriptador, el relevo está en su fase
+           («🔄 que encripte otro»), que sí deja seguir jugando. -->
       <button role="menuitem" data-a="table-open" onclick={() => { app.ui.modal = { type: 'table' }; close(); }}>🪑 La mesa</button>
       {#if playing}
         <button role="menuitem" data-a="de-repeat" onclick={() => { guard(A.requestRepeat); close(); }}>🔁 Repetir</button>
@@ -34,10 +43,7 @@
       {#if spectator}
         <button role="menuitem" data-a="back-to-mesa" onclick={() => { close(); navigate(`/g/${slug}`); }}>← Volver a la mesa</button>
       {/if}
-      {#if !spectator}
-        <button role="menuitem" class="danger-text" data-a="de-leave-open" onclick={() => { app.ui.modal = { type: 'de-leave' }; close(); }}>🚪 Dejar la partida</button>
-      {/if}
-      <button role="menuitem" class="danger-text" data-a="de-end-open" onclick={() => { app.ui.modal = { type: 'de-end' }; close(); }}>🏳️ Terminar</button>
+      <button role="menuitem" class="danger-text" data-a="de-end-open" onclick={() => { app.ui.modal = { type: 'de-end' }; close(); }}>🏳️ Terminar la partida</button>
     </div>
   {/if}
 </div>

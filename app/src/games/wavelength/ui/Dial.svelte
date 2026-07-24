@@ -166,16 +166,19 @@
   </div>
 
   {#if secret && target !== null}
-    <!-- El interruptor de la diana: pulsado = visible, suelto = tapada. Nunca
+    <!-- Esto NO es «ver mi carta» (B34): es la ACCIÓN de apuntar, y se rotula
+         por lo que hace. Pulsado = la diana se pinta; suelto = se tapa. Nunca
          queda encendida sola, así que el móvil no puede delatar la zona ni
          apoyado en la mesa ni si alguien pasa por detrás. -->
     <button
       class="peek {peeking ? 'on' : ''}" data-a="wl-peek" aria-pressed={peeking}
+      aria-label="Mantén pulsado para apuntar: enseña tu diana mientras pulsas"
       onpointerdown={peekOn} onpointerup={peekOff} onpointercancel={peekOff}
       onlostpointercapture={peekOff} oncontextmenu={(e) => e.preventDefault()}
       onkeydown={(e) => { if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) { e.preventDefault(); peeking = true; } }}
       onkeyup={(e) => { if (e.key === ' ' || e.key === 'Enter') peeking = false; }}
-    >{peeking ? '👁️ Diana a la vista — suelta y se tapa' : '🙈 Mantén pulsado para ver la diana'}</button>
+    ><b>{peeking ? '🎯 Apuntando: no sueltes' : '🎯 Mantén pulsado para apuntar'}</b>
+      <small>{peeking ? 'al soltar, la diana se vuelve a tapar' : 'tu diana se pinta solo mientras pulsas'}</small></button>
   {/if}
 
   <!-- El pie de colores no delata nada (dice cuánto vale cada franja, no dónde
@@ -183,8 +186,10 @@
        cada vez que se destapa. Lo que sí es secreto —el número del objetivo y
        la distancia— pasa por `shown`. -->
   {#if legend === 'bands'}
+    <!-- El número del objetivo NO se repite aquí: lo dice, en grande, el recuadro
+         de arriba del panel. Esto solo pone nombre a los colores. -->
     <p class="lg">
-      {#if shown !== null}<span class="li">🎯 diana en <b>{shown}</b></span>{/if}
+      <span class="li">🎯 tu diana:</span>
       <span class="li"><i class="sw s4"></i> centro <b>4</b></span>
       <span class="li"><i class="sw s3"></i> <b>3</b></span>
       <span class="li"><i class="sw s2"></i> <b>2</b></span>
@@ -194,7 +199,7 @@
     <p class="lg">
       {#if shown !== null}<span class="li"><i class="key tgt"></i> aguja amarilla = objetivo <b>{shown}</b></span>{/if}
       {#if marker !== null}<span class="li"><i class="key mk"></i> aguja roja = marca del equipo <b>{marker}</b></span>{/if}
-      {#if dist !== null}<span class="li">📏 a <b>{dist}</b> del centro</span>{/if}
+      {#if dist !== null}<span class="li">📏 a <b>{dist}</b> del objetivo</span>{/if}
       <span class="li"><i class="sw s4"></i> 4</span>
       <span class="li"><i class="sw s3"></i> 3</span>
       <span class="li"><i class="sw s2"></i> 2</span>
@@ -292,13 +297,19 @@
   .s-q { transform: translateX(-50%); opacity: 0.75; }
   .s-r { right: 0; }
 
-  /* ——— El interruptor de la diana (postura de MANO) ——— */
+  /* ——— Apuntar: la acción del Psíquico (postura de MANO) ——— */
   .peek {
-    display: block; width: 100%; margin-top: 10px; padding: 14px 12px;
-    font-size: 1rem; font-weight: 700; touch-action: none; user-select: none;
+    display: block; width: 100%; margin-top: 10px; padding: 12px;
+    font-size: 1rem; line-height: 1.25; touch-action: none; user-select: none;
     background: var(--card2, #222639); border: 2px dashed var(--line-2, #3b4060); color: var(--text, #fff);
   }
+  /* Los hijos no reciben el puntero: así el `pointerdown` (y su captura) es
+     siempre del botón y el «suelta y se tapa» no se pierde por el camino. */
+  .peek b, .peek small { display: block; pointer-events: none; }
+  .peek b { font-weight: 800; }
+  .peek small { font-size: 0.78rem; font-weight: 400; color: var(--muted, #9aa); margin-top: 2px; }
   .peek.on { border-style: solid; border-color: #63c47f; background: color-mix(in srgb, #63c47f 18%, var(--card2, #222639)); }
+  .peek.on small { color: var(--text, #fff); }
 
   /* ——— Pie: qué significan los colores (sin esto, el dial es un adorno) ——— */
   .lg { display: flex; flex-wrap: wrap; align-items: center; gap: 3px 10px; margin-top: 6px; font-size: 0.8rem; color: var(--muted, #9aa); min-height: 19px; }

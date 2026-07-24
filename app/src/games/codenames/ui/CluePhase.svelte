@@ -25,23 +25,35 @@
   let inf = $state(false);
   const problem = $derived(clueProblem(game, word));
   const label = $derived(inf ? '∞' : String(num));
+  // Qué significa el número elegido, dicho donde se elige (contrato B25·1): el
+  // 0 y el ∞ son las dos jugadas que nadie recuerda de un juego a otro.
+  const numMeans = $derived(inf
+    ? '∞: seguid con las que quedaron pendientes de pistas anteriores. Sin límite de toques.'
+    : num === 0
+      ? '0: ninguna de tus casillas se parece a esa palabra (sirve para alejarlos de una trampa). Sin límite de toques.'
+      : `${num}: la palabra conecta ${num} casilla${num === 1 ? '' : 's'} tuya${num === 1 ? '' : 's'}. Podrán tocar hasta ${num + 1} veces.`);
 </script>
 
 {#if iAmSpy}
   <div class="actionpanel"><h3>💬 Da tu pista</h3>
     <p class="hint">Una palabra que conecte casillas tuyas y cuántas son. <b>Dila también en voz alta</b>: tocan {agents.join(', ') || 'tus agentes'}.</p>
-    <input id="cn-clue-word" class="block" data-a="cn-clue-word" bind:value={word} maxlength="24" placeholder="Palabra de la pista (p. ej. «fuego»)" autocomplete="off" />
-    <div class="btnrow" style="margin-top:8px;flex-wrap:wrap">
+
+    <label class="cnlab" for="cn-clue-word">1 · La palabra</label>
+    <input id="cn-clue-word" class="block" data-a="cn-clue-word" bind:value={word} maxlength="24" placeholder="p. ej. «fuego»" autocomplete="off" autocapitalize="none" />
+
+    <p class="cnlab">2 · El número</p>
+    <div class="cnnums" role="group" aria-label="Número de la pista">
       {#each [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] as k (k)}
         <button class="small {!inf && num === k ? 'primary' : 'ghost'}" data-a="cn-clue-num" data-p={String(k)} onclick={() => { num = k; inf = false; }}>{k}</button>
       {/each}
       <button class="small {inf ? 'primary' : 'ghost'}" data-a="cn-clue-num" data-p="inf" onclick={() => (inf = true)}>∞</button>
     </div>
+    <p class="small-note" style="margin-top:6px">{numMeans}</p>
+
     <!-- El botón gris nunca se queda mudo: siempre está escrito POR QUÉ no se
          puede enviar (y la pista es irreversible: mejor pararla aquí). -->
     {#if problem}<p class="small-note" data-a="cn-clue-bad" style={word ? 'color:var(--danger)' : ''}>{word ? '⚠️' : '✍️'} {problem}</p>{/if}
-    <button class="primary block" style="margin-top:8px" data-a="cn-clue-give" disabled={!!problem} onclick={() => guard(() => A.giveClue(word, num, inf))}>💬 Dar la pista{word ? ` «${word}»` : ''} · {label}</button>
-    <p class="small-note">Con <b>0</b> («ninguna es mía») y con <b>∞</b> («seguid con las pendientes») pueden tocar sin límite.</p>
+    <button class="primary block" data-a="cn-clue-give" disabled={!!problem} onclick={() => guard(() => A.giveClue(word, num, inf))}>💬 Dar la pista{word ? ` «${word}»` : ''} · {label}</button>
     <BoardRef {game} />
   </div>
 {:else}
@@ -55,3 +67,12 @@
     <BoardRef {game} />
   </div>
 {/if}
+
+<style>
+  .cnlab { display: block; margin: 12px 0 5px; font-size: 0.8rem; font-weight: 700; color: var(--muted, #a9a6c0); }
+  /* Los once números en una rejilla propia: con `.btnrow` heredaban
+     `min-width: 130px` y salían dos por fila, seis filas de altura. Aquí caben
+     en dos filas y cada uno mantiene los 44 px de objetivo táctil. */
+  .cnnums { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+  .cnnums button { min-width: 0; min-height: 44px; padding: 0; font-size: 1.05rem; font-weight: 700; border-radius: 10px; }
+</style>

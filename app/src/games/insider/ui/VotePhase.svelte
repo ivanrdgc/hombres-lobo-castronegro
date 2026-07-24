@@ -4,7 +4,9 @@
   // aparecen apagados CON EL MOTIVO (antes desaparecían y la mesa no entendía
   // por qué faltaban nombres). La app cuenta y destapa a la vez.
   // Nada en esta pantalla dice a quién has señalado: el reparto de puntos vive
-  // en la chuleta del pie (una sola vez) y el botón no canta tu voto.
+  // en «📖 Las reglas» del pie (una sola vez) y el botón no canta tu voto.
+  // Solo la ven los de la ronda (GameScreen manda a los de fuera a su pantalla
+  // de espectador): sin modo mirón.
   import { app } from '../../../core/sync/store.svelte';
   import { guard } from '../../../core/sync/guard';
   import { sel1, clearSel } from '../../../shell/selection';
@@ -14,9 +16,8 @@
   import RolesRef from './RolesRef.svelte';
 
   const { game, my }: { game: InsiderState; my: PlayerDoc } = $props();
-  const inGame = $derived(game.playerIds.includes(my.id));
   const iVoted = $derived(game.votes[my.id] !== undefined);
-  const canForce = $derived(inGame && A.canForceTally(game, my.id));
+  const canForce = $derived(A.canForceTally(game, my.id));
   const nm = (pid: string) => game.names[pid] || '¿?';
   // Quién falta POR NOMBRE: hace falta el 100 % de los votos y sin reloj; con un
   // «3/4» pelado la mesa no sabía a quién mirar.
@@ -30,7 +31,7 @@
 
 <div class="narration">👉 Palabra adivinada. Comentad quién orientaba las preguntas con demasiada puntería y señaladlo en secreto. Han votado {voted} de {game.playerIds.length}.</div>
 
-{#if inGame && !iVoted}
+{#if !iVoted}
   <div class="actionpanel">
     <h3>🗳️ ¿Quién era el Insider?</h3>
     <p class="hint">Toca un nombre y confirma abajo. Puedes cambiarlo tocando otro; una vez confirmado, no. Nadie ve tu voto hasta el recuento.</p>
@@ -66,7 +67,7 @@
     {#if !pick}<p class="small-note">Ninguno marcado todavía: toca el nombre de quien te parezca que sabía la palabra.</p>
     {:else}<p class="small-note">Repasa el ✔️ antes de confirmar: tu voto no aparece en ninguna pantalla hasta el recuento.</p>{/if}
   </div>
-{:else if inGame}
+{:else}
   <div class="card">
     <h3>✅ Tu voto está echado</h3>
     <p class="hint" data-a="ins-pending" style="margin-bottom:0">{pending.length ? `Falta por votar: ${pending.join(', ')}. En cuanto voten todos se destapa el recuento a la vez.` : 'Recontando…'}</p>
@@ -77,8 +78,6 @@
       <button class="ghost block" data-a="ins-force-tally" onclick={() => guard(A.forceTally)}>⏭️ Cerrar el recuento sin {pending.join(', ')}</button>
     {/if}
   </div>
-{:else}
-  <div class="card"><p class="hint" data-a="ins-pending">👀 La mesa está cazando al Insider… Falta por votar: {pending.join(', ') || '…'}</p></div>
 {/if}
 
 <RolesRef />

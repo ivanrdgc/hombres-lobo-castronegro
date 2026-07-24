@@ -18,20 +18,22 @@
   {#if open}
     <button class="menu-scrim" aria-label="Cerrar menú" onclick={close}></button>
     <div class="menu-pop" role="menu">
-      <button role="menuitem" data-a="voice-open" onclick={() => { app.ui.modal = { type: 'voice' }; app.ui.voiceTest = null; close(); }}>{app.ui.muted ? '🔇 Voz' : '🗣️ Voz'}</button>
-      <!-- La ayuda solo se abría desde el lobby: a media partida no había forma
-           de consultar las reglas. -->
-      <button role="menuitem" data-a="gc-help-open" onclick={() => { app.ui.modal = { type: 'gc-help' }; close(); }}>🎲 Cómo se juega</button>
-      <!-- Rescate cuando un móvil se queda sin batería y el turno espera por él. -->
-      <button role="menuitem" data-a="table-open" onclick={() => { app.ui.modal = { type: 'table' }; close(); }}>🪑 La mesa</button>
+      <!-- Orden del contrato (UX.md): primero mandar sobre la partida, luego
+           consultar, y al final las salidas. -->
       {#if playing}
-        <button role="menuitem" data-a="gc-repeat" onclick={() => { guard(A.requestRepeat); close(); }}>🔁 Repetir</button>
         {#if game.paused}
           <button role="menuitem" data-a="gc-resume" onclick={() => { guard(A.resumeGame); close(); }}>▶️ Reanudar</button>
         {:else}
           <button role="menuitem" data-a="gc-pause" onclick={() => { guard(A.pauseGame); close(); }}>⏸️ Pausar</button>
         {/if}
+        <button role="menuitem" data-a="gc-repeat" onclick={() => { guard(A.requestRepeat); close(); }}>🔁 Repetir</button>
       {/if}
+      <button role="menuitem" data-a="voice-open" onclick={() => { app.ui.modal = { type: 'voice' }; app.ui.voiceTest = null; close(); }}>{app.ui.muted ? '🔇 Voz' : '🗣️ Voz'}</button>
+      <!-- La ayuda solo se abría desde el lobby: a media partida no había forma
+           de consultar las reglas. Mismo nombre que allí. -->
+      <button role="menuitem" data-a="gc-help-open" onclick={() => { app.ui.modal = { type: 'gc-help' }; close(); }}>🎲 Cómo se juega</button>
+      <!-- Rescate cuando un móvil se queda sin batería y el turno espera por él. -->
+      <button role="menuitem" data-a="table-open" onclick={() => { app.ui.modal = { type: 'table' }; close(); }}>🪑 La mesa</button>
       {#if spectator}
         <button role="menuitem" data-a="back-to-mesa" onclick={() => { close(); navigate(`/g/${slug}`); }}>← Volver a la mesa</button>
       {/if}

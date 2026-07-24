@@ -15,7 +15,7 @@
   import { selIds, sel1, clearSel } from '../../../shell/selection';
   import { app, state as selState } from '../../../core/sync/store.svelte';
   import * as A from '../actions';
-  import { DOBLE_JOIN_ROLES, ROLES } from '../roles';
+  import { CENTER_COUNT, DOBLE_JOIN_ROLES, ROLES } from '../roles';
   import { packmates, nightIs } from '../engine';
   import type { PlayerDoc } from '../../../core/sync/schema';
   import type { GameState, RoleId, StepId } from '../types';
@@ -96,7 +96,7 @@
 {#if step === 'doble'}
   {@const dr = acts.dobleRole}
   {@const subDone = !!acts.dobleView || acts.dobleCard != null || !!acts.dobleActed}
-  <h3>👯 Tu turno · El Doble</h3>
+  <h3>👯 El Doble</h3>
   {#if !dr}
     {@render plan(
       'La carta de quien toques (solo la ves tú).',
@@ -180,7 +180,7 @@
 {:else if step === 'lobos'}
   {@const lonePeek = !wolfMates.length && !acts.loneWolfCard}
   {@const soloSeen = !wolfMates.length && !!acts.loneWolfCard}
-  <h3>🐺 Tu turno · Los Hombres Lobo</h3>
+  <h3>🐺 Los Hombres Lobo</h3>
   {#if game.originalRole[meId] === 'doble'}<p class="hint">👯 Copiaste al lobo: cazas y ganas con la manada.</p>{/if}
   {#if wolfMates.length}
     {@render plan('Quién más es lobo esta noche.', 'Nada: en Una Noche la noche no mata.', 'Solo reconoceros en silencio.')}
@@ -205,7 +205,7 @@
   <button class="{lonePeek ? 'ghost' : 'primary'} block" data-a="una-wolf-ok" onclick={() => guard(A.wolvesSeen)}>🐺 {lonePeek ? 'Cerrar los ojos sin mirar el centro' : soloSeen ? 'Ya lo he visto: cierro los ojos' : 'Reconocido: cierro los ojos'}</button>
 
 {:else if step === 'esbirro'}
-  <h3>😈 Tu turno · El Esbirro</h3>
+  <h3>😈 El Esbirro</h3>
   {@render plan('Quiénes son los hombres lobo.', 'Nada: solo miras.', 'Solo mirar. Ellos jamás sabrán que existes.')}
   {#if wolves.length}
     <p class="big">Los lobos son: <b>{wolves.map((p) => p.name).join(', ')}</b></p>
@@ -216,7 +216,7 @@
   <button class="primary block" data-a="una-minion-ok" onclick={() => guard(A.minionSeen)}>😈 Entendido, cierro los ojos</button>
 
 {:else if step === 'masones'}
-  <h3>🧱 Tu turno · Los Masones</h3>
+  <h3>🧱 Los Masones</h3>
   {@render plan('Quién es tu hermano masón.', 'Nada: solo miras.', 'Solo reconoceros.')}
   {#if masonMates.length}
     <p class="big">Tu hermandad: <b>{masonMates.map((p) => p.name).join(', ')}</b></p>
@@ -227,7 +227,7 @@
   <button class="primary block" data-a="una-mason-ok" onclick={() => guard(A.masonSeen)}>🧱 Reconocido: cierro los ojos</button>
 
 {:else if step === 'vidente'}
-  <h3>🔮 Tu turno · La Vidente</h3>
+  <h3>🔮 La Vidente</h3>
   {#if !acts.videnteDone}
     {@render plan(
       'Una carta de un jugador, O dos del centro. Tú eliges.',
@@ -262,7 +262,7 @@
   {/if}
 
 {:else if step === 'ladron'}
-  <h3>🃏 Tu turno · El Ladrón</h3>
+  <h3>🃏 El Ladrón</h3>
   {#if !acts.ladronDone}
     {@render plan(
       'Tu nueva carta, en cuanto robes (nadie más la ve).',
@@ -286,7 +286,7 @@
 {:else if step === 'alborotadora'}
   <!-- Al terminar dejas de ser actor: el «hecho» lo da ya la pantalla de la
        fase (✅ Hecho), así que aquí no hace falta rama de después. -->
-  <h3>🌀 Tu turno · La Alborotadora</h3>
+  <h3>🌀 La Alborotadora</h3>
   {@render plan(
     'Nada: no miras las cartas que mueves (tú tampoco sabrás qué eran).',
     'Esos DOS se intercambian la carta entre ellos y no se enteran. La tuya no se toca: sigues siendo la Alborotadora.',
@@ -299,7 +299,7 @@
   <button class="ghost block" data-a="una-tm-skip" onclick={() => guard(A.troublemakerSkip)}>🙈 No intercambiar nada</button>
 
 {:else if step === 'borracho'}
-  <h3>🍺 Tu turno · El Borracho</h3>
+  <h3>🍺 El Borracho</h3>
   {@render plan(
     'Nada: cambias a ciegas, sin mirar.',
     'Tu carta se va al centro y te quedas la del centro que elijas. Ni tú sabrás qué eres al amanecer.',
@@ -309,7 +309,7 @@
   <div class="btnrow">{#each CENTER as i (i)}<button class="primary" data-a="una-drink" data-p={String(i)} onclick={() => guard(() => A.drunkTake(i))}>🍺 Coger la {i + 1}</button>{/each}</div>
 
 {:else if step === 'insomne'}
-  <h3>😴 Tu turno · La Insomne</h3>
+  <h3>😴 La Insomne</h3>
   {#if !(acts.insomneCard || {})[meId]}
     {@render plan(
       'Tu propia carta, tal y como está AHORA.',
@@ -332,8 +332,8 @@
 
   <!-- B25·4: la referencia se consulta DESDE donde se decide. -->
   <details class="unaref">
-    <summary data-a="una-ref">📖 Las {deckRows.reduce((a, [, n]) => a + n, 0)} cartas de esta partida y lo que hacen</summary>
-    <p class="small-note" style="margin:6px 0 2px">Una por jugador y 3 en el centro; la lista es pública. En este orden llama la voz de noche. Toca una para el detalle.</p>
+    <summary data-a="una-ref">📖 El mazo: las {deckRows.reduce((a, [, n]) => a + n, 0)} cartas y lo que hacen</summary>
+    <p class="small-note" style="margin:6px 0 2px">Una por jugador y {CENTER_COUNT} en el centro; la lista es pública. En este orden llama la voz de noche. Toca una para el detalle.</p>
     {#each deckRows as [id, n] (id)}
       <button class="refrow" data-a="una-ref-role" data-p={id} onclick={() => openRole(id)}>
         <div class="sinfo">

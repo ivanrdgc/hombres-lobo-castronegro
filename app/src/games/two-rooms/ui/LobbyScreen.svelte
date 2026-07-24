@@ -42,7 +42,7 @@
   <!-- Cómo se sostiene el móvil (B28). Two Rooms es de MESA con una excepción,
        y la excepción es justo la jugada del juego: hay que avisarla aquí. -->
   <p class="small-note" style="margin:6px 0 0" data-a="tr-posture">{POSTURE_HINT[gameMeta('two_rooms').posture]}</p>
-  <p class="small-note" style="margin:4px 0 0">🤝 Salvo al enseñar tu carta: entonces coges el móvil y lo pones delante de quien tú decides —solo el color o la carta entera—, tapando el resto.</p>
+  <p class="small-note" style="margin:4px 0 0">🤝 Salvo con «Enseñar mi carta a alguien», la jugada del juego: entonces coges el móvil y lo pones delante de quien tú decides —solo el color o la carta entera—, tapando el resto.</p>
   <button class="block" data-a="open-demo" onclick={() => (app.ui.modal = { type: 'tr-demo' })}>🎓 Aprender con el tutorial (2 min)</button>
   <button class="block" data-a="tr-open-help" onclick={() => (app.ui.modal = { type: 'tr-help' })}>🎲 Consultar cómo se juega</button>
   <button class="primary block" data-a="open-start" onclick={() => navigate(`/g/${group.id}/two_rooms/empezar`)}>💣 Empezar partida</button>

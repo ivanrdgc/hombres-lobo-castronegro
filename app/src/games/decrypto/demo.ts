@@ -15,7 +15,7 @@ export const DEMO: DemoScript = {
       text: [
         'Jugáis cuatro: TÚ y Bea en el equipo 🔴 rojo; Carlos y David en el 🔵 azul. Cada equipo tiene 4 palabras clave numeradas del 1 al 4 que SOLO conocen los suyos.',
         'Cada ronda transmitís un código de 3 cifras a los vuestros con pistas… mientras el rival os escucha e intenta descifrarlo. Ganáis con 2 INTERCEPCIONES al rival; perdéis si os liais 2 veces con vuestro propio código.',
-        'No hay que memorizar nada: tus 4 palabras están siempre a mano en el botón flotante de la carta (🎴), abajo a la derecha, y también en el panel de tu equipo.',
+        'No hay que memorizar nada: tus 4 palabras están SIEMPRE en tu pantalla, en la tarjeta «Vuestras 4 palabras». El botón flotante de abajo a la derecha guarda solo las reglas, por si dudáis de alguna.',
       ],
       visual: {
         kind: 'screens',

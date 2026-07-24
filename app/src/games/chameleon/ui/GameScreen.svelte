@@ -57,7 +57,9 @@
 
 {#if showTopic}
   <div class="card">
-    <h3 style="margin:0 0 2px">🗺️ {topicName(game.topicId)}</h3>
+    <!-- El tema ya trae su propio emoji («🏖️ La playa»): el 🗺️ delante hacía
+         «🗺️ 🏖️ La playa», dos iconos para un solo dato. -->
+    <h3 style="margin:0 0 2px">Tema · {topicName(game.topicId)}</h3>
     {#if showGrid}
       <!-- La explicación, solo en el reparto: en las pistas y en el voto la
            rejilla ya se sabe y la línea era ruido en todas las pantallas. -->

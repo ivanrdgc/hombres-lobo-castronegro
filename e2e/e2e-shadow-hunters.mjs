@@ -3,9 +3,12 @@
 // quien la da y quien la recibe) → revelarse con poder → ataques a dados hasta
 // el final. Verifica la FUGA con el criterio de POSTURA 🍽️ MESA (B28): con el
 // móvil plano sobre la mesa, en reposo las cuatro pantallas son IDÉNTICAS —
-// ni el tablero, ni el panel de turno, ni el 🎴 llevan tu personaje escrito, y
-// el sobre de la pista sale en todas para que su presencia no delate a quién le
-// tocó. Lo tuyo vive tras el 👁 y se vuelve a tapar.
+// ni el tablero ni el panel de turno llevan tu personaje escrito, y el aviso de
+// la pista sale en todas para que su presencia no delate a quién le tocó.
+// Y el criterio de UNA SOLA PUERTA (B34): tu carta se abre desde la pastilla
+// flotante 🎴 y desde ningún otro sitio — ni un «👁 ver mi carta» en el cuerpo,
+// ni otro dentro del paso de revelarte, ni un segundo toque dentro de la propia
+// pastilla. Se vuelve a tapar sola.
 import { chromium } from 'playwright';
 const BASE = process.env.BASE; if (!BASE) { console.error('Define BASE=https://tu-sitio.web.app'); process.exit(1); }
 let fail = 0;
@@ -97,28 +100,27 @@ try {
   const restTxt = await pg(someone).innerText('body');
   check(!restTxt.includes(CHAR_NAME[s.chars[someone]]) && !restTxt.includes(POWER_HINT[s.chars[someone]]),
     'en reposo ninguna pantalla lleva escrito tu personaje ni tu poder');
-  check(await pg(someone).locator('[data-a=sh-peek]').count() === 1, 'y el 👁 para mirarlo es el mismo botón en todas');
+  // B34 · UNA SOLA PUERTA: en un juego de mesa la carta se abre desde la
+  // pastilla flotante y de ningún otro sitio. El cuerpo de la partida ya no
+  // añade su propio «👁 Ver mi personaje»: eran dos botones para lo mismo.
+  check(await pg(someone).locator('[data-a=open-mycard]').count() === 1, 'la pastilla 🎴 «Mi carta» está en la pantalla de partida');
+  check(await pg(someone).locator('[data-a=sh-peek]').count() === 0, 'y es la ÚNICA puerta: el cuerpo no repite un botón de «ver mi carta»');
 
-  // El gesto: sale tu carta… y se tapa al tocarla (y sola a los 12 s).
-  await pg(someone).click('[data-a=sh-peek]');
-  const secret = await pg(someone).innerText('[data-a=sh-secret]');
-  check(secret.includes(CHAR_NAME[s.chars[someone]]) && secret.includes(POWER_HINT[s.chars[someone]]),
-    'tras el gesto 👁 ves tu personaje Y tu poder');
-  await pg(someone).click('[data-a=sh-secret]');
-  await pg(someone).waitForSelector('[data-a=sh-secret]', { state: 'detached', timeout: 8000 });
-  ok('tocando la carta se vuelve a tapar');
-
-  // El 🎴 sigue siendo el sitio de la chuleta… pero tampoco destapa de entrada.
+  // Pulsar la pastilla YA es el gesto: la carta entra destapada, sin pedir un
+  // segundo toque… y se vuelve a tapar al tocarla (y sola a los 12 s).
   await pg(someone).click('[data-a=open-mycard]');
-  await pg(someone).waitForSelector('text=/Tu personaje/');
-  check(await pg(someone).locator('.modal [data-a=sh-secret]').count() === 0, 'el 🎴 tampoco enseña tu carta de entrada: hay que pedirla');
-  check(await pg(someone).locator('.modal .settingrow').count() >= 16, 'el 🎴 lleva la chuleta de los 8 personajes Y las 8 cartas de pista');
+  await pg(someone).waitForSelector('.modal [data-a=sh-secret]');
+  const secret = await pg(someone).innerText('.modal [data-a=sh-secret]');
+  check(secret.includes(CHAR_NAME[s.chars[someone]]) && secret.includes(POWER_HINT[s.chars[someone]]),
+    'abrir la pastilla enseña tu personaje Y tu poder de una vez');
+  check(await pg(someone).locator('.modal .settingrow').count() >= 16, 'y trae las reglas: los 8 personajes Y las 8 pistas');
   const cardTxt = await pg(someone).locator('.modal').innerText();
-  check(/Sois 4:[\s\S]*Cazadores[\s\S]*Sombras/.test(cardTxt), 'el 🎴 dice el reparto REAL de esta partida (4 → 2 y 2)');
-  await pg(someone).click('.modal [data-a=sh-peek]');
-  check((await pg(someone).innerText('.modal [data-a=sh-secret]')).includes(CHAR_NAME[s.chars[someone]]),
-    'y tras el 👁 enseña tu personaje también desde el 🎴');
+  check(/Sois 4:[\s\S]*Cazadores[\s\S]*Sombras/.test(cardTxt), 'la pastilla dice el reparto REAL de esta partida (4 → 2 y 2)');
+  await pg(someone).click('.modal [data-a=sh-secret]');
+  await pg(someone).waitForSelector('.modal [data-a=sh-peek]', { timeout: 8000 });
+  ok('tocando la carta se vuelve a tapar, sin salir de la pastilla');
   await pg(someone).click('.modal [data-a=close-modal]');
+  await pg(someone).waitForSelector('.modal', { state: 'detached', timeout: 8000 });
   check(/Sois 4:/.test(await pg(someone).innerText('body')), 'el reparto también se ve bajo el tablero');
 
   // ——— El panel de turno DICE lo que hace cada acción (B25/B26) ———
@@ -128,7 +130,7 @@ try {
   const panel0 = await pg(actor0).innerText('.actionpanel');
   check(/dado de 6 y otro de 4/.test(panel0) && /DIFERENCIA/.test(panel0), 'el panel explica los dados del ataque sin tener que recordarlos');
   check(/1 de cada 6/.test(panel0), 'y dice lo que se arriesga (el fallo por empate)');
-  check(/8 cartas/.test(panel0) && /EN SECRETO/.test(panel0), 'la pista explica que la carta se enseña en secreto');
+  check(/8 pistas/.test(panel0) && /EN SECRETO/.test(panel0), 'la pista explica que se enseña en secreto');
   check(!panel0.includes(CHAR_NAME[s.chars[actor0]]) && !panel0.includes(POWER_HINT[s.chars[actor0]]),
     'el panel de turno NO lleva tu carta escrita: se queda abierto sobre la mesa mientras piensas');
   check(await pg(actor0).locator('[data-a=sh-ref]').count() === 1, 'la referencia de personajes y pistas se consulta desde el propio panel');
@@ -187,13 +189,19 @@ try {
   const rchar = s.chars[revealer];
   await pg(revealer).waitForSelector('[data-a=sh-mode-reveal]:not([disabled])', { timeout: 15000 });
   await pg(revealer).click('[data-a=sh-mode-reveal]');
-  // Es la única decisión que pide tu carta: el 👁 está DENTRO del paso, y ni el
-  // paso ni el botón final nombran tu personaje mientras no lo pidas.
-  check(await pg(revealer).locator('.actionpanel [data-a=sh-peek]').count() === 1, 'el paso de revelarte trae su propio 👁 para repasar tu poder');
+  // Es la única decisión que pide tu carta… y aun así el paso NO abre una
+  // segunda puerta (B34): dice dónde está la única que hay y sigue sin nombrar
+  // tu personaje. La pastilla es un modal encima, así que no pierde el paso.
+  check(await pg(revealer).locator('.actionpanel [data-a=sh-peek]').count() === 0, 'el paso de revelarte no añade un segundo botón de «ver mi carta»');
   const revealStep = await pg(revealer).innerText('.actionpanel');
-  check(!revealStep.includes(CHAR_NAME[rchar]) && !revealStep.includes(POWER_HINT[rchar]), 'y sin tocarlo, el paso no dice quién eres');
-  await pg(revealer).click('.actionpanel [data-a=sh-peek]');
-  check((await pg(revealer).innerText('.actionpanel [data-a=sh-secret]')).includes(POWER_HINT[rchar]), 'al tocarlo sí ves el poder que vas a gastar');
+  check(/Mi carta/.test(revealStep), 'sino que manda a la pastilla 🎴, que está siempre en pantalla');
+  check(!revealStep.includes(CHAR_NAME[rchar]) && !revealStep.includes(POWER_HINT[rchar]), 'y el paso no dice quién eres ni qué poder gastas');
+  await pg(revealer).click('[data-a=open-mycard]');
+  await pg(revealer).waitForSelector('.modal [data-a=sh-secret]');
+  check((await pg(revealer).innerText('.modal [data-a=sh-secret]')).includes(POWER_HINT[rchar]), 'desde la pastilla sí ves el poder que vas a gastar');
+  await pg(revealer).click('.modal [data-a=close-modal]');
+  await pg(revealer).waitForSelector('.modal', { state: 'detached', timeout: 8000 });
+  check(await pg(revealer).locator('[data-a=sh-back]').count() === 1, 'y al cerrarla sigues en el paso, con la acción todavía elegida');
   if (POWER_TARGET[rchar]) {
     const tgt = s.playerIds.find((p) => p !== revealer && s.alive[p]);
     await pg(revealer).click(`[data-a=sh-reveal-target][data-p="${tgt}"]`);
@@ -213,10 +221,10 @@ try {
     const boardTxt = await pg(other).innerText('.shboard');
     check(/❤️ \d+ de 8/.test(boardTxt), 'el tablero lleva la vida de cada uno sobre el total');
     check(/Destapados/.test(await pg(other).innerText('body')), 'y bajo el tablero, cuántos van destapados de cada bando');
-    // Al revelarte tu carta ya es pública: a partir de ahí tu pantalla SÍ la
-    // enseña sin gestos, y esa diferencia la explica el tablero de todos.
-    check((await pg(revealer).innerText('[data-a=sh-secret]')).includes(CHAR_NAME[rchar]),
-      'quien se ha revelado lleva ya su carta a la vista, sin tener que pedirla');
+    // Al revelarte tu carta ya es pública, y lo público vive en UN sitio: el
+    // tablero. Tu propia fila se destapa ahí, igual que en las demás pantallas.
+    check((await pg(revealer).innerText('.shboard')).includes(CHAR_NAME[rchar]),
+      'quien se ha revelado sale destapado en su propio tablero, como en el de los demás');
   }
 
   // ——— Ataques dirigidos (god-view) hasta el final: caza de Sombras ———

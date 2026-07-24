@@ -8,7 +8,7 @@
   import { app, isMaster, matchOf } from '../../../core/sync/store.svelte';
   import { guard } from '../../../core/sync/guard';
   import { coupGame, passAbsent } from '../actions';
-  import { isAlive, pendingReactors } from '../engine';
+  import { pendingReactors } from '../engine';
   import { unlockAudio } from '../../../core/audio/engine';
   import { play } from '../../../core/audio/player';
   import { pauseMs, profileOf } from '../../../core/narrator/pacing';
@@ -29,14 +29,23 @@
   const { group, my }: { group: GroupDoc; my: PlayerDoc } = $props();
   const game = $derived(coupGame(group)!);
   const inGame = $derived(game.playerIds.includes(my.id) && !!matchOf(my.id));
-  const alive = $derived(inGame && isAlive(game, my.id));
   const needsUnlock = $derived(isMaster() && !app.ui.audioReady && !app.ui.muted);
   const turnName = $derived(game.names[game.playerIds[game.turnIdx]] || '¿?');
   const nm = (pid: string) => game.names[pid] || '¿?';
 
-  // La chip decía «Turno de X» aunque la mesa te estuviera esperando a TI.
+  // La chip decía «Turno de X» aunque la mesa te estuviera esperando a TI —y
+  // seguía diciéndolo mientras otro descubría carta o barajaba con la corte, que
+  // no es el turno de nadie. Siempre dice por quién se espera (B26·5).
   const pending = $derived(pendingReactors(game));
   const chip = $derived.by(() => {
+    if (game.phase === 'loseInfluence') {
+      const who = game.losing[0]?.pid;
+      return who === my.id ? '💥 Te toca descubrir carta' : `⏳ ${nm(who || '')} descubre carta`;
+    }
+    if (game.phase === 'exchangeReturn') {
+      const who = game.exchange?.pid;
+      return who === my.id ? '🎭 Te toca elegir cartas' : `⏳ ${nm(who || '')} baraja con la corte`;
+    }
     if (pending.includes(my.id)) return '⏳ Esperan tu reacción';
     if (pending.length > 2) return `⏳ Faltan ${pending.length} por reaccionar`;
     if (pending.length) return `⏳ Esperando a: ${pending.map(nm).join(', ')}`;
@@ -57,6 +66,16 @@
   });
   const absent = $derived(pending.filter((pid) => pid !== my.id));
   const canNudge = $derived(isMaster() && !game.paused && absent.length > 0 && waited >= stallMs);
+
+  // Descubrir carta y elegir en el intercambio son decisiones SUYAS: nadie puede
+  // pasar por él. Si el móvil se ha ido, esas dos fases se quedaban colgadas sin
+  // decir cómo salir (B26·8): se enseña el rescate, que es sacarlo de la mesa.
+  const stuckPid = $derived.by(() => {
+    if (game.phase === 'loseInfluence') return game.losing[0]?.pid || null;
+    if (game.phase === 'exchangeReturn') return game.exchange?.pid || null;
+    return null;
+  });
+  const canRescue = $derived(isMaster() && !game.paused && !!stuckPid && stuckPid !== my.id && waited >= stallMs);
 
   function unlockVoice() {
     unlockAudio();
@@ -88,13 +107,19 @@
     <p class="small-note">Sin reaccionar: <b>{absent.map(nm).join(', ')}</b>. Si no están, pasa por ellos.</p>
     <button class="ghost block" data-a="coup-pass-absent" onclick={() => guard(passAbsent)}>⏭️ Pasar por quienes faltan</button>
   </div>
+{:else if canRescue}
+  <div class="card" data-a="coup-stall">
+    <h3 style="margin-top:0">⏳ La partida no avanza</h3>
+    <p class="small-note">Le toca elegir a <b>{nm(stuckPid || '')}</b> en su móvil y nadie puede hacerlo por él: es su carta. Si se ha ido de verdad, sácalo desde «🪑 La mesa» — eso cierra la partida y todos vuelven al lobby.</p>
+    <button class="ghost block" data-a="coup-open-table" onclick={() => (app.ui.modal = { type: 'table' })}>🪑 Abrir la mesa</button>
+  </div>
 {/if}
 
 {#if game.phase === 'reveal'}
   <RevealPhase {game} {my} />
 {:else if game.phase === 'end'}
   <Board {game} meId={my.id} />
-  <EndPhase {game} {my} />
+  <EndPhase {game} />
 {:else if !inGame}
   <div class="card" style="text-align:center"><span class="moon">👀</span>
     <h3>Hay una partida en curso</h3>
@@ -102,8 +127,11 @@
   </div>
   <Board {game} meId={my.id} />
 {:else}
-  {#if alive}<MyHand {game} pid={my.id} pinned />{/if}
-  <Board {game} meId={my.id} hideMe={alive} />
+  <!-- La mano se queda aunque te eliminen: tus dos cartas boca arriba y el
+       «estás fuera» viven donde siempre has mirado, y así la pantalla no se
+       reordena justo cuando peor viene. -->
+  <MyHand {game} pid={my.id} />
+  <Board {game} meId={my.id} hideMe />
   {#if game.phase === 'turn'}
     <TurnPhase {game} {my} />
   {:else if game.phase === 'challengeAction' || game.phase === 'block' || game.phase === 'challengeBlock'}

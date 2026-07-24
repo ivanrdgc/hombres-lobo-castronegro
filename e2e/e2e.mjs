@@ -241,7 +241,7 @@ try {
 
   // El narrador-altavoz no recibe rol ni carta que confirmar.
   check(!(await ana.isVisible('[data-a=confirm-role-seen]')), 'el narrador no tiene carta que confirmar');
-  check(!(await pages.bruno.isVisible('.rolecard')), 'la carta no se muestra hasta pedirla con «Ver mi rol»');
+  check(!(await pages.bruno.isVisible('.rolecard')), 'la carta no se muestra hasta pedirla con «👁 Ver mi carta»');
   for (const label of ['bruno', 'carla', 'david', 'elsa']) {
     const p = pages[label];
     await p.click('[data-a=open-reveal-role]');
@@ -306,12 +306,18 @@ try {
   // Con caza en la noche 1 no hay paso de presentación: los lobos van directos
   // a elegir presa (se reconocen al abrir los ojos para cazar).
   await waitState(ana, (s) => s.steps[s.stepIdx] === 'lobos', 'turno de los lobos');
+  // B34 · una sola puerta: durante la partida la carta NO se dibuja en el
+  // cuerpo de ninguna pantalla ni hay un segundo botón para abrirla; se entra
+  // siempre por la misma pastilla flotante «🎴 Mi carta».
   check(!(await wolfPage.isVisible('.rolecard')), 'el rol queda oculto por defecto durante la partida');
-  await wolfPage.click('button[data-a=toggle-rolecard]');
-  await wolfPage.waitForSelector('.rolecard');
+  check((await wolfPage.locator('button[data-a=toggle-rolecard]').count()) === 0,
+    'ninguna pantalla añade su propio «Ver mi carta»: la única puerta es la pastilla 🎴');
+  await wolfPage.click('[data-a=open-mycard]');
+  await wolfPage.waitForSelector('.modal .rolecard');
   check(await wolfPage.isVisible('text=/reconoceros como manada/i'), 'el lobo aún no ha visto a su manada en la carta');
-  await wolfPage.click('.rolecard');
-  check(!(await wolfPage.isVisible('.rolecard')), 'la carta se vuelve a ocultar al tocarla');
+  check(await wolfPage.isVisible('text=/Las reglas: qué hace cada carta/i'), 'la misma puerta trae también las reglas de las cartas');
+  await wolfPage.click('.modal button[data-a=close-modal]');
+  check(!(await wolfPage.isVisible('.rolecard')), 'al cerrar, el móvil vuelve a la mesa sin la carta encima');
 
   // Lobo: elige víctima (la vidente).
   const videnteName = st.players.find((p) => p.role === 'vidente').name;
@@ -355,7 +361,10 @@ try {
   await pages.bruno.waitForSelector('[data-a=open-start]');
   ok('vuelta al lobby del juego para todos');
 
-  // Un jugador abandona (el botón Salir también está en el lobby del juego).
+  // Un jugador abandona. El lobby del juego ya NO lleva botón «Salir»: se sale
+  // desde la mesa, tocando tu propia ficha (badge «Tú») → «Abandonar».
+  await pages.david.click('[data-a=change-game]');
+  await pages.david.click('.player[data-a=player-menu]:has(.badge.you)');
   await pages.david.click('[data-a=leave]');
   await pages.david.click('[data-a=leave-confirm]');
   await pages.david.waitForURL(BASE + '/');

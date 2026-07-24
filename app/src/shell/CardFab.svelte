@@ -3,15 +3,20 @@
   // el modal «mi carta + referencia del juego» del juego actual. Así la carta
   // propia y el mazo completo son consultables en CUALQUIER fase (reparto,
   // votaciones, turnos ajenos…).
-  import { app } from '../core/sync/store.svelte';
+  import { app, ctxMatch } from '../core/sync/store.svelte';
+  import { gameMeta } from '../games/registry';
   const { modal }: { modal: string } = $props();
+  // En los juegos de MANO (y de equipo) la carta propia vive ya en la pantalla:
+  // el flotante es entonces la chuleta, y decir «Mi carta» sobraba (B32).
+  const hand = $derived(gameMeta(ctxMatch()?.gameId ?? '').posture !== 'mesa');
 </script>
 
 <!-- Hueco en el flujo: la pastilla es fija y, sin él, tapaba la última línea
      de los paneles largos (lo detectó la pasada de UI de Ávalon). -->
 <div class="cardfab-gap" aria-hidden="true"></div>
-<button class="cardfab" data-a="open-mycard" aria-label="Mi carta y las reglas del juego" onclick={() => (app.ui.modal = { type: modal })}>
-  <span class="cf-emoji">🎴</span><span class="cf-label">Mi carta<br /><small>y las reglas</small></span>
+<button class="cardfab" data-a="open-mycard" aria-label={hand ? 'Las reglas y las cartas del juego' : 'Mi carta y las reglas del juego'} onclick={() => (app.ui.modal = { type: modal })}>
+  <span class="cf-emoji">{hand ? '📖' : '🎴'}</span>
+  <span class="cf-label">{hand ? 'Reglas' : 'Mi carta'}<br /><small>{hand ? 'del juego' : 'y las reglas'}</small></span>
 </button>
 
 <style>

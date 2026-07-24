@@ -1,6 +1,8 @@
 <script lang="ts">
-  // «🎴 Mi carta + referencia» (B19/B21): tu carta (palabra secreta o Camaleón)
-  // y la chuleta de reglas y puntos. Accesible en cualquier fase.
+  // «🎴 Mi carta y las reglas» (B19/B21): lo que promete la pastilla, en este
+  // orden — tu carta (la palabra secreta o «Camaleón») y las reglas en corto.
+  // B34: esta es la ÚNICA puerta a tu carta durante la partida, así que aquí
+  // están también las dos reglas que la deciden (el voto y los puntos).
   import { app, viewGroup, me } from '../../../../core/sync/store.svelte';
   import { chamGame } from '../../actions';
   import RefRows from '../../../../shell/RefRows.svelte';
@@ -23,12 +25,13 @@
   {#if inGame}
     <!-- Sin título: la carta ya se presenta sola («Tu carta de esta ronda») y el
          botón dice lo que hace. `mini`: se enseña a petición y se auto-oculta,
-         que abierta de par en par se quedaba a la vista del vecino de mesa. -->
+         que abierta de par en par se quedaba a la vista del vecino de mesa
+         (el modal se puede abrir solo para consultar las reglas). -->
     <MyCard {game} pid={my.id} mini={true} />
   {:else}
     <p class="small-note">👀 Miras de espectador: sin carta propia.</p>
   {/if}
-  <RefRows title="📖 Chuleta" {rows} />
-  <button class="block" style="margin-top:10px" data-a="ch-help-open" onclick={() => (app.ui.modal = { type: 'ch-help' })}>🎲 Cómo se juega (reglas completas)</button>
+  <RefRows title="📖 Las reglas" {rows} />
+  <button class="block" style="margin-top:10px" data-a="ch-help-open" onclick={() => (app.ui.modal = { type: 'ch-help' })}>🎲 Cómo se juega (la guía entera)</button>
 {/if}
 <button class="primary block" style="margin-top:14px" data-a="close-modal" onclick={() => (app.ui.modal = null)}>Cerrar</button>

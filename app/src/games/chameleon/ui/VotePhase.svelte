@@ -14,7 +14,6 @@
   import { VOTE_GRACE_MS } from '../engine';
   import type { PlayerDoc } from '../../../core/sync/schema';
   import type { ChameleonState } from '../types';
-  import MyCard from './MyCard.svelte';
 
   const { game, my }: { game: ChameleonState; my: PlayerDoc } = $props();
   const inGame = $derived(game.playerIds.includes(my.id));
@@ -92,7 +91,8 @@
   <div class="card"><p class="small-note" style="margin-top:0">⏱️ Lleva un buen rato sin responder (móvil bloqueado, se ha levantado…). La ronda puede resolverse con los votos que ya hay.</p>
     <button class="ghost block" data-a="ch-close-vote" onclick={() => guard(A.closeVote)}>🗳️ Cerrar la votación sin {missing.join(', ')}</button></div>
 {/if}
-{#if inGame}<MyCard {game} pid={my.id} mini={true} />{/if}
+<!-- B34: ni aquí. Si necesitas repasar tu carta antes de señalar, la pastilla
+     🎴 de abajo es la misma puerta para todos (y no canta que la has abierto). -->
 
 <style>
   .stake {

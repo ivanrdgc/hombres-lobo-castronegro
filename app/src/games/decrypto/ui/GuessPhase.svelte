@@ -8,6 +8,9 @@
   // solo aparecen dentro de los botones (letra normal, a media pantalla), nunca
   // en un titular. Y la rejilla es idéntica interceptando o descifrando, para
   // que el rival de enfrente no lea por la silueta lo que estás haciendo.
+  //
+  // Las 3 pistas se enseñan UNA vez (B29): dentro del selector si te toca
+  // decidir, y en su propia tarjeta si solo miras.
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
   import { cluesForWord, encoderId, teamOf, teamMembers, other, TEAM_LABEL, TOKENS_TO_WIN } from '../engine';
@@ -60,19 +63,24 @@
   {:else}🔓 El equipo {TEAM_LABEL[game.active]} descifra su propio código, sin {encName}.{/if}
 </div>
 
-<div class="card">
-  <h3 style="margin:0 0 6px">💬 Las 3 pistas, en orden</h3>
-  <div class="declues">
-    {#each clues as c, i (i)}
-      <div class="dclue"><span class="dcord">{ORD[i]} pista</span><b>{c}</b></div>
-    {/each}
+{#if !iCanAct}
+  <!-- Las 3 pistas, para quien NO decide (el encriptador, el equipo que espera y
+       los espectadores). A quien decide se las lleva pegadas el selector, una
+       por fila: repetirlas aquí arriba era decir lo mismo dos veces y empujaba
+       la acción fuera de la pantalla (B29). -->
+  <div class="card">
+    <h3 style="margin:0 0 6px">💬 Las 3 pistas, en orden</h3>
+    <div class="declues">
+      {#each clues as c, i (i)}
+        <div class="dclue"><span class="dcord">{ORD[i]} pista</span><b>{c}</b></div>
+      {/each}
+    </div>
   </div>
-  <p class="small-note" style="margin:8px 0 0">⚠️ El orden de las pistas <b>no</b> es el de las palabras: la 1.ª pista puede apuntar a la palabra nº 3.</p>
-</div>
+{/if}
 
 {#if iCanAct}
   <div class="actionpanel"><h3>{intercepting ? '🕵️ Interceptad el código' : '🔓 Descifrad vuestro código'}</h3>
-    <p class="hint">Colocad cada pista en el número al que creéis que apunta. Debajo de cada uno, {intercepting ? 'lo que ya dijeron para él (sus palabras no las veis)' : 'lo que ya dijisteis vosotros para él'}.</p>
+    <p class="hint">Colocad cada pista en el número al que creéis que apunta; debajo de cada número está lo que {intercepting ? 'ya dijeron' : 'ya dijisteis'} para él. ⚠️ El orden de las pistas <b>no</b> es el de las palabras: la 1.ª pista puede apuntar a la palabra nº 3.</p>
     <CodePicker value={code} {clues} {options} {notes} onchange={(c) => (code = c)} />
     {#if ready}
       <p class="desay" data-a="de-guess-say"><b>{intercepting ? 'Apostáis' : 'Decís'} {code.join('-')}</b>: {say}</p>
@@ -86,13 +94,13 @@
     {#if picked}
       <button class="ghost block" style="margin-top:6px" data-a="de-guess-clear" onclick={() => (code = [0, 0, 0])}>↩️ Empezar de nuevo</button>
     {/if}
-    <details class="deref">
-      <summary>📖 Qué os jugáis</summary>
-      <p class="small-note" style="margin:6px 0">
-        {#if intercepting}🕵️ Si acertáis, os lleváis una ficha de intercepción ({TOKENS_TO_WIN} ganan la partida). Si falláis no perdéis nada: interceptar sale gratis.
-        {:else}🔓 Si acertáis no pasa nada. Si falláis, os cae una ficha de error ❌ ({TOKENS_TO_WIN} pierden la partida).{/if}
-      </p>
-    </details>
+    <!-- Qué os jugáis: iba plegado tras un «📖», que ahora es el rótulo de las
+         reglas. Es una línea: se dice y ya. -->
+    <p class="small-note" style="margin:8px 0 0">
+      {#if intercepting}🕵️ Acertar el código entero = una ficha de intercepción ({TOKENS_TO_WIN} ganan la partida). Fallar no cuesta nada.
+      {:else}🔓 Acertar no da nada; fallar os cuesta una ficha de error ❌ ({TOKENS_TO_WIN} hacen perder la partida).{/if}
+      {#if deciders.length > 1}Lo habláis entre todos, pero basta con que lo registre uno.{:else}Lo registras tú, en nombre de tu equipo.{/if}
+    </p>
   </div>
 {:else if iEncode}
   <!-- El encriptador veía el mismo cartel que el rival («el equipo rojo
@@ -104,7 +112,7 @@
 {:else if myTeam === game.active && intercepting}
   <div class="card"><p class="hint" style="margin:0">🤫 Callad: {listed} ({TEAM_LABEL[other(game.active)]}) {deciders.length > 1 ? 'deliberan' : 'delibera'} su intercepción. Después descifraréis vosotros, sin {encName}.</p></div>
 {:else}
-  <div class="card"><p class="hint" style="margin:0">👀 Esperando a {listed} ({TEAM_LABEL[actingTeam]}): {intercepting ? 'deliberan su intercepción' : 'descifran su código'}. Mientras, repasa la hoja de pistas del final de la pantalla.</p></div>
+  <div class="card"><p class="hint" style="margin:0">👀 Esperando a {listed} ({TEAM_LABEL[actingTeam]}): {intercepting ? 'deliberan su intercepción' : 'descifran su código'}.{#if game.history.length} Mientras, mira la «📻 Hoja de pistas», más abajo.{/if}</p></div>
 {/if}
 
 <style>
@@ -113,6 +121,4 @@
   .dclue .dcord { flex: 0 0 auto; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.4px; color: var(--moon, #ffd98a); }
   .dclue b { font-size: 1.02rem; overflow-wrap: anywhere; }
   .desay { margin: 8px 0 0; padding: 9px 11px; border-radius: 10px; font-size: 0.88rem; line-height: 1.4; border: 1px solid var(--accent, #c8a24a); background: color-mix(in srgb, var(--accent, #c8a24a) 12%, transparent); }
-  .deref { margin-top: 10px; }
-  .deref summary { font-size: 0.8rem; color: var(--muted, #a9a6c0); cursor: pointer; }
 </style>

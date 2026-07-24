@@ -5,7 +5,7 @@
   // de equipo (vuestras palabras y la hoja). Si el móvil se queda apoyado, lo
   // que el rival lee desde su lado de la mesa es la franja de arriba: ahí no hay
   // nada que le sirva.
-  import { app, isMaster, matchOf } from '../../../core/sync/store.svelte';
+  import { app, isMaster } from '../../../core/sync/store.svelte';
   import { decryptoGame } from '../actions';
   import { MAX_ROUNDS, TEAM_LABEL, TOKENS_TO_WIN, encoderId, teamMembers, teamOf } from '../engine';
   import { unlockAudio } from '../../../core/audio/engine';
@@ -23,7 +23,6 @@
 
   const { group, my }: { group: GroupDoc; my: PlayerDoc } = $props();
   const game = $derived(decryptoGame(group)!);
-  const inGame = $derived(game.playerIds.includes(my.id) && !!matchOf(my.id));
   const needsUnlock = $derived(isMaster() && !app.ui.audioReady && !app.ui.muted);
 
   function unlockVoice() {
@@ -70,11 +69,11 @@
 {/if}
 {#if game.paused}
   <div class="card" style="text-align:center"><span class="moon">⏸️</span><h3>Partida en pausa</h3>
-    <p class="small-note">La ha pausado {game.paused.name || 'alguien'}.</p></div>
+    <p class="small-note">La ha pausado {game.paused.name || 'alguien'}. Nadie puede transmitir ni descifrar hasta reanudar (menú ⋯).</p></div>
 {/if}
 
 {#if game.phase === 'end'}
-  <EndPhase {game} {my} />
+  <EndPhase {game} />
   <TeamPanel {game} {my} />
 {:else}
   <!-- Público y compacto: se ve desde el otro lado de la mesa sin que pase nada
@@ -91,7 +90,7 @@
       {/each}
     </div>
     <p class="small-note" style="margin:6px 0 0">🕵️ {TOKENS_TO_WIN} intercepciones ganan la partida · ❌ {TOKENS_TO_WIN} errores propios la pierden.</p>
-    {#if game.round === 1}<p class="small-note" style="margin:4px 0 0">🪑 Los equipos son nuevos: sentaos con los vuestros, el rival enfrente.</p>{/if}
+    {#if game.round === 1}<p class="small-note" style="margin:4px 0 0">🪑 Sentaos juntos los del mismo equipo. En la ronda 1 todavía no se puede interceptar: hacen falta pistas anteriores.</p>{/if}
   </div>
   {#if game.phase === 'clue'}
     <CluePhase {game} {my} />
@@ -101,9 +100,9 @@
     <RevealPhase {game} {my} />
   {/if}
   <!-- Lo secreto, al fondo: hay que acercarse el móvil para leerlo. También para
-       espectadores (sin palabras: siguen la hoja, que es pública). -->
+       espectadores (sin palabras: siguen la hoja, que es pública). Que miras de
+       espectador ya lo dice la tira de postura, arriba: aquí no se repite. -->
   <TeamPanel {game} {my} />
-  {#if !inGame}<p class="small-note" style="text-align:center">👀 Sigues la partida de espectador.</p>{/if}
 {/if}
 
 {#if game.log && game.log.length}
@@ -111,7 +110,9 @@
     <div class="log" bind:this={logEl}>{#each game.log as l, i (i)}<p>{l.txt}</p>{/each}</div></div>
 {/if}
 
-<CardFab modal="de-mycard" />
+<!-- Juego de EQUIPO: la pastilla es «📖 Reglas» y nada más. Las palabras, las
+     fichas y la hoja de pistas ya están en la pantalla (B34). -->
+<CardFab modal="de-rules" />
 
 <style>
   .destate { padding: 12px 13px; }

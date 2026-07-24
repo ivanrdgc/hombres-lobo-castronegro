@@ -2,8 +2,10 @@
   // Reparto de Insider: cada cual mira su carta y confirma; cuando están todas
   // vistas, cualquiera arranca el reloj. Orden de la pantalla (B29): lo que hay
   // que hacer AHORA arriba y sin scroll, debajo el contexto (quién ha
-  // confirmado) y al pie la chuleta, plegada. Los nombres de la ronda —quién
+  // confirmado) y al pie las reglas, plegadas. Los nombres de la ronda —quién
   // responde, quién abre— salen UNA vez, en la tira de datos públicos.
+  // Es la ÚNICA fase con botón propio para la carta (excepción de B34): aquí la
+  // instrucción ES la pantalla. Repartida ya, la única puerta es la pastilla 🎴.
   import { app } from '../../../core/sync/store.svelte';
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
@@ -13,8 +15,9 @@
   import RoundFacts from './RoundFacts.svelte';
   import RolesRef from './RolesRef.svelte';
 
+  // Solo la ven los de la ronda (GameScreen manda a los de fuera a su pantalla
+  // de espectador): sin modo mirón.
   const { game, my }: { game: InsiderState; my: PlayerDoc } = $props();
-  const inGame = $derived(game.playerIds.includes(my.id));
   const amMaster = $derived(my.id === game.masterId);
   const nm = (pid: string) => game.names[pid] || '¿?';
   const pend = $derived(game.playerIds.filter((pid) => !game.seen[pid]).map(nm));
@@ -27,7 +30,7 @@
 
 <RoundFacts {game} meId={my.id} showTime={true} />
 
-{#if inGame && !game.seen[my.id]}
+{#if !game.seen[my.id]}
   {#if app.ui.revealOpen}
     <!-- `onHide`: la carta se cierra SOLA a los pocos segundos. Antes se quedaba
          abierta hasta pulsar «Lo tengo» y bastaba con distraerse para dejar la
@@ -36,20 +39,20 @@
     <button class="primary block" data-a="ins-seen" onclick={() => guard(async () => { await A.confirmSeen(); app.ui.revealOpen = false; })}>✅ Lo tengo (ocultar la carta)</button>
   {:else}
     <div class="actionpanel">
-      <h3>🎴 Mira tu carta</h3>
+      <h3>🎴 Tu carta, a solas</h3>
       <ol class="howlist">
-        <li>Ábrela y léela <b>a solas</b>: se cierra sola a los pocos segundos y puedes volver a abrirla.</li>
+        <li>Léela sin que nadie mire: se cierra sola a los pocos segundos y puedes volver a abrirla.</li>
         <li>Confirma con «Lo tengo» y deja el móvil <b>plano en la mesa</b>.</li>
         <li>Con todas las cartas vistas, cualquiera pone el reloj en marcha.</li>
       </ol>
-      <button class="primary block" data-a="ins-reveal" onclick={() => (app.ui.revealOpen = true)}>👁 Ver mi carta en secreto</button>
+      <button class="primary block" data-a="ins-reveal" onclick={() => (app.ui.revealOpen = true)}>👁 Ver mi carta</button>
       <p class="small-note">🍽️ Todas las cartas se ven iguales —mismo dibujo, mismo alto—: nadie sabe si el vecino tiene la palabra.</p>
     </div>
   {/if}
 {:else if pend.length}
   <div class="card">
     <h3>⏳ Faltan cartas por mirar</h3>
-    <p class="small-note" style="margin-top:0">Ve pensando preguntas de sí o no. Tu carta sigue a mano en el botón 🎴. Si alguien se ha quedado sin móvil, sácalo de la partida desde ⋯ → 🪑 La mesa.</p>
+    <p class="small-note" style="margin-top:0">Ve pensando preguntas de sí o no. Tu carta sigue a mano en la pastilla 🎴 «Mi carta», abajo a la derecha. Si alguien se ha quedado sin móvil, sácalo de la partida desde ⋯ → 🪑 La mesa.</p>
   </div>
 {:else}
   <!-- Confirmadas todas, el botón sale en TODAS las pantallas: si el móvil del
@@ -61,10 +64,8 @@
     {:else}
       <p class="hint">Preguntáis en voz alta y sin turnos; responde solo el Maestro. Abre quien diga la tira de arriba.</p>
     {/if}
-    {#if inGame}
-      <button class="primary block" data-a="ins-begin" onclick={() => guard(A.beginQuestions)}>⏱ Arrancar el reloj: {mins} min</button>
-      <p class="small-note">El reloj corre para todos y ya no se para (salvo pausa en ⋯).</p>
-    {/if}
+    <button class="primary block" data-a="ins-begin" onclick={() => guard(A.beginQuestions)}>⏱ Arrancar el reloj: {mins} min</button>
+    <p class="small-note">El reloj corre para todos y ya no se para (salvo pausa en ⋯).</p>
   </div>
 {/if}
 

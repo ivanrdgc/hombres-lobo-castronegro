@@ -10,12 +10,10 @@
   import type { PlayerDoc } from '../../../core/sync/schema';
   import type { SHState } from '../types';
   import ShGrid from './ShGrid.svelte';
-  import MyCard from './MyCard.svelte';
 
   const { game, my }: { game: SHState; my: PlayerDoc } = $props();
   const pres = $derived(presidentId(game));
   const amPres = $derived(my.id === pres);
-  const inGame = $derived(game.playerIds.includes(my.id));
   const eligible = $derived(eligibleChancellors(game));
   const players = $derived(playersOf(game));
   const excluded = $derived(game.playerIds.filter((pid) => !eligible.includes(pid)));
@@ -60,7 +58,6 @@
     <p class="small-note">Mientras: repasa arriba quién votó qué la última vez.</p>
   </div>
 {/if}
-{#if inGame}<MyCard {game} pid={my.id} />{/if}
 
 <style>
   .plan {

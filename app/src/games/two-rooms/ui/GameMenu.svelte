@@ -36,7 +36,7 @@
       {#if !spectator}
         <button role="menuitem" class="danger-text" data-a="tr-leave-open" onclick={() => { app.ui.modal = { type: 'tr-leave' }; close(); }}>🚪 Dejar la partida</button>
       {/if}
-      <button role="menuitem" class="danger-text" data-a="tr-end-open" onclick={() => { app.ui.modal = { type: 'tr-end' }; close(); }}>🏳️ Terminar</button>
+      <button role="menuitem" class="danger-text" data-a="tr-end-open" onclick={() => { app.ui.modal = { type: 'tr-end' }; close(); }}>🏳️ Terminar la partida</button>
     </div>
   {/if}
 </div>

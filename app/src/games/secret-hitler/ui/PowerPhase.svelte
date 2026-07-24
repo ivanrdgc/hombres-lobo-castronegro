@@ -6,10 +6,14 @@
   //
   // Postura 🍽️ MESA con momento de mano (B28): elegir a quién investigar o a
   // quién ejecutar es público (acaba en la crónica), así que se hace en la
-  // pantalla de la fase; pero lo que SOLO ve el Presidente —las tres cartas del
-  // 🔮 y la lealtad del 🔎— no se pinta solo: vive en la cortina de privacidad,
-  // que se cierra sola y no deja rastro. Los demás ven la misma tarjeta neutra
-  // en todos los móviles.
+  // pantalla de la fase; pero lo que SOLO ve el Presidente —los tres decretos
+  // del 🔮 y la lealtad del 🔎— no se pinta solo: vive en la cortina de
+  // privacidad, que se cierra sola y no deja rastro. Los demás ven la misma
+  // tarjeta neutra en todos los móviles.
+  //
+  // Una sola puerta a tu carta (B34): aquí no hay «👁 Ver mi carta» —eso es la
+  // pastilla 🎴—. Estas cortinas abren un PODER, así que se rotulan por lo que
+  // hacen: «🔮 Mirar el mazo», «🔎 Leer la afiliación de X».
   import { untrack } from 'svelte';
   import { guard } from '../../../core/sync/guard';
   import { sel1, clearSel } from '../../../shell/selection';
@@ -19,13 +23,11 @@
   import type { PlayerDoc } from '../../../core/sync/schema';
   import type { SHState } from '../types';
   import ShGrid from './ShGrid.svelte';
-  import MyCard from './MyCard.svelte';
   import PrivacySheet from './PrivacySheet.svelte';
 
   const { game, my }: { game: SHState; my: PlayerDoc } = $props();
   const power = $derived(game.power!);
   const amActor = $derived(my.id === power.by);
-  const inGame = $derived(game.playerIds.includes(my.id));
   const players = $derived(playersOf(game));
   // Clave de selección propia de ESTE poder: si no, la ficha marcada al
   // investigar hace tres rondas reaparecía ya elegida en la ejecución —y el
@@ -66,16 +68,16 @@
 
 {#if amActor}
   {#if power.type === 'peek'}
-    <div class="actionpanel"><h3>🔮 Mira el futuro del mazo</h3>
-      <p class="hint">El decreto fascista que acabáis de promulgar te deja ver, en secreto y EN ORDEN, las tres cartas de arriba del mazo: las que robará el próximo Presidente (salvo que el mazo se rebaraje antes, cuando quedan menos de 3).</p>
-      <button class="primary block" data-a="sh-open-peek" onclick={() => (open = true)}>👁 Ver las tres cartas y continuar</button>
-      <p class="why">Nadie más las verá y no quedan en la crónica: lo que cuentes a la mesa —o te calles— es cosa tuya.</p>
+    <div class="actionpanel"><h3>🔮 Mira el mazo</h3>
+      <p class="hint">El decreto fascista que acabáis de promulgar te deja ver, en secreto y EN ORDEN, los tres decretos de arriba del mazo: los que robará el próximo Presidente (salvo que el mazo se rebaraje antes, cuando quedan menos de 3).</p>
+      <button class="primary block" data-a="sh-open-peek" onclick={() => (open = true)}>🔮 Mirar el mazo</button>
+      <p class="why">Nadie más los verá y no quedan en la crónica: lo que cuentes a la mesa —o te calles— es cosa tuya.</p>
     </div>
   {:else if power.type === 'investigate'}
     {#if result}
       <div class="actionpanel"><h3>🔎 Lealtad de {nm(result.target)}</h3>
         <p class="hint">Ya tienes la respuesta. Ábrela con el móvil hacia ti: solo la ves tú y no queda en el tablero ni en la crónica.</p>
-        <button class="primary block" data-a="sh-open-loyalty" onclick={() => (open = true)}>👁 Ver su afiliación y continuar</button>
+        <button class="primary block" data-a="sh-open-loyalty" onclick={() => (open = true)}>🔎 Leer la afiliación de {nm(result.target)}</button>
         <p class="why">Puedes contarla, callártela o mentir: la mesa solo tiene tu palabra.</p>
       </div>
     {:else}
@@ -114,7 +116,7 @@
   <div class="card"><h3>⚡ Poder presidencial</h3>
     <p class="hint">El Presidente <b>{nm(power.by)}</b> está usando en su móvil: {POWER_LABEL[power.type]}.</p>
     <p class="small-note">
-      {#if power.type === 'peek'}Ve las tres cartas de arriba del mazo. Nadie más las verá: lo que cuente después es palabra suya.
+      {#if power.type === 'peek'}Ve los tres decretos de arriba del mazo. Nadie más los verá: lo que cuente después es palabra suya.
       {:else if power.type === 'investigate'}Verá la afiliación de alguien, y solo él. Puede contarla, callársela o mentir — y Hitler le saldría como «fascista» sin más.
       {:else if power.type === 'special'}Elegirá a dedo quién preside la próxima ronda; lo veréis todos en cuanto lo haga.
       {:else}Va a ejecutar a alguien: quedará fuera de la partida y no volverá a votar. Si es Hitler, se acaba la partida.
@@ -126,7 +128,7 @@
 <!-- Cortina: lo que SOLO ve el Presidente. 20 s (cada toque reinicia la cuenta):
      es memorizar, no decidir. -->
 {#if open && amActor && power.type === 'peek'}
-  <PrivacySheet title="🔮 Las tres de arriba del mazo" hold={20000} onclose={() => (open = false)}>
+  <PrivacySheet title="🔮 Los tres decretos de arriba" hold={20000} onclose={() => (open = false)}>
     <p class="lead">En este orden: es lo que robará el próximo Presidente.</p>
     <div class="policies">
       {#each game.peek || [] as pol, i (i)}
@@ -144,8 +146,6 @@
     <button class="primary block" data-a="sh-invest-done" onclick={() => guard(A.powerInvestigateDone)}>✅ Ya lo he visto · pasar la presidencia</button>
   </PrivacySheet>
 {/if}
-
-{#if inGame}<MyCard {game} pid={my.id} />{/if}
 
 <style>
   .lead { margin: 6px 0 10px; font-size: 0.88rem; color: var(--muted); line-height: 1.4; }

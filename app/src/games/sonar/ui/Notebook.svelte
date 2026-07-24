@@ -53,7 +53,7 @@
 <div class="card">
   <h3>🎧 Cazar al {tag}</h3>
   <p class="small-note" style="margin:0">
-    Salió de {home} y cada rumbo que canta queda aquí, numerado. Probad su ruta desde varias salidas: las islas y los bordes descartan caminos.
+    Salió de {home}. Aquí tenéis las dos herramientas de la caza: su <b>tira de rumbos</b> y vuestro <b>cuaderno de sonar</b>. Probad su ruta desde varias salidas: las islas y los bordes descartan caminos.
   </p>
 
   {#if moves.length}
@@ -66,13 +66,13 @@
     </div>
     <p class="small-note" style="margin:4px 0 0">🤫 = se deslizó sin decir rumbo (1 o 2 casillas) · ⏫ = emergió y cantó cuadrante.</p>
   {:else}
-    <p class="small-note" style="margin:8px 0 0">Aún no ha navegado: en cuanto lo haga, su rumbo aparecerá aquí.</p>
+    <p class="small-note" style="margin:8px 0 0">📻 Su tira de rumbos está vacía: aún no ha navegado. En cuanto cante uno, aparecerá aquí numerado.</p>
   {/if}
 
   <hr class="sep" />
 
   <p class="small-note" style="margin:0">
-    🗒️ <b>Vuestro cuaderno.</b> Tocad una casilla y va pasando por ❌ descartada → ⭕ candidata → limpia. Es papel y boli: solo vive en este móvil.
+    🗒️ <b>Vuestro cuaderno de sonar.</b> Tocad una casilla y va pasando por ❌ descartada → ⭕ candidata → limpia. Es papel y boli: solo vive en este móvil.
   </p>
   <MapGrid sub={game.subs[team]} {team} {notes} onNote={toggle} />
   <div class="snfoot">

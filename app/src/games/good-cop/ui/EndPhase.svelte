@@ -19,7 +19,7 @@
 </div>
 
 <div class="card"><h3>🃏 Quién era quién</h3>
-  <PlayersBoard game={{ ...game, cards: Object.fromEntries(Object.entries(game.cards).map(([pid, cs]) => [pid, cs.map((c) => ({ ...c, up: true }))])) }} {my} /></div>
+  <PlayersBoard game={{ ...game, cards: Object.fromEntries(Object.entries(game.cards).map(([pid, cs]) => [pid, cs.map((c) => ({ ...c, up: true }))])) }} {my} final /></div>
 
 <div class="card">
   <h3>🏆 Marcador</h3>

@@ -3,7 +3,7 @@
 // anunciados, torpedos, dron, emersiones y el desenlace) leyendo el diario.
 import { cleanForSpeech } from '../../core/util/speech';
 import {
-  COST_DRONE, COST_SILENCE, COST_TORPEDO, MAX_ENERGY, MAX_HP, SILENCE_MAX_STEPS, TORPEDO_RANGE,
+  COST_DRONE, COST_SILENCE, COST_TORPEDO, MAX_ENERGY, SILENCE_MAX_STEPS, TORPEDO_RANGE,
 } from './engine';
 import type { SonarState } from './types';
 
@@ -63,10 +63,14 @@ export const HOW_TO: HelpSection[] = [
   },
 ];
 
-// ——— Chuleta de las 5 acciones ———
-// Una sola definición para los dos sitios donde se consulta (B25 · punto 4): el
-// modal 🎴 y el desplegable «📖» plegado DENTRO del panel de turno, para que
-// nadie tenga que salir de la pantalla en la que está decidiendo.
+// ——— Las 5 acciones: la referencia ———
+// Una sola definición y UN SOLO NOMBRE (B34) para los dos sitios donde se
+// consulta: la pastilla «📖 Reglas» y el desplegable plegado DENTRO del panel de
+// turno (B25 · punto 4), para que nadie tenga que salir de la pantalla en la que
+// está decidiendo. El rótulo también es el mismo en los dos: ACTIONS_TITLE.
+
+/** Cómo se llama esta lista, se abra por donde se abra. */
+export const ACTIONS_TITLE = '📖 Las 5 acciones, sus costes y sus reglas';
 
 export interface ActionRef { emoji: string; name: string; note: string; desc: string }
 
@@ -99,7 +103,7 @@ export const ACTION_REF: ActionRef[] = [
     emoji: '⏫',
     name: 'Emerger',
     note: 'gratis · siempre legal',
-    desc: `Borra vuestra estela para volver a maniobrar… a cambio de cantar vuestro cuadrante. Es la salida cuando la estela os encierra. Cada casco aguanta ${MAX_HP} de daño.`,
+    desc: 'Borra vuestra estela para volver a maniobrar… a cambio de cantar vuestro cuadrante. Es la salida cuando la estela os encierra: siempre se puede.',
   },
 ];
 

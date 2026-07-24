@@ -8,7 +8,7 @@
   //   · SECRETO DE EQUIPO — la consola de tu tripulación (mapa, estela, rumbos
   //     del rival y cuaderno), anunciada como secreta y con tapadera.
   import { app } from '../../../core/sync/store.svelte';
-  import { sonarGame, teamOf, rival } from '../actions';
+  import { sonarGame, teamOf } from '../actions';
   import { narrates, COST_TORPEDO, MAX_ENERGY, MAX_HP } from '../engine';
   import { DIR_ARROW } from '../map';
   import { unlockAudio } from '../../../core/audio/engine';
@@ -32,10 +32,11 @@
   // Vida como cascos (❤️ enteros, 🤍 perdidos): se lee de un vistazo, sin contar.
   const hearts = (hp: number) => '❤️'.repeat(hp) + '🤍'.repeat(Math.max(0, MAX_HP - hp));
   // Lo que ha cantado cada submarino es PÚBLICO: lo ha oído la sala entera. Aquí
-  // van los últimos, de un vistazo y para todos (incluidos los espectadores); la
-  // tira completa del rival, para triangular, vive en el cuaderno.
+  // va solo lo ÚLTIMO de cada uno, para todos (incluidos los espectadores). La
+  // tira entera del rival —la que se usa para triangular— vive numerada en el
+  // cuaderno de sonar y no se repite aquí (B29 · un dato, un sitio).
   const arrow = (a: Announce) => (a === 'silence' ? '🤫' : a === 'surface' ? '⏫' : DIR_ARROW[a]);
-  const heard = (t: Team) => game.moves[t].slice(-4).map(arrow).join(' ');
+  const heard = (t: Team) => { const m = game.moves[t]; return m.length ? arrow(m[m.length - 1]) : '—'; };
 
   function unlockVoice() {
     unlockAudio();
@@ -76,27 +77,29 @@
       {/each}
     </div>
     {#if game.phase === 'turn'}
+      <!-- De quién es el turno se dice AQUÍ y solo aquí: el panel de abajo ya
+           no lo repite, dice qué hacer (B29 · un dato, un sitio). -->
       <p class="snturn" data-a="sn-turn">
-        {#if myTurn}🎬 <b>Os toca:</b> elegid una acción abajo.
+        {#if myTurn}🎬 <b>Os toca a vosotros.</b>
         {:else}🎬 Turno del {tag(game.turnTeam)} {label(game.turnTeam)}.
         {/if}
       </p>
     {/if}
-    <p class="snheard">🎧 Cantado: {tag('red')} {heard('red') || '—'} · {tag('blue')} {heard('blue') || '—'}</p>
+    <p class="snheard">🎧 Lo último cantado: {tag('red')} {heard('red')} · {tag('blue')} {heard('blue')}</p>
   </div>
 </div>
 
 {#if game.phase === 'end'}
   <EndPhase {game} {my} />
 {:else if myTeam}
+  <!-- El aviso de «al rival le llega para un torpedo» va DENTRO de la consola,
+       en la línea de espera: aquí sería la tercera vez que se dice lo mismo
+       (la barra ya lo marca con 🚀 en el submarino que puede disparar). -->
   <CrewConsole {game} team={myTeam} active={myTurn && !game.paused} />
-  {#if !myTurn && game.subs[rival(myTeam)].energy >= COST_TORPEDO}
-    <p class="small-note" style="text-align:center;margin:6px 0">⚠️ Al rival le llega para un torpedo 🚀: no os quedéis donde os oyó por última vez.</p>
-  {/if}
 {:else}
   <div class="card">
     <h3>👀 Miráis la partida</h3>
-    <p class="small-note" style="margin:0">Sin submarino no hay mapa: las posiciones y las estelas son secretas de cada tripulación. De lo público no os perdéis nada — vida, energía, turno, lo que canta cada uno y el diario de abajo.</p>
+    <p class="small-note" style="margin:0">Sin submarino no hay mapa: las posiciones y las estelas son secretas de cada tripulación. De lo público no os perdéis nada — vida, energía, turno, lo último que cantó cada uno y, abajo, todo lo que ha oído la mesa.</p>
   </div>
 {/if}
 
@@ -105,7 +108,7 @@
     <div class="log" bind:this={logEl}>{#each game.log as l, i (i)}<p>{l.txt}</p>{/each}</div></div>
 {/if}
 
-<CardFab modal="sn-mycard" />
+<CardFab modal="sn-rules" />
 
 <style>
   /* Vida, energía y turno no deberían perderse de vista al bajar al mapa o al

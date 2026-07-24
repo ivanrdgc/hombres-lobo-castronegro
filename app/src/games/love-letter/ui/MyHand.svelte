@@ -8,7 +8,7 @@
   import type { LoveLetterState } from '../types';
   import CardFace from './CardFace.svelte';
 
-  const { game, meId }: { game: LoveLetterState; meId: string } = $props();
+  const { game, meId, track = true }: { game: LoveLetterState; meId: string; track?: boolean } = $props();
   const hand = $derived(game.hands[meId] || []);
   const out = $derived(outCounts(game));
   const alive = $derived(!!game.alive[meId]);
@@ -19,7 +19,7 @@
   <div class="hand" data-a="ll-my-hand">
     <div class="hh">🖐 Tu mano <span class="hs">· solo la ves tú</span></div>
     {#each hand as c, i (i)}
-      <CardFace card={c} tone="mine" foot={copiesNote(c, out[c])} />
+      <CardFace card={c} tone="mine" foot={copiesNote(c, out[c], track)} />
     {/each}
     {#if prot}
       <p class="tag">🛡️ Protegido por la Doncella: nadie puede señalarte hasta tu próximo turno.</p>
@@ -30,7 +30,7 @@
        mirar y sabe que vuelve en la ronda siguiente. -->
   <div class="hand gone" data-a="ll-out-banner">
     <div class="hh">❌ Fuera de ESTA ronda</div>
-    <p class="tag">Tus cartas ya se descartaron{#if (game.discards[meId] || []).length} (arriba, en tu pila: {(game.discards[meId] || []).map((c) => `${CARD_INFO[c].emoji} ${CARD_INFO[c].name}`).join(', ')}){/if}. En la siguiente ronda se reparte otra vez y vuelves a jugar: mientras, cuenta los descartes de los demás.</p>
+    <p class="tag">Tus cartas ya se descartaron{#if (game.discards[meId] || []).length} (arriba, en tu pila: {(game.discards[meId] || []).map((c) => `${CARD_INFO[c].emoji} ${CARD_INFO[c].name}`).join(', ')}){/if}. En la siguiente ronda se reparte otra vez y vuelves a jugar; mientras, aprovecha para ver qué cartas van saliendo.</p>
   </div>
 {/if}
 

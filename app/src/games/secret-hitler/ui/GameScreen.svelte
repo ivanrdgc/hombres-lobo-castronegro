@@ -24,6 +24,14 @@
   const needsUnlock = $derived(isMaster() && !app.ui.audioReady && !app.ui.muted);
   const legislative = $derived(['legislativePresident', 'legislativeChancellor', 'vetoDecision'].includes(game.phase));
 
+  // El chip de la cabecera dice QUÉ TOCA AHORA, igual en todos los móviles (es
+  // público). El marcador de decretos vive en el tablero, dos dedos más abajo.
+  const PHASE_CHIP: Record<string, string> = {
+    reveal: '🎴 Reparto', nominate: '🤝 Nominación', election: '🗳️ Votación',
+    legislativePresident: '📜 Legislatura', legislativeChancellor: '📜 Legislatura',
+    vetoDecision: '✋ Veto', power: '⚡ Poder', end: '🏁 Final',
+  };
+
   function unlockVoice() {
     unlockAudio();
     play({ id: 'unlock', segments: [{ kind: 'clip', text: 'La voz está lista.' }] }).catch(() => {});
@@ -35,9 +43,10 @@
 
 <div class="topbar">
   <h2>🏛️ Secret Hitler</h2>
-  <!-- Sin marcador de decretos: vive en el tablero, dos dedos más abajo (B29).
-       El ejecutado sí lleva su estado siempre a la vista, en cualquier fase. -->
-
+  <!-- En el final no: el cartel del ganador ya lo dice, y dos chips a la vez
+       parten el nombre del juego en una pantalla estrecha. -->
+  {#if game.phase !== 'end'}<span class="chip" data-a="sh-phase-chip">{PHASE_CHIP[game.phase] ?? ''}</span>{/if}
+  <!-- El ejecutado lleva su estado siempre a la vista, en cualquier fase. -->
   {#if executed}<span class="chip" data-a="sh-dead-chip">💀 Ejecutado</span>{/if}
   <GameMenu {game} {my} />
 </div>

@@ -7,7 +7,7 @@ import { MIN_PLAYERS, MAX_PLAYERS, evilCountFor, teamSizes } from './roles';
 import type { Team } from './roles';
 
 /** Una fila de la tabla oficial en una frase (misma fuente que el motor: si
- *  cambia `roles.ts`, la ayuda y la chuleta cambian con él). */
+ *  cambia `roles.ts`, la ayuda y las reglas en partida cambian con él). */
 export function sizesLine(n: number): string {
   const evil = evilCountFor(n);
   return `${n} jugadores: equipos de ${teamSizes(n).join('-')} en las misiones 1 a 5, con ${evil} malvados y ${n - evil} leales.`;

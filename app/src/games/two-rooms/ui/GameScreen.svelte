@@ -95,7 +95,7 @@
       <div class="narration">🚶 Los rehenes cruzan de sala. Sin prisa: el reloj no corre.</div>
     {/if}
     {#if inGame}
-      <button class="primary block" data-a="tr-begin" onclick={() => guard(A.beginRound)}>▶️ Ya estamos: empezar la ronda {game.round}</button>
+      <button class="primary block" data-a="tr-begin" onclick={() => guard(A.beginRound)}>▶️ Empezar la ronda {game.round}</button>
     {/if}
   {/if}
   {#if !inGame}<p class="small-note" style="text-align:center">👀 Sigues la partida de espectador.</p>{/if}

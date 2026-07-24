@@ -58,7 +58,7 @@
       {#if inRound}
         <button role="menuitem" class="danger-text" data-a="espia-leave-open" onclick={leaveOpen}>🚪 Dejar la ronda</button>
       {/if}
-      <button role="menuitem" class="danger-text" data-a="espia-end-open" onclick={endOpen}>🏳️ Terminar</button>
+      <button role="menuitem" class="danger-text" data-a="espia-end-open" onclick={endOpen}>🏳️ Terminar el juego</button>
     </div>
   {/if}
 </div>

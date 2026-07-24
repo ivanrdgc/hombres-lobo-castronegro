@@ -85,9 +85,11 @@ try {
   const order = timeupOrder(st);
   console.log('  espía:', spy, '· orden:', order.join(' → '));
   // Postura de MESA (B28): tras el tiempo tampoco hay pantalla especial para el
-  // espía —su jugada sigue viva, pero dentro de la carta, tras el mismo gesto.
-  await pg(spy).waitForSelector('[data-a=espia-togglecard]', { timeout: 20000 });
+  // espía —su jugada sigue viva, pero dentro de la carta, que se abre por la
+  // pastilla 🎴 que llevan todos (única puerta, B34).
+  await pg(spy).waitForSelector('[data-a=espia-notes]', { timeout: 20000 });
   check(await pg(spy).locator('[data-a=espia-guess-open]').count() === 0, 'la jugada del espía no asoma en la tanda de acusaciones');
+  check(await pg(spy).locator('[data-a=espia-togglecard]').count() === 0, 'la pantalla no duplica la puerta a la carta');
 
   // Turnos: el primer no-espía PASA (y el espía pasa si le toca); el segundo
   // no-espía ACUSA al espía.
@@ -161,9 +163,9 @@ try {
   const prev3 = { ...st.scores };
   st = await waitState(ana, (s) => s.phase === 'timeup', 'tiempo agotado R3', 60000);
   // Tras el tiempo, la jugada del espía sigue donde estaba: dentro de la carta,
-  // detrás del mismo gesto que usa cualquiera (postura de mesa, B28).
-  await pg(spy3).waitForSelector('[data-a=espia-togglecard]', { timeout: 20000 });
-  await pg(spy3).click('[data-a=espia-togglecard]');
+  // detrás de la pastilla 🎴 que usa cualquiera (postura de mesa, B28/B34).
+  await pg(spy3).waitForSelector('[data-a=open-mycard]', { timeout: 20000 });
+  await pg(spy3).click('[data-a=open-mycard]');
   await pg(spy3).waitForSelector('[data-a=espia-guess-open]');
   await pg(spy3).click('[data-a=espia-guess-open]');
   await pg(spy3).waitForSelector(`button[data-a=espia-lugar][data-p=${st.locationId}]`);

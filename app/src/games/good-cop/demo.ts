@@ -27,7 +27,7 @@ export const DEMO: DemoScript = {
       visual: {
         kind: 'screens',
         panes: [
-          { title: 'Tu 🎴 (a solas)', lines: ['🕵️ Agente · 👮 Honesto · 🦹 Corrupto', 'Mayoría honesta → tu bando. Y llevas al líder.'] },
+          { title: '🎴 Mi carta (solo tú)', lines: ['🕵️ Agente · 👮 Honesto · 🦹 Corrupto', 'Mayoría honesta → tu bando. Y llevas al líder.'] },
           { title: 'El tablero (todos)', lines: ['🂠 🂠 🂠', 'Tres dorsos. Nada más.'] },
         ],
       },
@@ -44,7 +44,7 @@ export const DEMO: DemoScript = {
       visual: {
         kind: 'screens',
         panes: [
-          { title: 'El 🎴 de Bea', lines: ['🔍 «TÚ, carta 2: 👮 Honesto.»', 'Si hubiera elegido tu carta 1: 🕵️ Agente.'], buttons: [{ label: '🙈 Tapar ya', kind: 'ghost' }] },
+          { title: '🎴 Mi carta, en el móvil de Bea', lines: ['🔍 «TÚ, carta 2: 👮 Honesto.»', 'Si hubiera elegido tu carta 1: 🕵️ Agente.'], buttons: [{ label: '🙈 Tapar', kind: 'ghost' }] },
           { title: 'La pantalla de todos', lines: ['📜 «Bea investiga la carta 2 de TÚ.»', 'Sabes cuál ha mirado, no qué ha visto.'] },
         ],
       },

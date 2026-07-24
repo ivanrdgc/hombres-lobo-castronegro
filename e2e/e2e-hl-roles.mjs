@@ -195,7 +195,9 @@ try {
   await anyAlive.click('button[data-a=vote-nadie]');
   st = await waitState(ana, (s) => (s.votesLeft || 0) <= 0 && !s.pending.length, 'el pueblo perdona (juicio resuelto)');
   const jp = pageOf(juez);
-  await jp.click('button[data-a=toggle-rolecard]');
+  // El botón secreto del Juez vive DENTRO de la carta, y a la carta se entra
+  // por la única puerta del juego: la pastilla 🎴 (B34).
+  await jp.click('[data-a=open-mycard]');
   await jp.waitForSelector('[data-a=juez-arm]', { timeout: 15000 });
   await jp.click('[data-a=juez-arm]');
   st = await waitState(ana, (s) => (s.votesLeft || 0) === 1 && s.juezSecondActive === true,

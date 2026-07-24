@@ -45,8 +45,8 @@ async function twoSel(p) {
   for (let i = 0; i < Math.min(2, n); i++) await p.locator('.player[data-a=una-sel]').nth(i).click({ timeout: 4000 }).catch(() => {});
 }
 
-// B28 · postura 🍽️ MESA: el panel del paso vive tras «👁 Abrir mi panel», que
-// es el mismo botón en todos los móviles (al resto le dice «no es tu turno»).
+// B28 · postura 🍽️ MESA: el panel del paso vive tras «👁 Abrir mi turno», que
+// es el mismo botón en todos los móviles (al resto le dice «ahora no te toca»).
 async function openPanel(p) {
   if (await vis(p, '[data-a=una-open]:not([disabled])')) { await clk(p, '[data-a=una-open]'); await p.waitForTimeout(120); }
 }

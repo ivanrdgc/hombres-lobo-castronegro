@@ -47,7 +47,7 @@ export const HOW_TO: HelpSection[] = [
   {
     heading: '🏆 Ganar y perder discos',
     items: [
-      'Quien pierde todos sus discos queda eliminado. Si solo queda uno en pie, gana.',
+      'Quien pierde todos sus discos queda FUERA de la partida. Si solo queda uno en pie, gana.',
       'El primero en ganar DOS retos se lleva la partida. La app anuncia cada jugada en voz alta (nunca tus discos ocultos) y guarda el marcador.',
     ],
   },

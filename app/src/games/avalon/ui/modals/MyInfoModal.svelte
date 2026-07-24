@@ -1,7 +1,8 @@
 <script lang="ts">
-  // «🎴 Mi carta + referencia» (B19/B21): tu lealtad (con lo que sabes), la
-  // CHULETA con los números de la partida y los roles EN JUEGO. Accesible en
-  // cualquier fase: es la única vía de consultar reglas sin salir de la mesa.
+  // «🎴 Mi carta y las reglas» (B19/B21/B34): tu lealtad (con lo que sabes), los
+  // números de la partida y los roles EN JUEGO. Se abre desde la pastilla
+  // flotante, que es la ÚNICA puerta a tu carta una vez empezada la partida:
+  // ninguna fase pinta ya su propio «👁 Ver mi carta» en el cuerpo.
   import { app, viewGroup, me } from '../../../../core/sync/store.svelte';
   import { avalonGame } from '../../actions';
   import { ROLES, evilCountFor, teamSizes } from '../../roles';
@@ -23,7 +24,7 @@
     }))
     : []);
 
-  // Los números que una mesa novata pregunta a media partida y que hasta ahora
+  // Las reglas que una mesa novata pregunta a media partida y que hasta ahora
   // solo estaban en el lobby (la ayuda no se abría con la partida en curso).
   const cheats = $derived(game ? [
     {
@@ -60,16 +61,18 @@
 </script>
 
 {#if game && my}
-  <h3 style="margin:0 0 4px">🎴 Tu carta</h3>
+  <!-- El mismo rótulo que la pastilla que abre esto: «Mi carta» y «las reglas»
+       (B34: un nombre por cosa; «la chuleta» no existe como tercer nombre). -->
+  <h3 style="margin:0 0 4px">🎴 Mi carta</h3>
   {#if inGame}
-    <!-- Abrir el 🎴 YA es el gesto, así que la carta entra desplegada… pero se
-         auto-oculta como en cualquier otra pantalla: el modal se queda abierto
-         mientras se consulta la chuleta y el móvil vuelve a la mesa. -->
+    <!-- Abrir la pastilla YA es el gesto, así que la carta entra desplegada…
+         pero se auto-oculta igual: el modal se queda abierto mientras se
+         consultan las reglas y el móvil vuelve a la mesa. -->
     <RoleCard {game} pid={my.id} startOpen={true} />
   {:else}
-    <p class="small-note">👀 Miras de espectador: sin carta propia.</p>
+    <p class="small-note">👀 Miras de espectador: sin carta propia. Las reglas de abajo sí son para ti.</p>
   {/if}
-  <RefRows title="📖 Chuleta: los números" rows={cheats} />
-  <RefRows title="🎭 Roles en juego" {rows} />
+  <RefRows title="📖 Las reglas: los números de la partida" rows={cheats} />
+  <RefRows title="🎭 Las reglas: los roles en juego" {rows} />
 {/if}
 <button class="primary block" style="margin-top:14px" data-a="close-modal" onclick={() => (app.ui.modal = null)}>Cerrar</button>

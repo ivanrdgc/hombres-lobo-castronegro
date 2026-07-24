@@ -7,9 +7,8 @@ import StartScreen from './ui/StartScreen.svelte';
 import GameScreen from './ui/GameScreen.svelte';
 import HelpModal from './ui/modals/HelpModal.svelte';
 import DemoModal from './ui/modals/DemoModal.svelte';
-import LeaveModal from './ui/modals/LeaveModal.svelte';
 import EndConfirmModal from './ui/modals/EndConfirmModal.svelte';
-import MyInfoModal from './ui/modals/MyInfoModal.svelte';
+import RulesModal from './ui/modals/RulesModal.svelte';
 
 export const sonar: GameDefinition = {
   id: 'sonar',
@@ -22,10 +21,13 @@ export const sonar: GameDefinition = {
   Start: StartScreen,
   Screen: GameScreen,
   modals: {
-    'sn-mycard': MyInfoModal,
+    // La pastilla flotante de un juego de EQUIPO abre las REGLAS, no una carta:
+    // el submarino, la posición y el cuaderno ya están en la consola (B34).
+    'sn-rules': RulesModal,
     'sn-help': HelpModal,
     'sn-demo': DemoModal,
-    'sn-leave': LeaveModal,
+    // Sin «sn-leave»: irse de una partida por equipos es terminarla, y tener dos
+    // puertas con dos nombres para la misma acción era el botón de más.
     'sn-end': EndConfirmModal,
   },
 };

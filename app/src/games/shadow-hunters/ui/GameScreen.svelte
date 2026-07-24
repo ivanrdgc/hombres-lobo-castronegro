@@ -11,7 +11,6 @@
   import CardFab from '../../../shell/CardFab.svelte';
   import GameMenu from './GameMenu.svelte';
   import PlayersBoard from './PlayersBoard.svelte';
-  import SecretPeek from './SecretPeek.svelte';
   import TurnPanel from './TurnPanel.svelte';
   import EndPhase from './EndPhase.svelte';
 
@@ -24,9 +23,9 @@
   // La pista en curso: quien la RECIBE lee el texto completo; quien la dio ve
   // la confirmación (también con el texto: la carta la leen ambos).
   const pistaMine = $derived(game.pista && (game.pista.target === my.id || game.pista.by === my.id) ? game.pista : null);
-  // 🍽️ MESA: el sobre sale en TODAS las pantallas, pero el texto solo se abre
+  // 🍽️ MESA: el aviso sale en TODAS las pantallas, pero el texto solo se abre
   // tras un gesto y se vuelve a tapar solo. `denied` es lo que ve quien no es de
-  // los dos al tocarlo: así tocar el sobre tampoco delata (y desaparece solo).
+  // los dos al tocarlo: así tocar el aviso tampoco delata (y desaparece solo).
   let pistaOpen = $state(false);
   let pistaDenied = $state(false);
   function openPista() { if (pistaMine) pistaOpen = true; else pistaDenied = true; }
@@ -90,23 +89,26 @@
 {#if game.phase === 'end'}
   <EndPhase {game} {my} />
 {:else}
-  <!-- Orden de la pantalla (B29): lo que hay que hacer AHORA arriba (la carta de
-       pista pendiente, luego tu turno o a quién se espera), después tu carta
-       tras el 👁, y solo entonces el contexto público (tablero) y el diario. -->
+  <!-- Orden de la pantalla (B29): lo que hay que hacer AHORA arriba (la pista
+       pendiente, luego tu turno o a quién se espera) y solo entonces el
+       contexto público (tablero) y el diario. Tu carta NO se pinta aquí: en un
+       juego de mesa se abre desde un único sitio, la pastilla 🎴 (B34). -->
 
-  <!-- La carta de pista sigue a la vista en pausa a propósito: leerla no es
-       actuar (y `clearPista` va con allowPaused). Solo se retira cuando la han
-       acusado los DOS, para que quien la da no se la borre a quien la recibe.
-       🍽️ MESA: el sobre se pinta en TODAS las pantallas y con el mismo texto —
+  <!-- La pista sigue a la vista en pausa a propósito: leerla no es actuar (y
+       `clearPista` va con allowPaused). Solo se retira cuando la han acusado los
+       DOS, para que quien la da no se la borre a quien la recibe.
+       🍽️ MESA: el aviso se pinta en TODAS las pantallas y con el mismo texto —
        antes aparecía solo en dos móviles y su sola presencia decía a quién le
-       había tocado. Lo secreto es QUÉ pone, y eso vive tras el 👁. -->
+       había tocado. Lo secreto es QUÉ pone, y eso vive tras el botón.
+       B34: esto NO es «ver mi carta», es una acción, así que se rotula por lo
+       que hace («leer la pista»). -->
   {#if game.pista}
     {@const acked = (game.pista.ack || []).includes(my.id)}
     <div class="card pistacard">
-      <h3 style="margin:0 0 2px">🔮 Hay una carta de pista sin leer</h3>
-      <p class="small-note" style="margin:0">La leen solo quien la da y quien la recibe; la mesa oye únicamente el resultado. Este sobre sale igual en los {game.playerIds.length} móviles.</p>
+      <h3 style="margin:0 0 2px">🔮 Hay una pista sin leer</h3>
+      <p class="small-note" style="margin:0">La leen solo quien la da y quien la recibe; la mesa oye únicamente el resultado. Este aviso sale igual en los {game.playerIds.length} móviles.</p>
       {#if !pistaOpen}
-        <button class="primary block" style="margin-top:10px" data-a="sh-pista-peek" onclick={openPista}>👁 Abrir la carta (se tapa sola)</button>
+        <button class="primary block" style="margin-top:10px" data-a="sh-pista-peek" onclick={openPista}>🔮 Leer la pista (se tapa sola)</button>
         {#if pistaDenied}
           <p class="small-note" style="margin:8px 0 0">🤫 Esta no es tuya: la leen quien la da y quien la recibe. Por eso el botón está en todas las pantallas — tocarlo no delata a nadie.</p>
         {/if}
@@ -116,12 +118,12 @@
         <p class="small-note" style="margin:8px 0 0">🤫 Solo la leéis dos: {nm(otro)} y tú.</p>
         <div class="pistatxt">«{PISTAS[pistaMine.idx].text}»</div>
         <p style="margin:8px 0 0">{pistaEfecto}</p>
-        <p class="small-note" style="margin:6px 0 0">La mesa solo ha oído el resultado («{pistaMine.outcome}»), nunca la carta: {soyTarget ? `lo que ${nm(otro)} deduzca de tu bando lo sabe solo ${nm(otro)}… y ahora decide si lo cuenta o miente.` : `lo que deduzcas de ${nm(otro)} lo sabes solo tú: cuéntalo, cállalo o miente.`}</p>
+        <p class="small-note" style="margin:6px 0 0">La mesa solo ha oído el resultado («{pistaMine.outcome}»), nunca la pista: {soyTarget ? `lo que ${nm(otro)} deduzca de tu bando lo sabe solo ${nm(otro)}… y ahora decide si lo cuenta o miente.` : `lo que deduzcas de ${nm(otro)} lo sabes solo tú: cuéntalo, cállalo o miente.`}</p>
         {#if acked}
-          <p class="small-note" style="margin:8px 0 0">✅ Ya la has leído: el sobre se retira cuando {nm(otro)} pulse también «Entendido».</p>
+          <p class="small-note" style="margin:8px 0 0">✅ Ya la has leído: el aviso se retira cuando {nm(otro)} pulse también «Entendido».</p>
           <button class="ghost block small" style="margin-top:8px" data-a="sh-pista-hide" onclick={() => (pistaOpen = false)}>🙈 Taparla ya</button>
         {:else}
-          <button class="primary block" style="margin-top:10px" data-a="sh-pista-ok" onclick={() => guard(clearPista)}>👍 Entendido, retirar la carta</button>
+          <button class="primary block" style="margin-top:10px" data-a="sh-pista-ok" onclick={() => guard(clearPista)}>👍 Entendido, retirar la pista</button>
         {/if}
       {/if}</div>
   {/if}
@@ -138,10 +140,9 @@
   {#if inGame && !game.alive[my.id]}<p class="small-note" style="text-align:center">☠️ Estás fuera y tu personaje quedó destapado. Mira cómo acaba.</p>{/if}
   {#if !inGame}<p class="small-note" style="text-align:center">👀 Miras de espectador: no juegas esta partida.</p>{/if}
 
-  <!-- Lo tuyo: mismo botón en todos los móviles, se tapa solo. -->
-  <SecretPeek {game} pid={my.id} />
-
-  <div class="card"><h3 style="margin:0 0 4px">🩸 Cómo va la mesa</h3><PlayersBoard {game} {my} /></div>
+  <!-- «La mesa» ya es el modal de dispositivos del menú ⋯: este tablero cuenta
+       cómo va la PARTIDA (vidas y destapados). Un nombre por cosa. -->
+  <div class="card"><h3 style="margin:0 0 4px">🩸 Cómo va la partida</h3><PlayersBoard {game} {my} /></div>
 {/if}
 
 {#if game.log && game.log.length}
@@ -152,8 +153,8 @@
 <CardFab modal="sh-mycard" />
 
 <style>
-  /* La carta de pista es LO que se juega aquí: se pinta como una carta, no como
-     un aviso más, y con el texto grande (se lee de una ojeada y se pasa). */
+  /* La pista es LO que se juega aquí: se pinta como una carta, no como un aviso
+     más, y con el texto grande (se lee de una ojeada y se pasa). */
   .pistacard { border-color: #c8a24a; }
   .pistatxt {
     margin: 10px 0 0; padding: 12px; border-radius: var(--r-2);

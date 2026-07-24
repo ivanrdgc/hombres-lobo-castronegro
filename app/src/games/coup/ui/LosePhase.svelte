@@ -63,7 +63,7 @@
   <div class="card">
     <h3 style="margin-top:0">💥 {game.names[loser || ''] || '¿?'} descubre una carta {reason}</h3>
     <p class="hint">⏳ Está eligiendo cuál destapa. Quedará boca arriba el resto de la partida: es información que conviene recordar.</p>
-    <CharRef {game} label="📖 Repasa la corte mientras esperas" />
+    <CharRef {game} />
   </div>
 {/if}
 

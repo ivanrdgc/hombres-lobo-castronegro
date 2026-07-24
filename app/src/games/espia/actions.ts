@@ -80,7 +80,7 @@ export async function startEspia(playerIds: string[], speakerId: string | null, 
     voteSeq: 0, accusedUsed: {}, vote: null, timeupTurn: null,
     usedLocations: [deal.locationId], scores: {}, history: [], outcome: null,
     paused: null, repeatNonce: 0,
-    log: [{ txt: `🕵️ Ronda 1: identidades repartidas (${playerIds.length} agentes… o casi).` }],
+    log: [{ txt: `🕵️ Ronda 1: cartas repartidas (${playerIds.length} agentes… o casi).` }],
   };
   await txWithRetry(async (tx) => {
     const snap = await tx.get(gref(slug));
@@ -112,7 +112,7 @@ export async function confirmSeen(): Promise<void> {
   });
 }
 
-/** Todos han visto su identidad: cualquiera pone el reloj en marcha. */
+/** Todos han visto su carta: cualquiera pone el reloj en marcha. */
 export async function beginRound(): Promise<void> {
   await espiaTx((game) => {
     if (game.phase !== 'reveal') return null;
@@ -235,7 +235,7 @@ export async function voteAccusation(agree: boolean): Promise<void> {
 
 /** El espía se revela y adivina la localización: mientras corre el reloj Y
  *  también en la tanda de acusaciones (nunca durante una votación). Su jugada
- *  no caduca con el reloj: es lo que prometen su carta y la chuleta. */
+ *  no caduca con el reloj: es lo que prometen su carta y las reglas. */
 export async function spyGuess(guessId: string): Promise<void> {
   const me = myPid();
   await espiaTx((game) => {
@@ -300,7 +300,7 @@ export async function nextRound(): Promise<void> {
     game.usedLocations = game.usedLocations.length >= LOCATIONS.length
       ? [deal.locationId] // mazo agotado: se rebaraja
       : [...game.usedLocations, deal.locationId];
-    game.log.push({ txt: `🕵️ Ronda ${round}: nuevas identidades. Reparte ${nameOf(game, deal.dealerId)}.` });
+    game.log.push({ txt: `🕵️ Ronda ${round}: cartas nuevas. Reparte ${nameOf(game, deal.dealerId)}.` });
     return game;
   });
 }
@@ -440,7 +440,7 @@ export async function leaveRound(targetPid?: string, mid?: string): Promise<void
       game.roles = deal.roles;
       game.seen = {};
       game.usedLocations = [...game.usedLocations, deal.locationId];
-      game.log.push({ txt: '🔀 Se reparten identidades nuevas entre los que quedan.' });
+      game.log.push({ txt: '🔀 Se reparten cartas nuevas entre los que quedan.' });
       return out(game);
     }
     if (game.vote) {

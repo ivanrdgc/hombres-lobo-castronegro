@@ -25,6 +25,10 @@
 
   const { group, my }: { group: GroupDoc; my: PlayerDoc } = $props();
   const game = $derived(loveLetterGame(group)!);
+  // Foto del ajuste de la mesa al arrancar (B33): con el recuento apagado se
+  // juega en MODO DIFÍCIL — sigue viéndose cuántas cartas quedan por robar, pero
+  // la app no dice cuáles han salido ni cuáles quedan.
+  const track = $derived((group.settings || {}).llTrack !== false);
   const inGame = $derived(game.playerIds.includes(my.id) && !!matchOf(my.id));
   const myTurn = $derived(game.turn === my.id && game.phase === 'turn');
   const needsUnlock = $derived(isMaster() && !app.ui.audioReady && !app.ui.muted);
@@ -83,7 +87,7 @@
 {#snippet board()}
   <div class="card table">
     <PlayersRow {game} meId={my.id} />
-    <DeckStrip {game} />
+    <DeckStrip {game} {track} />
     {#if game.asideUp.length}
       <p class="small-note" style="margin:6px 0 0">🚫 Fuera de esta ronda, boca arriba: {game.asideUp.map((c) => `${CARD_INFO[c].emoji} ${CARD_INFO[c].name}`).join(', ')}.</p>
     {/if}
@@ -103,15 +107,18 @@
 
   {#if game.phase === 'turn'}
     {#if myTurn}
-      <TurnPanel {game} {my} />
+      <TurnPanel {game} {my} {track} />
       {@render board()}
     {:else}
-      {@render board()}
-      <p class="waiting" data-a="ll-waiting">🎴 Juega <b>{game.names[game.turn] || '¿?'}</b>. Tú no tienes nada que tocar: ve contando lo que sale.</p>
+      <!-- Tus cartas, SIEMPRE en el mismo sitio: arriba, te toque o no, para que
+           la pantalla no salte de un turno a otro y tu mano no se vaya nunca por
+           debajo del pliegue (B28 · postura de mano). -->
+      {#if inGame}<MyHand {game} meId={my.id} {track} />{/if}
+      <p class="waiting" data-a="ll-waiting">⏳ Le toca a <b>{game.names[game.turn] || '¿?'}</b>: tú no tienes nada que tocar. {track ? 'Mira los descartes de la mesa y ve pensando tu jugada.' : 'Ve contando lo que sale, que aquí no lo cuenta nadie por ti.'}</p>
       {#if turnAsleep}
         <p class="small-note" data-a="ll-turn-asleep">💤 El móvil de <b>{game.names[game.turn] || '¿?'}</b> lleva un rato sin dar señal. Si no vuelve, en el menú ⋯ tienes <b>🪑 La mesa</b> para verlo, y quien empezó la partida puede usar <b>⏭️ Retirar a un ausente</b> para seguir sin él esta ronda.</p>
       {/if}
-      {#if inGame}<MyHand {game} meId={my.id} />{/if}
+      {@render board()}
     {/if}
   {:else if game.phase === 'roundEnd'}
     {#if game.roundResult}

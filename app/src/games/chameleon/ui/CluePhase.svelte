@@ -11,7 +11,6 @@
   import { clueOrder, cluesGiven, cluesDone, currentCluePid, nextCluePid } from '../engine';
   import type { PlayerDoc } from '../../../core/sync/schema';
   import type { ChameleonState } from '../types';
-  import MyCard from './MyCard.svelte';
 
   const { game, my }: { game: ChameleonState; my: PlayerDoc } = $props();
   const inGame = $derived(game.playerIds.includes(my.id));
@@ -91,7 +90,8 @@
     </div></div>
   </details>
 </div>
-{#if inGame}<MyCard {game} pid={my.id} mini={true} />{/if}
+<!-- B34: aquí NO va un segundo «ver mi carta». La única puerta a tu carta en
+     partida es la pastilla 🎴 de abajo, idéntica en todos los móviles. -->
 
 <style>
   .chorder { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 12px; }

@@ -1,11 +1,13 @@
 <script lang="ts">
   // Fase de adivinar. Aquí la postura cambia de bando (B28):
-  //  · 👥 EQUIPO: el dial es la MESA. Un solo marcador para todos, que se
-  //    manosea entre varios y se mira desde donde cada uno esté sentado: pista
-  //    en grande, barra alta, pomo gordo y el número del marcador cantado.
+  //  · 👥 EQUIPO: el dial es la MESA. Una sola marca para todos, que se manosea
+  //    entre varios y se mira desde donde cada uno esté sentado: pista en
+  //    grande, barra alta, pomo gordo y el número cantado.
   //  · 🃏 El Psíquico sigue teniendo el secreto en la mano: su dial no pinta la
   //    diana (solo mientras mantiene pulsado), porque es justo el rato en que
   //    los demás se mueven, se asoman y él tiene el móvil en la mesa.
+  // Una sola palabra para la cosa que se mueve: LA MARCA (el botón, la aguja
+  // roja y la voz dicen lo mismo). «Marcador» se ha quedado para los puntos.
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
   import { psychicId } from '../engine';
@@ -21,8 +23,8 @@
   const pickedByMe = $derived(game.pickBy === my.id);
   // Cuántos móviles MÁS enseñan esta misma marca (el equipo, menos yo).
   const others = $derived(Math.max(1, game.playerIds.length - 2));
-  const othersTxt = $derived(others === 1 ? 'el otro móvil del equipo lo ve igual'
-    : `los otros ${others} móviles del equipo lo ven igual`);
+  const othersTxt = $derived(others === 1 ? 'el otro móvil del equipo la ve igual'
+    : `los otros ${others} móviles del equipo la ven igual`);
 
   // La marca vive en el DOC (todos ven la misma). `drag` es solo el valor
   // mientras el dedo va por la barra: se publica al soltar.
@@ -54,13 +56,16 @@
 
     <Dial spectrumId={game.spectrumId} selectable={true} value={pos} onpick={(v) => (drag = v)} onpickend={publish} />
 
+    <!-- El número ya está dos veces donde toca (el grande del dial y el botón
+         de fijar): esta línea solo dice de QUIÉN es la mano, que en una mesa se
+         ve y en el móvil no. -->
     <p class="who">
       {#if game.pick === null}
-        ⚪ Nadie lo ha movido todavía. Arrastrad el pomo entre todos: es el MISMO marcador en todos vuestros móviles.
+        ⚪ Nadie la ha movido todavía. Arrastrad el pomo entre todos: es la MISMA marca en todos vuestros móviles.
       {:else if pickedByMe}
-        🟢 Marcador en <b>{game.pick}</b>: lo has puesto <b>tú</b> y {othersTxt}.
+        🟢 La marca la has puesto <b>tú</b> y {othersTxt}.
       {:else}
-        🟢 Marcador en <b>{game.pick}</b>: lo movió <b>{pickedBy || 'el equipo'}</b> y lo veis igual todos.
+        🟢 La marca la ha puesto <b>{pickedBy || 'el equipo'}</b> y la veis igual todos.
       {/if}
     </p>
 
@@ -69,20 +74,21 @@
       {armed ? `✅ Sí: fijar en ${game.pick} y puntuar` : `✅ Fijar la marca en ${game.pick ?? '—'}`}
     </button>
     {#if game.pick === null}
-      <p class="small-note" style="margin-top:6px">Hasta que no lo mováis no hay nada que fijar.</p>
+      <p class="small-note" style="margin-top:6px">Hasta que no la mováis no hay nada que fijar.</p>
     {:else if armed}
       <p class="warn">⚠️ El segundo toque cierra la ronda y revela el objetivo. No se puede deshacer.</p>
-      <button class="ghost block" data-a="wl-guess-cancel" onclick={() => (armedAt = null)}>↩️ No: seguir moviéndolo</button>
+      <button class="ghost block" data-a="wl-guess-cancel" onclick={() => (armedAt = null)}>↩️ No: seguir moviéndola</button>
     {:else}
-      <p class="small-note" style="margin-top:6px">Pedirá un segundo toque: lo fija uno por todos, cuando estéis de acuerdo.</p>
+      <p class="small-note" style="margin-top:6px">Pedirá un segundo toque: la fija uno por todos, cuando estéis de acuerdo.</p>
     {/if}
 
-    <!-- La chuleta, aquí mismo: en esta pantalla es donde se decide, y lo que
-         puntúa cada franja no se lleva de memoria. -->
+    <!-- La referencia, aquí mismo: en esta pantalla es donde se decide, y lo que
+         puntúa cada franja no se lleva de memoria (B25). Dice lo mismo, con las
+         mismas palabras, que la pastilla «📖 Reglas». -->
     <details class="ref">
       <summary data-a="wl-ref-guess">📖 Cuánto puntúa cada franja y qué se puede hacer</summary>
       <p class="small-note">La diana (que no veis) es una franja de ±15 alrededor del objetivo: su centro vale <b>4</b> puntos, la parte media <b>3</b> y la exterior <b>2</b>. Fuera de ella, <b>0</b>. Ajustar un par de puntos importa.</p>
-      <p class="small-note">Podéis debatir sin prisa y mover el marcador las veces que queráis: solo cuenta dónde esté al fijarlo, y lo mueve cualquiera del equipo.</p>
+      <p class="small-note">Podéis debatir sin prisa y mover la marca las veces que queráis: solo cuenta dónde esté al fijarla, y la mueve cualquiera del equipo.</p>
       <p class="small-note">{psychicName} ya no puede añadir nada ni hacer gestos: si lo intenta, ignoradle. Los puntos son del equipo y también suyos.</p>
     </details>
   </div>
@@ -90,21 +96,19 @@
   <div class="privacy" data-a="wl-private">
     🙈 <b>Sigues teniendo el objetivo en el móvil</b>, y es cuando más se asoman: pantalla hacia ti hasta que se revele.
   </div>
-  <div class="narration">🎚️ Ya diste tu pista. El equipo está colocando el marcador… ni una palabra, ni un gesto.</div>
   <div class="card">
     {#if game.clueText}<p class="clue" style="margin-top:0">💬 Tu pista: <b>«{game.clueText}»</b></p>{/if}
     <Dial spectrumId={game.spectrumId} target={game.target} marker={game.pick} legend="result" secret={true} />
     <p class="small-note" style="margin-top:2px">
-      {game.pick === null ? 'Aún no han movido nada.' : `Van por ${game.pick}${pickedBy ? ` (lo movió ${pickedBy})` : ''}. Lo fijan ellos: tú ya no tocas el dial.`}
+      {game.pick === null ? 'Aún no han movido nada.' : `Van por ${game.pick}${pickedBy ? ` (la movió ${pickedBy})` : ''}. La fijan ellos: tú ya no tocas el dial.`}
     </p>
   </div>
 {:else}
-  <div class="narration">👀 Miras de espectador: para ti el objetivo sigue siendo secreto. <b>{psychicName}</b> ya dio su pista y el equipo está colocando el marcador.</div>
   <div class="card">
     {#if game.clueText}<p class="clue" style="margin-top:0">💬 La pista: <b>«{game.clueText}»</b></p>{/if}
     <Dial spectrumId={game.spectrumId} marker={game.pick} />
     <p class="small-note" style="margin-top:2px">
-      {game.pick === null ? 'El equipo aún no ha movido el marcador.' : `Marcador en ${game.pick}${pickedBy ? `, movido por ${pickedBy}` : ''}.`}
+      {game.pick === null ? 'El equipo aún no ha movido la marca; para ti el objetivo sigue siendo secreto.' : `La marca va por ${game.pick}${pickedBy ? `, la movió ${pickedBy}` : ''}.`}
     </p>
   </div>
 {/if}

@@ -55,8 +55,8 @@
   {/each}
 </div>
 
-<button class="primary block" data-a="sn-again" onclick={() => guard(A.playAgain)}>🔁 Otra partida (mismas tripulaciones)</button>
-<p class="small-note" style="text-align:center;margin:4px 0 10px">Nadie cambia de corro ni de altavoz: solo se recolocan los submarinos y el cuaderno empieza en blanco.</p>
+<button class="primary block" data-a="sn-again" onclick={() => guard(A.playAgain)}>🔁 Otra partida</button>
+<p class="small-note" style="text-align:center;margin:4px 0 10px">Mismas tripulaciones: nadie cambia de corro ni de altavoz. Solo se recolocan los submarinos y el cuaderno de sonar empieza en blanco.</p>
 <button class="ghost block" data-a="sn-back-lobby" onclick={() => guard(() => A.endSonar())}>🏁 Terminar y volver al lobby</button>
 
 <style>

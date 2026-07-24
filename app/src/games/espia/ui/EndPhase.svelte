@@ -36,6 +36,8 @@
   }));
   let adds = $state<string[]>([]);
   const picked = $derived(adds.filter((pid) => candidates.some((p) => p.id === pid)));
+  // El botón nombra a quién sienta (B25: el botón dice lo que hace).
+  const pickedNames = $derived(picked.map((pid) => candidates.find((p) => p.id === pid)?.name || '¿?').join(', '));
   const roomLeft = $derived(ESPIA_MAX_PLAYERS - game.playerIds.length);
   const nextDealer = $derived(game.names[game.playerIds[game.round % game.playerIds.length]] || '¿?');
 
@@ -77,8 +79,8 @@
 </div>
 
 <div class="card">
-  <h3>▶️ La próxima ronda</h3>
-  <p class="small-note" style="margin-top:0">Juegan <b>{game.playerIds.length}</b>: {game.playerIds.map((pid) => game.names[pid] || pid).join(', ')}{tooFew ? '' : ` · reparte ${nextDealer}`}. Para retirarte: ⋯ → 🚪 Dejar la ronda.</p>
+  <h3>👥 ¿Quién juega la próxima ronda?</h3>
+  <p class="small-note" style="margin-top:0">Sentados <b>{game.playerIds.length}</b>: {game.playerIds.map((pid) => game.names[pid] || pid).join(', ')}{tooFew ? '' : ` · reparte ${nextDealer}`}. Para retirarte: ⋯ → 🚪 Dejar la ronda.</p>
   {#if candidates.length && roomLeft > 0}
     <p class="small-note">Se puede sumar gente (hasta {ESPIA_MAX_PLAYERS}). Añade solo a quien esté delante: si no confirma su carta, la ronda no arranca.</p>
     <div class="players">
@@ -91,7 +93,7 @@
       {/each}
     </div>
     <button class="block" data-a="espia-add-players" disabled={!picked.length || picked.length > roomLeft} onclick={addNow}>
-      ➕ {picked.length ? `Sentar a ${picked.length} en la próxima ronda` : 'Sentar a alguien en la próxima ronda'}
+      ➕ {picked.length ? `Sentar a ${pickedNames}` : 'Toca arriba a quien se sume'}
     </button>
     {#if picked.length > roomLeft}<p class="small-note">⚠️ Solo caben {roomLeft} más (máximo {ESPIA_MAX_PLAYERS}: 7 papeles y el espía).</p>{/if}
   {:else if roomLeft <= 0}
@@ -100,6 +102,6 @@
   {#if tooFew}
     <p class="small-note">⚠️ Sois {game.playerIds.length}: hacen falta {ESPIA_MIN_PLAYERS} para repartir otra vez. Sentad a alguien más… o terminad el juego.</p>
   {/if}
-  <button class="primary block" style="margin-top:10px" data-a="espia-next-round" disabled={tooFew} onclick={() => guard(A.nextRound)}>▶️ Repartir otra ronda</button>
-  <button class="ghost block" data-a="espia-end-game" onclick={() => guard(A.endEspia)}>🏁 Terminar el juego (se cierra el marcador)</button>
+  <button class="primary block" style="margin-top:10px" data-a="espia-next-round" disabled={tooFew} onclick={() => guard(A.nextRound)}>🎴 Repartir la ronda {game.round + 1}</button>
+  <button class="ghost block" data-a="espia-end-game" onclick={() => guard(A.endEspia)}>🏳️ Terminar el juego (se cierra el marcador)</button>
 </div>

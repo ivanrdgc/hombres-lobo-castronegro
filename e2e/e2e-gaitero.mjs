@@ -89,9 +89,10 @@ try {
   let st = await waitState(ana, (s) => s.phase === 'reveal', 'reparto');
   check(st.players.some((p) => p.role === 'gaitero'), 'el gaitero está en juego');
 
-  // Revelar todos. En el primero, reproducimos el disparador del bug de roleOpen:
-  // tocar la carta desplegada del revelado ANTES de confirmar; tras confirmar,
-  // la carta mini debe salir PLEGADA (botón «Mostrar mi rol»), no abierta.
+  // Revelar todos. En el primero, reproducimos el disparador del viejo bug de
+  // roleOpen: tocar la carta desplegada del revelado ANTES de confirmar. Tras
+  // confirmar, la carta se guarda del todo (B34: ya no queda ninguna carta ni
+  // ningún segundo botón en el cuerpo; la puerta es la pastilla 🎴).
   let first = true;
   for (const p of st.players.filter((x) => x.inGame)) {
     const pg = pages[p.name.toLowerCase()];
@@ -99,15 +100,16 @@ try {
     await pg.click('[data-a=open-reveal-role]');
     await pg.waitForSelector('[data-a=confirm-role-seen]');
     if (first) {
-      await pg.click('.rolecard[data-a=toggle-rolecard]'); // toque en la carta del revelado
+      await pg.click('.rolecard'); // toque en la carta del revelado
       await pg.waitForTimeout(150);
     }
     await pg.click('[data-a=confirm-role-seen]');
     await pg.waitForTimeout(250);
     if (first) {
-      const collapsed = await pg.locator('button[data-a=toggle-rolecard]').count();
-      const expanded = await pg.locator('div.rolecard[data-a=toggle-rolecard]').count();
-      check(collapsed >= 1 && expanded === 0, 'tras confirmar el rol, la carta mini queda plegada (no abierta)');
+      const still = await pg.locator('.rolecard').count();
+      const doors = await pg.locator('button[data-a=toggle-rolecard]').count();
+      check(still === 0 && doors === 0, 'tras confirmar el rol, la carta se guarda y no deja una segunda puerta en el cuerpo');
+      check((await pg.locator('[data-a=open-mycard]').count()) === 1, 'queda una sola puerta a la carta: la pastilla 🎴');
       first = false;
     }
   }

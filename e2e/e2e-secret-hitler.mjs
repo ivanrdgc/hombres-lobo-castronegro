@@ -13,6 +13,11 @@
 // abierta tiene el mismo marco y el mismo alto para los tres bandos, desde los
 // móviles de fuera no se ve nada distinto durante la legislatura y al terminarla
 // no queda rastro en pantalla de qué cartas tuvo el Presidente.
+//
+// Y la puerta única (B34): en partida la carta se abre SOLO desde la pastilla
+// flotante 🎴 (ningún «👁 Ver mi carta» suelto en el cuerpo de las fases), la
+// cabecera dice la misma fase en todos los móviles y las cortinas de la
+// legislatura y de los poderes se rotulan por lo que abren, no por «mi carta».
 import { chromium } from 'playwright';
 const BASE = process.env.BASE; if (!BASE) { console.error('Define BASE=https://tu-sitio.web.app'); process.exit(1); }
 let fail = 0;
@@ -126,6 +131,7 @@ try {
   let sawPeek = false; let execCount = 0; let sawLegPres = false; let sawLegChan = false;
   let killedHitler = false; let neinRoundDone = false; let deadNoteChecked = false;
   let sawLegHint = false; let sawEnactHint = false; let sawNomWhy = false; let sawHandoff = false;
+  let sawOneDoor = false;
   st = await waitState(ana, (s) => s.phase === 'nominate', 'primera nominación');
   // El tablero dice de un vistazo qué desbloquea la casilla que viene.
   await ana.waitForSelector('[data-a=sh-next]', { timeout: 15000 });
@@ -139,6 +145,29 @@ try {
     if (st.phase === 'nominate') {
       const pres = presidentPid(st);
       const p = pg(pres);
+      // Una sola puerta a tu carta (B34): con la partida en marcha, el cuerpo de
+      // las fases NO lleva ningún «👁 Ver mi carta» —había uno debajo de cada
+      // panel, además de la pastilla flotante—. La pastilla 🎴 es la única, y es
+      // idéntica en todos los móviles (postura de MESA, B28).
+      if (!sawOneDoor) {
+        sawOneDoor = true;
+        const otro = st.playerIds.find((x) => x !== pres);
+        const q = pg(otro);
+        const fabs = await q.locator('[data-a=open-mycard]').count();
+        const extra = await q.locator('[data-a=sh-show-card]').count();
+        check(fabs === 1 && extra === 0, `una sola puerta a la carta: 1 pastilla 🎴 y 0 botones sueltos (${fabs}/${extra})`);
+        check(await q.locator('[data-a=sh-rolecard]').count() === 0, 'en reposo ningún móvil enseña la carta');
+        // Y la cabecera cuenta lo mismo en todas las pantallas.
+        const chips = [];
+        for (const x of st.playerIds) chips.push(((await pg(x).textContent('[data-a=sh-phase-chip]')) || '').trim());
+        check(new Set(chips).size === 1, `la cabecera dice la misma fase en los ${chips.length} móviles («${chips[0]}»)`);
+        await q.click('[data-a=open-mycard]');
+        await q.waitForSelector('[data-a=sh-sheet] [data-a=sh-rolecard]', { timeout: 10000 });
+        ok('la pastilla 🎴 abre la carta (y las reglas) dentro de la cortina de privacidad');
+        await q.click('[data-a=sh-hide]');
+        await q.waitForSelector('[data-a=sh-sheet]', { state: 'detached', timeout: 10000 });
+        check(await q.locator('[data-a=sh-rolecard]').count() === 0, 'al ocultarla no queda rastro en pantalla');
+      }
       // Leemos los cancilleres que la propia pantalla ofrece como ELEGIBLES
       // (la app ya aplica los límites de mandato) y elegimos uno que NO sea
       // Hitler — así jamás intentamos tocar un chip que la UI no muestra.
@@ -195,6 +224,10 @@ try {
       if (primeraLeg) {
         sawHandoff = true;
         check(await p.locator('[data-a=sh-pres-discard]').count() === 0, 'los tres decretos no se pintan solos: hace falta el gesto');
+        // Actuar no es «ver mi carta» (B34 · 2): la cortina se rotula por lo que
+        // abre —los decretos—, no con otro nombre para la carta.
+        const leg = ((await p.textContent('[data-a=sh-open-cards]')) || '').replace(/\s+/g, ' ').trim();
+        check(/abrir/i.test(leg) && /decreto/i.test(leg) && !/mi carta/i.test(leg), `la cortina de la legislatura dice qué abre («${leg}»)`);
         const otro = st.playerIds.find((x) => x !== presidentPid(st) && x !== st.nominatedChancellor);
         const fuera = await pg(otro).locator('[data-a=sh-open-cards], [data-a=sh-sheet], .pol').count();
         check(fuera === 0, 'desde fuera (otro móvil) no se ve nada de la legislatura');
@@ -242,7 +275,9 @@ try {
         sawPeek = true;
         // Las tres cartas del mazo también viven tras la cortina.
         await p.waitForSelector('[data-a=sh-open-peek]', { timeout: 15000 });
-        check(await p.locator('.policy').count() === 0, 'las tres cartas del 🔮 no se pintan solas');
+        check(await p.locator('.policy').count() === 0, 'los tres decretos del 🔮 no se pintan solos');
+        const peek = ((await p.textContent('[data-a=sh-open-peek]')) || '').replace(/\s+/g, ' ').trim();
+        check(/mirar|mazo/i.test(peek) && !/mi carta/i.test(peek), `el poder 🔮 se rotula por lo que hace («${peek}»)`);
         await p.click('[data-a=sh-open-peek]');
         await p.waitForSelector('[data-a=sh-peek-done]', { timeout: 15000 });
         await p.click('[data-a=sh-peek-done]');
@@ -309,6 +344,8 @@ try {
   await ana.click('[data-a=game-menu]');
   // «🪑 La mesa» dentro de la partida: el rescate cuando un móvil se apaga.
   check(await ana.locator('[data-a=table-open]').count() > 0, 'el menú ⋯ ofrece «🪑 La mesa»');
+  // Y las reglas largas, sin salir de la partida (la pastilla 🎴 solo lleva el resumen).
+  check(await ana.locator('[data-a=sh-help-open]').count() > 0, 'el menú ⋯ ofrece «📖 Cómo se juega»');
   await ana.click('[data-a=sh-end-open]');
   await ana.waitForSelector('[data-a=sh-end-confirm]');
   await ana.click('[data-a=sh-end-confirm]');

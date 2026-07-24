@@ -34,7 +34,13 @@
 {#if opening || raising}
   <div class="actionpanel">
     <h3>{opening ? '🗣️ Abrir la apuesta' : '📈 Subir la apuesta… o pasar'}</h3>
-    <p class="hint">Quien se queda solo levanta: primero TU pila ({minePlaced} disco{minePlaced === 1 ? '' : 's'}) y luego las ajenas.</p>
+    <!-- El botón dice lo que hace, y el panel lo que cuesta (B26·1 y ·3): quien
+         abre la apuesta deja de colocar, y quien gana la puja levanta lo suyo
+         primero. Son las dos cosas que se olvidan al pujar. -->
+    <p class="hint">
+      {#if opening}Abrir la apuesta cierra tu colocación: ya no pondrás más discos esta ronda.{/if}
+      Quien se queda solo levanta: primero TU pila ({minePlaced} disco{minePlaced === 1 ? '' : 's'}) y luego las ajenas.
+    </p>
 
     {#if nums.length}
       <div class="btnrow" style="flex-wrap:wrap;gap:6px">

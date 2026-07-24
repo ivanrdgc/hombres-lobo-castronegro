@@ -8,7 +8,6 @@ import GameScreen from './ui/GameScreen.svelte';
 import HelpModal from './ui/modals/HelpModal.svelte';
 import DeckModal from './ui/modals/DeckModal.svelte';
 import RoleDetailModal from './ui/modals/RoleDetailModal.svelte';
-import LeaveModal from './ui/modals/LeaveModal.svelte';
 import EndConfirmModal from './ui/modals/EndConfirmModal.svelte';
 import DemoModal from './ui/modals/DemoModal.svelte';
 import MyInfoModal from './ui/modals/MyInfoModal.svelte';
@@ -29,7 +28,6 @@ export const unaNoche: GameDefinition = {
     'una-help': HelpModal,
     'una-deck': DeckModal,
     'una-role-detail': RoleDetailModal,
-    'una-leave': LeaveModal,
     'una-end': EndConfirmModal,
   },
 };

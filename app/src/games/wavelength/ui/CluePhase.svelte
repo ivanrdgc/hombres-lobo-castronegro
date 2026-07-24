@@ -6,7 +6,9 @@
   //    diana pintada, que sí canta a lo lejos, va tapada tras «mantén pulsado».
   //    Encima, un aviso PERMANENTE de que esa pantalla no la ve nadie más.
   //  · El resto es pantalla de EQUIPO: el dial público, grande, sin nada que
-  //    tocar todavía.
+  //    tocar todavía. Lo que están esperando ya lo dice la cabecera («escucha
+  //    la pista de X»), así que aquí no se repite: solo el dial y por qué está
+  //    vacío.
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
   import { psychicId, targetHint } from '../engine';
@@ -31,11 +33,11 @@
        es de una sola persona. En un juego cooperativo cuesta recordarlo —«son
        los míos»—, pero si la ve alguien del equipo la ronda ya no vale. -->
   <div class="privacy" data-a="wl-private">
-    🙈 <b>Pantalla privada:</b> móvil hacia ti, como una mano de cartas. Si alguien ve tu diana
+    🙈 <b>Pantalla privada:</b> móvil hacia ti, como una mano de cartas. Si alguien te ve el objetivo
     —aunque sea de los tuyos—, la ronda ya no vale.
   </div>
 
-  <div class="actionpanel"><h3>🔮 Una idea que caiga en tu diana</h3>
+  <div class="actionpanel"><h3>🔮 Una idea que caiga en tu objetivo</h3>
 
     <p class="aim">🎯 Tu objetivo está en <b>{game.target}</b> de 100, {aim}.</p>
 
@@ -58,14 +60,13 @@
     </details>
   </div>
 {:else}
-  <div class="narration">🔮 <b>{psychicName}</b> está buscando su pista… Escuchad: solo la dirá una vez.</div>
   <div class="card">
-    <p class="small-note" style="margin:0 0 2px">📡 Este es el dial de la ronda. El objetivo está en algún punto de la barra y no lo veis: {psychicName} sí.</p>
+    <p class="small-note" style="margin:0 0 2px">📡 El dial de la ronda. El objetivo está en algún punto de la barra y no lo veis: {psychicName} es el único que lo ve.</p>
     <Dial spectrumId={game.spectrumId} />
     <p class="small-note" style="margin-top:2px">
       {inTeam
-        ? '🙈 Y no miréis su móvil: lleva la diana tapada, pero la destapa para pensar. Si alguien la ve, la ronda se cae.'
-        : '👀 Miras de espectador: verás el dial y la pista, pero no el objetivo ni podrás mover el marcador.'}
+        ? '🙈 Y no miréis su móvil: lleva la diana tapada, pero la destapa para apuntar. Si alguien se la ve, la ronda se cae.'
+        : '👀 Verás el dial y la pista, pero no el objetivo, y no podrás mover la marca.'}
     </p>
   </div>
 {/if}

@@ -41,7 +41,8 @@
        dejará el móvil boca arriba en la mesa. -->
   <p class="posture">{POSTURE_HINT[meta.posture]} La app reparte y guarda las manos: cada uno ve solo la suya.</p>
 
-  <button class="primary block" data-a="open-start" onclick={() => navigate(`/g/${group.id}/love_letter/empezar`)}>💌 Empezar: elegir quién juega</button>
+  <!-- El mismo rótulo que en los otros 16 juegos (B29·5: vocabulario estable). -->
+  <button class="primary block" data-a="open-start" onclick={() => navigate(`/g/${group.id}/love_letter/empezar`)}>💌 Empezar partida</button>
   <div class="ways">
     <button data-a="open-demo" onclick={() => (app.ui.modal = { type: 'll-demo' })}>🎓 Aprender jugando<small>ronda guiada · 2 min</small></button>
     <button data-a="ll-open-help" onclick={() => (app.ui.modal = { type: 'll-help' })}>📖 Cómo se juega<small>reglas y las 8 cartas</small></button>

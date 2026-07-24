@@ -9,7 +9,7 @@
   import type { SHState } from '../types';
 
   const { game, my }: { game: SHState; my: PlayerDoc } = $props();
-  const meId = my.id;
+  const meId = $derived(my.id);
   const nm = (pid: string) => game.names[pid] || '¿?';
 </script>
 

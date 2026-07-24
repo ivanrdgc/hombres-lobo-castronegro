@@ -4,6 +4,10 @@
   // chivato más caro de la partida, porque en Una Noche la carta inicial es
   // media deducción—. Ahora todos los móviles enseñan la MISMA tarjeta neutra y
   // la carta se mira dentro de la cortina de privacidad, que se cierra sola.
+  //
+  // Es la ÚNICA fase con botón propio a la carta (excepción de B34): aquí la
+  // instrucción ES mirarla y memorizarla. En cuanto empieza la noche, la única
+  // puerta vuelve a ser la pastilla flotante «🎴 Mi carta».
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
   import type { PlayerDoc } from '../../../core/sync/schema';
@@ -33,7 +37,7 @@
   <!-- Tarjeta NEUTRA: el mismo texto y el mismo botón en todos los móviles. -->
   <div class="actionpanel">
     <h3>🎴 Tu carta está repartida</h3>
-    <p class="hint">Coge el móvil, tápalo con la mano y ábrelo: la carta solo aparece mientras la miras y se oculta sola a los 12 s. Nadie puede deducir nada mirando tu pantalla de reojo, porque <b>es la misma que la suya</b>.</p>
+    <p class="hint">Coge el móvil, tápalo con la mano y ábrelo: la carta solo aparece mientras la miras y se oculta sola a los 12 s. De reojo nadie deduce nada, porque tu pantalla <b>es la misma que la suya</b>.</p>
     <button class="primary block" data-a="una-open-card" onclick={() => (open = true)}>👁 Ver mi carta en secreto</button>
     <p class="why">{seen ? '✅ Tu carta: memorizada.' : '⏳ Tu carta: aún sin confirmar.'} {allSeen ? 'Todos listos.' : 'Faltan por confirmar: ' + pending.join(', ') + '.'}</p>
   </div>
@@ -43,7 +47,7 @@
   {/if}
 
   {#if open}
-    <PrivacySheet title="🎴 Tu carta inicial" onclose={() => (open = false)}>
+    <PrivacySheet title="🎴 Mi carta" onclose={() => (open = false)}>
       <RoleCard role={myRole} />
       {#if !seen}
         <button class="primary block" data-a="una-seen" onclick={memorized}>✅ Ya la he memorizado</button>
@@ -53,7 +57,7 @@
     </PrivacySheet>
   {/if}
 {:else}
-  <div class="card"><p class="hint">👀 No juegas esta partida: pon la voz o mira desde aquí.</p></div>
+  <div class="card"><p class="hint">🎴 Repartiendo las cartas…</p></div>
 {/if}
 
 <style>

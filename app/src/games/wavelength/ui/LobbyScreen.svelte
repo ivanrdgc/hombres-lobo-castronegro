@@ -5,7 +5,7 @@
   // aquí ya no se repite.
   import { app, navigate } from '../../../core/sync/store.svelte';
   import { localAudioState, toggleLocalSpeech } from '../../../shell/explain-audio';
-  import { gameMeta, POSTURE_HINT } from '../../registry';
+  import { gameMeta } from '../../registry';
   import { MIN_PLAYERS, MAX_PLAYERS } from '../engine';
   import { INTRO_LOBBY } from '../texts';
   import type { GroupDoc, PlayerDoc } from '../../../core/sync/schema';
@@ -23,14 +23,16 @@
 <Flash />
 
 <div class="card">
-  <p class="pitch">Un <b>dial entre dos ideas opuestas</b> con un objetivo secreto: el <b>Psíquico</b> de la ronda lo ve y da <b>una pista</b>. El resto debate y coloca el marcador; cuanto más cerca, más puntos.</p>
-  <p class="small-note">Cooperativo: todos en el mismo equipo y un solo marcador. De {MIN_PLAYERS} a {MAX_PLAYERS} jugadores, {meta.mins[0]}–{meta.mins[1]} min.</p>
+  <p class="pitch">Un <b>dial entre dos ideas opuestas</b> con un objetivo secreto: el <b>Psíquico</b> de la ronda lo ve y da <b>una pista</b>. El resto debate y coloca la marca; cuanto más cerca, más puntos.</p>
+  <p class="small-note">Cooperativo: todos en el mismo equipo, un solo dial y un único total de puntos. De {MIN_PLAYERS} a {MAX_PLAYERS} jugadores, {meta.mins[0]}–{meta.mins[1]} min.</p>
 
-  <!-- Cómo se coge el móvil, antes de repartir nada: en este juego el secreto
-       es de una sola persona y decide cómo son las pantallas. -->
+  <!-- Cómo se coge el móvil, antes de empezar nada: en este juego el secreto es
+       de una sola persona y decide cómo son las pantallas. El aviso genérico de
+       los juegos de equipo habla del «equipo rival», y aquí no hay rival: sois
+       todos el mismo equipo. -->
   <div class="posture" data-a="wl-posture">
-    <p>{POSTURE_HINT[meta.posture]}</p>
-    <p class="small-note" style="margin-top:4px">Con un matiz: el secreto es de <b>uno solo</b>. La pantalla del Psíquico no la puede ver <b>nadie</b>, ni los suyos; los demás comparten un dial que se ve igual en todos.</p>
+    <p>👥 <b>Un solo equipo:</b> el dial es público y se ve igual en todos los móviles, así que podéis dejarlos a la vista y debatir mirándolos entre todos.</p>
+    <p class="small-note" style="margin-top:4px">🙈 La excepción es el <b>Psíquico</b> de cada ronda: lleva el objetivo en su móvil y esa pantalla no la puede ver <b>nadie</b>, tampoco los suyos. La sujeta mirando hacia él y la diana solo se pinta mientras mantiene pulsado.</p>
   </div>
 
   <button class="primary block" data-a="open-start" onclick={() => navigate(`/g/${group.id}/wavelength/empezar`)}>📡 Empezar partida</button>

@@ -5,7 +5,7 @@
   // media regla de este juego, se avisa ANTES de repartir.
   import { app, navigate } from '../../../core/sync/store.svelte';
   import { localAudioState, toggleLocalSpeech } from '../../../shell/explain-audio';
-  import { gameMeta, POSTURE_HINT } from '../../registry';
+  import { gameMeta } from '../../registry';
   import { MIN_PLAYERS, MAX_PLAYERS } from '../engine';
   import { INTRO_LOBBY } from '../texts';
   import type { GroupDoc, PlayerDoc } from '../../../core/sync/schema';
@@ -32,7 +32,7 @@
       {#each INTRO_LOBBY as p, i (i)}<p style="margin:0 0 9px">{p}</p>{/each}
     </div>
     {#if introAudio === 'playing'}
-      <button class="small ghost" data-a="cn-play-intro" title="Detener" onclick={() => toggleLocalSpeech('cn-intro', [])}>⏹️</button>
+      <button class="small ghost" data-a="cn-play-intro" aria-label="Detener" title="Detener" style="font-size:1.1rem;line-height:1" onclick={() => toggleLocalSpeech('cn-intro', [])}>⏹️</button>
     {:else if introAudio === 'loading'}
       <button class="small ghost" aria-label="Preparando la voz" disabled><span class="spinner"></span></button>
     {:else}
@@ -40,10 +40,12 @@
     {/if}
   </div>
 
-  <p class="small-note" data-a="cn-posture" style="margin-top:0">{POSTURE_HINT[meta.posture]}</p>
-  <p class="small-note" style="margin-top:4px">Aquí con un matiz: el mapa del Jefe no lo ve <b>nadie</b>, tampoco sus propios agentes. Él sujeta el móvil como una mano de cartas; los demás pueden dejar el suyo en medio de la mesa.</p>
+  <!-- La postura, en UNA frase: el aviso genérico de los juegos de equipo dice
+       «secreto de equipo», y en Codenames es más estricto (ni sus agentes),
+       así que se dice bien a la primera en vez de decirlo y corregirlo. -->
+  <p class="small-note" data-a="cn-posture" style="margin-top:0">👥 El mapa del Jefe no lo ve <b>nadie</b>, tampoco sus propios agentes: él sujeta el móvil como una mano de cartas y los demás dejan el suyo a la vista de todos.</p>
 
   <button class="block" data-a="open-demo" onclick={() => (app.ui.modal = { type: 'cn-demo' })}>🎓 Aprender jugando (tutorial de 2 min)</button>
-  <button class="block" data-a="cn-open-help" onclick={() => (app.ui.modal = { type: 'cn-help' })}>🎲 Consultar las reglas</button>
+  <button class="block" data-a="cn-open-help" onclick={() => (app.ui.modal = { type: 'cn-help' })}>🎲 Cómo se juega</button>
   <button class="primary block" data-a="open-start" onclick={() => navigate(`/g/${group.id}/codenames/empezar`)}>🕵️ Empezar partida</button>
 </div>

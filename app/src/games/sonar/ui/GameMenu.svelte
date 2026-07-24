@@ -31,10 +31,13 @@
       {#if spectator}
         <button role="menuitem" data-a="back-to-mesa" onclick={() => { close(); navigate(`/g/${slug}`); }}>← Volver a la mesa</button>
       {/if}
-      {#if !spectator}
-        <button role="menuitem" class="danger-text" data-a="sn-leave-open" onclick={() => { app.ui.modal = { type: 'sn-leave' }; close(); }}>🚪 Dejar la partida</button>
+      <!-- UNA sola salida (B34). Antes había dos con dos nombres —«🚪 Dejar la
+           partida» y «🏳️ Terminar»— que hacían exactamente lo mismo: en un juego
+           por equipos, irse ES terminar. Y con la partida ya acabada, la
+           pantalla del final ya ofrece «🔁 Otra partida» y «🏁 Terminar». -->
+      {#if playing}
+        <button role="menuitem" class="danger-text" data-a="sn-end-open" onclick={() => { app.ui.modal = { type: 'sn-end' }; close(); }}>🏳️ Terminar la partida</button>
       {/if}
-      <button role="menuitem" class="danger-text" data-a="sn-end-open" onclick={() => { app.ui.modal = { type: 'sn-end' }; close(); }}>🏳️ Terminar</button>
     </div>
   {/if}
 </div>

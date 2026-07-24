@@ -23,7 +23,7 @@ export const HOW_TO: HelpSection[] = [
     items: [
       'Cada ronda, la app muestra a TODOS la misma rejilla de 16 palabras sobre un tema (la playa, el cine…). La rejilla es pública: está siempre a la vista.',
       'Tu carta privada te dice tu papel: o te escribe la palabra SECRETA (eres del grupo), o te avisa de que eres el CAMALEÓN y no la conoces. En la rejilla pública no se marca nada: la palabra solo aparece en tu carta.',
-      'Míralo a solas y confirma. Puedes volver a mirar tu carta cuando quieras con el botón redondo de la esquina, el de la carta, o con el botón de ver mi carta que hay bajo cada fase.',
+      'Míralo a solas y confirma. Durante el resto de la ronda tu carta se abre desde un único sitio: la pastilla de abajo a la derecha, la que pone «Mi carta y las reglas». Se tapa sola a los pocos segundos, y tocarla no delata a nadie porque la tenéis todos igual.',
       'El Camaleón ve la rejilla igual que los demás: por eso puede fingir.',
     ],
   },

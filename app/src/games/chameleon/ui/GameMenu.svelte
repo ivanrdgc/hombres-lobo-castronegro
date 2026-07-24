@@ -25,7 +25,8 @@
            forma de llegar al menú de un móvil apagado y sacarlo de la ronda. -->
       <button role="menuitem" data-a="table-open" onclick={() => { app.ui.modal = { type: 'table' }; close(); }}>🪑 La mesa</button>
       {#if playing}
-        <button role="menuitem" data-a="ch-repeat" onclick={() => { guard(A.requestRepeat); close(); }}>🔁 Repetir</button>
+        <!-- «Repetir» a secas se confundía con «🔁 Otra ronda» del final. -->
+        <button role="menuitem" data-a="ch-repeat" onclick={() => { guard(A.requestRepeat); close(); }}>🔁 Repetir lo último en voz alta</button>
         {#if game.paused}
           <button role="menuitem" data-a="ch-resume" onclick={() => { guard(A.resumeGame); close(); }}>▶️ Reanudar</button>
         {:else}

@@ -3,16 +3,19 @@
   // CONOCIMIENTO que ese rol tendría (compañeros del Mal, la visión de Merlín,
   // la pareja Merlín/Morgana de Percival…), calculado en oculto por la app.
   //
-  // POSTURA DE MESA (B28): en Ávalon el móvil vive PLANO sobre la mesa y el
-  // vecino puede echarle un vistazo. Por eso la carta:
-  //  1. nunca se pinta sola — siempre tras un gesto (👁 aquí, 🎴 en el modal);
+  // POSTURA DE MESA (B28) + UNA SOLA PUERTA (B34): en Ávalon el móvil vive PLANO
+  // sobre la mesa y el vecino puede echarle un vistazo. La carta se abre desde UN
+  // único sitio —la pastilla flotante «🎴 Mi carta» y, solo durante el reparto,
+  // el botón grande de esa pantalla—: ninguna fase la cuelga ya de su cuerpo.
+  // Por eso la carta:
+  //  1. nunca se pinta sola — siempre tras un gesto del jugador;
   //  2. se auto-oculta a los 12 s (y al cambiar de fase: el componente se
   //     vuelve a montar cerrado);
   //  3. abierta, ocupa LO MISMO y lleva EL MISMO color para los dos bandos: ni
   //     el borde rojo/azul de antes ni un panel más largo (el de quien conoce a
   //     los malvados) pueden delatar desde el otro lado de la mesa;
-  //  4. cerrada, el botón es idéntico en todos los móviles: tocarlo no dice
-  //     nada de ti.
+  //  4. si se oculta sola, lo que queda no es otra puerta: es un «volver a
+  //     mostrarla» dentro del sitio donde ya estabas.
   import { ROLES, knowledgeOf } from '../roles';
   import type { AvalonState } from '../types';
 
@@ -25,7 +28,8 @@
   const nameList = (pids: string[]) => pids.map(nm).join(', ');
 
   // `startOpen` solo cuando el gesto ya lo hizo el jugador (pulsar «👁 Ver mi
-  // carta» en el reparto, abrir el 🎴): ni así se queda abierta para siempre.
+  // carta» en el reparto, abrir la pastilla 🎴): ni así se queda abierta para
+  // siempre.
   let openState: boolean | null = $state(null); // null = lo que diga startOpen
   const open = $derived(openState === null ? startOpen : openState);
   function toggle() { openState = !open; }
@@ -38,7 +42,7 @@
 
 {#if !open}
   <div class="peek">
-    <button class="ghost block" data-a="av-togglecard" onclick={toggle}>👁 Ver mi carta (solo tú)</button>
+    <button class="ghost block" data-a="av-togglecard" onclick={toggle}>👁 Volver a mostrar mi carta</button>
   </div>
 {:else}
   <div class="rolecard avcard" data-a="av-togglecard" onclick={toggle} role="button" tabindex="0"

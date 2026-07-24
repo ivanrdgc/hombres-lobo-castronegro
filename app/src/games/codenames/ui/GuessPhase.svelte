@@ -45,7 +45,7 @@
   </div>
 {:else if iAmTurnSpy}
   <div class="actionpanel"><h3>🤐 Ahora te callas</h3>
-    <p class="hint">Ya diste tu pista: no puedes añadir nada, ni gestos, ni caras. Y cuidado con el mapa —si sueltas el móvil o te acercas a mirar con ellos, tápalo antes con «🙈 Taparlo».</p>
+    <p class="hint">Ya diste tu pista: no puedes añadir nada, ni gestos, ni caras. Y cuidado con el mapa —si sueltas el móvil o te acercas a mirar con ellos, ciérralo antes con «🙈 Tapar».</p>
     <BoardRef {game} />
   </div>
 {:else}

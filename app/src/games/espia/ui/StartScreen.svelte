@@ -108,5 +108,5 @@
   <div id="form-error">
     {#if app.ui.formError}<div class="flash error">{app.ui.formError}</div>{/if}
   </div>
-  <button class="primary block" disabled={tooFew || tooMany} data-a="espia-start" onclick={startNow}>🕵️ Repartir identidades y empezar</button>
+  <button class="primary block" disabled={tooFew || tooMany} data-a="espia-start" onclick={startNow}>🎴 Repartir las cartas y empezar</button>
 </div>

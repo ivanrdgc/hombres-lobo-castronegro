@@ -1,8 +1,10 @@
 <script lang="ts">
-  // «Empezar partida» de Love Letter: quién juega (SeatPicker) y qué dispositivo
-  // pone la voz (opcional).
+  // «Empezar partida» de Love Letter: dos tarjetas y un botón — quién juega
+  // (SeatPicker) y cómo se juega esta partida (el recuento de cartas y qué móvil
+  // pone la voz).
   import { app, matchOf, me, navigate } from '../../../core/sync/store.svelte';
   import { guard } from '../../../core/sync/guard';
+  import * as G from '../../../core/sync/group-actions';
   import { isActiveDevice } from '../../../core/sync/presence';
   import { defaultNarrator } from '../../../shell/ui-helpers';
   import { unlockAudio } from '../../../core/audio/engine';
@@ -33,6 +35,11 @@
   const narratorP = $derived(app.players.find((p) => p.id === narrator));
   const okStart = $derived(n >= MIN_PLAYERS && n <= MAX_PLAYERS);
 
+  // ¿La app marca lo que ya ha salido? Ajuste de MESA: se recuerda entre
+  // partidas y por defecto va encendido (B33). Apagarlo es el modo difícil.
+  const track = $derived((group.settings || {}).llTrack !== false);
+  const setTrack = (v: boolean) => guard(() => G.setSettings({ llTrack: v }));
+
   function startNow() {
     const pids = chosen.map((p) => p.id);
     if (narrator === meId) {
@@ -40,7 +47,7 @@
       play({ id: 'unlock', segments: [{ kind: 'clip', text: 'Que empiece Love Letter.' }] }).catch(() => {});
       app.ui.voiceUnlocked = true;
     }
-    guard(() => A.startLoveLetter(pids, narrator));
+    guard(() => A.startLoveLetter(pids, narrator, track));
   }
 </script>
 
@@ -56,9 +63,25 @@
   <p class="small-note">El orden de la lista es el de los turnos. Cada uno empieza con una carta en la mano, en su propio móvil.</p>
 </div>
 
+<!-- Las dos cosas que se deciden aparte de quién juega, en una sola tarjeta
+     (B29·3): con qué ayuda se juega y dónde suena la voz. -->
 <div class="card">
-  <h3>🔊 ¿Dónde suena la voz?</h3>
-  <p class="small-note" style="margin-top:6px">Canta en alto las cartas jugadas y quién gana; nunca tu mano. Puede ponerla alguien que también juega.</p>
+  <h3>⚙️ Cómo jugáis esta partida</h3>
+
+  <p class="small-note" style="margin:0">🧮 <b>El recuento de cartas</b> — se recuerda para las siguientes partidas.</p>
+  <div class="btnrow" style="margin-top:6px">
+    <button class="pick {track ? 'primary' : 'ghost'}" style="flex:1;min-width:140px" data-a="ll-track" data-p="on" onclick={() => setTrack(true)}>🧮 Lo lleva la app</button>
+    <button class="pick {track ? 'ghost' : 'primary'}" style="flex:1;min-width:140px" data-a="ll-track" data-p="off" onclick={() => setTrack(false)}>🧠 Lo lleváis vosotros</button>
+  </div>
+  <p class="small-note" data-a="ll-track-why">
+    {#if track}
+      La app va tachando lo que ya ha salido: en la mesa ves qué cartas siguen sin aparecer y, al adivinar con el Guardia, cuántas quedan de cada una.
+    {:else}
+      <b>Modo difícil</b>: la app solo dice cuántas cartas quedan por robar. Lo que ha salido no lo tacha nadie — está en los descartes de cada jugador, boca arriba, y hay que mirarlos y acordarse.
+    {/if}
+  </p>
+
+  <p class="small-note" style="margin-top:14px">🔊 <b>Qué móvil pone la voz</b> — canta en alto las cartas jugadas y quién gana; nunca tu mano. Puede ponerla alguien que también juega.</p>
   <div class="btnrow" style="margin-top:6px">
     {#each rows.filter((p) => !matchOf(p.id)) as p (p.id)}
       <button class="pick {narrator === p.id ? 'primary' : 'ghost'}" data-a="pick-narrator" data-p={p.id} style="flex:0 1 auto;min-width:0" onclick={() => (narrPick = p.id)}>
@@ -66,7 +89,7 @@
       </button>
     {/each}
   </div>
-  {#if narratorP}<p class="small-note">🔊 <b>{narratorP.name}</b> pone la voz{seat.chosen.includes(narratorP.id) ? ' y también juega' : ' (no juega)'}.</p>{/if}
+  {#if narratorP}<p class="small-note">Sonará en el móvil de <b>{narratorP.name}</b>{seat.chosen.includes(narratorP.id) ? ', que además juega' : ' (no juega)'}.</p>{/if}
 </div>
 
 <div class="card">

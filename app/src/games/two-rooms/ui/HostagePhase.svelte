@@ -69,7 +69,7 @@
     <button class="primary block" data-a="tr-ballot" onclick={() => (ballot = true)}>🗳️ Abrir mi papeleta</button>
   </div>
 {:else if inGame && !iVoted}
-  <div class="actionpanel"><h3>¿A quién mandáis de tu sala (Sala {myRoom + 1})?</h3>
+  <div class="actionpanel"><h3>🗳️ ¿A quién mandas de rehén? (Sala {myRoom + 1})</h3>
     <p class="small-note" style="margin:0 0 6px">🙈 Tapa la pantalla: esta lista delata tu voto. Solo puedes votar a alguien de TU sala (tú incluido, si te ofreces).</p>
     <div class="players">
       {#each mates as pid (pid)}

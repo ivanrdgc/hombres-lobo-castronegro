@@ -48,4 +48,6 @@
 
 {#if !canRematch}<p class="small-note" style="text-align:center">Sois menos de {MIN_PLAYERS}: no hay revancha con este grupo.</p>{/if}
 <button class="primary block" data-a="tr-again" disabled={!canRematch} onclick={() => guard(A.playAgain)}>🔁 Otra partida</button>
-<button class="ghost block" data-a="tr-back-lobby" onclick={() => guard(() => A.endTwoRooms())}>🏁 Terminar y volver al lobby</button>
+<!-- La MISMA acción se llama igual aquí y en el menú ⋯ (antes: «🏁 Terminar y
+     volver al lobby» frente a «🏳️ Terminar»). Un nombre y un emoji por cosa. -->
+<button class="ghost block" data-a="tr-back-lobby" onclick={() => guard(() => A.endTwoRooms())}>🏳️ Terminar la partida</button>

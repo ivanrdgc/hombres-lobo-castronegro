@@ -3,7 +3,8 @@
   // se queda plano y solo lo coges en tu turno, así que ESTA pantalla es
   // IDÉNTICA en todos los móviles — mismo texto, mismos bloques, mismo alto.
   // Nada tuyo (cartas, carta de LÍDER, lo investigado, cuántas veces has
-  // mirado) asoma aquí: todo eso vive detrás del gesto 🎴.
+  // mirado) asoma aquí: todo eso vive detrás de la pastilla «🎴 Mi carta», que
+  // es su ÚNICA puerta (B34) — el cuerpo no repite ese botón con otro nombre.
   import { app, isMaster, matchOf } from '../../../core/sync/store.svelte';
   import * as A from '../actions';
   import { nextAlive } from '../engine';
@@ -71,11 +72,13 @@
     <TurnPanel {game} {my} />
     <div class="card"><PlayersBoard {game} {my} /></div>
   {:else}
-    <div class="narration">🎬 Turno de <b>{game.names[game.turn] || '¿?'}</b>: investiga, se arma, apunta o dispara.
-      <!-- Su estado público, aquí: es lo que dice si el peligro es inmediato. -->
-      {#if turnArmed && turnAim}<br />⚠️ Va armado y apunta a <b>{game.names[turnAim] || '¿?'}</b>: puede disparar en este turno.
+    <div class="narration">🎬 Juega <b>{game.names[game.turn] || '¿?'}</b>: una sola acción — 🔍 investigar, 🔫 armarse, 🎯 apuntar o 💥 disparar.
+      <!-- Su estado público, aquí: es lo único que el tablero no sabe decir, que
+           es si el peligro es inmediato. -->
+      {#if turnArmed && turnAim}<br />⚠️ Va armado y apunta a <b>{game.names[turnAim] || '¿?'}</b>: puede disparar en este mismo turno.
       {:else if turnArmed}<br />🔫 Va armado, pero todavía no apunta a nadie.{/if}
-      {#if queue.length}<br />Después: {queue.join(' → ')}{queueMore ? '…' : ''}. Mientras tanto, pregunta, acusa y negocia.{/if}
+      {#if queue.length}<br />Después: {queue.join(' → ')}{queueMore ? '…' : ''}.{/if}
+      <br />Mientras tanto: pregunta, acusa y negocia.
     </div>
     <div class="card"><PlayersBoard {game} {my} /></div>
     {#if inGame && game.alive[my.id] && !game.paused}
@@ -87,8 +90,9 @@
   {/if}
   {#if inGame && !game.alive[my.id]}<p class="small-note" style="text-align:center">❌ Estás fuera: tus cartas quedaron destapadas y ya no juegas turnos. Sigues mirando (y comentando) hasta el final.</p>{/if}
   {#if !inGame}<p class="small-note" style="text-align:center">👀 Sigues la partida de espectador: ves el tablero y el diario, nunca las cartas ocultas.</p>{/if}
-  <!-- El mismo recordatorio en TODOS los móviles: lo privado no vive aquí. -->
-  <p class="small-note" style="text-align:center">🎴 Tus cartas y lo que has visto están en el botón de abajo, y se tapan solas. Móvil plano en la mesa.</p>
+  <!-- Una sola puerta a lo tuyo, y se dice por su nombre (B34): la pastilla de
+       abajo. El mismo recordatorio en TODOS los móviles que juegan. -->
+  {#if inGame}<p class="small-note" style="text-align:center">🎴 Tus 3 cartas y lo que has visto están en «Mi carta», la pastilla de abajo: se abre de un toque y se tapa sola. Móvil plano en la mesa.</p>{/if}
 {/if}
 
 {#if game.log && game.log.length}

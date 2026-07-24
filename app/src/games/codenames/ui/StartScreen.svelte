@@ -33,6 +33,10 @@
   });
   const narratorP = $derived(app.players.find((p) => p.id === narrator));
   const okStart = $derived(n >= MIN_PLAYERS && n <= MAX_PLAYERS);
+  // Resumen con NOMBRES y con el tamaño de cada equipo: quien pulsa «Empezar»
+  // tiene que poder comprobar de un vistazo que no falta ni sobra nadie.
+  const names = $derived(chosen.map((p) => p.name).join(', '));
+  const split = $derived(`${Math.ceil(n / 2)} y ${Math.floor(n / 2)}`);
 
   function startNow() {
     const pids = chosen.map((p) => p.id);
@@ -59,7 +63,7 @@
   {:else if n > MAX_PLAYERS}
     <p class="small-note">⚠️ Sois {n}: como mucho juegan {MAX_PLAYERS}.</p>
   {:else}
-    <p class="small-note">Jugáis <b>{n}</b>: al repartir se sortean dos equipos y un Jefe de espías en cada uno.</p>
+    <p class="small-note">Jugáis <b>{n}</b> ({names}): al repartir se sortean dos equipos de <b>{split}</b> y un Jefe de espías en cada uno.</p>
   {/if}
 </div>
 

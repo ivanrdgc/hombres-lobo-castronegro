@@ -4,7 +4,7 @@
   // aparte, porque es lo que la mesa se queda mirando y comentando.
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
-  import { WIN_LABELS } from '../engine';
+  import { WIN_TITLE } from '../engine';
   import type { PlayerDoc } from '../../../core/sync/schema';
   import type { CodenamesState } from '../types';
   import Board from './Board.svelte';
@@ -16,10 +16,10 @@
 
 <div class="card" style="text-align:center">
   <span class="moon">{game.winner === 'red' ? '🔴' : '🔵'}</span>
-  <h3 style="margin:6px 0">{game.winner ? WIN_LABELS(game.winner) : ''}</h3>
+  <h3 style="margin:6px 0">{game.winner ? WIN_TITLE(game.winner) : ''}</h3>
   {#if game.winReason}<p class="small-note" style="margin-top:0">{game.winReason}</p>{/if}
-  <div style="margin-top:12px">
-    <div class="exp" style="text-align:left">🏆 Marcador</div>
+  <div style="margin-top:12px;text-align:left">
+    <div class="exp">🏆 Marcador</div>
     {#each ranked as pid (pid)}
       <div class="settingrow" style="align-items:center">
         <div class="sinfo"><div class="sname">{game.teams[pid] === 'red' ? '🔴' : '🔵'} {nm(pid)}{game.spymaster[game.teams[pid]] === pid ? ' 🕵️ Jefe' : ''}{game.winner === game.teams[pid] ? ' ✅' : ''}</div></div>

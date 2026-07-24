@@ -59,7 +59,7 @@
 
 <button class="primary block" data-a="ch-again" onclick={() => guard(A.nextRound)}>🔁 Otra ronda</button>
 <!-- Con confirmación: al lado de «Otra ronda», un toque de más borraba la partida y el marcador. -->
-<button class="ghost block" data-a="ch-back-lobby" onclick={() => (app.ui.modal = { type: 'ch-end' })}>🏁 Terminar y volver al lobby</button>
+<button class="ghost block" data-a="ch-back-lobby" onclick={() => (app.ui.modal = { type: 'ch-end' })}>🏳️ Terminar y volver al lobby</button>
 
 <style>
   /* El recuento es PÚBLICO y es la recompensa de la ronda: se lee a un palmo,

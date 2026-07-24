@@ -7,9 +7,8 @@ import StartScreen from './ui/StartScreen.svelte';
 import GameScreen from './ui/GameScreen.svelte';
 import HelpModal from './ui/modals/HelpModal.svelte';
 import DemoModal from './ui/modals/DemoModal.svelte';
-import LeaveModal from './ui/modals/LeaveModal.svelte';
 import EndConfirmModal from './ui/modals/EndConfirmModal.svelte';
-import MyInfoModal from './ui/modals/MyInfoModal.svelte';
+import RulesModal from './ui/modals/RulesModal.svelte';
 
 export const decrypto: GameDefinition = {
   id: 'decrypto',
@@ -22,10 +21,13 @@ export const decrypto: GameDefinition = {
   Start: StartScreen,
   Screen: GameScreen,
   modals: {
-    'de-mycard': MyInfoModal,
+    // La pastilla flotante de un juego de EQUIPO abre las REGLAS, no una carta:
+    // las palabras están en la pantalla (B34).
+    'de-rules': RulesModal,
     'de-help': HelpModal,
     'de-demo': DemoModal,
-    'de-leave': LeaveModal,
+    // Sin «de-leave»: irse de una partida por equipos es terminarla, y tener dos
+    // entradas para la misma acción era el clásico botón de más.
     'de-end': EndConfirmModal,
   },
 };

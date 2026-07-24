@@ -44,9 +44,10 @@
 
   const place = (d: Disc) => guard(() => (game.phase === 'setup' ? A.placeInitial(d) : A.placeDisc(d)));
 
-  // Tu situación en una línea. No repite lo que ya dicen los hechos de arriba
-  // ni el panel de abajo: aquí solo va lo TUYO (tus discos y tu sitio en la
-  // subasta, que en la mesa de rivales no aparece).
+  // Tu situación en una línea. Aquí solo va lo TUYO: qué puedes hacer con tus
+  // discos y cómo estás en la subasta. Lo que pasa en la mesa lo dice la línea
+  // de arriba y CÓMO se juega, el panel de decisión de abajo; cuando ese panel
+  // ya lo explica (te toca pujar), esta línea calla en vez de repetirlo.
   const now = $derived.by(() => {
     if (!alive) return '☠️ Estás fuera: te quedaste sin discos, pero sigues viendo la partida.';
     switch (game.phase) {
@@ -58,7 +59,7 @@
       case 'bid':
         if (game.bid?.by === my.id) return `🗣️ Tu apuesta de ${game.bid.n} sigue en pie: si nadie sube, levantas tú.`;
         if (game.passed[my.id]) return '🤐 Ya pasaste: fuera de la subasta hasta el revelado.';
-        if (myTurn) return '🎯 Sigues en la subasta: decides abajo.';
+        if (myTurn) return '';
         return `🎯 Sigues en la subasta: podrás subir desde ${(game.bid?.n ?? 0) + 1}.`;
       case 'reveal':
         if (iReveal) {
@@ -78,7 +79,7 @@
 <div class="skmine {canPlace || (iReveal && ownLeft > 0) ? 'act' : ''}">
   <div class="skmhead">
     <h3>🃏 Tu mano</h3>
-    <span class="sktag">⭐ {game.marks[my.id] || 0}/2</span>
+    <span class="sktag">⭐ {game.marks[my.id] || 0}/2 retos</span>
     <span class="sktag">💠 {invCount(game, my.id)} discos</span>
   </div>
 
@@ -101,12 +102,14 @@
     </p>
   {/if}
 
-  <p class="sknow">{now}</p>
+  {#if now}<p class="sknow">{now}</p>{/if}
 
   <div class="skmypile">
     <span class="skpl">Tu pila</span>
     {#if stack.length}
-      <span class="skedge">abajo</span>
+      <!-- Con un solo disco no hay «abajo» ni «arriba» que aclarar: las dos
+           etiquetas solo estorbaban en la primera ronda. -->
+      {#if stack.length > 1}<span class="skedge">abajo</span>{/if}
       <span class="skpile">
         {#each stack as d, i (i)}
           {@const isFlipped = i >= stack.length - flippedMine}
@@ -114,7 +117,7 @@
             >{d === 'skull' ? '💀' : '🌸'}</span>
         {/each}
       </span>
-      <span class="skedge">arriba ⬆ ({stack.length} en la mesa{flippedMine ? `, ${flippedMine} ya levantado${flippedMine === 1 ? '' : 's'}` : ''})</span>
+      <span class="skedge">{stack.length > 1 ? 'arriba ⬆ · ' : ''}{stack.length} en la mesa{flippedMine ? `, ${flippedMine} ya levantado${flippedMine === 1 ? '' : 's'}` : ''}</span>
     {:else}
       <span class="skempty">vacía: aún no has puesto nada</span>
     {/if}
@@ -122,7 +125,7 @@
 
   {#if iReveal && ownLeft > 0}
     <button class="danger block skflip" data-a="sk-flip" data-p={my.id} onclick={() => onflip(my.id)}>
-      🃏 Levantar el de arriba de TU pila ({ownLeft} por levantar)
+      👆 Levantar el de arriba de TU pila ({ownLeft} por levantar)
     </button>
   {/if}
 </div>

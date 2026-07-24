@@ -207,6 +207,26 @@ try {
     check(/🪙\s*\d/.test(rival) && /🂠|Duque|Asesino|Capitán|Embajador|Condesa|eliminado/.test(rival),
       'de los demás se ven sus monedas y las influencias que les quedan');
     check(await p0.locator('text=/boca arriba/').count() >= 1, 'y qué cartas están ya descubiertas en la corte');
+    // La mesa no repite TU fila: lo tuyo está en la mano anclada arriba.
+    check(await p0.locator(`[data-a=coup-seat][data-p="${pid0}"]`).count() === 0,
+      'y la mesa no repite tu propia fila: lo tuyo vive en la mano');
+
+    // ——— B34 · una sola puerta a tu carta ———
+    // Coup es de MANO: la mano vive en la pantalla y la pastilla flotante es
+    // SOLO «📖 Reglas», que no vuelve a enseñar la mano ni se llama «Mi carta».
+    const fab = await p0.locator('[data-a=open-mycard]').innerText();
+    check(/Reglas/.test(fab) && !/Mi carta/i.test(fab), 'la pastilla flotante se llama «Reglas», no «Mi carta»');
+    await p0.click('[data-a=open-mycard]');
+    await p0.waitForSelector('.modal button[data-a=close-modal]', { timeout: 15000 });
+    check(await p0.locator('.modal [data-a=coup-myhand]').count() === 0,
+      'y al abrirla NO repite tu mano (que ya está en pantalla)');
+    const ref = await p0.locator('.modal').innerText();
+    check(/5 personajes/.test(ref) && /7 jugadas/.test(ref), 'trae la referencia completa: los 5 personajes y las 7 jugadas');
+    check(!/Ver mi|Ver mis|chuleta/i.test(ref), 'y sin «Ver mi carta» ni un tercer nombre («chuleta») para las reglas');
+    await p0.click('.modal button[data-a=close-modal]');
+    await p0.waitForSelector('.modal', { state: 'detached', timeout: 15000 });
+    // Las mismas reglas, plegadas donde se decide (B25·4), con un solo rótulo.
+    check(await p0.locator('[data-a=coup-ref]').count() >= 1, 'y esas mismas reglas están plegadas en el panel donde se decide');
   }
 
   // ——— Motor de partida: cobertura guiada + asesinatos hasta un ganador ———

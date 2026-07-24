@@ -19,11 +19,11 @@ export const DEMO: DemoScript = {
     {
       icon: '🎴',
       title: 'El reparto',
-      who: { actor: 'TODOS veis vuestras 2 cartas en pantalla y pulsáis «Lo tengo»', others: 'cuando el último confirma, cualquiera pulsa «Empezar la partida».' },
+      who: { actor: 'TODOS veis vuestras 2 cartas en pantalla y pulsáis «Lo tengo»', others: 'cuando el último confirma, cualquiera arranca el primer turno.' },
       text: [
         'A ti te tocan 🎩 Duque y 🎭 Embajador. Buen combo: puedes cobrar impuestos con la verdad… y farolear el resto.',
-        'Tus dos cartas se quedan ancladas arriba en tu pantalla toda la partida, con tus monedas al lado: sujeta el móvil mirando a ti, como una mano de cartas, y no lo dejes en la mesa.',
-        'Las 15 cartas de la corte (el mazo) son 5 personajes con 3 copias de cada uno. La chuleta completa está en el botón flotante de abajo a la derecha, para consultarla en cualquier fase.',
+        'Tus dos cartas se quedan ancladas arriba en tu pantalla toda la partida, con tus monedas al lado: sujeta el móvil mirando a ti, como una mano de cartas, y no lo dejes en la mesa. Nunca tendrás que pulsar nada para verlas.',
+        'Las 15 cartas de la corte (el mazo) son 5 personajes con 3 copias de cada uno. La referencia completa está en la pastilla «Reglas» de abajo a la derecha, para consultarla en cualquier fase.',
       ],
       visual: {
         kind: 'screens',
@@ -114,10 +114,10 @@ export const DEMO: DemoScript = {
     {
       icon: '👑',
       title: 'Y a ganar',
-      who: { actor: 'El último con influencia gana; la voz va cantando cada jugada', others: 'revancha con «🔁 Otra partida»: el marcador se guarda.' },
+      who: { actor: 'El último con influencia gana; la voz va cantando cada jugada', others: 'revancha con «🔁 Repartir otra partida»: el marcador se guarda.' },
       text: [
-        'Chuleta rápida: 🪙 Renta +1 (nadie la para) · 🤝 Ayuda +2 (la bloquea cualquier «Duque») · 🎩 Impuestos +3 · ⚓ Robar 2 · 🗡️ Asesinar (3 monedas) · 🎭 Intercambiar cartas · 💥 Golpe 7 monedas (imparable) · 👑 Condesa: sin acción propia, solo bloquea el asesinato.',
-        'Tus cartas están siempre arriba en tu pantalla y esa chuleta, en el botón flotante de abajo a la derecha: consúltalo cuando quieras, es privado. Ganas si eres quien queda en pie: 1 punto al marcador y se destapan todas las manos.',
+        'Las 7 jugadas, en corto: 🪙 Renta +1 (nadie la para) · 🤝 Ayuda +2 (la bloquea cualquier «Duque») · 🎩 Impuestos +3 · ⚓ Robar 2 · 🗡️ Asesinar (3 monedas) · 🎭 Intercambiar cartas · 💥 Golpe 7 monedas (imparable) · 👑 Condesa: sin acción propia, solo bloquea el asesinato.',
+        'Tus cartas están siempre arriba en tu pantalla, y esas reglas en la pastilla «Reglas» de abajo a la derecha: consúltalas cuando quieras. Ganas si eres quien queda en pie: 1 punto al marcador y se destapan todas las manos.',
         'Farolea, duda de todos y no enseñes la pantalla. 🎭',
       ],
     },

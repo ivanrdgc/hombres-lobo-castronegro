@@ -37,18 +37,19 @@
     });
   }
 
-  // Qué hace cada uno AHORA, sin deducirlo de la narración.
+  // Qué hace cada uno AHORA, sin deducirlo de la narración. Solo estados que
+  // dicen algo: los mudos («⏳ colocando», «🎯 sigue») los daba ya la línea de
+  // arriba —a quién se espera, quién sigue en la subasta— y llenaban la mesa de
+  // ruido (B29·1: un dato, un sitio).
   function status(pid: string): { txt: string; cls: string } | null {
     if (!game.alive[pid]) return { txt: '☠️ fuera', cls: 'gone' };
-    if (game.phase === 'setup') {
-      return placedCount(game, pid) >= 1 ? { txt: '✅ colocó', cls: 'ok' } : { txt: '⏳ colocando', cls: '' };
-    }
+    if (game.phase === 'setup') return placedCount(game, pid) >= 1 ? { txt: '✅ colocó', cls: 'ok' } : null;
     if (game.phase === 'play') return game.turn === pid ? { txt: '🎬 su turno', cls: 'now' } : null;
     if (game.phase === 'bid') {
       const b = game.bid;
       if (b && b.by === pid) return { txt: `🗣️ apuesta ${b.n}`, cls: 'now' };
       if (game.passed[pid]) return null; // ya lo dice el chip «🤐 pasó»
-      return game.turn === pid ? { txt: '👉 puja', cls: 'now' } : { txt: '🎯 sigue', cls: '' };
+      return game.turn === pid ? { txt: '👉 puja', cls: 'now' } : null;
     }
     const r = game.reveal;
     if (game.phase === 'reveal' && r && r.by === pid) return { txt: `🎲 levanta ${r.need} 🌸`, cls: 'now' };
@@ -86,7 +87,7 @@
       <div class="skmeta">⭐ {game.marks[pid] || 0}/2 · 💠 {invCount(game, pid)} · ✋ {handCount(game, pid)} en mano</div>
 
       {#if onflip && isTarget}
-        <button class="danger skflip" data-a="sk-flip" data-p={pid} onclick={() => onflip(pid)}>🃏 Levantar el de arriba de {nm(pid)}</button>
+        <button class="danger skflip" data-a="sk-flip" data-p={pid} onclick={() => onflip(pid)}>👆 Levantar el de arriba de {nm(pid)}</button>
       {:else if game.phase === 'reveal' && flippedCount(pid) > 0 && !isTarget}
         <span class="skdone">✔️ pila levantada entera</span>
       {/if}

@@ -1,8 +1,8 @@
 // E2E de «Wavelength»: 3 jugadores (Ana, Bea, Carlos) + Dani, el dispositivo
 // que PONE LA VOZ SIN JUGAR (el que suele quedarse en el centro de la mesa).
 // Cooperativo, god-view (el doc tiene el objetivo secreto del dial): catálogo →
-// empezar con meta → ronda (cambiar espectro, pista escrita, marcador
-// COMPARTIDO y doble confirmación) → saltar una ronda desde ⋯ → última ronda →
+// empezar con meta → ronda (cambiar espectro, pista escrita, marca
+// COMPARTIDA y doble confirmación) → saltar una ronda desde ⋯ → última ronda →
 // resumen final → terminar. Vigila la FUGA del objetivo: la diana solo puede
 // pintarse en el móvil del Psíquico, nunca en el del narrador ni en el de un
 // espectador.
@@ -119,13 +119,18 @@ try {
   ok('el dispositivo de la voz entra en la partida sin jugar');
   const firstPsychic = psychicOf(s);
 
-  // B19/B21: el botón flotante 🎴 abre «mi carta + referencia» en CUALQUIER fase.
+  // B34: en un juego de EQUIPO la pastilla flotante es SOLO «📖 Reglas» —tu
+  // papel y el espectro ya están en la pantalla— y es la única puerta a la
+  // referencia en cualquier fase.
   await ana.click('[data-a=open-mycard]');
-  await ana.waitForSelector('text=/Tu papel en esta ronda/');
-  check(await ana.locator('text=/Puntos por cercanía/').count() >= 1, 'el 🎴 muestra tu papel y la chuleta del juego');
+  await ana.waitForSelector('text=/Reglas de Wavelength/');
+  check(await ana.locator('text=/Puntos por cercanía/').count() >= 1, 'la pastilla 📖 abre las reglas del juego');
+  check(await ana.locator('.modal >> text=/Eres el Psíquico|Eres del equipo|Espectro:/').count() === 0,
+    'B34: las reglas no repiten tu papel ni el espectro (ya están en la pantalla)');
   await ana.click('.modal [data-a=close-modal]');
   await ana.waitForSelector('[data-a=open-mycard]');
-  ok('el 🎴 se abre y se cierra en mitad de la fase de pista');
+  ok('el 📖 se abre y se cierra en mitad de la fase de pista');
+  check(await ana.locator('text=/Ver mi carta|Mi carta/').count() === 0, 'B34: ninguna pantalla añade su propio «ver mi carta»');
 
   // B26: «🪑 La mesa» desde DENTRO de la partida (rescate del móvil sin batería:
   // aquí la ronda se atasca si el Psíquico deja de dar señales).
@@ -140,7 +145,7 @@ try {
   // mismo dato dos dedos más arriba (B29).
   check(await dani.locator('text=/Ronda 1 de 3/').count() >= 1, 'la cabecera lleva el progreso hacia la meta');
   check(await dani.locator('.topbar .chip').count() === 0, 'la ronda no se repite en la barra de título');
-  check(await dani.locator('[data-a=wl-team-score]').count() === 1, 'el total del equipo (el marcador que importa) está siempre a la vista');
+  check(await dani.locator('[data-a=wl-team-score]').count() === 1, 'el total del equipo (los puntos que importan) está siempre a la vista');
 
   // ——— Ronda 1: cambiar espectro, pista escrita, marca compartida ———
   s = await waitState(ana, (x) => x.phase === 'clue' && x.round === 1, 'ronda 1 en fase de pista');
@@ -157,7 +162,8 @@ try {
   // en reposo. Su pantalla se ve igual que la de los demás hasta que él tapa el
   // móvil con la mano y mantiene pulsado.
   check(await zones(pg(psychic)) === 0, 'CHIVATO: en reposo el dial del Psíquico no enseña la mancha verde');
-  check(await pg(psychic).locator('[data-a=wl-peek]').count() === 1, 'el Psíquico tiene el «mantén pulsado para ver la diana»');
+  // B34: la cortina de privacidad abre una ACCIÓN («apuntar»), no «ver mi carta».
+  check(await pg(psychic).locator('[data-a=wl-peek]:has-text("apuntar")').count() === 1, 'el Psíquico tiene el «mantén pulsado para apuntar» (una acción, no «ver mi carta»)');
   check(await peekZones(pg(psychic)) > 0, 'manteniendo pulsado, el Psíquico SÍ ve su diana');
   await pg(psychic).waitForFunction(() => document.querySelectorAll('.zone').length === 0, null, { timeout: 4000 }).catch(() => {});
   check(await zones(pg(psychic)) === 0, 'al soltar, la diana se tapa sola (no se queda encendida en la mesa)');
@@ -192,7 +198,7 @@ try {
 
   // Sin marca movida no se puede fijar (un toque accidental ya no cierra la ronda).
   check(s.pick === null, 'la ronda empieza SIN marca puesta');
-  check(await pg(other).locator('[data-a=wl-guess-confirm][disabled]').count() === 1, 'no se puede fijar hasta mover el marcador');
+  check(await pg(other).locator('[data-a=wl-guess-confirm][disabled]').count() === 1, 'no se puede fijar hasta mover la marca');
   check(await pg(psychic).locator('[data-a=wl-guess-confirm]').count() === 0, 'el Psíquico no fija la marca');
 
   check(await pg(other).locator('[data-a=wl-ref-guess]').count() === 1, 'el panel del equipo lleva la chuleta de lo que puntúa cada franja');
@@ -208,10 +214,13 @@ try {
   const shared = s.pick;
   check(shared === rough + 1, `el ±1 mueve la marca un punto sin arrastrar (${rough} → ${shared})`);
   const seen2 = await pg(other2).evaluate(() => window.__hlc.group.game.pick);
-  check(seen2 === shared, `el marcador es COMPARTIDO: el resto del equipo ve el mismo (${shared})`);
-  // Quién lo ha movido: en la mesa se ve la mano; en el móvil hay que decirlo.
-  check(await pg(other).locator('text=/lo has puesto/').count() >= 1, 'quien mueve la marca ve que la puso él');
-  check(await pg(other2).locator(`text=/lo movió ${NAMES[other]}/`).count() >= 1, `el resto del equipo ve quién la movió (${NAMES[other]})`);
+  check(seen2 === shared, `la marca es COMPARTIDA: el resto del equipo ve la misma (${shared})`);
+  // Quién la ha movido: en la mesa se ve la mano; en el móvil hay que decirlo.
+  check(await pg(other).locator('text=/La marca la has puesto/').count() >= 1, 'quien mueve la marca ve que la puso él');
+  check(await pg(other2).locator(`text=/La marca la ha puesto ${NAMES[other]}/`).count() >= 1, `el resto del equipo ve quién la movió (${NAMES[other]})`);
+  // Un solo nombre por cosa (B29): lo que se arrastra es «la marca»; «marcador»
+  // se ha quedado fuera de la pantalla para no confundirlo con los puntos.
+  check(await pg(other).locator('text=/marcador/i').count() === 0, 'la pantalla del equipo llama «marca» a la marca, nunca «marcador»');
   // Doble toque: el primero arma, el segundo fija.
   await pg(other).click('[data-a=wl-guess-confirm]');
   await pg(other).waitForSelector('[data-a=wl-guess-cancel]');
@@ -221,7 +230,7 @@ try {
   check(s.marker === shared, 'se fija la marca que veía toda la mesa');
   check(s.lastScore === expectScore(s.target, s.marker), `la puntuación cuadra con la cercanía (obj ${s.target}, marca ${s.marker} → ${s.lastScore})`);
   check((s.scores[psychic] || 0) >= s.lastScore, 'los puntos se los lleva el Psíquico de la ronda');
-  check((s.psychicRounds[psychic] || 0) === 1 && s.scored === 1, 'el marcador cuenta las rondas que ha llevado cada Psíquico');
+  check((s.psychicRounds[psychic] || 0) === 1 && s.scored === 1, 'la cuenta por persona lleva las rondas que ha hecho cada Psíquico');
   check(await pg(other).locator('text=/una sauna/').count() >= 1, 'el resultado recuerda cuál era la pista');
   check(await ana.locator('[data-a=wl-finish]').count() === 0, 'con la meta sin cumplir no se ofrece el resumen final');
 
@@ -236,7 +245,7 @@ try {
   await pg(notPsychic2).waitForSelector('[data-a=wl-skip-confirm]');
   await pg(notPsychic2).click('[data-a=wl-skip-confirm]');
   s = await waitState(ana, (x) => x.round === 3 && x.phase === 'clue', 'la ronda saltada pasa el turno');
-  check(s.scored === 1 && psychicOf(s) !== psychic2, '⏭️ saltar ronda no puntúa, rota el Psíquico y no borra el marcador');
+  check(s.scored === 1 && psychicOf(s) !== psychic2, '⏭️ saltar ronda no puntúa, rota el Psíquico y no borra los puntos');
   check(s.log.some((l) => /saltada/i.test(l)), 'el diario deja constancia de la ronda saltada');
 
   // ——— Ronda 3: se cumple la meta y sale el resumen final ———

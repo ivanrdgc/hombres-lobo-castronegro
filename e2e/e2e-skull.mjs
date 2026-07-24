@@ -180,7 +180,7 @@ try {
   const passer = s.turn;
   // Lo público de la puja, en pantalla (B25/B26): tope, apuesta y quién sigue.
   const facts = await pg(passer).locator('.skfacts').innerText().catch(() => '');
-  check(/Discos en la mesa/.test(facts) && /Siguen en la subasta/.test(facts) && /Ya han pasado/.test(facts),
+  check(/Discos en la mesa/.test(facts) && /Apuesta a batir/.test(facts) && /Siguen en la subasta/.test(facts),
     'la puja enseña discos en la mesa (tope), apuesta a batir y quién sigue vivo en la subasta');
   const row0 = await pg(passer).locator('.skrow').first().innerText().catch(() => '');
   check(/en la mesa/.test(row0) && /✋/.test(row0), 'cada ficha de la mesa dice la altura de la pila y los discos en mano');
@@ -212,13 +212,21 @@ try {
   check(s.lastResult?.success === false, 'topar una calavera falla el reto');
   check(s.inv[starter].flowers + s.inv[starter].skulls === 3, 'quien falla pierde un disco (de 4 a 3)');
   check(s.starter === starter, 'tras fallar, empieza la ronda quien perdió el disco');
-  // El 🎴 ya no hace falta para jugar (la mano vive en la pantalla), pero sigue
-  // siendo la chuleta: debe abrirse aunque la pila siga en la mesa con el
-  // inventario ya bajado.
+  // Una sola puerta (B34): la pastilla flotante de un juego de MANO es «📖
+  // Reglas» y NO enseña tu mano (que vive en la pantalla); dentro, las reglas
+  // de la fase en curso. Y no hay un segundo desplegable de reglas en la
+  // pantalla. Debe abrirse aunque la pila siga en la mesa con el inventario ya
+  // bajado.
+  const fab = await pg(starter).locator('[data-a=open-mycard]').innerText();
+  check(/Reglas/.test(fab) && !/Mi carta/.test(fab), 'la pastilla flotante es «📖 Reglas»: tu mano ya está en la pantalla');
+  check(await pg(starter).locator('[data-a=sk-ref]').count() === 0, 'las reglas se abren desde UN solo sitio (sin desplegable duplicado)');
   await pg(starter).click('[data-a=open-mycard]');
-  await pg(starter).waitForSelector('text=/Reglas de bolsillo/');
+  await pg(starter).waitForSelector('.modal [data-a=sk-rules]');
+  const rules = await pg(starter).locator('.modal').innerText();
+  check(/Ahora mismo/.test(rules) && /fin de ronda/i.test(rules), 'las reglas abren por la fase en curso');
+  check(!/Tus discos/.test(rules) && !/En mano/.test(rules), 'el 📖 no repite tu mano ni tu pila (B34·4)');
   await pg(starter).click('.modal [data-a=close-modal]');
-  ok('ronda 2: subida de apuesta, calavera, pérdida de disco y 🎴 sano');
+  ok('ronda 2: subida de apuesta, calavera, pérdida de disco y 📖 sano');
 
   // ——— Ronda 3: gana el segundo reto y la partida ———
   await pg(starter).click('[data-a=sk-next-round]');

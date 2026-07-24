@@ -158,12 +158,13 @@
     <CharRef {game} />
   </div>
 {:else}
-  <!-- La cabecera ya dice de quién es el turno: aquí solo lo que TÚ haces
-       (nada) y con qué monedas juega quien declara. -->
+  <!-- Nunca un panel mudo ni un «no hay nada que hacer» (B26·8): se dice a quién
+       se espera, qué se puede permitir (sus monedas ya salen en la mesa, aquí va
+       lo que significan) y qué vas a poder hacer en cuanto declare. -->
   <div class="card">
-    <h3 style="margin-top:0">⏳ Nada que tocar todavía</h3>
-    <p class="small-note" style="margin-top:0"><b>{turnName}</b> está eligiendo jugada con 🪙 {turnCoins} monedas. {purse}</p>
-    <p class="small-note">En cuanto declare algo, aquí mismo te saldrán los botones para <b>desafiar su farol</b> o <b>bloquearlo</b>.</p>
+    <h3 style="margin-top:0">⏳ {turnName} está eligiendo jugada</h3>
+    <p class="small-note" style="margin-top:0">{purse}</p>
+    <p class="small-note">En cuanto declare algo, aquí mismo te saldrán los botones para <b>❗ desafiar su farol</b> o <b>🛡️ bloquearlo</b>. Mientras tanto, repasa arriba las monedas de cada uno y las cartas ya boca arriba.</p>
     <CharRef {game} />
   </div>
 {/if}

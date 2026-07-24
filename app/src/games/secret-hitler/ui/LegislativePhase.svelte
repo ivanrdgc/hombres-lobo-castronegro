@@ -13,6 +13,11 @@
   // Cada carta dice EN SU PROPIA TARJETA qué implica jugarla: cuántos van, qué
   // poder desbloquea el siguiente fascista, si activa el veto o si acaba la
   // partida. Y como es irreversible, se elige primero y se confirma después.
+  //
+  // Una sola puerta a tu carta (B34): aquí NO hay «👁 Ver mi carta» —eso vive en
+  // la pastilla 🎴, igual en todos los móviles y en todas las fases—. Esta
+  // cortina abre una ACCIÓN, así que se rotula por lo que hace: «📜 Abrir los
+  // decretos», no «ver».
   import { untrack } from 'svelte';
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
@@ -21,13 +26,11 @@
   import type { PolicyId } from '../roles';
   import type { PlayerDoc } from '../../../core/sync/schema';
   import type { SHState } from '../types';
-  import MyCard from './MyCard.svelte';
   import PrivacySheet from './PrivacySheet.svelte';
 
   const { game, my }: { game: SHState; my: PlayerDoc } = $props();
   const pres = $derived(presidentId(game));
   const chan = $derived(game.nominatedChancellor);
-  const inGame = $derived(game.playerIds.includes(my.id));
   const nm = (pid: string | null) => (pid && game.names[pid]) || '¿?';
   const ICON = (p: string) => (p === 'liberal' ? '🕊️' : '🐷');
   const LABEL = (p: string) => (p === 'liberal' ? 'Liberal' : 'Fascista');
@@ -84,31 +87,38 @@
   }
 </script>
 
+<!-- La referencia se consulta DESDE donde se decide (B25/B26 · 4): plegada
+     dentro del propio panel, y la misma para Presidente y Canciller. -->
+{#snippet mazoRef()}
+  <details class="shref">
+    <summary data-a="sh-leg-ref">📖 Qué hay en el mazo y qué es público</summary>
+    <p class="small-note">El mazo son 17 decretos: <b>11 fascistas</b> 🐷 y solo <b>6 liberales</b> 🕊️. Que a un gobierno honesto le lleguen tres fascistas es lo más normal del mundo: por sí solo no prueba nada.</p>
+    <p class="small-note">Quedan {game.draw.length} decretos en el mazo y {game.discard.length} en descartes (se rebaraja todo cuando quedan menos de 3).</p>
+    <p class="small-note">Público: solo el decreto que se promulgue. Secreto para siempre: lo que descarta el Presidente, lo que pasa al Canciller y lo que el Canciller descarta.</p>
+  </details>
+{/snippet}
+
 {#if game.phase === 'legislativePresident'}
   {#if my.id === pres && game.presidentDraw}
     <div class="actionpanel"><h3>📜 Te toca legislar</h3>
       <p class="hint">Has robado tres decretos y solo los ves tú: descarta uno y los otros dos pasan al Canciller <b>{nm(chan)}</b>. Coge el móvil y ábrelos con la pantalla hacia ti.</p>
-      <button class="primary block" data-a="sh-open-cards" onclick={() => (open = true)}>👁 Ver mis tres decretos y descartar uno</button>
-      <p class="why">Nadie sabrá nunca qué descartaste: lo que cuentes después es palabra tuya. Hasta que lo abras, en tu pantalla no hay ninguna carta.</p>
+      <button class="primary block" data-a="sh-open-cards" onclick={() => (open = true)}>📜 Abrir mis tres decretos</button>
+      <p class="why">Nadie sabrá nunca qué descartaste: lo que cuentes después es palabra tuya. Hasta que lo abras, en tu pantalla no hay ningún decreto.</p>
+      {@render mazoRef()}
     </div>
-    <details class="shref">
-      <summary data-a="sh-leg-ref">📖 Qué hay en el mazo y qué es público</summary>
-      <p class="small-note">El mazo son 17 decretos: <b>11 fascistas</b> 🐷 y solo <b>6 liberales</b> 🕊️. Que a un Presidente honesto le lleguen tres fascistas es lo más normal del mundo: por sí solo no prueba nada.</p>
-      <p class="small-note">Quedan {game.draw.length} cartas en el mazo y {game.discard.length} en descartes (se rebaraja todo cuando quedan menos de 3).</p>
-      <p class="small-note">Público: solo el decreto que se promulgue. Secreto para siempre: tu descarte y las dos cartas que pasas.</p>
-    </details>
   {:else}
     <div class="card"><h3>📜 Legislan en secreto</h3>
       <p class="hint">El Presidente <b>{nm(pres)}</b> mira tres decretos en su móvil y descartará uno. Después, el Canciller <b>{nm(chan)}</b> promulgará uno de los dos que le lleguen.</p>
-      <p class="small-note">Solo se hará público el decreto promulgado: ni el descarte ni las cartas que pasa se verán jamás. Lo que digan luego es palabra suya.</p>
+      <p class="small-note">Solo se hará público el decreto promulgado: ni el descarte ni los dos decretos que pasa se verán jamás. Lo que digan luego es palabra suya.</p>
     </div>
   {/if}
 {:else if game.phase === 'legislativeChancellor'}
   {#if my.id === chan && game.chancellorDraw}
     <div class="actionpanel"><h3>📜 Te toca promulgar</h3>
       <p class="hint">El Presidente <b>{nm(pres)}</b> te ha pasado dos decretos que solo ves tú: promulga uno —será público y sube al tablero— y el otro se descarta en secreto.</p>
-      <button class="primary block" data-a="sh-open-cards" onclick={() => (open = true)}>👁 Ver mis dos decretos y promulgar uno</button>
+      <button class="primary block" data-a="sh-open-cards" onclick={() => (open = true)}>📜 Abrir mis dos decretos</button>
       <p class="why">{game.vetoUnlocked && !game.vetoRefused ? 'Ahí dentro también puedes proponer el ✋ veto: descartar la agenda entera.' : 'Nadie verá el que descartes: lo que cuentes después es palabra tuya.'}</p>
+      {@render mazoRef()}
     </div>
   {:else}
     <div class="card"><h3>📜 Decide el Canciller</h3>
@@ -126,7 +136,7 @@
       </div>
       <div class="outcomes">
         <p><b>✋ Si aceptas:</b> no se promulga nada y este gobierno cuenta como caído (<b>{game.electionTracker + 1}/3</b> hacia el caos{game.electionTracker >= 2 ? ' — ¡con este se llega a 3 y se promulga un decreto a ciegas!' : ''}). Presidirá el siguiente.</p>
-        <p><b>📜 Si rechazas:</b> {nm(chan)} queda obligado a promulgar una de las dos ahora mismo, y ya no podrá volver a vetar.</p>
+        <p><b>📜 Si rechazas:</b> {nm(chan)} queda obligado a promulgar uno de los dos decretos ahora mismo, y ya no podrá volver a vetar.</p>
       </div>
     </div>
   {:else}
@@ -137,7 +147,7 @@
   {/if}
 {/if}
 
-<!-- La cortina: aquí y solo aquí se ven las cartas (30 s, y cada toque reinicia
+<!-- La cortina: aquí y solo aquí se ven los decretos (30 s, y cada toque reinicia
      la cuenta: leer tres tarjetas con sus consecuencias lleva su tiempo). -->
 {#if open && game.phase === 'legislativePresident' && my.id === pres && presDraw.length}
   <PrivacySheet title="📜 Tus tres decretos" hold={30000} onclose={closeSheet}>
@@ -185,16 +195,14 @@
     {/if}
     {#if game.vetoUnlocked && !game.vetoRefused}
       <div class="vetobox">
-        <p class="small-note" style="margin-top:0">✋ <b>Veto</b> (desbloqueado con {VETO_AT} decretos fascistas): propón tirar la agenda ENTERA sin promulgar nada. Si {nm(pres)} acepta, no sube nada al tablero y el gobierno cuenta como caído ({game.electionTracker + 1}/3 hacia el caos); si lo rechaza, quedas obligado a promulgar una de las dos.</p>
+        <p class="small-note" style="margin-top:0">✋ <b>Veto</b> (desbloqueado con {VETO_AT} decretos fascistas): propón tirar la agenda ENTERA sin promulgar nada. Si {nm(pres)} acepta, no sube nada al tablero y el gobierno cuenta como caído ({game.electionTracker + 1}/3 hacia el caos); si lo rechaza, quedas obligado a promulgar uno de los dos.</p>
         <button class="ghost block" data-a="sh-veto" onclick={() => guard(A.requestVeto)}>✋ Proponer tirar la agenda entera</button>
       </div>
     {:else if game.vetoUnlocked && game.vetoRefused}
-      <p class="small-note">✋ {nm(pres)} ha rechazado tu veto: estás obligado a promulgar una de las dos.</p>
+      <p class="small-note">✋ {nm(pres)} ha rechazado tu veto: estás obligado a promulgar uno de los dos.</p>
     {/if}
   </PrivacySheet>
 {/if}
-
-{#if inGame}<MyCard {game} pid={my.id} />{/if}
 
 <style>
   .lead { margin: 6px 0 10px; font-size: 0.92rem; color: var(--muted); line-height: 1.4; }
@@ -222,6 +230,6 @@
   }
   .outcomes p + p { margin-top: 6px; }
   .vetobox { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 8px; }
-  .shref { margin: 0 0 12px; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--r-2); background: var(--card2); }
+  .shref { margin: 12px 0 0; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--r-2); background: var(--card2); }
   .shref summary { cursor: pointer; font-size: 0.88rem; color: var(--accent); }
 </style>

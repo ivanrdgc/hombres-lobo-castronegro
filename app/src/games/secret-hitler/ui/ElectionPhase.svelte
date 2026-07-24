@@ -8,7 +8,6 @@
   import { presidentId, aliveIds } from '../engine';
   import type { PlayerDoc } from '../../../core/sync/schema';
   import type { SHState } from '../types';
-  import MyCard from './MyCard.svelte';
 
   const { game, my }: { game: SHState; my: PlayerDoc } = $props();
   const inGame = $derived(game.playerIds.includes(my.id));
@@ -53,7 +52,6 @@
     <p class="small-note">Han votado <b>{voted}/{total}</b>.{#if pending.length} Faltan: <b>{pending.join(', ')}</b>.{/if}</p>
   </div>
 {/if}
-{#if inGame}<MyCard {game} pid={my.id} />{/if}
 
 <style>
   /* Qué pasa si sale y qué pasa si cae, justo debajo de los botones. */

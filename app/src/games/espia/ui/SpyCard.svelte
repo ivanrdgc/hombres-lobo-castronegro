@@ -1,12 +1,13 @@
 <script lang="ts">
-  // Carta de identidad de El Espía: el LUGAR y TU PAPEL (o la carta de espía).
-  // Se dibuja con el MISMO esqueleto en los dos casos —emoji grande, titular,
-  // línea de bando, recuadro clave y, en la versión larga, un `rdesc` y dos
-  // `rextra`— porque en un juego de mesa (B28) la FORMA se lee de reojo aunque
+  // Carta de El Espía: el LUGAR y TU PAPEL (o la carta de espía). Se dibuja con
+  // el MISMO esqueleto en los dos casos —emoji grande, titular, línea de bando,
+  // recuadro clave y, en la versión larga, un `rdesc` y un `rextra` de largo
+  // parecido— porque en un juego de mesa (B28) la FORMA se lee de reojo aunque
   // no se lea el texto: si la carta del espía fuera más corta o más alta que la
   // de un agente, quedaría cazado sin jugar.
-  // Nunca se muestra sola: vive dentro de PrivatePanel (👁 / 🎴) y del reparto,
-  // que la abren a petición y la ocultan solos.
+  // Nunca se muestra sola: vive dentro de MyCard (la pastilla 🎴, única puerta)
+  // y del reparto, que la abren a petición y la tapan solos.
+  // Los PUNTOS no están aquí: se cuentan una sola vez, en «📖 Las reglas».
   import { locationById } from '../locations';
   import type { EspiaState } from '../types';
 
@@ -14,7 +15,8 @@
 
   const spy = $derived(pid === game.spyId);
   const loc = $derived(locationById(game.locationId));
-  const agentes = $derived(Math.max(1, game.playerIds.length - 1));
+  const total = $derived(game.playerIds.length);
+  const agentes = $derived(Math.max(1, total - 1));
 </script>
 
 <div class="rolecard" data-a="espia-card">
@@ -29,8 +31,7 @@
     </div>
     {#if full}
       <div class="rdesc">Ni preguntes «¿dónde?» ni concretes de más: una respuesta demasiado exacta te delata igual que una demasiado vaga.</div>
-      <div class="rextra">🎭 <b>Revelarte y adivinar</b>, cuando quieras (con el reloj en marcha o ya en la tanda de acusaciones; nunca durante una votación): si <b>aciertas</b> el lugar, +4 y ganas la ronda; si <b>fallas</b>, la ronda termina ahí y cada agente se lleva +1.</div>
-      <div class="rextra">🏅 Sin jugártela: <b>+2</b> si se agota el tiempo sin que te condenen · <b>+4</b> si la mesa condena a un inocente.</div>
+      <div class="rextra">Sois {total} en la mesa: {agentes} conocen el lugar y tú no. Aguanta escondido, <b>revélate y adivina</b> cuando lo tengas… o <b>acusa</b> como cualquiera: una vez por ronda y hace falta unanimidad.</div>
     {/if}
   {:else}
     <span class="remoji">{loc?.emoji || '📍'}</span>
@@ -43,8 +44,7 @@
     </div>
     {#if full}
       <div class="rdesc">Ni demasiado exacto (le regalas el lugar al espía) ni demasiado vago (te confundirán con él).</div>
-      <div class="rextra">🎯 Sois {agentes} agentes y un espía. Tu objetivo: cazarlo. Tienes <b>UNA</b> acusación en toda la ronda —se gasta aunque la mesa vote que no— y hace falta unanimidad para revelar una carta.</div>
-      <div class="rextra">⚠️ Si condenáis a un inocente, la ronda termina igual y el espía se lleva +4.</div>
+      <div class="rextra">Sois {total} en la mesa: {agentes} conocéis el lugar y uno no. Cázalo antes de que lo adivine y <b>acusa</b> con cabeza: una vez por ronda, hace falta unanimidad y <b>condenar a un inocente</b> también acaba la ronda.</div>
     {/if}
   {/if}
 </div>

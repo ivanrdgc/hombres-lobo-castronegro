@@ -5,8 +5,8 @@ import { cleanForSpeech } from '../../core/util/speech';
 import type { CodenamesState } from './types';
 
 // De qué va, en dos líneas: es lo primero que lee (y escucha) una mesa que no
-// ha jugado nunca. Todo lo demás vive en «Consultar las reglas» o en el
-// tutorial, no aquí.
+// ha jugado nunca. Todo lo demás vive en «Cómo se juega» o en el tutorial,
+// no aquí.
 export const INTRO_LOBBY: string[] = [
   'Dos equipos y 25 palabras sobre la mesa. Cada equipo tiene un Jefe de espías que ve en su móvil cuáles son suyas, cuáles del rival, cuáles no son de nadie… y cuál esconde al asesino.',
   'El Jefe solo puede decir UNA palabra y un número; sus agentes tocan las que crean suyas. Gana quien destape todas las suyas, y quien toque al asesino pierde en el acto.',
@@ -26,8 +26,8 @@ export const HOW_TO: HelpSection[] = [
   {
     heading: '🗺️ El reparto',
     items: [
-      'Jugáis de 4 a 16 personas. La app reparte los equipos casi a la par y designa un Jefe por equipo (lo veréis en vuestra carta). El equipo que empieza tiene 9 palabras; el otro, 8. Hay 7 neutrales y 1 asesino.',
-      'Sentaos de modo que NADIE vea la pantalla del Jefe, tampoco sus propios agentes: ahí está el mapa con los colores. El Jefe lo abre de un toque al empezar y lo tapa con un botón si suelta el móvil. Con el botón 🎴 cualquiera vuelve a ver su papel y la chuleta de colores.',
+      'Jugáis de 4 a 16 personas. La app reparte los equipos casi a la par y designa un Jefe por equipo: al empezar, cada uno ve arriba de su pantalla si es Jefe o agente y de qué color. El equipo que empieza tiene 9 palabras; el otro, 8. Hay 7 neutrales y 1 asesino.',
+      'Sentaos de modo que NADIE vea la pantalla del Jefe, tampoco sus propios agentes: ahí está el mapa con los colores. El Jefe lo abre de un toque al empezar y lo tapa con un botón si suelta el móvil. Tu papel y tu equipo salen siempre arriba, y el botón 📖 de abajo deja las reglas a mano en cualquier momento.',
     ],
   },
   {
@@ -79,22 +79,26 @@ export function allCodenamesStaticPieces(): string[] {
   return [CN_INTRO, ...helpPieces()];
 }
 
-/** Fila de la chuleta del tablero (mismo trato que RefRows del shell). */
+/** Fila de «Las reglas» (mismo trato que RefRows del shell). */
 export interface BoardRefRow { emoji: string; name: string; note?: string; desc: string }
 
 /**
- * Chuleta del tablero: qué es cada color y cómo funciona la pista. Vive aquí
- * porque se enseña en DOS sitios —el modal 🎴 y, plegada, dentro del propio
- * panel de acción— y nadie debería salir de la pantalla en la que decide.
+ * «Las reglas» en corto: qué es cada color, cómo funciona la pista y cómo se
+ * gana. Vive aquí porque se enseña en DOS sitios con el MISMO nombre —plegada
+ * dentro del panel de acción y en el modal del botón 📖—, para que nadie tenga
+ * que salir de la pantalla en la que está decidiendo.
  */
 export function boardRef(game: CodenamesState): BoardRefRow[] {
+  const hidden = (k: 'neutral' | 'assassin'): number =>
+    game.map.filter((c, i) => c === k && !game.revealed[i]).length;
   return [
-    { emoji: '🔴', name: 'Casillas rojas', note: `quedan ${game.remaining.red}`, desc: 'Las del equipo rojo: destapadlas todas para ganar.' },
+    { emoji: '🔴', name: 'Casillas rojas', note: `quedan ${game.remaining.red}`, desc: 'Las del equipo rojo.' },
     { emoji: '🔵', name: 'Casillas azules', note: `quedan ${game.remaining.blue}`, desc: 'Las del equipo azul.' },
-    { emoji: '⬜', name: 'Transeúntes (neutrales)', note: '7 en el tablero', desc: 'Destapar una corta el turno de tu equipo.' },
-    { emoji: '💀', name: 'El Asesino', note: '1 en el tablero', desc: 'Destaparla hace PERDER a tu equipo al instante.' },
-    { emoji: '💬', name: 'La pista', desc: 'UNA palabra + un número: el equipo destapa hasta número+1 casillas (con 0 o ∞, sin límite). No vale una palabra del tablero.' },
+    { emoji: '⬜', name: 'Transeúntes', note: `quedan ${hidden('neutral')} de 7`, desc: 'No son de nadie: destapar una corta el turno de tu equipo.' },
+    { emoji: '💀', name: 'El asesino', note: hidden('assassin') ? 'sigue en el tablero' : 'ya ha salido', desc: 'Destaparlo hace PERDER a tu equipo al instante.' },
+    { emoji: '💬', name: 'La pista', desc: 'UNA palabra + un número: su equipo destapa hasta número+1 casillas (con 0 o ∞, sin límite). No vale una palabra del tablero, ni gestos ni añadidos.' },
     { emoji: '👉', name: 'Destapar', desc: 'Tocar una palabra la selecciona; se destapa al confirmarla abajo. Al menos una por turno; luego ya se puede pasar.' },
+    { emoji: '🏆', name: 'Ganar', desc: 'Destapad TODAS las vuestras. Ojo: si destapáis la última que le quedaba al rival, se la regaláis y gana él.' },
   ];
 }
 

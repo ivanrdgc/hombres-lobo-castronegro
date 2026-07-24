@@ -1,6 +1,10 @@
 <script lang="ts">
   // Reparto: cada cual despliega su carta (rol + lo que sabe), la memoriza y
   // confirma; cuando todos han confirmado, cualquiera abre la primera misión.
+  //
+  // Es la ÚNICA pantalla con su propio botón de carta (excepción de B34): aquí
+  // la instrucción ES el contenido de la pantalla. En cuanto empieza la partida
+  // la única puerta a tu carta es la pastilla flotante «🎴 Mi carta».
   import { app } from '../../../core/sync/store.svelte';
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
@@ -29,7 +33,7 @@
   {:else}
     <div class="card">
       <button class="primary block" data-a="av-reveal" onclick={() => (app.ui.revealOpen = true)}>👁 Ver mi carta</button>
-      <p class="small-note" style="margin-bottom:0">Solo la ves tú y se oculta sola a los pocos segundos. Memorízala: en Ávalon no se reparte otra vez (aunque siempre puedes volver a mirarla en 🎴).</p></div>
+      <p class="small-note" style="margin-bottom:0">Solo la ves tú y se oculta sola a los pocos segundos. Memorízala: en Ávalon no se reparte otra vez… aunque la pastilla <b>🎴 Mi carta</b> de abajo a la derecha te la reenseña en cualquier momento de la partida (y solo a ti).</p></div>
   {/if}
 {:else if !allSeen}
   <div class="waitlist">Esperando a que confirmen: {pend.join(', ')}</div>

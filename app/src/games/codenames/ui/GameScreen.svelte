@@ -5,6 +5,10 @@
   // móvil (B28): el Jefe lleva su mapa en la mano (tarjeta SpyMap, tapada al
   // repartir) y todos los demás llevan un tablero público, grande, para dejarlo
   // en medio de la mesa.
+  //
+  // Puerta única (B34): al ser un juego de EQUIPO, tu papel (la banda) y tu
+  // mapa están en ESTA pantalla y no se repiten en ningún modal; la pastilla
+  // flotante es solo «📖 Reglas».
   import { app, isMaster, matchOf } from '../../../core/sync/store.svelte';
   import { codenamesGame, revealCell } from '../actions';
   import { guard } from '../../../core/sync/guard';
@@ -12,6 +16,7 @@
   import { play } from '../../../core/audio/player';
   import { e2eTestMode } from '../../../core/test-hooks';
   import { CLUE_STALL_MS, clueStalled, isSpymaster, TEAM_LABEL } from '../engine';
+  import { lastLogLine } from '../texts';
   import type { GroupDoc, PlayerDoc } from '../../../core/sync/schema';
   import Flash from '../../../shell/Flash.svelte';
   import CardFab from '../../../shell/CardFab.svelte';
@@ -73,13 +78,13 @@
 {#if game.phase === 'end'}
   <EndPhase {game} {my} />
 {:else}
-  {#if inGame}<MyCard {game} pid={my.id} compact />{/if}
+  {#if inGame}<MyCard {game} pid={my.id} />{/if}
   {#if game.phase === 'guess'}<ClueBand {game} />{/if}
   {#if iAmSpy}
     <SpyMap {game} {my} />
   {:else}
     <div class="card"><Board {game} {my} {sel} onpick={(i) => (sel = sel === i ? null : i)} />
-      {#if !inGame}<p class="small-note" style="text-align:center;margin:0">👀 Miras de espectador: el mapa de los Jefes no lo ves.</p>{/if}
+      {#if !inGame}<p class="small-note" style="text-align:center;margin:0">👀 Miras de espectador: ves las 25 palabras, pero no el mapa de los Jefes.</p>{/if}
     </div>
   {/if}
   {#if game.phase === 'clue'}
@@ -89,9 +94,22 @@
   {/if}
 {/if}
 
+<!-- El diario es referencia, no decisión: al pie y plegado, con la ÚLTIMA línea
+     siempre visible —que es lo único que la mesa pregunta («¿qué acaba de
+     pasar?»)— y el historial a un toque. -->
 {#if game.log && game.log.length}
-  <div class="card"><h3>📜 Diario</h3>
-    <div class="log" bind:this={logEl}>{#each game.log as l, i (i)}<p>{l.txt}</p>{/each}</div></div>
+  <details class="diary">
+    <summary data-a="cn-log">📜 {lastLogLine(game)}</summary>
+    <div class="log" bind:this={logEl}>{#each game.log as l, i (i)}<p>{l.txt}</p>{/each}</div>
+  </details>
 {/if}
 
 <CardFab modal="cn-mycard" />
+
+<style>
+  .diary { margin: 12px 0 0; }
+  .diary summary {
+    cursor: pointer; font-size: 0.85rem; color: var(--muted, #a9a6c0); padding: 12px 0;
+    border-top: 1px solid var(--border, #2c3047); overflow-wrap: anywhere;
+  }
+</style>

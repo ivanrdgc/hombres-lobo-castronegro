@@ -51,10 +51,15 @@
 <div class="card">
   <h3>🎮 ¿Quién juega?</h3>
   <SeatPicker {group} {meId} gameId="decrypto" onState={(s) => (seat = s)} />
-  <p class="small-note">Los dos equipos (rojo y azul) los reparte la app al azar, con 4 palabras clave secretas cada uno. En cuanto salgan, <b>sentaos con los vuestros y el rival enfrente</b>.
-    {#if n >= MIN_PLAYERS && n % 2}Sois {n}: un equipo tendrá uno más ({Math.ceil(n / 2)} contra {Math.floor(n / 2)}), que en Decrypto no da ventaja.{/if}</p>
-  {#if n && n < MIN_PLAYERS}<p class="small-note">⚠️ Faltan jugadores: Decrypto necesita al menos {MIN_PLAYERS} (dos por equipo).</p>{/if}
-  {#if n > MAX_PLAYERS}<p class="small-note">⚠️ Sobran jugadores: como mucho {MAX_PLAYERS}.</p>{/if}
+  <!-- Un solo renglón bajo la lista, y siempre uno: cuando no se puede empezar
+       dice POR QUÉ (B25, lo deshabilitado se explica). -->
+  {#if n < MIN_PLAYERS}
+    <p class="small-note">⚠️ Sois {n}: hacen falta {MIN_PLAYERS} para dos equipos de dos (uno encripta y el otro descifra).</p>
+  {:else if n > MAX_PLAYERS}
+    <p class="small-note">⚠️ Sois {n}: como mucho juegan {MAX_PLAYERS}.</p>
+  {:else}
+    <p class="small-note">Jugáis <b>{n}</b>: la app sortea dos equipos, rojo y azul, y da a cada uno 4 palabras clave que solo verán los suyos.{#if n % 2} Al ser impares, un equipo tendrá uno más ({Math.ceil(n / 2)} contra {Math.floor(n / 2)}): en Decrypto no da ventaja.{/if}</p>
+  {/if}
 </div>
 
 <div class="card">
@@ -70,5 +75,8 @@
   {#if narratorP}<p class="small-note">🔊 <b>{narratorP.name}</b> pone la voz{seat.chosen.includes(narratorP.id) ? ' y también juega' : ' (no juega)'}.</p>{/if}
 </div>
 
+<!-- Lo último que se lee antes de repartir, porque es lo primero que hay que
+     hacer con el cuerpo: en Decrypto la pantalla es secreto de EQUIPO. -->
+<p class="small-note" data-a="de-start-warn">🪑 En cuanto salgan los equipos, <b>sentaos juntos los del mismo equipo, con el rival enfrente</b>: vuestras 4 palabras estarán a la vista en la pantalla y no deben verlas ellos.</p>
 <div id="form-error">{#if app.ui.formError}<div class="flash error">{app.ui.formError}</div>{/if}</div>
 <button class="primary block" disabled={!okStart} data-a="de-start" onclick={startNow}>🔐 Repartir equipos y empezar{okStart ? ` (${n})` : ''}</button>

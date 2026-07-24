@@ -27,14 +27,24 @@ export function fullDeck(): Card[] {
 
 export const cardName = (c: Card): string => `${CARD_INFO[c].emoji} ${CARD_INFO[c].name}`;
 
+/** Cuántas copias TRAE el mazo de esta carta. Va impreso en la caja y no depende
+ *  de lo que haya pasado en la ronda, así que se dice siempre, también en el
+ *  modo difícil. */
+export function deckNote(c: Card): string {
+  const total = CARD_INFO[c].count;
+  return total === 1 ? 'única en el mazo' : `${total} en el mazo`;
+}
+
 /** Nota de conteo que acompaña a una carta en pantalla: «5 en el mazo · quedan 3
  *  por salir». `out` son las copias ya descartadas (públicas). Contar es media
- *  partida, así que la cuenta va hecha allí donde se decide. */
-export function copiesNote(c: Card, out: number): string {
-  const total = CARD_INFO[c].count;
-  const left = total - out;
+ *  partida, así que la cuenta va hecha allí donde se decide… salvo que la mesa
+ *  juegue en MODO DIFÍCIL (`track = false`, B33): entonces la app se calla lo que
+ *  ha salido y contar vuelve a ser cosa vuestra. */
+export function copiesNote(c: Card, out: number, track = true): string {
+  if (!track) return deckNote(c);
+  const left = CARD_INFO[c].count - out;
   const cuantas = left === 0 ? 'ya han salido todas' : left === 1 ? 'queda 1 por salir' : `quedan ${left} por salir`;
-  return `${total === 1 ? 'única en el mazo' : `${total} en el mazo`} · ${cuantas}`;
+  return `${deckNote(c)} · ${cuantas}`;
 }
 
 /** Cartas cuyo efecto apunta a otro jugador. */

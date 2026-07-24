@@ -4,6 +4,8 @@
 // favor, el aviso del eliminado y la FUGA. Al ser un juego de MANO (B28), la
 // carta propia está SIEMPRE a la vista sin tocar nada: lo que se comprueba es
 // que en la pantalla de quien espera aparece la SUYA y ninguna ajena.
+// Al final, una segunda partida en MODO DIFÍCIL (B33): la app sigue diciendo
+// cuántas cartas quedan por robar, pero deja de contar cuáles han salido.
 // Dirige siempre desde god-view.
 import { chromium } from 'playwright';
 const BASE = process.env.BASE; if (!BASE) { console.error('Define BASE=https://tu-sitio.web.app'); process.exit(1); }
@@ -38,6 +40,15 @@ async function waitState(page, fn, what, timeout = 30000) {
 let NAMES = {};
 const pg = (pid) => pages[(NAMES[pid] || pid).toLowerCase()];
 const st = () => hlc(pages.ana);
+/** Ajustes que ve el dispositivo: los de la mesa en el lobby, la foto de la partida dentro. */
+const settingsOf = (page) => page.evaluate(() => window.__hlc.group?.settings || null);
+async function endMatch(page) {
+  await page.click('[data-a=game-menu]');
+  await page.click('[data-a=ll-end-open]');
+  await page.waitForSelector('[data-a=ll-end-confirm]');
+  await page.click('[data-a=ll-end-confirm]');
+  await page.waitForSelector('[data-a=open-start]', { timeout: 30000 });
+}
 const CARD_A = 'data-a=ll-card';
 const ES = {
   guard: 'Guardia', priest: 'Sacerdote', baron: 'Barón', handmaid: 'Doncella',
@@ -115,6 +126,9 @@ try {
 
   await ana.click('[data-a=open-start]');
   await ana.waitForSelector('[data-a=ll-start]:not([disabled])', { timeout: 15000 });
+  // El recuento de cartas (B33) se elige aquí y por defecto lo lleva la app.
+  check(await ana.locator('[data-a=ll-track]').count() === 2, 'la pantalla de empezar ofrece los dos modos de recuento');
+  check(await ana.locator('[data-a=ll-track][data-p=on].primary').count() === 1, 'por defecto, el recuento lo lleva la app');
   await ana.click('[data-a=ll-start]');
 
   let s = await waitState(ana, (x) => x.phase === 'turn', 'primer turno');
@@ -140,6 +154,17 @@ try {
   const waitTxt = await pg(otherP).evaluate(() => document.body.innerText);
   check(await pg(otherP).locator('[data-a=ll-my-hand]').count() === 1, 'quien espera tiene su mano en pantalla, sin gestos');
   check(await pg(otherP).locator('[data-a=ll-show-card]').count() === 0, 'ya no hay que destapar la carta propia');
+  // Una sola puerta (B34): en un juego de MANO la carta vive en la pantalla y la
+  // pastilla flotante son las REGLAS, que no vuelven a enseñar la mano.
+  check(await pg(otherP).locator('[data-a=open-mycard]').count() === 1, 'hay una sola pastilla flotante, y ningún «ver mi carta» en el cuerpo');
+  await pg(otherP).click('[data-a=open-mycard]');
+  await pg(otherP).waitForSelector('.modal [data-a=ll-rules-lead]', { timeout: 8000 });
+  // Ojo: el efecto del Rey dice «intercambias tu mano», así que el chivato no
+  // puede ser el texto: lo que no puede haber es una CARTA tuya destapada aquí.
+  const refModal = await pg(otherP).locator('.modal').innerText();
+  check(await pg(otherP).locator('.modal [data-a=ll-my-hand], .modal .face').count() === 0 && !/en tu mano/i.test(refModal),
+    'y el modal de las reglas no vuelve a enseñar la mano que ya está en pantalla');
+  await pg(otherP).click('.modal [data-a=close-modal]');
   check(waitTxt.includes(ES[s.hands[otherP][0]]), 'y ve SU carta con nombre y efecto');
   check(/sin salir/.test(waitTxt), 'la cuenta de lo que queda por salir está en la pantalla principal');
   // Cartas que SOLO tiene el de turno: ninguna puede aparecer en la pantalla ajena.
@@ -183,13 +208,47 @@ try {
   check(await ana.locator('.modal [data-a=table-player]').count() === 3, 'el menú ⋯ abre «🪑 La mesa» con los 3 dispositivos');
   await ana.click('.modal [data-a=close-modal]');
 
-  // Limpieza.
-  await ana.click('[data-a=game-menu]');
-  await ana.click('[data-a=ll-end-open]');
-  await ana.waitForSelector('[data-a=ll-end-confirm]');
-  await ana.click('[data-a=ll-end-confirm]');
-  await ana.waitForSelector('[data-a=open-start]', { timeout: 30000 });
+  await endMatch(ana);
   ok('al terminar, la mesa vuelve al lobby de Love Letter');
+
+  // —— Modo difícil (B33): la app deja de contar por ti ——
+  await ana.click('[data-a=open-start]');
+  await ana.waitForSelector('[data-a=ll-track][data-p=off]', { timeout: 15000 });
+  await ana.click('[data-a=ll-track][data-p=off]');
+  await ana.waitForFunction(() => window.__hlc.group?.settings?.llTrack === false, null, { timeout: 15000 });
+  const whyTxt = await ana.locator('[data-a=ll-track-why]').innerText();
+  check(/modo difícil/i.test(whyTxt) && /por robar/.test(whyTxt), 'la pantalla de empezar explica qué cambia con el modo difícil');
+  await ana.click('[data-a=ll-start]:not([disabled])');
+  s = await waitState(ana, (x) => x.phase === 'turn', 'primer turno del modo difícil');
+
+  const hardWait = pg(s.playerIds.find((p) => p !== s.turn));
+  const hardTurn = pg(s.turn);
+  const deckTxt = await hardWait.locator('[data-a=ll-deck-left]').innerText();
+  check(/por robar/.test(deckTxt) && !/sin salir/.test(deckTxt), 'en modo difícil se sigue viendo cuántas cartas quedan por robar, y nada más');
+  check(await hardWait.locator('[data-a=ll-hard-mode]').count() === 1, 'la partida dice, donde estaría la cuenta, que se juega en modo difícil');
+  check(await hardWait.locator('.strip').count() === 0, 'la tira de «lo que sigue sin salir» desaparece');
+  check(await hardWait.locator('[data-a=ll-discards]').count() === s.playerIds.length, 'los descartes de cada jugador siguen a la vista (están boca arriba en la mesa)');
+  check(await hardWait.locator('[data-a=ll-my-hand]').count() === 1, 'y tu mano sigue en pantalla, sin gestos');
+  const hardCard = await hardTurn.locator('[data-a=ll-card]').first().innerText();
+  check(/en el mazo/.test(hardCard) && !/(quedan? \d|salido todas)/.test(hardCard),
+    'cada carta dice cuántas copias trae el mazo, pero no cuántas han salido');
+  await hardTurn.click('[data-a=ll-ref]');
+  const refTxt = await hardTurn.locator('.llref').innerText();
+  check(/en el mazo/.test(refTxt) && !/(por salir|salido todas)/.test(refTxt), 'la referencia del panel tampoco cuenta lo que ya ha salido');
+  // Y si a quien le toca le sirve el Guardia, sus adivinanzas tampoco cuentan.
+  const hardIdx = chooseIdx(s.hands[s.turn], s, s.turn);
+  if (s.hands[s.turn][hardIdx] === 'guard') {
+    await hardTurn.click(`[${CARD_A}][data-p="${hardIdx}"]`, { timeout: 15000 });
+    await hardTurn.click(`[data-a=ll-target][data-p="${targetsFor(s, s.turn, 'guard')[0]}"]`, { timeout: 15000 });
+    const guessTxt = await hardTurn.locator('[data-a=ll-guess]').first().innerText();
+    check(/en el mazo/.test(guessTxt) && !/sin salir|salido todas/.test(guessTxt), 'las adivinanzas del Guardia no dicen cuántas quedan sin salir');
+  }
+  ok('el modo difícil oculta el recuento y conserva el mazo y los descartes');
+
+  await endMatch(ana);
+  check((await settingsOf(ana))?.llTrack === false, 'la mesa recuerda el modo para la próxima partida');
+
+  // Limpieza.
   for (const _p of Object.values(pages)) {
     try { if (_p.isClosed()) continue; await _p.goto(url); const _me = await _p.waitForSelector('.player[data-a=player-menu]:has(.badge.you)', { timeout: 9000 }).catch(() => null); if (_me) { await _me.click(); await _p.click('[data-a=leave]'); await _p.click('[data-a=leave-confirm]'); await _p.waitForURL(BASE + '/', { timeout: 12000 }).catch(() => {}); } } catch { /* ya fuera */ }
   }

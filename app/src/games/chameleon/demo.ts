@@ -49,7 +49,7 @@ export const DEMO: DemoScript = {
       title: 'Las pistas, por turnos y en voz alta',
       who: {
         actor: 'La app marca de quién es el turno; quien acaba de hablar confirma en el móvil con el botón de ya he dicho mi pista',
-        others: 'nadie más toca el móvil, salvo para releer su propia carta con el botón redondo 🎴 de la esquina o con el de ver mi carta.',
+        others: 'nadie más toca el móvil, salvo para releer su propia carta en la pastilla 🎴 «Mi carta y las reglas» de abajo a la derecha, que es la misma en todos los móviles.',
       },
       text: [
         'Carlos: «aleta». David: «peligro». Bea (¡el Camaleón, improvisando!): «playa». Te toca a ti…',

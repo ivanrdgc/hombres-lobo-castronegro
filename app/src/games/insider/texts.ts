@@ -18,7 +18,7 @@ export const HOW_TO: HelpSection[] = [
     heading: '🕵️ De qué va',
     items: [
       'Insider es un juego cooperativo… con un traidor, de 4 a 12 jugadores y en un solo móvil por persona. El EQUIPO debe adivinar una palabra secreta haciendo preguntas de SÍ o NO; el MAESTRO la conoce y responde con la verdad; y el INSIDER, oculto entre el equipo, también la conoce y trata de que la adivinen guiándoos con disimulo.',
-      'Gana el EQUIPO (Maestro y comunes) si adivináis la palabra a tiempo Y luego desenmascaráis al Insider. Gana el INSIDER si, adivinada la palabra, la mesa NO lo señala. Y si el tiempo se agota sin adivinar la palabra, PIERDEN TODOS, Insider incluido.',
+      'Gana el EQUIPO (el Maestro y todos los que no son el Insider) si adivináis la palabra a tiempo Y luego lo desenmascaráis. Gana el INSIDER si, adivinada la palabra, la mesa NO lo señala. Y si el tiempo se agota sin adivinar la palabra, PIERDEN TODOS, Insider incluido.',
       'La app hace de máster oculto: elige la palabra, reparte los papeles (el Insider en secreto), lleva el reloj y cuenta el voto. Nadie apunta nada a mano.',
     ],
   },
@@ -26,8 +26,8 @@ export const HOW_TO: HelpSection[] = [
     heading: '🎴 El reparto',
     items: [
       'Cada ronda, la app designa un MAESTRO (es público: la voz lo dice, y todos lo veis en pantalla). El Maestro rota cada ronda.',
-      'En su carta privada, cada jugador ve su papel. El Maestro y el Insider ven además la PALABRA secreta. Los comunes solo ven que son del equipo y que no la conocen.',
-      'Miradlo a solas y confirmad. Nadie más debe ver vuestra pantalla: que sois el Insider (o no) es secreto hasta el final.',
+      'En su carta privada, cada jugador ve qué es. El Maestro y el Insider ven además la PALABRA secreta; el resto del equipo solo ve que no la conoce.',
+      'Miradla a solas y confirmad. Nadie más debe ver vuestra pantalla: que sois el Insider (o no) es secreto hasta el final.',
     ],
   },
   {
@@ -55,7 +55,7 @@ export const HOW_TO: HelpSection[] = [
   {
     heading: '🏆 Puntos (varias rondas)',
     items: [
-      'Insider cazado: +1 para el Maestro y para cada común. Insider que escapa (con la palabra adivinada): +2 para él.',
+      'Insider cazado: +1 para todo el equipo, Maestro incluido. Insider que escapa (con la palabra adivinada): +2 para él.',
       'Tiempo agotado sin adivinar: nadie puntúa. El Maestro rota y la palabra no se repite hasta agotarse; jugad las rondas que queráis.',
       'Terminada la ronda, el botón «Otra ronda» lo pulsa cualquiera, no hace falta esperar al Maestro.',
     ],
@@ -63,7 +63,7 @@ export const HOW_TO: HelpSection[] = [
   {
     heading: '🧰 Las herramientas de la mesa',
     items: [
-      'El botón redondo con una carta 🎴, abajo a la derecha, abre tu carta en CUALQUIER momento: tu papel, la palabra si la conoces y la chuleta de papeles y puntos. Es la forma de reconsultarla a media partida sin preguntar en voz alta; se oculta sola a los pocos segundos.',
+      'La pastilla 🎴 «Mi carta», abajo a la derecha, es la ÚNICA puerta a tu carta una vez repartida, y está en todas las fases: qué eres, la palabra si la conoces y las reglas (papeles y puntos). Se abre solo cuando la pides y se oculta sola a los pocos segundos, así que reconsultarla a media partida no delata a nadie.',
       'El menú de herramientas de la cabecera (los tres puntos ⋯) pausa la partida: el reloj se congela y los botones desaparecen hasta que alguien reanude, así que podéis salir a por hielo sin perder el interrogatorio. Ahí están también la voz y el repetir la última locución.',
       'Nada se atasca por un móvil muerto: confirmadas todas las cartas, el reloj lo arranca cualquiera, y si alguien no llega a votar en la caza, el Maestro cierra el recuento con los votos que haya (y si el que falta es él, puede cerrarlo cualquiera que ya haya votado).',
     ],

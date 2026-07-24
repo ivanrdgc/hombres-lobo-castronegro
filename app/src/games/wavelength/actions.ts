@@ -83,8 +83,8 @@ export async function startWavelength(playerIds: string[], narratorId: string | 
   });
 }
 
-/** El Psíquico ya ha dado su pista en voz alta: el equipo puede colocar el
- *  marcador. `text` es opcional (la pista escrita, para releerla en el debate). */
+/** El Psíquico ya ha dado su pista en voz alta: el equipo puede colocar la
+ *  marca. `text` es opcional (la pista escrita, para releerla en el debate). */
 export async function giveClue(text = ''): Promise<void> {
   const me = myPid();
   const clueText = text.trim().slice(0, 60);
@@ -95,8 +95,8 @@ export async function giveClue(text = ''): Promise<void> {
     game.phase = 'guess';
     game.log.push({
       txt: clueText
-        ? `💬 La pista de ${nameOf(game, me)} es «${clueText}». El equipo coloca el marcador en el dial.`
-        : `💬 ${nameOf(game, me)} ya ha dado su pista. El equipo coloca el marcador en el dial.`,
+        ? `💬 La pista de ${nameOf(game, me)} es «${clueText}». El equipo coloca la marca en el dial.`
+        : `💬 ${nameOf(game, me)} ya ha dado su pista. El equipo coloca la marca en el dial.`,
     });
     return game;
   });
@@ -151,7 +151,9 @@ export async function castGuess(): Promise<void> {
     game.scored = (game.scored || 0) + 1;
     game.phase = 'result';
     game.log.push({ txt: `🎯 El objetivo estaba en ${game.target}, el equipo marcó ${marker}. ${scoreLabel(pts)} para ${nameOf(game, psy)}. Total del equipo: ${game.teamScore}.` });
-    if (goalMet(game)) game.log.push({ txt: `🏁 Meta cumplida (${game.goal!.label.toLowerCase()}): podéis ver el resumen o seguir jugando.` });
+    // Sin paréntesis anidados: la etiqueta de la meta ya trae los suyos
+    // («Una vuelta a la mesa (3 rondas)»).
+    if (goalMet(game)) game.log.push({ txt: `🏁 Meta cumplida: ${game.goal!.label.toLowerCase()}. Podéis ver el resumen o seguir jugando.` });
     return game;
   });
 }
@@ -212,7 +214,7 @@ export async function finishGame(): Promise<void> {
   });
 }
 
-/** Otra partida con la misma gente y la misma meta: marcador a cero. */
+/** Otra partida con la misma gente y la misma meta: puntos a cero. */
 export async function playAgain(): Promise<void> {
   await tx((game) => {
     if (game.phase !== 'end') return null;
@@ -223,7 +225,7 @@ export async function playAgain(): Promise<void> {
     game.psychicRounds = zeros();
     game.teamScore = 0;
     game.scored = 0;
-    game.log.push({ txt: '🔁 Nueva partida: marcador a cero.' });
+    game.log.push({ txt: '🔁 Nueva partida: puntos a cero.' });
     return game;
   });
 }

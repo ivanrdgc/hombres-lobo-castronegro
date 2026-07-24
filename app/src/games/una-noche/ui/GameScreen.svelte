@@ -26,7 +26,7 @@
   const phaseChip = $derived(
     game.phase === 'reveal' ? '🎴 Reparto'
       : game.phase === 'night' ? '🌙 Noche'
-        : game.phase === 'day' ? '☀️ Día' : '🌅 Se destapa todo',
+        : game.phase === 'day' ? '☀️ Día' : '🏆 Desenlace',
   );
   // Solo pedimos activar si el audio NO suena ya (estado real del AudioContext).
   const needsUnlock = $derived(isMaster() && !app.ui.audioReady && !app.ui.muted);

@@ -1,6 +1,6 @@
 <script lang="ts">
   // Final de partida: el resumen que faltaba antes de borrarlo todo (hasta
-  // ahora «Terminar» hacía desaparecer el marcador sin más). Nadie «gana»: es
+  // ahora «Terminar» hacía desaparecer los puntos sin más). Nadie «gana»: es
   // cooperativo, así que la nota es del equipo.
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
@@ -31,5 +31,5 @@
 
 <ScoreBoard {game} />
 
-<button class="primary block" data-a="wl-play-again" onclick={() => guard(A.playAgain)}>🔁 Otra partida (marcador a cero)</button>
+<button class="primary block" data-a="wl-play-again" onclick={() => guard(A.playAgain)}>🔁 Otra partida (puntos a cero)</button>
 <button class="ghost block" data-a="wl-back-lobby" onclick={() => guard(() => A.endWavelength())}>🏁 Terminar y volver al lobby</button>

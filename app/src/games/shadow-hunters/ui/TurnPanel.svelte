@@ -5,17 +5,19 @@
   //   2) Elegida una: qué va a pasar, el objetivo (con su vida y lo que se sabe
   //      de él) y un botón final que NOMBRA la consecuencia. Todo reversible.
   //   3) Plegada al fondo, la chuleta de los 8 personajes y las 8 pistas.
-  // 🍽️ MESA (B28): la pasada anterior clavaba TU carta (personaje, bando y
+  // 🍽️ MESA (B28): una pasada anterior clavaba TU carta (personaje, bando y
   // poder) arriba del panel, y el panel se queda abierto sobre la mesa mientras
-  // piensas: era el chivato más caro del juego. Ahora ni el panel ni el botón de
-  // confirmar nombran tu personaje; para consultarlo está el 👁 (SecretPeek),
-  // que se tapa solo. Al revelarte pasa a ser público y ahí sí se escribe.
+  // piensas: era el chivato más caro del juego. Ni el panel ni el botón de
+  // confirmar nombran tu personaje.
+  // B34: la pasada siguiente lo arregló metiendo AQUÍ un segundo «👁 ver mi
+  // carta» dentro del paso de revelarte — otra puerta a lo mismo. Tu carta se
+  // abre desde un único sitio, la pastilla 🎴, que está fija en pantalla y no se
+  // lleva por delante la acción elegida: el panel solo dice dónde está.
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
   import { isAlive, charOf } from '../engine';
-  import { CHARS, FACTION_SHORT, charRefRows, pistaRefRows, factionSummary } from '../chars';
+  import { CHARS, FACTION_SHORT, charRefRows, pistaRefRows } from '../chars';
   import RefRows from '../../../shell/RefRows.svelte';
-  import SecretPeek from './SecretPeek.svelte';
   import type { PlayerDoc } from '../../../core/sync/schema';
   import type { ShadowHState } from '../types';
 
@@ -42,8 +44,8 @@
   const ACTS = $derived([
     {
       id: 'pista' as Mode, emoji: '🔮', name: 'Dar una pista', ask: '¿A quién le das la pista?',
-      what: 'La app roba 1 de las 8 cartas y se la enseña EN SECRETO a quien elijas: esa persona sufre su efecto (pierde o cura 1 punto de vida, según su bando) y la carta la leéis solo ella y tú.',
-      risk: 'La mesa solo oye el resultado, así que tú deduces algo que nadie más sabe… y ella sabe que lo sabes. Si la carta la deja a 0, muere.',
+      what: 'La app roba 1 de las 8 pistas y se la enseña EN SECRETO a quien elijas: esa persona sufre su efecto (pierde o cura 1 punto de vida, según su bando) y la pista la leéis solo ella y tú.',
+      risk: 'La mesa solo oye el resultado, así que tú deduces algo que nadie más sabe… y ella sabe que lo sabes. Si la pista la deja a 0, muere.',
       off: false, why: '',
     },
     {
@@ -53,7 +55,9 @@
       off: false, why: '',
     },
     {
-      id: 'rest' as Mode, emoji: '💤', name: 'Descansar', ask: '',
+      // 💊 y no 💤: es el mismo emoji con el que el diario canta el descanso y
+      // con el que lo nombran la ayuda y el tutorial (un nombre por cosa).
+      id: 'rest' as Mode, emoji: '💊', name: 'Descansar', ask: '',
       what: full
         ? `Recuperarías 1 punto de vida, pero ya estás al máximo (${hp} de ${game.maxHp}): no te curaría nada.`
         : `Recuperas 1 punto de vida: pasas de ${hp} a ${hp + 1} de ${game.maxHp}.`,
@@ -64,8 +68,7 @@
       id: 'reveal' as Mode, emoji: '🎭', name: 'Revelarte y usar tu poder',
       ask: '¿Sobre quién usas tu poder?',
       // Sin tu nombre de personaje: el panel se queda abierto encima de la mesa.
-      // Al elegir esta acción tienes el 👁 ahí mismo para mirarlo un momento.
-      what: 'Tu identidad pasa a ser PÚBLICA para siempre: la mesa sabrá qué personaje eres y de qué bando. En el acto usas TU poder, de un solo uso (podrás mirarlo antes de confirmar).',
+      what: 'Tu identidad pasa a ser PÚBLICA para siempre: la mesa sabrá qué personaje eres y de qué bando. En el acto usas TU poder, de un solo uso.',
       risk: 'Tu bando sabrá que estás con él… y el contrario, a quién tiene que atacar.',
       off: revealed, why: 'Ya te revelaste: tu poder era de un solo uso y ya está gastado.',
     },
@@ -94,7 +97,7 @@
   // Una línea en claro con lo que va a ocurrir al confirmar.
   const preview = $derived.by(() => {
     const t = tgt ? (tgt === my.id ? 'ti' : nm(tgt)) : '';
-    if (mode === 'pista' && tgt) return `${nm(tgt)} recibirá una carta que solo leeréis ${nm(tgt)} y tú; la mesa verá si pierde vida, se cura o no le pasa nada.`;
+    if (mode === 'pista' && tgt) return `${nm(tgt)} recibirá una pista que solo leeréis ${nm(tgt)} y tú; la mesa verá si pierde vida, se cura o no le pasa nada.`;
     if (mode === 'attack' && tgt) return `${nm(tgt)} (${pub(tgt)}) recibirá de 0 a 5 de daño… o ninguno si los dados empatan.`;
     if (mode === 'rest') return full ? `Sigues con ${hp} de ${game.maxHp}: gastas el turno sin ganar vida.` : `Subes a ${hp + 1} de ${game.maxHp} puntos de vida.`;
     if (mode === 'reveal') return `Toda la mesa verá tu personaje y tu bando, para siempre${needsTarget && t ? `, y tu poder caerá sobre ${t}` : ''}.`;
@@ -121,7 +124,7 @@
   <h3>🎬 Te toca: elige UNA acción</h3>
 
   {#if !mode}
-    <p class="hint" style="margin:10px 0 8px">Toca una acción para ver qué hace; después eliges a quién y lo confirmas. Tu carta sigue tapada: mírala con 👁 si te hace falta.</p>
+    <p class="hint" style="margin:10px 0 8px">Toca una acción para ver qué hace; después eliges a quién y lo confirmas. Tu carta sigue tapada: si la necesitas está donde siempre, en la pastilla 🎴 Mi carta de abajo a la derecha.</p>
     <div class="shacts">
       {#each ACTS as a (a.id)}
         <button class="shact {a.off ? 'off' : ''}" data-a={`sh-mode-${a.id}`} disabled={a.off} onclick={() => (mode = a.id)}>
@@ -139,9 +142,11 @@
       <div class="arisk">⚠️ {act.risk}</div>
     </div>
     {#if mode === 'reveal'}
-      <!-- El único sitio donde de verdad necesitas tu carta para decidir: aquí,
-           tras un gesto y con auto-tapado, no clavada arriba todo el turno. -->
-      <SecretPeek {game} pid={my.id} compact label="👁 Ver quién eres y qué poder gastarás" />
+      <!-- Es la única decisión que pide tu carta… y por eso mismo NO se abre una
+           segunda puerta aquí (B34): se dice dónde está la única que hay. Abrir
+           la pastilla es un modal encima, así que al cerrarla sigues en este
+           paso con la acción (y el objetivo) tal y como los dejaste. -->
+      <p class="small-note" style="margin:10px 0 0">¿No recuerdas qué poder vas a gastar? Míralo en la pastilla 🎴 Mi carta, abajo a la derecha: al cerrarla vuelves aquí, con esta acción todavía elegida.</p>
     {/if}
     <button class="ghost block small" style="margin:8px 0" data-a="sh-back" onclick={() => (mode = null)}>↩️ Cambiar de acción</button>
 
@@ -167,14 +172,13 @@
   {/if}
 
   <!-- Referencia al pie y plegada: nadie debería salir de la pantalla en la que
-       está decidiendo. Aquí vive también «cómo se gana», que antes repetía el
-       tablero (un dato, un sitio). -->
+       está decidiendo. Aquí vive «cómo se gana»; el reparto («Sois 5: 2 y 2…»)
+       NO se repite, que está justo debajo, bajo el tablero (un dato, un sitio). -->
   <details class="shref">
     <summary data-a="sh-ref">📖 Consultar: cómo se gana, los 8 personajes y las 8 pistas</summary>
     <p class="small-note" style="margin:8px 0 0">🏹 Los Cazadores ganan cuando no queda ninguna 🌑 Sombra en pie; las Sombras, cuando no queda ningún Cazador. Los 🧭 neutrales van a lo suyo.</p>
-    <p class="small-note" style="margin:6px 0 0">{factionSummary(game.playerIds.length)} El reparto es público; lo secreto es quién es quién.</p>
     <RefRows title="🎭 Los 8 personajes posibles" rows={charRefRows()} />
-    <RefRows title="🔮 Las 8 cartas de pista" rows={pistaRefRows()} />
+    <RefRows title="🔮 Las 8 pistas posibles" rows={pistaRefRows()} />
     <p class="small-note" style="margin-top:8px">Siempre son estas ocho: cuatro quitan 1 punto de vida y cuatro lo curan, según el bando de quien la recibe.</p>
   </details>
 </div>

@@ -61,7 +61,9 @@
 
 <div class="topbar">
   <button class="small ghost" data-a="back-lobby-game" aria-label="Volver" title="Volver" style="font-size:1.25rem;line-height:1;padding:6px 12px" onclick={() => navigate(`/g/${group.id}/sonar`)}>←</button>
-  <h2>⚓ Empezar partida</h2>
+  <!-- Como en los otros 16: la cabecera dice a QUÉ juegas (B27), no solo en qué
+       paso estás; y el botón de abajo ya dice lo que hace (B29 · 1). -->
+  <h2>⚓ Captain Sonar: empezar</h2>
 </div>
 <Flash />
 
@@ -89,7 +91,10 @@
   {#if voiceMode === 'all'}
     <p class="small-note">📣 Sonarán todos los móviles de los jugadores: cada corro se oye solo. Puede quedar algo «a coro».</p>
   {:else}
-    <p class="small-note" style="margin:10px 0 4px"><b>{voiceMode === 'perRoom' ? '🔊 Altavoz del primer corro' : '🔊 ¿Qué dispositivo narra?'}</b></p>
+    <!-- Con un altavoz por corro no hay «primero» ni «segundo»: las
+         tripulaciones se sortean después, así que se nombran «un corro» y «el
+         otro» (decir «el primer corro» hacía buscar un corro que no existe). -->
+    <p class="small-note" style="margin:10px 0 4px"><b>{voiceMode === 'perRoom' ? '🔊 Altavoz de un corro' : '🔊 ¿Qué dispositivo narra?'}</b></p>
     <div class="btnrow">
       {#each speakerCands as p (p.id)}
         <button class="small {narrator === p.id ? 'primary' : 'ghost'}" data-a="pick-narrator" data-p={p.id} style="flex:0 1 auto;min-width:0" onclick={() => (narrPick = p.id)}>
@@ -98,7 +103,7 @@
       {/each}
     </div>
     {#if voiceMode === 'perRoom'}
-      <p class="small-note" style="margin:10px 0 4px"><b>🔊 Altavoz del segundo corro</b></p>
+      <p class="small-note" style="margin:10px 0 4px"><b>🔊 Altavoz del otro corro</b></p>
       <div class="btnrow">
         {#each speakerCands.filter((p) => p.id !== narrator) as p (p.id)}
           <button class="small {speaker1 === p.id ? 'primary' : 'ghost'}" data-a="sn-pick-speaker2" data-p={p.id} style="flex:0 1 auto;min-width:0" onclick={() => (spk1Pick = p.id)}>
@@ -106,7 +111,7 @@
           </button>
         {/each}
       </div>
-      {#if !speaker1}<p class="small-note">⚠️ Elige un segundo altavoz (distinto del primero).</p>{/if}
+      {#if !speaker1}<p class="small-note">⚠️ Falta el altavoz del otro corro: elige un dispositivo distinto del anterior.</p>{/if}
       <p class="small-note" style="margin:6px 0 0">🔀 Al repartir, la app pone a los dos altavoces en tripulaciones distintas: así cada corro tiene su voz.</p>
     {/if}
   {/if}

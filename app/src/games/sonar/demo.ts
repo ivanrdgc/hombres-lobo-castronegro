@@ -27,7 +27,7 @@ export const DEMO: DemoScript = {
       visual: {
         kind: 'screens',
         panes: [
-          { title: 'TÚ (tripulación Roja)', lines: ['🗺️ Tu mapa: 🔴 en D6, islas ⛰️', '🎧 Rumbos del rival: (aún nada)'] },
+          { title: 'TÚ (tripulación Roja)', lines: ['🗺️ Vuestro mapa: 🔴 en D6, islas ⛰️', '🎧 Su tira de rumbos: (aún nada)'] },
           { title: 'Carlos (tripulación Azul)', lines: ['🗺️ Su mapa: 🔵 en una casilla que tú NO ves', 'De tu submarino no ve NADA.'] },
         ],
       },
@@ -74,7 +74,7 @@ export const DEMO: DemoScript = {
       visual: {
         kind: 'screens',
         panes: [
-          { title: 'Lo que habéis oído', lines: ['🎧 Rumbos del Azul: ⬅️ ⬅️ ⬇️', '🔵 Empezó en la F, la G o la H'] },
+          { title: 'Su tira de rumbos', lines: ['🎧 El Azul ha cantado: ⬅️ ⬅️ ⬇️', '🔵 Empezó en la F, la G o la H'] },
           { title: 'Vuestro cuaderno de sonar', lines: ['✅ H4 → G4 → F4 → F5 (encaja)', '❌ G3: es isla, nadie empieza ahí', '❌ G8 → F8 → E8 → ⬇️ se sale del mapa'] },
         ],
       },
@@ -114,7 +114,9 @@ export const DEMO: DemoScript = {
       who: { actor: 'Quien deja al rival a 0 ❤️ gana en el acto', others: 'la app revela entonces las posiciones de los dos submarinos.' },
       text: [
         'Otro torpedo y el Azul se hunde: ¡victoria de vuestra tripulación, +1 punto para cada tripulante y el marcador se acumula! Si os hundís con vuestra propia onda, la victoria es suya… aunque el mismo disparo hunda a los dos.',
-        'Consejo de a bordo: decidid en voz baja (¡el rival está en la misma sala!), y consultad la carta 🎴 para costes y reglas. ⚓',
+        // En un juego de EQUIPO la pastilla flotante es «📖 Reglas» y no hay
+        // ninguna «carta» que consultar (B34 · un nombre por cosa).
+        'Consejo de a bordo: decidid en voz baja (¡el rival está en la misma sala!), y abrid las reglas 📖 (abajo a la derecha) para los costes y el alcance. ⚓',
       ],
       visual: { kind: 'log', lines: ['🚀 Torpedo del submarino Rojo 🔴 contra D4: ¡IMPACTO DIRECTO en el submarino Azul 🔵! (2 de daño, le quedan 0).', '🏆 ¡Gana el submarino Rojo 🔴! El submarino Azul 🔵 se hunde.', '📍 Posiciones finales: Rojo en C6, Azul en D4.'] },
     },

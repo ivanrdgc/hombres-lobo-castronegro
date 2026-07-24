@@ -19,12 +19,16 @@
     <button class="menu-scrim" aria-label="Cerrar menú" onclick={close}></button>
     <div class="menu-pop" role="menu">
       <button role="menuitem" data-a="voice-open" onclick={() => { app.ui.modal = { type: 'voice' }; app.ui.voiceTest = null; close(); }}>{app.ui.muted ? '🔇 Voz' : '🗣️ Voz'}</button>
+      <!-- Las reglas completas, también en partida: el 🎴 lleva el resumen, pero
+           la duda de mesa («¿cuándo se desbloquea el veto?») se resuelve aquí sin
+           tener que terminar la partida para volver al lobby. -->
+      <button role="menuitem" data-a="sh-help-open" onclick={() => { app.ui.modal = { type: 'sh-help' }; close(); }}>📖 Cómo se juega</button>
       <!-- Dentro de una partida la URL se recoloca sola: sin esta entrada no hay
            forma de llegar al menú de un dispositivo apagado y sacarlo (y aquí la
            fase se queda esperando por él). -->
       <button role="menuitem" data-a="table-open" onclick={() => { app.ui.modal = { type: 'table' }; close(); }}>🪑 La mesa</button>
       {#if playing}
-        <button role="menuitem" data-a="sh-repeat" onclick={() => { guard(A.requestRepeat); close(); }}>🔁 Repetir</button>
+        <button role="menuitem" data-a="sh-repeat" onclick={() => { guard(A.requestRepeat); close(); }}>🔁 Repetir lo último en voz alta</button>
         {#if game.paused}
           <button role="menuitem" data-a="sh-resume" onclick={() => { guard(A.resumeGame); close(); }}>▶️ Reanudar</button>
         {:else}

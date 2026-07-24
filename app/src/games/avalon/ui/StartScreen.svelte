@@ -96,7 +96,7 @@
     <span class="chip">🧙 Merlín</span><span class="chip">🗡️ Asesino</span>
     {#each OPTIONAL_ROLES.filter((r) => enabled.includes(r)) as r (r)}<span class="chip">{ROLES[r].emoji} {ROLES[r].name}</span>{/each}
   </div>
-  <p class="small-note">El resto, Leales y Esbirros. {n >= MIN_PLAYERS ? `De los ${n}: ${evilCountFor(n)} del Mal y ${n - evilCountFor(n)} del Bien.` : ''} <button class="small ghost" data-a="av-edit-roles" onclick={() => navigate(`/g/${group.id}/avalon`)}>Cambiar roles</button></p>
+  <p class="small-note">El resto, Leales y Esbirros. {n >= MIN_PLAYERS ? `De los ${n}: ${evilCountFor(n)} del Mal y ${n - evilCountFor(n)} del Bien.` : ''} <button class="small ghost" data-a="av-edit-roles" onclick={() => navigate(`/g/${group.id}/avalon`)}>🎭 Cambiar los roles opcionales</button></p>
   {#if wontFit.length}
     <p class="small-note" data-a="av-roles-dropped">⚠️ Con {n} jugadores solo caben {evilCountFor(n) - 1} especiales del Mal además del Asesino: <b>{wontFit.map((r) => ROLES[r].name).join(' y ')}</b> se {wontFit.length > 1 ? 'quedan' : 'queda'} fuera de esta partida.</p>
   {/if}

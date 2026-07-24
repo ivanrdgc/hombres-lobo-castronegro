@@ -23,7 +23,8 @@ export const DEMO: DemoScript = {
       text: [
         'Cuanto más alto el número, más fuerte la carta (y más te delata). 💂 Guardia (1, cinco copias): adivina la carta de otro. ⛪ Sacerdote (2, dos): mírala en secreto. 🎩 Barón (3, dos): duelo, cae el menor. 🛡️ Doncella (4, dos): te protege un turno.',
         '🤴 Príncipe (5, dos): fuerza a alguien (o a ti) a descartar y robar. 👑 Rey (6, una): intercambia manos. 👸 Condesa (7, una): sin efecto, pero OBLIGATORIA si la tienes con Rey o Príncipe. 💗 Princesa (8, una): si la descartas, quedas fuera.',
-        'No hace falta memorizarlas: la app te enseña qué hace cada una al elegirla, y el botón flotante 🎴 (abajo a la derecha) tiene siempre a mano tu carta, la lista de las 8 con sus copias y cuántas quedan en el mazo.',
+        'No hace falta memorizarlas: la app te enseña qué hace cada una al elegirla, y el botón flotante de las reglas, abajo a la derecha, tiene siempre a mano la lista de las 8 con sus copias. Tu carta no se guarda ahí: vive en tu pantalla, a la vista.',
+        'Si la mesa juega en modo difícil, la app deja de marcar lo que ha salido: solo dice cuántas cartas quedan por robar, y llevar la cuenta vuelve a ser cosa vuestra mirando los descartes.',
       ],
     },
     {
@@ -39,7 +40,7 @@ export const DEMO: DemoScript = {
         kind: 'screens',
         panes: [
           { title: 'Bea (su turno)', lines: ['Paso 1 · sus dos cartas con el efecto entero: 💂 Guardia (1) o 🛡️ Doncella (4)', 'Paso 2 · toca el Guardia → ¿a quién? Carlos → ¿qué carta tiene? Barón'], buttons: [{ label: '▶️ Jugar 💂 Guardia sobre Carlos', kind: 'primary' }] },
-          { title: 'TÚ (esperando)', lines: ['«🎴 Juega Bea…»', 'Tu carta sigue a la vista en tu pantalla, con su efecto: sujeta el móvil mirando hacia ti y no hay nada que destapar.', 'Arriba, los descartes de todos y cuántas cartas quedan sin salir.'] },
+          { title: 'TÚ (esperando)', lines: ['«🎴 Juega Bea…»', 'Tu carta sigue a la vista en tu pantalla, con su efecto: sujeta el móvil mirando hacia ti y no hay nada que destapar.', 'Arriba, los descartes de todos y cuántas cartas quedan por robar.'] },
         ],
       },
     },

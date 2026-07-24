@@ -2,6 +2,9 @@
   // Pantalla de partida de Ávalon: cabecera + tablero de misiones + fase actual
   // + diario. Enruta por game.phase. Los que no juegan siguen la partida sin ver
   // cartas secretas (el tablero y el diario son públicos).
+  //
+  // La pastilla 🎴 «Mi carta y las reglas» va al final y sale en TODAS las
+  // fases: es la única puerta a tu carta (B34). Las fases no pintan la suya.
   import { app, isMaster } from '../../../core/sync/store.svelte';
   import { avalonGame } from '../actions';
   import { unlockAudio } from '../../../core/audio/engine';
@@ -28,9 +31,10 @@
 
   // El chip de la cabecera dice QUÉ TOCA AHORA. El número de misión ya lo canta
   // el tablero (casilla resaltada) y el panel de la fase: decirlo aquí otra vez
-  // era el mismo dato en tres sitios (B29).
+  // era el mismo dato en tres sitios (B29). El 🎴 no se usa aquí: en toda la
+  // partida ese emoji significa una sola cosa, la pastilla «Mi carta» (B34).
   const PHASE_CHIP: Record<string, string> = {
-    reveal: '🎴 Reparto', propose: '🧭 Propuesta', vote: '🗳️ Votación',
+    reveal: '🃏 Reparto', propose: '🧭 Propuesta', vote: '🗳️ Votación',
     voteReveal: '🗳️ Votos', quest: '⚔️ Misión', result: '📜 Resultado',
     assassin: '🗡️ Asesino', end: '🌅 Final',
   };

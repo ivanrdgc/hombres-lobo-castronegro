@@ -12,6 +12,11 @@
 // del leal y el del malvado son idénticos LETRA A LETRA (y que el rojo solo se
 // le niega al leal cuando lo toca, en su mano) y que la pantalla del Asesino es
 // igual que la de los demás hasta que él mismo abre la mira.
+//
+// Y UNA SOLA PUERTA A TU CARTA (B34): empezada la partida, la carta se abre
+// SOLO desde la pastilla flotante «🎴 Mi carta» — ninguna fase pinta su propio
+// «👁 Ver mi carta» en el cuerpo (la excepción es el reparto) — y la mira del
+// Asesino se rotula por lo que hace, no como «ver mi carta».
 import { chromium } from 'playwright';
 const BASE = process.env.BASE; if (!BASE) { console.error('Define BASE=https://tu-sitio.web.app'); process.exit(1); }
 let fail = 0;
@@ -68,21 +73,29 @@ async function checkProposeScreen(leader, size) {
   await pg(other).waitForSelector('[data-a=av-propose-pending]', { timeout: 15000 });
   ok('a los demás se les dice por nombre a quién se espera y qué pueden ir haciendo');
 }
-/** POSTURA DE MESA (B28): con el móvil plano, la carta de rol no puede pintarse
- *  sola ni llevar color por bando; se pide con un gesto idéntico en todos los
- *  móviles y se puede ocultar al momento (además se auto-oculta a los 12 s). */
+/** POSTURA DE MESA (B28) + UNA SOLA PUERTA (B34): con el móvil plano, la carta
+ *  de rol no puede pintarse sola ni llevar color por bando; y a media partida se
+ *  abre desde UN solo sitio, la pastilla flotante «🎴 Mi carta», idéntica en
+ *  todos los móviles (antes cada fase colgaba además su propio «👁 Ver mi
+ *  carta»: dos puertas a lo mismo en la misma pantalla). */
 async function checkTableCard(pid) {
   const p = pg(pid);
-  await p.waitForSelector('[data-a=av-togglecard]', { timeout: 15000 });
+  await p.waitForSelector('[data-a=open-mycard]', { timeout: 15000 });
   check(await p.locator('.rolecard').count() === 0, 'en reposo la carta de rol NO se pinta sola');
-  check(await p.locator('[data-a=av-togglecard]').count() === 1, 'se pide con un gesto (el mismo botón en todos los móviles)');
-  await p.click('[data-a=av-togglecard]');
-  await p.waitForSelector('.rolecard', { timeout: 5000 });
-  const cls = (await p.locator('.rolecard').first().getAttribute('class')) || '';
+  check(await p.locator('[data-a=av-togglecard], [data-a=av-reveal]').count() === 0,
+    'en partida ninguna fase añade su propio «👁 Ver mi carta»');
+  check(await p.locator('[data-a=open-mycard]').count() === 1,
+    'la única puerta es la pastilla 🎴, la misma en todos los móviles');
+  await p.click('[data-a=open-mycard]');
+  await p.waitForSelector('.modal .rolecard', { timeout: 5000 });
+  const cls = (await p.locator('.modal .rolecard').first().getAttribute('class')) || '';
   check(!/(^|\s)(good|evil)(\s|$)/.test(cls), 'la carta abierta no lleva borde de color por bando');
-  await p.click('[data-a=av-togglecard]');
+  const modal = await p.locator('.modal').innerText();
+  check(!/chuleta/i.test(modal) && /Mi carta/.test(modal) && /Las reglas/.test(modal),
+    'y dentro se llaman siempre igual: «Mi carta» y «las reglas» (nada de «chuleta»)');
+  await p.click('.modal [data-a=close-modal]');
   await p.waitForSelector('.rolecard', { state: 'detached', timeout: 5000 });
-  ok('y se oculta en cuanto se toca');
+  ok('al cerrarla, la carta desaparece de la pantalla');
 }
 /** Toda la mesa vota lo mismo (aprobar o rechazar). */
 async function everyoneVotes(st, approve) {
@@ -139,6 +152,13 @@ try {
   check(evil.length === 2, `2 malvados (${evil.map((p) => st.roles[p]).join(', ')})`);
   check(Object.values(st.roles).includes('merlin') && Object.values(st.roles).includes('assassin'), 'Merlín y Asesino repartidos');
   console.log('  roles:', st.playerIds.map((id) => `${st.names[id]}=${st.roles[id]}`).join(', '));
+  // Excepción única de B34: el REPARTO sí tiene su propio botón grande (ahí la
+  // instrucción ES el contenido de la pantalla) y convive con la pastilla.
+  const p0reveal = pg(st.playerIds[0]);
+  await p0reveal.waitForSelector('[data-a=av-reveal]', { timeout: 15000 });
+  check(await p0reveal.locator('[data-a=av-reveal]').count() === 1
+    && await p0reveal.locator('[data-a=open-mycard]').count() === 1,
+  'en el reparto conviven el botón grande y la pastilla 🎴 (excepción de B34)');
   for (const pid of st.playerIds) {
     const p = pg(pid);
     await p.waitForSelector('[data-a=av-reveal]', { timeout: 15000 });
@@ -200,7 +220,11 @@ try {
       const rejecting = !!v && !v.approved;
       const leaderBefore = leaderPid(st);
       if (rejecting && !rejectedOnce) {
-        check(await p0.locator('text=1/5').count() > 0, 'el destape avisa: van 1 de 5 rechazos');
+        // Un solo contador y una sola cifra en la pantalla: el tablero suma ya
+        // el rechazo que se acaba de destapar (antes decía 0/5 mientras la
+        // tarjeta de debajo decía 1/5).
+        check((await p0.locator('[data-a=av-track-dots]').innerText()).includes('1/5'),
+          'el tablero cuenta ya el rechazo recién destapado (1/5) y nadie lo repite');
         check((await p0.locator('[data-a=av-vote-continue]').innerText()).includes('Siguiente propuesta'), 'el botón lleva a la siguiente propuesta');
       }
       await p0.click('[data-a=av-vote-continue]');
@@ -293,6 +317,10 @@ try {
     check(await ap.locator('[data-a=av-assassin-gate]').innerText()
       === await pb.locator('[data-a=av-assassin-gate]').innerText(),
     'la pantalla del Asesino es idéntica a la de los demás hasta que abre la mira');
+    // B34: actuar no es «ver mi carta» — la cortina se rotula por lo que hace.
+    const gateBtn = await ap.locator('[data-a=av-assassin-open]').innerText();
+    check(/mira/i.test(gateBtn) && !/carta/i.test(gateBtn),
+      'la cortina del Asesino se rotula por su acción («Abrir la mira»), no «ver mi carta»');
     await pb.click('[data-a=av-assassin-open]');
     await pb.waitForSelector('[data-a=av-assassin-denied]', { timeout: 5000 });
     check(await pb.locator('[data-a=av-assassinate]').count() === 0, 'quien no es el Asesino recibe «no es tu turno»: tocar no delata');

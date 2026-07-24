@@ -37,17 +37,20 @@
     }),
   );
   const mineCount = (n: number) => (team ? cluesForWord(game, team, n).length : 0);
+  // El aviso de «esta palabra está medio adivinada» solo aparece cuando alguna
+  // lo está: en las primeras rondas sobraría (B29, fuera el ruido).
+  const hotWords = $derived([1, 2, 3, 4].some((n) => mineCount(n) > 1));
 </script>
 
 {#if team && !revealed}
   <div class="card" data-a="de-words">
-    <h3 style="margin:0 0 6px">🔑 Vuestras 4 palabras <small>solo el equipo {TEAM_LABEL[team]}</small></h3>
+    <h3 style="margin:0 0 6px">🔑 Vuestras 4 palabras</h3>
     <div class="dewords">
       {#each game.words[team] as w, i (i)}
-        <div class="deword"><span class="denum">{i + 1}</span><span class="dwtxt">{w}{#if mineCount(i + 1)}<i class="dwc">{mineCount(i + 1)} pista{mineCount(i + 1) > 1 ? 's' : ''} ya dada{mineCount(i + 1) > 1 ? 's' : ''}</i>{/if}</span></div>
+        <div class="deword" class:hot={mineCount(i + 1) > 1}><span class="denum">{i + 1}</span><span class="dwtxt">{w}{#if mineCount(i + 1)}<i class="dwc">{mineCount(i + 1) > 1 ? '⚠️ ' : ''}{mineCount(i + 1)} pista{mineCount(i + 1) > 1 ? 's' : ''} ya dada{mineCount(i + 1) > 1 ? 's' : ''}</i>{/if}</span></div>
       {/each}
     </div>
-    <p class="small-note" style="margin:8px 0 0">Se transmite el NÚMERO, nunca la palabra.</p>
+    <p class="small-note" style="margin:8px 0 0">Se transmite el NÚMERO, nunca la palabra.{#if hotWords} Las marcadas ⚠️ ya llevan dos pistas: son las que el rival tiene medio adivinadas.{/if}</p>
   </div>
 {/if}
 
@@ -80,8 +83,11 @@
         </div>
       </div>
     {/each}
+    <!-- Lo único que la rejilla no enseña: el CÓDIGO que llevaba cada
+         transmisión (ya destapado). Por eso el desplegable dice eso y no
+         «ver la hoja otra vez». -->
     <details class="dhdet">
-      <summary>Ver transmisión a transmisión</summary>
+      <summary>Ver los códigos ya destapados</summary>
       {#each game.history as h, i (i)}
         <p class="small-note" style="margin:4px 0">{h.team === 'red' ? '🔴' : '🔵'} R{h.round}: {h.clues.join(' · ')} → <b>{h.code.join('-')}</b></p>
       {/each}
@@ -90,11 +96,14 @@
 {/if}
 
 <style>
-  h3 small { font-size: 0.72rem; font-weight: 600; color: var(--muted, #a9a6c0); white-space: nowrap; }
   /* Letra grande: estas cuatro palabras se leen entre dos o tres personas
      apiñadas alrededor de un móvil, y a veces de reojo desde un lado. */
   .dewords { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 7px; }
   .deword { display: flex; align-items: center; gap: 9px; padding: 9px 11px; border-radius: 10px; border: 1px solid var(--border, #333); background: var(--surface, #1c1e28); font-size: 1.02rem; font-weight: 700; }
+  /* Misma marca que la fila «caliente» de la hoja: la palabra que ya lleva dos
+     pistas es la que está a punto de caer. */
+  .deword.hot { border-color: color-mix(in srgb, var(--moon, #ffd98a) 55%, transparent); }
+  .deword.hot .dwc { opacity: 0.85; color: var(--moon, #ffd98a); }
   .deword .dwtxt { flex: 1; min-width: 0; overflow-wrap: break-word; }
   .deword .dwc { display: block; font-size: 0.68rem; font-style: normal; font-weight: 600; opacity: 0.62; }
   .denum { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; flex: 0 0 auto; border-radius: 50%; background: var(--accent, #c8a24a); color: #000; font-size: 0.82rem; font-weight: 800; }

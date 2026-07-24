@@ -12,12 +12,19 @@
   // número de toques, y eso se lee al lado.
   const num = $derived(clue?.unlimited ? '∞' : String(clue?.num ?? 0));
   const left = $derived(game.guessesLeft < 0 ? 'sin límite' : String(game.guessesLeft));
+  // El 0 y el ∞ son las dos jugadas que la mesa no recuerda: van traducidas
+  // aquí mismo, que es donde se leen, y no solo en la referencia.
+  const means = $derived(clue?.unlimited
+    ? 'las pendientes de antes'
+    : clue?.num === 0 ? 'ninguna es suya' : null);
 </script>
 
 {#if clue}
   <div class="cnclue" data-a="cn-clue-band">
     <div class="cc-word">«{clue.word}» · {num}</div>
-    <div class="cc-meta">Pista de {TEAM_LABEL[game.turn]} · toques que le quedan: <b>{left}</b></div>
+    <div class="cc-meta">
+      Pista de {TEAM_LABEL[game.turn]}{means ? ` · ${means}` : ''} · toques que le quedan: <b>{left}</b>
+    </div>
   </div>
 {/if}
 

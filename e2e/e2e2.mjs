@@ -195,8 +195,9 @@ async function drivePending(st) {
       const s = st.players.find((p) => p.role === 'sirvienta' && p.alive);
       if (s) {
         const pg = pages[s.name.toLowerCase()];
-        // La decisión vive DENTRO de la carta: la abre con disimulo y renuncia.
-        if (await pg.locator('button[data-a=toggle-rolecard]').count()) await pg.click('button[data-a=toggle-rolecard]');
+        // La decisión vive DENTRO de la carta, y a la carta se entra siempre por
+        // la misma pastilla 🎴 (B34): la abre con disimulo y renuncia.
+        if (!(await pg.locator('button[data-a=sirvienta-no]').count())) await pg.click('[data-a=open-mycard]');
         await pg.waitForSelector('button[data-a=sirvienta-no]', { timeout: 10000 });
         await pg.click('button[data-a=sirvienta-no]');
       }
@@ -359,7 +360,7 @@ try {
 
   // Reconexión a mitad de partida: Bruno recarga.
   await pages.bruno.reload();
-  await pages.bruno.waitForSelector('[data-a=toggle-rolecard], .actionpanel', { timeout: 45000 });
+  await pages.bruno.waitForSelector('[data-a=open-mycard], .actionpanel', { timeout: 45000 });
   ok('reconexión tras recargar la página en plena partida');
 
   // Conducir la partida hasta el final (máx. 6 ciclos noche/día).

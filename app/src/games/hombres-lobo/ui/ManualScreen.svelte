@@ -10,7 +10,6 @@
   import PlayersGrid from './PlayersGrid.svelte';
   import RolesStrip from './RolesStrip.svelte';
   import RevealGate from './RevealGate.svelte';
-  import RoleCard from './RoleCard.svelte';
   import EndPhase from './EndPhase.svelte';
   import GameMenu from './GameMenu.svelte';
 
@@ -26,12 +25,12 @@
 </script>
 
 {#if game.phase === 'end'}
-  <div class="topbar"><h2>🌕 Hombres Lobo</h2><PhaseChip game={game} /></div>
+  <div class="topbar"><h2>🐺 Hombres Lobo</h2><PhaseChip game={game} /></div>
   <EndPhase group={group} my={my} />
   <LogPanel game={game} />
 {:else if !master && !my.inGame}
   <!-- Espectador: sigue la partida y puede terminarla desde el menú ⋯ si hace falta. -->
-  <div class="topbar"><h2>🌕 Hombres Lobo</h2><PhaseChip game={game} /><GameMenu group={group} /></div>
+  <div class="topbar"><h2>🐺 Hombres Lobo</h2><PhaseChip game={game} /><GameMenu group={group} /></div>
   <Flash />
   <div class="card" style="text-align:center">
     <span class="moon">👀</span>
@@ -42,7 +41,7 @@
   <RolesStrip game={game} />
   <LogPanel game={game} />
 {:else}
-  <div class="topbar"><h2>🌕 Hombres Lobo</h2><PhaseChip game={game} /><GameMenu group={group} /></div>
+  <div class="topbar"><h2>🐺 Hombres Lobo</h2><PhaseChip game={game} /><GameMenu group={group} /></div>
   <Flash />
   {#if master}
     <div class="card">
@@ -71,7 +70,7 @@
     </div>
   {:else}
     {#if my.inGame && !my.roleSeen}<RevealGate group={group} my={my} />{/if}
-    {#if my.inGame && my.roleSeen}<RoleCard player={my} group={group} mini={true} />{/if}
+    {#if my.inGame && my.roleSeen}<p class="small-note">Tu carta y las reglas están abajo, en <b>🎴 Mi carta</b>. El narrador dirige la partida: atiende a su voz.</p>{/if}
     <PlayersGrid players={players} title="🏘️ El pueblo" viewer={my} />
     <RolesStrip game={game} />
   {/if}

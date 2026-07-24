@@ -4,7 +4,7 @@
 
 export type Phase =
   | 'clue' // el Psíquico ve el objetivo y da una pista (una idea que caiga ahí)
-  | 'guess' // el equipo debate y coloca el marcador en el dial
+  | 'guess' // el equipo debate y coloca la marca en el dial
   | 'result' // se revela el objetivo y se puntúa por cercanía
   | 'end'; // se cumplió la meta: resumen final antes de cerrar
 
@@ -39,7 +39,7 @@ export interface WavelengthState {
   /** Marca que el equipo está moviendo, 0..100 (PÚBLICA: todos ven la misma).
    *  `null` = nadie ha tocado aún el dial, así que todavía no se puede fijar. */
   pick: number | null;
-  /** Quién movió el marcador la última vez (para el «lo ha movido X»). */
+  /** Quién movió la marca la última vez (para el «la ha puesto X»). */
   pickBy?: string | null;
   /** Posición que fijó el equipo, 0..100 (null hasta confirmar). */
   marker: number | null;
@@ -47,7 +47,7 @@ export interface WavelengthState {
   lastScore: number | null;
   /** Puntos por jugador: los gana el Psíquico que logró transmitir. */
   scores: Record<string, number>;
-  /** Rondas que cada uno ha hecho de Psíquico. Sin esto el marcador engaña:
+  /** Rondas que cada uno ha hecho de Psíquico. Sin esto la cuenta engaña:
    *  quien todavía no ha sido Psíquico sale con 0 y parece que va perdiendo. */
   psychicRounds: Record<string, number>;
   /** Total del equipo acumulado (suma de todas las rondas). */

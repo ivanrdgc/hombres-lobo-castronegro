@@ -25,7 +25,7 @@ export const DEMO: DemoScript = {
       },
       text: [
         'A ti te toca la 🔮 Vidente. Memorízala bien: durante la noche alguien puede cambiártela sin que te enteres.',
-        'Cuando los tres habéis confirmado, cualquiera pulsa «🌙 Comenzar la noche» y la voz se pone a llamar rol por rol. Si se te va la carta de la cabeza, el botón flotante 🎴 (abajo a la derecha, en cualquier fase) te enseña la tuya y el mazo entero.',
+        'Cuando los tres habéis confirmado, cualquiera pulsa «🌙 Comenzar la noche» y la voz se pone a llamar rol por rol. Si se te va la carta de la cabeza, la pastilla «🎴 Mi carta» (abajo a la derecha, en cualquier fase) te la enseña en secreto junto al mazo entero: es el único sitio desde donde se abre.',
       ],
       visual: {
         kind: 'screens',
@@ -48,7 +48,7 @@ export const DEMO: DemoScript = {
       visual: {
         kind: 'screens',
         panes: [
-          { title: 'TÚ (tu turno)', lines: ['🔮 Miras a Carlos: «🐺 ¡Hombre Lobo!»'], buttons: [{ label: '✅ Visto (cierro los ojos)', kind: 'primary' }] },
+          { title: 'TÚ (👁 Abrir mi turno)', lines: ['🔮 Miras a Carlos: «🐺 ¡Hombre Lobo!»'], buttons: [{ label: '✔️ Lo he visto, cierro los ojos', kind: 'primary' }] },
           { title: 'Bea (su turno, después)', lines: ['🃏 Roba tu carta y mira la nueva:', '«Ahora tienes: 🔮 Vidente.»'] },
         ],
       },
@@ -59,7 +59,7 @@ export const DEMO: DemoScript = {
       who: { actor: 'Cada uno actúa según su carta INICIAL, pase lo que pase', others: 'quien reciba tu carta robada NO actúa por ti.' },
       text: [
         'Imagina ahora una mesa con 👯 Doble en el mazo. El Doble despierta el PRIMERO: copia al Ladrón y, ahí mismo, te roba la carta a TI. Cuando la voz llama a la Vidente, tu carta ya está en otras manos… y tú ni te has enterado.',
-        'El mazo es PÚBLICO: la tira «🎴 Cartas en juego» enseña siempre TODOS los roles de la partida, y de ahí sale la deducción. Lo que nadie ve son las TRES cartas del centro: la Vidente puede espiar dos y el Borracho se lleva una a ciegas.',
+        'El mazo es PÚBLICO: la tira «🎴 El mazo» enseña siempre TODOS los roles de la partida, y de ahí sale la deducción. Lo que nadie ve son las TRES cartas del centro: la Vidente puede espiar dos y el Borracho se lleva una a ciegas.',
       ],
       ask: {
         prompt: 'La voz llama a la Vidente. ¿Actúas?',

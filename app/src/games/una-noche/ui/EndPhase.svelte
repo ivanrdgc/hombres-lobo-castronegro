@@ -64,7 +64,7 @@
     <button class="ghost block" data-a="una-again-no" onclick={() => (againArmed = false)}>↩️ Aún no</button>
   </div>
 {/if}
-<button class="ghost block" data-a="una-back-lobby" onclick={() => guard(() => A.endUnaNoche())}>🏁 Terminar y volver al lobby</button>
+<button class="ghost block" data-a="una-back-lobby" onclick={() => guard(() => A.endUnaNoche())}>🏳️ Terminar y volver al lobby</button>
 
 <style>
   .histblock { padding: 8px 0; border-bottom: 1px solid var(--border); }

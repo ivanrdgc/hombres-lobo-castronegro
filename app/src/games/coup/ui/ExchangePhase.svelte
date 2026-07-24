@@ -59,7 +59,7 @@
   <div class="card">
     <h3 style="margin-top:0">🎭 {game.names[ex?.pid || ''] || '¿?'} baraja con la corte</h3>
     <p class="hint">⏳ Ha robado 2 cartas y elige con cuáles se queda; el resto vuelve barajado. Nadie dirá cuáles eran: solo que ya no tiene por qué ser el mismo de antes.</p>
-    <CharRef {game} label="📖 Repasa la corte mientras esperas" />
+    <CharRef {game} />
   </div>
 {/if}
 

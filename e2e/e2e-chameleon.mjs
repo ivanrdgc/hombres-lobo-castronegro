@@ -6,6 +6,9 @@
 // ronda 1, pillan al Camaleón y FALLA la palabra → gana el grupo; ronda 2, la
 // mesa señala a un inocente → el Camaleón ESCAPA; ronda 3, EMPATE en el voto →
 // el Camaleón escapa también (+2). Y que el Camaleón nunca repite ronda.
+// B34 (una sola puerta): el REPARTO es la única fase con botón propio a la
+// carta; en pistas y voto no hay ningún «👁 Ver mi carta» suelto y la pastilla
+// flotante —idéntica en todos los móviles— la abre de verdad.
 import { chromium } from 'playwright';
 const BASE = process.env.BASE; if (!BASE) { console.error('Define BASE=https://tu-sitio.web.app'); process.exit(1); }
 let fail = 0;
@@ -97,11 +100,16 @@ async function cluesAndVote(st, { checks = false } = {}) {
     check(await p.locator('[data-a=ch-start-vote]').count() === 0, 'sin todas las pistas NO hay botón de votar');
     check(await p.locator('[data-a=ch-turn]').count() === st.playerIds.length, 'la lista de turnos muestra a los 4');
     // La referencia se consulta SIN salir de la pantalla en la que se decide.
-    check(await p.locator('[data-a=ch-clue-ref]').count() === 1, 'el turno de pistas lleva su chuleta plegada («qué es una buena pista»)');
-    // En pistas, el punto de entrada a lo secreto es el mismo botón para todos.
+    check(await p.locator('[data-a=ch-clue-ref]').count() === 1, 'el turno de pistas lleva la referencia plegada («qué es una buena pista»)');
+    // B34 · UNA SOLA PUERTA: en partida a tu carta se llega solo por la pastilla
+    // flotante; ninguna fase cuelga además su propio «👁 Ver mi carta».
     const otro = st.playerIds.find((pid) => pid !== st.chameleonId);
-    const rotulo = async (pid) => (await pg(pid).locator('[data-a=ch-togglecard]').first().innerText()).trim();
-    check(await rotulo(st.chameleonId) === await rotulo(otro), 'en las pistas, el botón de la carta es idéntico para todos');
+    const puertas = async (pid) => pg(pid).locator('[data-a=ch-togglecard]').count();
+    check(await puertas(st.chameleonId) === 0 && await puertas(otro) === 0,
+      'en las pistas no hay un segundo «ver mi carta» en el cuerpo');
+    // Y el punto de entrada a lo secreto es idéntico en todos los móviles.
+    const rotulo = async (pid) => (await pg(pid).locator('[data-a=open-mycard]').innerText()).trim();
+    check(await rotulo(st.chameleonId) === await rotulo(otro), 'la pastilla 🎴 es la misma en todos los móviles');
     // «↩️ Atrás» deshace un turno adelantado por error.
     await p.click('[data-a=ch-clue-next]');
     await waitState(pages.ana, (s) => s.clueIdx === 1, 'primer turno dado');
@@ -145,6 +153,23 @@ async function voteUiChecks(st) {
   await p.click('[data-a=ch-vote-change]');
   await p.waitForSelector('[data-a=ch-vote-stake]', { state: 'detached', timeout: 8000 });
   ok('el voto se decide en dos pasos, con las consecuencias por delante');
+  check(await p.locator('[data-a=ch-togglecard]').count() === 0,
+    'en el voto tampoco cuelga un «ver mi carta»: la puerta sigue siendo la pastilla');
+}
+
+// La otra mitad de B34: puerta única, pero PUERTA — la pastilla abre de verdad
+// la carta de la ronda (y con la palabra secreta dentro, para quien la conoce).
+async function fabDoorCheck(st) {
+  const pid = st.playerIds.find((x) => x !== st.chameleonId);
+  const p = pg(pid);
+  await p.click('[data-a=open-mycard]');
+  await p.waitForSelector('.modal [data-a=ch-togglecard]', { timeout: 8000 });
+  await p.click('.modal [data-a=ch-togglecard]');
+  await p.waitForSelector('.modal .rolecard', { timeout: 8000 });
+  const palabra = (await p.locator('.modal .rolecard .rname').innerText()).trim();
+  check(palabra.includes(st.grid[st.secret]), 'la pastilla 🎴 abre tu carta con la palabra secreta');
+  await p.click('.modal [data-a=close-modal]');
+  await p.waitForSelector('.modal', { state: 'detached', timeout: 8000 });
 }
 
 // Cada votante señala a `pick(pid)`; selecciona el chip y confirma.
@@ -202,6 +227,7 @@ try {
   console.log('  camaleón:', st.chameleonId, '· secreta:', st.grid[st.secret]);
   await noTellChecks(st);
   await revealAll(st);
+  await fabDoorCheck(st);
   await cluesAndVote(st, { checks: true });
   await voteUiChecks(st);
   // Todos los NO-camaleón votan al Camaleón; el Camaleón vota a otro.

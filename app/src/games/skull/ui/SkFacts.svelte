@@ -1,10 +1,11 @@
 <script lang="ts">
-  // Los números con los que se decide, SIEMPRE en pantalla y sin abrir nada
-  // (postura 🃏 mano: el móvil se mira en cada puja). Antes la tarjeta de
-  // hechos solo existía durante la puja y ocupaba cuatro filas; ahora es una
-  // rejilla compacta que vive arriba del todo y se adapta a la fase: discos en
-  // la mesa (el tope), apuesta a batir, quién sigue vivo en la subasta y quién
-  // pasó, más el marcador del revelado.
+  // LA MESA EN NÚMEROS: lo público con lo que se decide, siempre en pantalla y
+  // sin abrir nada (postura 🃏 mano: el móvil se mira en cada puja). Discos en
+  // la mesa (el tope de la apuesta), apuesta a batir, a quién se espera y el
+  // marcador del revelado.
+  // Reparto de trabajo, para no decir dos veces lo mismo (B29·1): esta línea
+  // dice QUÉ pasa y a quién se espera —en tercera persona—; qué puedes hacer TÚ
+  // lo dice tu panel de mano, y cómo se hace, el panel de decisión.
   import { totalPlaced, flippedFlowers } from '../engine';
   import type { PlayerDoc } from '../../../core/sync/schema';
   import type { SkullState } from '../types';
@@ -18,7 +19,6 @@
   // «Sigue en la subasta» = vivo y sin pasar (el apostador incluido: puede
   // volver a subir si le pisan la apuesta).
   const stillIn = $derived(alive.filter((pid) => !game.passed[pid]));
-  const gone = $derived(alive.filter((pid) => game.passed[pid]));
   const pend = $derived(alive.filter((pid) => (game.stacks[pid] || []).length < 1));
   const by = $derived(game.reveal?.by || '');
   const need = $derived(game.reveal?.need ?? 0);
@@ -27,11 +27,15 @@
   const now = $derived.by(() => {
     switch (game.phase) {
       case 'setup':
-        return `🌸 Ronda ${game.round}: colocáis a la vez el disco de salida, boca abajo.`;
+        return '🌸 Colocáis a la vez el disco de salida, boca abajo.';
       case 'play':
-        return `🎬 ${game.turn === my.id ? 'Tu turno' : 'Turno de ' + nm(game.turn)}: otro disco sobre la pila… o abrir la apuesta.`;
+        return game.turn === my.id
+          ? '🎬 Es TU turno.'
+          : `🎬 Turno de ${nm(game.turn)}: pone otro disco… o abre la apuesta.`;
       case 'bid':
-        return `🗣️ ${game.turn === my.id ? 'Te toca pujar' : 'Puja ' + nm(game.turn)}: subir de ${cur} o pasar.`;
+        return game.turn === my.id
+          ? '🗣️ Te toca pujar.'
+          : `🗣️ Puja ${nm(game.turn)}: sube de ${cur} o pasa.`;
       case 'reveal':
         return `🎲 ${by === my.id ? 'Te la juegas TÚ' : nm(by) + ' se la juega'}: ${need} flor${need === 1 ? '' : 'es'} seguidas sin topar calavera.`;
       case 'roundEnd':
@@ -45,15 +49,21 @@
 <div class="card skfacts">
   <p class="sknow">{now}</p>
   <div class="skfgrid">
-    <div class="skf"><span class="skfk">🧮 Discos en la mesa</span> <b>{max}</b></div>
+    <div class="skf">
+      <span class="skfk">🧮 Discos en la mesa</span> <b>{max}</b>
+      {#if game.phase === 'play' || game.phase === 'bid'}<span class="skfk">(tope de la apuesta)</span>{/if}
+    </div>
     {#if game.phase === 'setup'}
       <div class="skf"><span class="skfk">⏳ Faltan por colocar</span> {pend.length ? pend.map(who).join(', ') : 'nadie, ya están'}</div>
-    {:else if game.bid}
+    {:else if game.phase === 'bid' && game.bid}
+      <!-- En el revelado la apuesta ya no se bate: lo que importa entonces es
+           cuánto lleva, y eso va abajo con sus casillas. -->
       <div class="skf"><span class="skfk">🗣️ Apuesta a batir</span> <b>{cur}</b> ({who(game.bid.by)})</div>
     {/if}
+    <!-- Quién pasó se ve ficha a ficha en la mesa («🤐 pasó»); aquí solo el
+         dato que hay que contar de un vistazo: cuántos pueden pisarte. -->
     {#if game.phase === 'bid'}
-      <div class="skf"><span class="skfk">🎯 Siguen en la subasta</span> {stillIn.map(who).join(', ') || '—'}</div>
-      <div class="skf"><span class="skfk">🤐 Ya han pasado</span> {gone.map(who).join(', ') || 'nadie'}</div>
+      <div class="skf"><span class="skfk">🎯 Siguen en la subasta</span> <b>{stillIn.length}</b>: {stillIn.map(who).join(', ') || '—'}</div>
     {/if}
     {#if game.phase === 'reveal'}
       <div class="skf wide">

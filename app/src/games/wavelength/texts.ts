@@ -18,14 +18,14 @@ export const HOW_TO: HelpSection[] = [
     items: [
       'Es un juego de SINTONÍA, cooperativo. Cada ronda, la app muestra un espectro entre dos ideas opuestas y esconde un OBJETIVO (un punto del dial) que solo ve el Psíquico de turno.',
       'El Psíquico da una pista para que el equipo adivine dónde está el objetivo; cuanto más cerca lo coloquéis, más puntos. Se juega a mejorar vuestra marca ronda a ronda; el Psíquico rota.',
-      'La app custodia el objetivo (nadie más lo ve hasta el final), lleva el marcador y puntúa la cercanía.',
+      'La app custodia el objetivo (nadie más lo ve hasta el final), puntúa la cercanía y lleva la cuenta de los puntos.',
       'Es una adaptación libre del juego de mesa: aquí sois un solo equipo, sin bando rival ni apuesta de «izquierda o derecha».',
     ],
   },
   {
     heading: '📡 El espectro y el objetivo',
     items: [
-      'La ronda arranca con un espectro público, del tipo «Frío ↔ Caliente» o «Inútil ↔ Útil». En su móvil, solo el Psíquico ve la DIANA: una franja del dial que vale 4 puntos en el centro, 3 y 2 según te alejas.',
+      'La ronda arranca con un espectro público, del tipo «Frío ↔ Caliente» o «Inútil ↔ Útil». En su móvil, solo el Psíquico ve la DIANA: una franja del dial que vale 4 puntos en el centro, 3 y 2 según te alejas. La lleva tapada: se pinta mientras mantiene pulsado el botón de apuntar, para que no se le vea desde el otro lado de la mesa.',
       'El dial va de 0 (el extremo izquierdo del espectro) a 100 (el derecho); 50 es justo el centro. Cuando la app dice «el objetivo estaba en 82», habla de esa escala.',
       'El objetivo es subjetivo: no hay una respuesta oficial. La gracia es que el Psíquico y su equipo piensen parecido.',
     ],
@@ -41,7 +41,7 @@ export const HOW_TO: HelpSection[] = [
   {
     heading: '🎚️ La marca del equipo',
     items: [
-      'El resto debate en voz alta e interpreta la pista: ¿más a la izquierda o a la derecha? El marcador es COMPARTIDO: lo mueve cualquiera con el dedo y se ve igual en todos los móviles del equipo.',
+      'El resto debate en voz alta e interpreta la pista: ¿más a la izquierda o a la derecha? La marca es COMPARTIDA: la mueve cualquiera con el dedo y se ve igual en todos los móviles del equipo.',
       'Cuando os pongáis de acuerdo, uno pulsa «✅ Fijar la marca» y confirma; se fija la posición que veis todos, así que un toque despistado ya no cierra la ronda.',
       'El Psíquico no toca el dial ni opina sobre la posición: su trabajo ya está hecho.',
     ],
@@ -50,7 +50,7 @@ export const HOW_TO: HelpSection[] = [
     heading: '🏆 Puntos (varias rondas)',
     items: [
       'Al fijar la marca, la app revela el objetivo y da puntos por cercanía: 4 en el centro de la diana, 3 cerca, 2 rozando, 0 fuera. Los suma el Psíquico de la ronda (fue quien os sintonizó) y también el total del equipo.',
-      'El marcador por persona NO es una competición: cada uno solo suma en las rondas en que le tocó ser Psíquico, por eso al lado aparecen cuántas ha jugado. Lo que importa es el total del equipo.',
+      'La cuenta por persona NO es una competición: cada uno solo suma en las rondas en que le tocó ser Psíquico, por eso al lado aparecen cuántas ha jugado. Lo que importa es el total del equipo.',
       'Luego rota el Psíquico y cambia el espectro. La ronda siguiente la lanza cualquiera con «🔁 Otra ronda».',
     ],
   },
@@ -59,7 +59,7 @@ export const HOW_TO: HelpSection[] = [
     items: [
       'Al empezar elegís meta: una vuelta a la mesa (una ronda por jugador), dos vueltas, hasta 20 puntos de equipo… o ninguna, y jugáis lo que os apetezca.',
       'Cuando se cumple, la ronda termina con «🏁 Ver el resumen final»: el total del equipo, la media por ronda y lo que aportó cada uno. Desde ahí, otra partida o volver al lobby.',
-      'En el menú ⋯ hay dos salidas: «⏭️ Saltar ronda» (la puede pulsar cualquiera; anula la ronda, no puntúa y pasa el turno) y «🏳️ Terminar», que cierra la partida para TODOS y borra el marcador. Si alguien deja la partida, también se cierra: el Psíquico tiene que poder rotar entre los presentes.',
+      'En el menú ⋯ hay dos salidas: «⏭️ Saltar ronda» (la puede pulsar cualquiera; anula la ronda, no puntúa y pasa el turno) y «🏳️ Terminar», que cierra la partida para TODOS y borra los puntos. Si alguien deja la partida, también se cierra: el Psíquico tiene que poder rotar entre los presentes.',
     ],
   },
 ];

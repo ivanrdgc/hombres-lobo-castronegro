@@ -75,7 +75,7 @@
 
 <div class="topbar">
   <button class="small ghost" data-a="back-lobby-game" aria-label="Volver" title="Volver" style="font-size:1.25rem;line-height:1;padding:6px 12px" onclick={() => navigate(`/g/${group.id}/two_rooms`)}>←</button>
-  <h2>💣 Empezar: Two Rooms</h2>
+  <h2>💣 Two Rooms: empezar</h2>
 </div>
 <Flash />
 
@@ -91,11 +91,13 @@
 </div>
 
 <div class="card">
-  <h3>🔊 ¿Qué dispositivo habla en cada sala?</h3>
-  <p class="small-note" style="margin-top:6px">Las dos salas están separadas: un solo altavoz llega solo a una. (El temporizador sale siempre en la pantalla de todos.)</p>
+  <!-- Aquí solo se habla de «la voz»: en Two Rooms no hay narrador de carne y
+       hueso, habla la app por los altavoces que elijáis. Un nombre por cosa. -->
+  <h3>🔊 ¿Qué dispositivo pone la voz?</h3>
+  <p class="small-note" style="margin-top:6px">Las dos salas están separadas: un solo dispositivo se oye solo en una. (El temporizador sale siempre en la pantalla de todos.)</p>
   <div class="btnrow" style="margin-top:6px">
-    <button class="small {voiceMode === 'single' ? 'primary' : 'ghost'}" data-a="tr-voice-mode" data-p="single" onclick={() => (voiceMode = 'single')}>🔊 Un narrador</button>
-    <button class="small {voiceMode === 'perRoom' ? 'primary' : 'ghost'}" data-a="tr-voice-mode" data-p="perRoom" onclick={() => (voiceMode = 'perRoom')}>🔊🔊 Uno por sala</button>
+    <button class="small {voiceMode === 'single' ? 'primary' : 'ghost'}" data-a="tr-voice-mode" data-p="single" onclick={() => (voiceMode = 'single')}>🔊 Una sola voz</button>
+    <button class="small {voiceMode === 'perRoom' ? 'primary' : 'ghost'}" data-a="tr-voice-mode" data-p="perRoom" onclick={() => (voiceMode = 'perRoom')}>🔊🔊 Una voz por sala</button>
     <button class="small {voiceMode === 'all' ? 'primary' : 'ghost'}" data-a="tr-voice-mode" data-p="all" onclick={() => (voiceMode = 'all')}>📣 Todos los móviles</button>
   </div>
 
@@ -103,7 +105,7 @@
     <p class="small-note">📣 Cada sala se oye sola, sin dispositivos de más. Puede quedar algo «a coro».</p>
   {:else}
     <div style="margin-top:10px">
-      <p class="small-note" style="margin:0 0 4px"><b>{voiceMode === 'perRoom' ? '🔊 Voz de la Sala 1' : '🔊 Narrador'}</b></p>
+      <p class="small-note" style="margin:0 0 4px"><b>{voiceMode === 'perRoom' ? '🔊 Voz de la Sala 1' : '🔊 La voz'}</b></p>
       <div class="btnrow">
         {#each speakerCands as p (p.id)}
           <button class="small {narrator === p.id ? 'primary' : 'ghost'}" data-a="pick-narrator" data-p={p.id} style="flex:0 1 auto;min-width:0" onclick={() => (narrPick = p.id)}>
@@ -138,7 +140,7 @@
   {/if}
   <details class="trref">
     <summary data-a="tr-ref-voice">📖 Cuál elegir</summary>
-    <p class="small-note">Lo ideal es un dispositivo que NO juegue en cada sala (una tele, una tablet vieja): se quedan clavados donde están. Si el altavoz es un jugador y cruza como rehén, la app pasa la voz de esa sala a otro móvil de los que se quedan.</p>
+    <p class="small-note">Lo ideal es un dispositivo que NO juegue en cada sala (una tele, una tablet vieja): se quedan clavados donde están. Si la voz de una sala es un jugador y cruza como rehén, la app la pasa a otro móvil de los que se quedan.</p>
   </details>
 </div>
 

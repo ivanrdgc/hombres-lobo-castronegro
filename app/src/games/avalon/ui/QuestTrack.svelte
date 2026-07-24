@@ -23,6 +23,15 @@
   })));
   const nm = (pid: string) => game.names[pid] || '¿?';
   const missionOf = (q: number) => (game.missions || []).find((m) => m.quest === q) || null;
+  // El rechazo que se acaba de destapar aún no está sumado en `voteTrack` (lo
+  // suma «continuar»). Mientras se lee el destape, el tablero lo cuenta ya: si
+  // no, la misma pantalla enseñaba dos cifras distintas del mismo contador
+  // (tablero «0/5» y tarjeta «1/5»).
+  const track = $derived(
+    game.phase === 'voteReveal' && game.lastVote && !game.lastVote.approved
+      ? game.voteTrack + 1
+      : game.voteTrack,
+  );
 
   let openQ: number | null = $state(null);
   const open = $derived(openQ === null ? null : quests.find((m) => m.q === openQ) || null);
@@ -46,7 +55,8 @@
     {/each}
   </div>
   <!-- Los tamaños ya están escritos en cada casilla: repetir la fila entera aquí
-       era el mismo dato dos veces (B29). La chuleta completa vive en el 🎴. -->
+       era el mismo dato dos veces (B29). Las reglas completas viven en la
+       pastilla 🎴 «Mi carta y las reglas». -->
   <p class="small-note qlegend" style="margin:0">El número de cada casilla es cuántos van a esa misión. Tócala para ver quién fue y cómo acabó.</p>
 
   {#if open}
@@ -63,11 +73,13 @@
     </div>
   {/if}
 
-  <div class="qdots" aria-label="Propuestas rechazadas seguidas">
-    {#each [0, 1, 2, 3, 4] as i (i)}<span class="dot {i < game.voteTrack ? 'on' : ''} {i === 4 ? 'last' : ''}"></span>{/each}
-    <span class="small-note" style="margin-left:6px">↪️ {game.voteTrack}/5 rechazos seguidos{game.voteTrack >= 4 ? ' — otro y gana el Mal' : ''}</span>
+  <div class="qdots" data-a="av-track-dots" aria-label="Propuestas rechazadas seguidas">
+    {#each [0, 1, 2, 3, 4] as i (i)}<span class="dot {i < track ? 'on' : ''} {i === 4 ? 'last' : ''}"></span>{/each}
+    <span class="small-note" style="margin-left:6px">↪️ {track}/5 rechazos seguidos{track === 5 ? ' — el reino cae' : track >= 4 ? ' — otro y gana el Mal' : ''}</span>
   </div>
-  <p class="small-note" style="margin:6px 0 0" data-a="av-evil-count">😈 Entre los {n} caballeros hay <b>{evil}</b> malvados.{#if game.phase !== 'end' && game.phase !== 'reveal'} · 🧭 Lidera <b>{nm(leaderId(game))}</b>.{/if}</p>
+  <!-- Quién lidera solo mientras hay propuestas: en el disparo del Asesino y en
+       el final el cargo ya no manda nada y solo era ruido. -->
+  <p class="small-note" style="margin:6px 0 0" data-a="av-evil-count">😈 Entre los {n} caballeros hay <b>{evil}</b> malvados.{#if !['reveal', 'assassin', 'end'].includes(game.phase)} · 🧭 Lidera <b>{nm(leaderId(game))}</b>.{/if}</p>
 </div>
 
 <style>

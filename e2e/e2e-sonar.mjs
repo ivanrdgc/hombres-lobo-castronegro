@@ -8,6 +8,8 @@
 // se anuncia como secreta y se puede tapar de un toque, y ningún paso del turno
 // cambia la SILUETA de la pantalla (apuntar no añade una segunda rejilla ni
 // pinta un botón rojo: si el rival lo distingue a dos metros, se acabó la caza).
+// Y B34, una sola puerta: el flotante es «📖 Reglas» (nunca «Mi carta»), no
+// repite nada de la consola y no hay un segundo botón que abra lo mismo.
 import { chromium } from 'playwright';
 const BASE = process.env.BASE; if (!BASE) { console.error('Define BASE=https://tu-sitio.web.app'); process.exit(1); }
 let fail = 0;
@@ -125,11 +127,19 @@ try {
   check(await pg(redP).locator('.snmap[data-kind=notes]').count() === 1, '…y su cuaderno de sonar');
   check(await pg(redP).locator('.snmap[data-team=blue]').count() === 0, '…y NO el del Azul');
   check(await pg(blueP).locator('.snmap[data-team=red]').count() === 0, 'la Azul no ve el mapa Rojo');
+  // ——— B34 · una sola puerta: la pastilla flotante es «📖 Reglas» ———
+  // En un juego de EQUIPO la «carta» de la tripulación (submarino, posición,
+  // estela, energía, cuaderno) vive en la consola: el flotante NO la repite,
+  // solo lleva las reglas que no cambian.
   await pg(blueP).click('[data-a=open-mycard]');
-  await pg(blueP).waitForSelector('text=/Tu submarino/');
-  check(await pg(blueP).locator('.modal .settingrow').count() >= 5, 'el 🎴 lleva la chuleta de las 5 acciones');
+  await pg(blueP).waitForSelector('text=/Reglas de Captain Sonar/');
+  const reglasTxt = await pg(blueP).locator('.modal').innerText();
+  check(await pg(blueP).locator('.modal .settingrow').count() >= 5, 'la pastilla 📖 lleva las 5 acciones con su coste y su efecto');
+  check(!/📍|Tripulas el|faltan \d+ ⚡/.test(reglasTxt), '…y no repite lo que ya está en la consola (posición, energía, qué os podéis pagar)');
   await pg(blueP).click('.modal [data-a=close-modal]');
-  ok('el 🎴 se abre en cualquier momento');
+  const puertas = await pg(blueP).locator('button').allInnerTexts();
+  check(!puertas.some((t) => /ver mi carta|mi carta/i.test(t)), 'no hay ningún «👁 Ver mi carta» en el cuerpo: la pastilla es la única puerta');
+  ok('la pastilla 📖 Reglas se abre en cualquier momento');
 
   // ——— POSTURA 👥 EQUIPO: aviso hacia fuera y tapadera ———
   check(await pg(redP).locator('[data-a=sn-secret]').count() === 1, 'la consola se anuncia como secreta de la tripulación (el rival está en la sala)');
@@ -150,7 +160,8 @@ try {
   check(await ap.locator('[data-a=sn-act][data-p=torpedo]').isDisabled(), 'sin energía, el torpedo sale deshabilitado');
   const panelTxt = await ap.locator('.actionpanel').innerText();
   check(/Os faltan 3 ⚡/.test(panelTxt), '…y dice POR QUÉ, en pantalla: «os faltan 3 ⚡»');
-  check(await ap.locator('[data-a=sn-ref]').count() === 1, 'la chuleta 📖 se consulta DENTRO del panel de acción');
+  check(await ap.locator('[data-a=sn-ref]').count() === 1, 'las 5 acciones también se consultan DENTRO del panel, sin salir de la pantalla');
+  check(/Os toca/.test(await ap.locator('[data-a=sn-turn]').innerText()), 'de quién es el turno se dice UNA vez, en la barra de arriba');
   check(await ap.locator('.snlegend').count() >= 2, 'los mapas llevan leyenda (isla, estela, submarino…)');
 
   // ——— Navegar: elegir rumbo NO gasta el turno; hay que confirmar ———
@@ -305,6 +316,7 @@ try {
   // Limpieza.
   await ana.click('[data-a=game-menu]');
   check(await ana.locator('[data-a=table-open]').count() === 1, 'el menú ⋯ ofrece «🪑 La mesa» (rescate de un móvil sin batería)');
+  check(await ana.locator('[data-a=sn-leave-open]').count() === 0, '…y UNA sola salida: en un juego por equipos, irse ES terminar (B34)');
   await ana.click('[data-a=sn-end-open]');
   await ana.waitForSelector('[data-a=sn-end-confirm]');
   await ana.click('[data-a=sn-end-confirm]');

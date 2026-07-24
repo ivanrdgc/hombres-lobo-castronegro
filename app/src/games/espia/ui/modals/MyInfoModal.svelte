@@ -1,11 +1,14 @@
 <script lang="ts">
-  // «🎴 Mi carta + reglas» (B19/B21): la carta va detrás del mismo panel que en
-  // la pantalla de juego (se abre a petición y se cierra sola, B28), y debajo
-  // la chuleta de reglas y puntos.
+  // Lo que hay detrás de la pastilla flotante «🎴 Mi carta y las reglas»: la
+  // ÚNICA puerta a tu carta en todo El Espía (docs/UX.md · B34). Arriba tu
+  // carta, ya destapada —para eso la has pedido— y con auto-tapado (B28);
+  // debajo, las reglas del juego. La libreta no está aquí: es una herramienta y
+  // vive en la pantalla de la ronda, con su propio botón.
   import { app, viewGroup, me } from '../../../../core/sync/store.svelte';
   import { espiaGame } from '../../actions';
   import RefRows from '../../../../shell/RefRows.svelte';
-  import PrivatePanel from '../PrivatePanel.svelte';
+  import LugaresGrid from '../LugaresGrid.svelte';
+  import MyCard from '../MyCard.svelte';
 
   const g = $derived(viewGroup());
   const game = $derived(g ? espiaGame(g) : null);
@@ -16,16 +19,22 @@
     { emoji: '👥', name: 'Los agentes', note: 'todos los demás', desc: 'Conocen el lugar y su papel: responden sin nombrarlo, ni muy exacto ni muy vago. Al ganar la ronda: +1 cada uno, +1 extra a quien inició la acusación.' },
     { emoji: '🛑', name: 'Acusar', note: 'una vez por ronda y jugador', desc: 'Para el reloj. Votan todos menos acusador (su «sí» ya cuenta) y acusado. Unanimidad = se revela la carta y la ronda TERMINA, sea el espía o no (si era inocente, +4 para el espía). Un solo «no» la tumba, el reloj sigue… y la acusación se gasta igual.' },
     { emoji: '⏰', name: 'Si el reloj llega a cero', desc: 'Se acaban las preguntas: acusaciones por turnos desde quien repartió, acusando o pasando. Aquí acusa todo el mundo, aunque ya gastara la suya. Si nadie es condenado, el espía se marcha de rositas (+2).' },
+    { emoji: '📝', name: 'Mi libreta', note: 'en la pantalla de la ronda', desc: 'Las 30 localizaciones posibles, para ir tachando las que descartes con cada respuesta. Los tachones solo existen en tu móvil: no los ve nadie.' },
   ];
 </script>
 
 {#if game && my}
   {#if inGame}
-    <PrivatePanel {game} {my} full={true} notes={false} />
+    <MyCard {game} {my} />
   {:else}
-    <p class="small-note" style="margin-top:0">👀 Miras de espectador: sin carta propia.</p>
+    <p class="small-note" style="margin-top:0">👀 Miras de espectador: sin carta propia. Aquí tienes las reglas y las localizaciones posibles.</p>
   {/if}
-  <RefRows title="📖 Chuleta" {rows} />
-  <button class="block" style="margin-top:8px" data-a="espia-lugares-open" onclick={() => (app.ui.modal = { type: 'espia-lugares' })}>🗺️ Ver las localizaciones posibles</button>
+  <RefRows title="📖 Las reglas" {rows} />
+  {#if !inGame}
+    <!-- Quien juega ya tiene la lista entera (y tachable) en su libreta: no se
+         repite aquí. El espectador no tiene libreta, así que la ve tal cual. -->
+    <h3 style="margin:16px 0 6px">📍 Las localizaciones posibles</h3>
+    <LugaresGrid />
+  {/if}
 {/if}
-<button class="primary block" style="margin-top:10px" data-a="close-modal" onclick={() => (app.ui.modal = null)}>Cerrar</button>
+<button class="primary block" style="margin-top:12px" data-a="close-modal" onclick={() => (app.ui.modal = null)}>Cerrar</button>

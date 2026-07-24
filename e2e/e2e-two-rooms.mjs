@@ -6,6 +6,9 @@
 // doc tiene bandos y roles, así que el test (god-view) valida el dictamen final.
 // Cubre además las dos salidas del voto de rehén (que antes podía colgarse):
 // «🔒 Cerrar la votación» con la mayoría votada, y el plazo que cierra solo.
+// Y la regla de la carta (B34): durante la ronda hay UNA sola puerta a tu carta
+// —la pastilla 🎴— y una acción distinta y con otro nombre, «🤝 Enseñar mi
+// carta a alguien», que abre la pantalla a sangre para ponérsela delante a otro.
 import { chromium } from 'playwright';
 const BASE = process.env.BASE; if (!BASE) { console.error('Define BASE=https://tu-sitio.web.app'); process.exit(1); }
 let fail = 0;
@@ -126,17 +129,10 @@ try {
     await p.click('[data-a=tr-reveal]');
     await p.waitForSelector('[data-a=tr-seen]');
     if (pid === s.playerIds[0]) {
-      // La pantalla de ENSEÑAR (B28): ocupa el móvil entero para ponérselo
-      // delante a otra persona, y tiene las dos caras del juego real.
-      await p.click('[data-a=tr-color-only]');
-      await p.waitForSelector('[data-a=tr-color]', { timeout: 5000 });
-      check(await p.locator('[data-a=tr-card]').count() === 0, 'enseñando «solo el color» no queda nada más en pantalla (ni el rol)');
-      await p.click('[data-a=tr-show-full]');
-      await p.waitForSelector('[data-a=tr-show-card]', { timeout: 5000 });
-      check(await p.locator('[data-a=tr-color]').count() === 0, 'desde el color se pasa a la carta entera');
-      await p.click('[data-a=tr-show-close]');
-      await p.waitForSelector('[data-a=tr-card]', { timeout: 5000 });
-      ok('la carta se guarda a mano: enseñar no se corta solo');
+      // El REPARTO es la única fase con botón propio a la carta (excepción de
+      // B34), y ahí la carta se MIRA: no se enseña a nadie todavía.
+      check(await p.locator('[data-a=tr-show-open]').count() === 0,
+        'en el reparto no se ofrece enseñar la carta: primero se memoriza');
     }
     await p.click('[data-a=tr-seen]');
     await p.waitForTimeout(80);
@@ -162,8 +158,28 @@ try {
       // móvil queda plano y todos tienen que enseñar lo MISMO.
       const p0 = pg(s.playerIds[0]);
       check(await p0.locator('[data-a=tr-card]').count() === 0, 'en reposo la carta va guardada: ningún color de bando a la vista');
-      check(await p0.locator('[data-a=tr-peek]').count() === 1 && await p0.locator('[data-a=tr-show-open]').count() === 1,
-        'en reposo todos tienen los mismos dos botones: ver mi carta y enseñarla');
+      // UNA SOLA PUERTA a tu carta (B34): la pastilla flotante. El cuerpo de la
+      // ronda no repite un «👁 Ver mi carta»; lo que ofrece es la ACCIÓN del
+      // juego, que es otra cosa y se llama distinto.
+      check(await p0.locator('[data-a=open-mycard]').count() === 1 && await p0.locator('[data-a=tr-peek]').count() === 0,
+        'la carta se consulta solo desde la pastilla 🎴: ninguna puerta duplicada en el cuerpo');
+      check(await p0.locator('[data-a=tr-show-open]').count() === 1,
+        'la ronda ofrece la acción del juego: 🤝 enseñar mi carta a alguien');
+      // La pantalla de ENSEÑAR (B28): ocupa el móvil entero para ponérselo
+      // delante a otra persona, y tiene las dos caras del juego real.
+      await p0.click('[data-a=tr-show-open]');
+      await p0.waitForSelector('[data-a=tr-color]', { timeout: 5000 });
+      check(await p0.locator('[data-a=tr-show-card]').count() === 0, 'se abre por la cara menos comprometida: solo el color, el rol no sale');
+      const box = await p0.locator('[data-a=tr-color]').boundingBox();
+      const vp = p0.viewportSize();
+      check(!!box && !!vp && box.height > vp.height * 0.5, 'enseñar ocupa el móvil entero (sin reloj ni tablero alrededor)');
+      await p0.click('[data-a=tr-show-full]');
+      await p0.waitForSelector('[data-a=tr-show-card]', { timeout: 5000 });
+      check(await p0.locator('[data-a=tr-color]').count() === 0, 'desde el color se pasa a la carta entera');
+      await p0.click('[data-a=tr-show-close]');
+      await p0.waitForSelector('[data-a=tr-show-card]', { state: 'detached', timeout: 5000 });
+      check(await p0.locator('[data-a=tr-timer]').count() === 1, 'al guardarla se vuelve a la ronda (reloj y tablero otra vez)');
+      ok('la carta se guarda a mano: enseñar no se corta solo');
     }
     s = await waitState(ana, (x) => x.phase === 'hostages' && x.round === r, `fin del tiempo de la ronda ${r}`, 30000);
     check(true, `ronda ${r}: el reloj llega a cero y toca mandar rehenes`);

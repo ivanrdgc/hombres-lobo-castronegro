@@ -28,7 +28,7 @@ export const HOW_TO: HelpSection[] = [
     heading: '🎴 El reparto',
     items: [
       'Al empezar, toca «👁 Ver mi carta y mi sala» y mírala A SOLAS: tu bando (azul o rojo), tu rol (Presidente, Bombardero o carta normal) y tu sala (1 o 2). Pulsa «✅ Lo tengo».',
-      'Tu carta no se pierde: el botón redondo 🎴 de abajo a la derecha la vuelve a abrir en cualquier momento, y durante la ronda tienes además «👁 Ver mi carta».',
+      'Tu carta no se pierde: durante toda la partida se consulta por un solo sitio, la pastilla «🎴 Mi carta» de abajo a la derecha, que además trae las reglas. Se guarda sola a los pocos segundos, para que el móvil pueda volver a la mesa.',
       'Cuando todos confirman, mirad el tablero de salas, id cada uno a la vuestra y que cualquiera pulse «▶️ Empezar la ronda 1»: arranca el reloj.',
     ],
   },
@@ -43,8 +43,9 @@ export const HOW_TO: HelpSection[] = [
     heading: '🗣️ Las rondas (contrarreloj)',
     items: [
       'Hasta 10 jugadores se juegan tres rondas cada vez más cortas: 3, 2 y 1 minuto. De 11 en adelante son cinco rondas (5, 4, 3, 2 y 1 minuto), para que dé tiempo a que la gente circule entre salas.',
-      'El temporizador corre en la pantalla de TODOS los móviles; la voz suena según el modo elegido al empezar (un narrador, uno por sala o todos los móviles).',
-      'Durante la ronda, dentro de tu sala, hablas y puedes ENSEÑAR tu carta a quien quieras, cara a cara: con «Enseñársela a alguien» tu carta llena toda la pantalla, en grande, y le pones el móvil delante. No se apaga sola: la guardas tú al acabar. La app no arbitra eso; es cosa vuestra.',
+      'El temporizador corre en la pantalla de TODOS los móviles; la voz suena según lo elegido al empezar (una sola voz, una voz por sala o todos los móviles).',
+      'Durante la ronda, dentro de tu sala, hablas y puedes ENSEÑAR tu carta a quien quieras, cara a cara: con «🤝 Enseñar mi carta a alguien» tu carta llena toda la pantalla, en grande, y le pones el móvil delante. No se apaga sola: la guardas tú al acabar. La app no arbitra eso; es cosa vuestra.',
+      'Ojo, que son dos cosas distintas: enseñar es un trato con otra persona; consultar tu carta para ti es la pastilla «🎴 Mi carta», y esa se guarda sola.',
       'Puedes enseñar la carta ENTERA (bando y rol) o solo el bando, con «🎨 Enseñar solo el color»: es la jugada de siempre del Presidente, que quiere aliados azules sin destaparse del todo.',
       'El objetivo de hablar es averiguar quién es de fiar: los azules quieren localizar al Presidente para protegerlo; los rojos, colar al Bombardero donde esté el Presidente.',
     ],

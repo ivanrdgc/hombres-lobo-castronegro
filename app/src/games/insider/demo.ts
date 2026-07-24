@@ -23,7 +23,7 @@ export const DEMO: DemoScript = {
       title: 'El reparto: quién sabe la palabra',
       who: { actor: 'TODOS miráis vuestra carta a la vez y confirmáis', others: 'nadie enseña la pantalla: ser (o no) el Insider es secreto hasta el final.' },
       text: [
-        'Tú eres común: sabes que NO sabes. Bea, la Maestra, ve la palabra: «brújula». Y el Insider —Carlos o David, aún no puedes saberlo— la ve también en su carta.',
+        'Tú eres del EQUIPO: sabes que NO sabes. Bea, la Maestra, ve la palabra: «brújula». Y el Insider —Carlos o David, aún no puedes saberlo— la ve también en su carta.',
       ],
       // Las dos pantallas van a propósito con la MISMA forma (mismo 🎴, mismo
       // recuadro de palabra, mismo alto): es lo que se ve de reojo desde la otra
@@ -31,7 +31,7 @@ export const DEMO: DemoScript = {
       visual: {
         kind: 'screens',
         panes: [
-          { title: 'TÚ (común)', lines: ['🎴 Eres del EQUIPO', '🔑 Palabra: no la conoces', 'Descúbrela preguntando de sí o no.'] },
+          { title: 'TÚ (equipo)', lines: ['🎴 Eres del EQUIPO', '🔑 Palabra: no la conoces', 'Descúbrela preguntando de sí o no.'] },
           { title: 'El INSIDER (no ves quién)', lines: ['🎴 Eres el INSIDER', '🔑 Palabra: «brújula»', 'Empuja hacia ella… sin cantarte.'] },
         ],
       },
@@ -43,13 +43,13 @@ export const DEMO: DemoScript = {
       text: [
         'Bea pone en marcha el reloj (3, 5 u 8 min, elegido al empezar; si su móvil falla, lo arranca cualquiera). Empieza preguntando quien indique la app —nunca la Maestra— y luego pregunta cualquiera: «¿es un objeto?» — «Sí». «¿Se come?» — «No».',
         'La Maestra solo puede responder «sí», «no» o «no lo sé»: ni pistas ni medias palabras.',
-        'Tu carta no se pierde de vista: el botón redondo con una carta 🎴, abajo a la derecha, la vuelve a abrir cuando quieras —tu papel y, si la conoces, la palabra— y se oculta sola a los pocos segundos. Nadie tiene que preguntar en voz alta «¿yo qué era?».',
+        'Tu carta no se pierde de vista: la pastilla 🎴 «Mi carta», abajo a la derecha, la vuelve a abrir cuando quieras —qué eres y, si la conoces, la palabra— y se oculta sola a los pocos segundos. Es el único sitio desde el que se abre, igual en todos los móviles: pulsarla no delata a nadie.',
       ],
       visual: {
         kind: 'screens',
         panes: [
           { title: 'Bea (Maestra)', lines: ['Ve la palabra: «brújula»', 'Responde en voz alta a cada pregunta.'], buttons: [{ label: '✅ ¡Palabra adivinada!', kind: 'primary' }] },
-          { title: 'TÚ (equipo)', lines: ['⏱️ 3:41', 'Preguntas en voz alta.', 'Botón 🎴: tu carta, cuando quieras.'] },
+          { title: 'TÚ (equipo)', lines: ['⏱️ 3:41', 'Preguntas en voz alta.', 'Pastilla 🎴 «Mi carta»: cuando quieras.'] },
         ],
       },
     },
@@ -93,7 +93,7 @@ export const DEMO: DemoScript = {
       title: 'El desenlace y los puntos',
       who: { actor: 'La app destapa el recuento y revela al Insider', others: 'cualquiera pulsa «🔁 Otra ronda»: la Maestra rota y la palabra cambia.' },
       text: [
-        'El más señalado es David: ¡cazado! +1 para la Maestra y cada común. Si hubierais señalado a un inocente (o empatado), David escapaba con +2. Y con el tiempo agotado, nadie puntúa.',
+        'El más señalado es David: ¡cazado! +1 para todo el equipo, Maestra incluida. Si hubierais señalado a un inocente (o empatado), David escapaba con +2. Y con el tiempo agotado, nadie puntúa.',
         'La doble lealtad del Insider: necesita que ACERTÉIS la palabra… pero que falléis al señalarlo. 🤫',
       ],
       visual: { kind: 'log', lines: ['✅ ¡Palabra adivinada! Ahora, en secreto, señalad a quien creáis el Insider.', '🗳️ La mesa señala a David.', '👥 El Insider era David. ¡Cazado! El equipo se lleva la ronda (+1).'] },

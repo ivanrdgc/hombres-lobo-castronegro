@@ -106,9 +106,9 @@
 {#if mayPeek}
   {#if peekOpen}
     <p class="small-note">💀 Toca a quien quieras para descubrir su carta (solo tú la ves). Se vuelve a tapar sola… y recuerda: los muertos no hablan.</p>
-    <button class="ghost block" data-a="dead-peek-close" onclick={closePeek}>🙈 Volver a tapar las cartas</button>
+    <button class="ghost block" data-a="dead-peek-close" onclick={closePeek}>🙈 Volver a tapar las cartas del pueblo</button>
   {:else}
-    <button class="ghost block" data-a="dead-peek-open" onclick={() => { peekOpen = true; touchPeek(); }}>👁 Destapar cartas (solo tú)</button>
+    <button class="ghost block" data-a="dead-peek-open" onclick={() => { peekOpen = true; touchPeek(); }}>👁 Destapar las cartas del pueblo (solo tú)</button>
   {/if}
 {/if}
 </div>

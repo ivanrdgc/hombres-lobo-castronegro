@@ -34,20 +34,31 @@
   };
   const tag = (i: number) =>
     game.map[i] === 'assassin' ? '💀' : game.map[i] === 'neutral' ? '⬜' : game.map[i] === 'red' ? '🔴' : '🔵';
+  // Una casilla es un BOTÓN solo cuando tocarla hace algo. El resto del tiempo
+  // —fase de pista, mapa del Jefe, turno del rival, espectadores, casillas ya
+  // destapadas— el tablero es información, no un mando: si se dibujara como un
+  // botón que no responde, sería un botón muerto de los que buscaba esta pasada.
+  const live = (i: number) => canPick && !game.revealed[i];
 </script>
+
+{#snippet face(i: number, w: string)}
+  <span class="cnword">{w}</span>
+  {#if game.revealed[i] || canSee}<span class="cntag">{tag(i)}</span>{/if}
+{/snippet}
 
 <div class="cnboard {priv ? 'priv' : 'pub'}">
   {#each game.words as w, i (i)}
-    <button
-      class="cncell {cls(i)}"
-      class:selected={sel === i && !game.revealed[i]}
-      data-a="cn-cell" data-p={String(i)}
-      disabled={!canPick || game.revealed[i]}
-      onclick={() => canPick && !game.revealed[i] && onpick && onpick(i)}
-    >
-      <span class="cnword">{w}</span>
-      {#if game.revealed[i] || canSee}<span class="cntag">{tag(i)}</span>{/if}
-    </button>
+    {#if live(i)}
+      <button
+        class="cncell {cls(i)}"
+        class:selected={sel === i}
+        data-a="cn-cell" data-p={String(i)}
+        aria-pressed={sel === i}
+        onclick={() => onpick && onpick(i)}
+      >{@render face(i, w)}</button>
+    {:else}
+      <div class="cncell {cls(i)}" data-a="cn-cell" data-p={String(i)}>{@render face(i, w)}</div>
+    {/if}
   {/each}
 </div>
 
@@ -58,10 +69,11 @@
     text-align: center; padding: 2px 3px; border-radius: 9px; border: 1px solid var(--border, #333);
     background: var(--surface, #20222e); color: var(--fg, #eee);
     font-size: 0.75rem; line-height: 1.05; font-weight: 700; word-break: break-word;
+    /* Las casillas que no son botón siguen siendo divs con texto: sin esto, un
+       toque largo en el móvil abre el selector de texto en vez de no hacer nada. */
+    cursor: default; user-select: none; -webkit-user-select: none;
   }
-  /* El tablero es INFORMACIÓN, no un botón: aunque no puedas tocarlo (fase de
-     pista, Jefes, rival) debe verse a plena luz, no al 45 % del disabled global. */
-  .cncell:disabled { cursor: default; opacity: 1; }
+  button.cncell { cursor: pointer; }
   .cnword { display: block; }
   .cntag { position: absolute; top: 2px; right: 3px; font-size: 0.72rem; }
   /* Casilla elegida, a la espera de confirmar. */

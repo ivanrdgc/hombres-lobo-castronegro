@@ -49,8 +49,8 @@
   </div>
 {:else}
   <div class="card">
-    <h3 style="margin-bottom:2px">⌛ Está apostando</h3>
-    <p class="small-note" style="margin:0">Vosotros sabéis la palabra: ni la digáis ni se la señaléis. Solo {nm(game.chameleonId)} puede tocar la rejilla.</p>
+    <h3 style="margin-bottom:2px">⌛ {nm(game.chameleonId)} está apostando</h3>
+    <p class="small-note" style="margin:0">Vosotros sabéis la palabra: ni la digáis ni se la señaléis. La rejilla solo es tocable en su móvil.</p>
     <Grid grid={game.grid} />
     <p class="small-note">🗣️ Las pistas fueron, por orden: <b>{spoke.join(' → ')}</b>.</p>
     {#if canResolve}

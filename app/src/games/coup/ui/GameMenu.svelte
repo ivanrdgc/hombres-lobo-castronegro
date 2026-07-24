@@ -33,10 +33,15 @@
       {#if spectator}
         <button role="menuitem" data-a="back-to-mesa" onclick={() => { close(); navigate(`/g/${slug}`); }}>← Volver a la mesa</button>
       {/if}
-      {#if !spectator}
-        <button role="menuitem" class="danger-text" data-a="coup-leave-open" onclick={() => { app.ui.modal = { type: 'coup-leave' }; close(); }}>🚪 Dejar la partida</button>
+      <!-- Terminada la partida, «dejarla» y «terminarla» ya no significan nada:
+           el único camino es el «🏁 Volver al lobby de Coup» que hay en pantalla,
+           y su modal («la partida ya no vale») contradecía el marcador. -->
+      {#if playing}
+        {#if !spectator}
+          <button role="menuitem" class="danger-text" data-a="coup-leave-open" onclick={() => { app.ui.modal = { type: 'coup-leave' }; close(); }}>🚪 Dejar la partida</button>
+        {/if}
+        <button role="menuitem" class="danger-text" data-a="coup-end-open" onclick={() => { app.ui.modal = { type: 'coup-end' }; close(); }}>🏳️ Terminar</button>
       {/if}
-      <button role="menuitem" class="danger-text" data-a="coup-end-open" onclick={() => { app.ui.modal = { type: 'coup-end' }; close(); }}>🏳️ Terminar</button>
     </div>
   {/if}
 </div>

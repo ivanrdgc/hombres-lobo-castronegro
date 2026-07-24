@@ -55,7 +55,7 @@
      La cabecera ya dice a qué juegas: aquí no se repite «empezar» tres veces. -->
 <div class="card">
   <h3 style="margin-bottom:2px">🎮 ¿Quién juega?</h3>
-  <p class="small-note" style="margin:0">En el orden en que estáis sentados: marca el turno de las pistas.</p>
+  <p class="small-note" style="margin:0">Ponlos en el orden en que estáis sentados: ese será el orden de las pistas.</p>
   <SeatPicker {group} {meId} gameId="chameleon" onState={(s) => (seat = s)} />
   <p class="summary">🦎 Jugarán <b>{n}</b>{n ? ': ' : ''}<span style="opacity:.8">{chosen.map((p) => p.name).join(', ')}</span></p>
 </div>

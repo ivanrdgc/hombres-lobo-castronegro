@@ -26,7 +26,7 @@
   }
 </script>
 
-<h3>🎭 Revelarte y adivinar</h3>
+<h3>🎭 Revelarte y adivinar el lugar</h3>
 <p class="small-note" style="margin-top:2px">Vas a anunciar a la mesa que eres el espía y a señalar dónde crees que estáis. <b>La ronda termina ahí</b>, aciertes o falles.</p>
 <ul class="bet">
   <li>✅ Si <b>aciertas</b>: +4 para ti y ganas la ronda.</li>

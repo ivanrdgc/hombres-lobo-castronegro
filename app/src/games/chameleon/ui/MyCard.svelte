@@ -12,6 +12,11 @@
   // el hueco de la palabra con alto fijo (para que «Ola» y «Tienda de campaña»
   // ocupen igual). Lo único que cambia son las letras del centro… y solo
   // mientras las pides: la carta se tapa sola, nunca se queda fija.
+  //
+  // B34 · una sola puerta: este componente se pinta en DOS sitios y ninguno más
+  // —el REPARTO (la excepción: ahí mirar la carta ES la pantalla) y el modal de
+  // la pastilla 🎴 «Mi carta y las reglas»—. Las fases de pistas y voto no
+  // llevan su propio «ver mi carta»: la puerta es siempre la pastilla.
   import { e2eTestMode } from '../../../core/test-hooks';
   import { isChameleon, secretWord } from '../engine';
   import type { ChameleonState } from '../types';
@@ -19,7 +24,7 @@
   const { game, pid, mini = false, onhide = null }: {
     game: ChameleonState;
     pid: string;
-    /** `true`: empieza tapada, con el botón 👁 (consulta durante la ronda). */
+    /** `true`: empieza tapada, con el botón 👁 (así es en el modal de la pastilla). */
     mini?: boolean;
     /** Aviso al padre de que la carta se ha tapado (sola o a la primera). */
     onhide?: (() => void) | null;
@@ -69,7 +74,7 @@
   </div>
 {:else if mini}
   <div class="chpeek">
-    <button class="small ghost" data-a="ch-togglecard" onclick={toggle}>👁 Ver mi carta en secreto</button>
+    <button class="ghost block" data-a="ch-togglecard" onclick={toggle}>👁 Ver mi carta (se tapa sola)</button>
   </div>
 {/if}
 

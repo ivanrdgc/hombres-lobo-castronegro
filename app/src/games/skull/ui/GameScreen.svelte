@@ -2,7 +2,8 @@
   // Partida de Skull en UNA pantalla (postura 🃏 mano): arriba los hechos con
   // los que se decide, en medio la mesa (pilas ajenas y su altura), abajo TU
   // mano y tu decisión. Nada de lo que hace falta para pujar o colocar está
-  // detrás de un gesto; solo el diario y las reglas van plegados.
+  // detrás de un gesto: solo el diario va plegado, y las reglas viven en la
+  // pastilla flotante «📖 Reglas», que es su ÚNICA puerta (B34).
   import { app, isMaster, matchOf } from '../../../core/sync/store.svelte';
   import { skullGame, flip, nextRound } from '../actions';
   import { guard } from '../../../core/sync/guard';
@@ -16,7 +17,6 @@
   import StacksBoard from './StacksBoard.svelte';
   import HandDock from './HandDock.svelte';
   import BidPanel from './BidPanel.svelte';
-  import RulesFold from './RulesFold.svelte';
   import EndPhase from './EndPhase.svelte';
 
   const { group, my }: { group: GroupDoc; my: PlayerDoc } = $props();
@@ -67,8 +67,6 @@
   {:else}
     <p class="small-note" style="text-align:center">👀 Sigues la partida de espectador: ves las alturas de las pilas, no lo que hay dentro.</p>
   {/if}
-
-  <RulesFold phase={game.phase} />
 {/if}
 
 {#if game.log && game.log.length}

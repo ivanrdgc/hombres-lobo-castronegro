@@ -22,7 +22,7 @@ export const DEMO: DemoScript = {
       who: { actor: 'TODOS pulsáis «👁 Ver mi carta y mi sala», la miráis A SOLAS y confirmáis con «✅ Lo tengo»', others: 'la pantalla enseña el tablero con quién va a cada sala, para que os coloquéis.' },
       text: [
         'A ti te toca 🔴 rojo, carta normal. Fran (aunque tú no lo sabes) es el 💣 BOMBARDERO. Nadie más que cada uno ve su carta.',
-        'Tras confirmar, la carta se cierra. No se ha perdido: el botón redondo 🎴 de abajo a la derecha la vuelve a abrir siempre que quieras, y durante la ronda tienes también «👁 Ver mi carta».',
+        'Tras confirmar, la carta se cierra. No se ha perdido: durante toda la partida se consulta por un solo sitio, la pastilla «🎴 Mi carta» de abajo a la derecha, que trae también las reglas.',
       ],
       visual: {
         kind: 'screens',
@@ -37,14 +37,14 @@ export const DEMO: DemoScript = {
       title: 'Ronda 1: hablar y enseñar cartas',
       who: { actor: 'TODOS habláis DENTRO de vuestra sala mientras corre el reloj (3 min)', others: 'el temporizador se ve en cada móvil; la voz suena según el modo elegido al empezar.' },
       text: [
-        'Enseñar la carta es EL mecanismo del juego, y se hace con el móvil: «🤝 Enseñársela a alguien» pone tu carta a pantalla completa —sin reloj, sin tablero, sin nada más— y le pones el móvil delante, cara a cara. Solo a quien tú decidas, y solo si quieres; la guardas tú cuando hayáis acabado.',
+        'Enseñar la carta es EL mecanismo del juego, y se hace con el móvil: «🤝 Enseñar mi carta a alguien» la pone a pantalla completa —sin reloj, sin tablero, sin nada más— y le pones el móvil delante, cara a cara. Solo a quien tú decidas, y solo si quieres; la guardas tú cuando hayáis acabado. Ojo, que no es lo mismo que consultarla tú: eso es la pastilla «🎴 Mi carta».',
         'Se abre por el lado menos comprometido, SOLO EL COLOR: se ve tu bando y nada más. Es la jugada favorita del Presidente, que necesita azules de confianza sin cantar que es el Presidente. Con «🎴 Enseñar también el rol» destapas la carta entera.',
         'Los azules quieren localizar y proteger al Presidente; los rojos, averiguar dónde está para acercarle al Bombardero.',
       ],
       visual: {
         kind: 'screens',
         panes: [
-          { title: 'Tu carta, en tu móvil', lines: ['🔵 Equipo AZUL', '🎖️ Eres el PRESIDENTE'], buttons: [{ label: '🤝 Enseñársela a alguien', kind: 'ghost' }] },
+          { title: 'La pantalla de la ronda', lines: ['🗣️ Hablad dentro de vuestra sala…'], buttons: [{ label: '🤝 Enseñar mi carta a alguien', kind: 'primary' }] },
           { title: 'A pantalla completa', lines: ['🔵 EQUIPO AZUL', 'Solo el bando · el rol no sale en pantalla'] },
         ],
       },

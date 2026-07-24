@@ -20,7 +20,7 @@
   // Rótulos de la MISMA longitud (una línea en cualquier móvil) y el mismo
   // «secreto: solo tú lo sabes» para Insider y común: un panel más largo, o una
   // línea de más, se lee de reojo aunque no se lea el texto. El detalle largo de
-  // cada papel vive en la chuleta 📖, igual para todos.
+  // cada papel vive en «📖 Las reglas», igual para todos.
   const NAME = { master: 'Eres el MAESTRO', insider: 'Eres el INSIDER', common: 'Eres del EQUIPO' };
   const TEAM = { master: 'público: lo sabe toda la mesa', insider: 'secreto: solo tú lo sabes', common: 'secreto: solo tú lo sabes' };
   const ROLES = ['master', 'insider', 'common'] as const;
@@ -46,8 +46,10 @@
 
 {#if mini && !open}
   <!-- Rótulo IDÉNTICO para los tres papeles (y por eso «si la conoces»): si al
-       Insider le pusiera «ver la palabra», el vecino lo ficharía de reojo. -->
-  <div style="text-align:center;margin:10px 0"><button class="ghost peek" data-a="ins-togglecard" onclick={toggle}>👁 Ver mi papel (y la palabra, si la conoces)</button></div>
+       Insider le pusiera «ver la palabra», el vecino lo ficharía de reojo.
+       «Mi carta» y no «mi papel»: es el mismo nombre que la pastilla 🎴 que abre
+       este panel, la ayuda, el tutorial y la voz (B34). -->
+  <div style="text-align:center;margin:10px 0"><button class="ghost peek" data-a="ins-togglecard" onclick={toggle}>👁 Ver mi carta (y la palabra, si la conoces)</button></div>
 {:else}
   <div class="rolecard ins" data-a="ins-togglecard" onclick={toggle} role="button" tabindex="0"
     onkeydown={(e) => { if (e.key === 'Enter') toggle(); }}>

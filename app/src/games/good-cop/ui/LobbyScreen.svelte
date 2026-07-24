@@ -43,8 +43,10 @@
   <p class="small-note" style="margin-top:10px">{POSTURE_HINT[meta.posture]}</p>
 
   <button class="primary block" style="margin-top:12px" data-a="open-start" onclick={() => navigate(`/g/${group.id}/good_cop/empezar`)}>🚔 Empezar partida</button>
+  <!-- Los dos caminos de consulta, con el mismo nombre y el mismo emoji que
+       tienen dentro de la partida (🎲 «Cómo se juega» también está en el ⋯). -->
   <div class="btnrow" style="margin-top:8px">
-    <button data-a="open-demo" onclick={() => (app.ui.modal = { type: 'gc-demo' })}>🎓 Aprender en 2 min</button>
-    <button data-a="gc-open-help" onclick={() => (app.ui.modal = { type: 'gc-help' })}>📖 Cómo se juega</button>
+    <button data-a="open-demo" onclick={() => (app.ui.modal = { type: 'gc-demo' })}>🎓 Tutorial · aprende en 2 min</button>
+    <button data-a="gc-open-help" onclick={() => (app.ui.modal = { type: 'gc-help' })}>🎲 Cómo se juega</button>
   </div>
 </div>

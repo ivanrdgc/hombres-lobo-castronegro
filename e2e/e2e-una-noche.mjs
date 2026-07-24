@@ -60,8 +60,9 @@ const norm = (s) => (s || '').replace(/\s+/g, ' ').trim();
 const restCard = async (p) => norm(await p.locator('.actionpanel').first().innerText().catch(() => '?'));
 
 // B28 · postura 🍽️ MESA: de noche NADA aparece solo. Todos los móviles enseñan
-// la misma tarjeta neutra y el panel se abre con «👁 Abrir mi panel» —el mismo
-// botón en todos—: al llamado le da sus opciones y al resto «no es tu turno».
+// la misma tarjeta neutra y el turno se abre con «👁 Abrir mi turno» —el mismo
+// botón en todos—: al llamado le da sus opciones y al resto «ahora no te toca».
+// La carta propia NO se abre desde aquí: su única puerta es la pastilla 🎴 (B34).
 async function openPanel(p) {
   if (await vis(p, '[data-a=una-open]:not([disabled])')) { await clk(p, '[data-a=una-open]'); await p.waitForTimeout(120); }
 }
@@ -234,6 +235,18 @@ try {
   await dp.locator('[data-a=una-ingame-role]').first().click();
   await dp.waitForSelector('.modal .howlist, .modal .small-note'); // el detalle abierto
   check((await dp.locator('[data-a=una-role-play]').count()) === 0, 'el ▶️ de lectura desaparece durante la partida (B13)');
+  await dp.click('button[data-a=close-modal]');
+  await dp.waitForTimeout(150);
+  // B34 · UNA sola puerta a tu carta: la pantalla de partida no tiene ningún
+  // «ver mi carta» suelto; se abre solo desde la pastilla flotante 🎴, y de un
+  // toque, dentro de la cortina de privacidad que se oculta sola.
+  check((await dp.locator('[data-a=una-show-card]').count()) === 0
+    && (await dp.locator('[data-a=open-mycard]').count()) === 1,
+  'B34 · la carta solo se abre desde la pastilla 🎴 (ninguna otra puerta en la pantalla)');
+  await dp.click('[data-a=open-mycard]');
+  await dp.waitForSelector('[data-a=una-sheet]', { timeout: 10000 });
+  check((await dp.locator('[data-a=una-sheet] .rolecard').count()) === 1, '…y un solo toque la enseña ya en la cortina de privacidad');
+  await dp.click('[data-a=una-hide]');
   await dp.click('button[data-a=close-modal]');
   await dp.waitForTimeout(150);
   const victim = st.playerIds[1];

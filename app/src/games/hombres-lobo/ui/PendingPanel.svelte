@@ -5,7 +5,6 @@
   // B25/B26: cada panel dice qué está en juego ANTES de elegir, el botón nombra
   // la consecuencia, y quien NO decide sabe a quién se espera (por su nombre) y
   // qué puede ir haciendo mientras.
-  import { app } from '../../../core/sync/store.svelte';
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
   import { selIds, sel1 } from '../../../shell/selection';
@@ -74,10 +73,11 @@
   {@const target = players.find((p) => p.id === head.targetId)}
   <!-- Vista IDÉNTICA para todos, también para la Sirvienta: su decisión vive
        dentro de su carta. Y el gesto se pide a TODA la mesa: si solo lo hiciera
-       quien decide, abrir la carta en este momento la delataría. -->
+       quien decide, abrir la carta en este momento la delataría. La puerta es
+       la de siempre —la pastilla 🎴— y por eso el panel no añade la suya (B34):
+       un botón que apareciera solo en este momento sería otro chivato. -->
   <div class="actionpanel"><h3>⏳ El juicio se resuelve…</h3>
-    <p class="hint">Un instante de silencio antes de revelar el destino de {target?.name || ''}. <b>Abrid todos la carta</b> y disimulad: casi nadie tendrá nada que decidir… y así nadie sabrá quién sí. <Countdown deadline={head.deadline ?? 0} /></p>
-    <button class="primary block" data-a="open-day-card" onclick={() => (app.ui.roleOpen = true)}>👁 Abrir mi carta</button></div>
+    <p class="hint">Un instante de silencio antes de revelar el destino de {target?.name || ''}. <b>Abrid todos vuestra carta</b> en 🎴 Mi carta (abajo a la derecha) y disimulad: casi nadie tendrá nada que decidir… y así nadie sabrá quién sí. <Countdown deadline={head.deadline ?? 0} /></p></div>
 {:else if head.type === 'alguacil_elect'}
   {#if my.alive}
     <div class="actionpanel"><h3>⭐ Elección del Alguacil</h3>

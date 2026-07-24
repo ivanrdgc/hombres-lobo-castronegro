@@ -4,7 +4,9 @@
 // ASESINO → revancha. Verifica además la FUGA (el agente NO ve el mapa; el Jefe
 // sí), la POSTURA del móvil (B28: el mapa del Jefe nace tapado, se abre de un
 // toque, se puede volver a tapar y el aviso de pantalla secreta no se va), la
-// escotilla anti-atasco del Jefe y qué dice la voz.
+// PUERTA ÚNICA (B34: al ser juego de equipo, tu papel vive en la pantalla y la
+// pastilla flotante es solo «📖 Reglas»), la escotilla anti-atasco del Jefe y
+// qué dice la voz.
 import { chromium } from 'playwright';
 const BASE = process.env.BASE; if (!BASE) { console.error('Define BASE=https://tu-sitio.web.app'); process.exit(1); }
 let fail = 0;
@@ -153,8 +155,22 @@ try {
   // ——— La voz arranca diciendo quién empieza (línea 0 del diario) ———
   check(await waitSaid(/Comienza Codenames/, 1), 'la voz locuta el arranque (qué equipo empieza)');
 
-  // ——— La chuleta se consulta sin salir del panel, y «La mesa» está en el ⋯ ———
-  check(await pg(agentA).locator('[data-a=cn-ref]').count() === 1, 'el panel lleva plegada la chuleta de colores');
+  // ——— Las reglas se consultan sin salir del panel, y «La mesa» está en el ⋯ ———
+  check(await pg(agentA).locator('[data-a=cn-ref]').count() === 1, 'el panel lleva «📖 Las reglas» plegadas donde se decide');
+
+  // ——— Puerta única a tu carta (B34) ———
+  // Codenames es de EQUIPO: tu papel VIVE en la pantalla (la banda) y el mapa
+  // del Jefe también, así que la pastilla flotante es SOLO las reglas y no
+  // puede ofrecer una segunda puerta a lo mismo con otro nombre.
+  check(await pg(agentA).locator('[data-a=cn-band]').count() === 1, 'tu papel se dice en la pantalla, en una sola banda');
+  const fabTxt = await pg(agentA).locator('[data-a=open-mycard]').innerText();
+  check(/reglas/i.test(fabTxt) && !/mi carta/i.test(fabTxt), 'la pastilla flotante se llama «Reglas», no «Mi carta»');
+  await pg(agentA).click('[data-a=open-mycard]');
+  await pg(agentA).waitForSelector('.modal [data-a=cn-all-rules]', { timeout: 10000 });
+  check(await pg(agentA).locator('.modal [data-a=cn-band]').count() === 0, 'el modal de las reglas no repite tu papel');
+  check(await pg(agentA).locator('.modal [data-a=cn-play-howto]').count() === 0, 'dentro de la partida las reglas no traen ▶️ (la voz está narrando)');
+  await pg(agentA).click('button[data-a=close-modal]');
+
   await pg(agentA).click('[data-a=game-menu]');
   await pg(agentA).click('[data-a=table-open]');
   await pg(agentA).waitForSelector('[data-a=table-player]');

@@ -30,7 +30,7 @@
            forma de llegar al menú de un dispositivo apagado y sacarlo. -->
       <button role="menuitem" data-a="table-open" onclick={() => { app.ui.modal = { type: 'table' }; close(); }}>🪑 La mesa</button>
       {#if playing}
-        <button role="menuitem" data-a="cn-repeat" onclick={() => { guard(A.requestRepeat); close(); }}>🔁 Repetir lo último</button>
+        <button role="menuitem" data-a="cn-repeat" onclick={() => { guard(A.requestRepeat); close(); }}>🔁 Repetir</button>
         {#if canSkip}
           <button role="menuitem" data-a="cn-skip-clue" onclick={() => { guard(A.skipClue); close(); }}>⏭️ Saltar el turno de {spyName}</button>
         {/if}

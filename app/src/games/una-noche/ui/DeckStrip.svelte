@@ -1,9 +1,9 @@
 <script lang="ts">
-  // Tira de «Cartas en juego» durante la partida. En Una Noche la composición
-  // del mazo es PÚBLICA (todos saben qué roles hay: es la base de la deducción),
-  // así que se muestran TODAS las cartas del mazo, con el recuento por bando
-  // —lo que en la mesa real está a la vista no se memoriza—. Se toca una y abre
-  // su detalle (qué hace y cómo se juega), igual que la tira de Los Hombres Lobo.
+  // Tira de «El mazo» durante la partida (mismo nombre que en el lobby, en
+  // «Empezar» y en 🎴 Mi carta: un nombre por cosa, B34). En Una Noche la
+  // composición es PÚBLICA —todos saben qué roles hay: es la base de la
+  // deducción—, así que se muestran TODAS las cartas con el recuento por bando.
+  // Se toca una y abre su detalle (qué hace y cómo se juega).
   import { app } from '../../../core/sync/store.svelte';
   import { ROLES, CENTER_COUNT } from '../roles';
   import type { GameState, RoleId } from '../types';
@@ -22,7 +22,7 @@
 
 {#if list.length}
   <div class="card">
-    <h3>🎴 Las {total} cartas de esta partida</h3>
+    <h3>🎴 El mazo · {total} carta{total === 1 ? '' : 's'}</h3>
     <p class="small-note" style="margin:0 0 8px">{teamN('lobos')} 🐺 del bando lobo · {teamN('pueblo')} 🏡 del pueblo{#if teamN('tanner')} · {teamN('tanner')} 🪢 en solitario{/if}. {CENTER_COUNT} están en el centro y nadie sabe cuáles. Toca una para ver qué hace.</p>
     <div class="chips">
       {#each list as [id, n] (id)}

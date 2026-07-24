@@ -49,7 +49,10 @@ async function tx(fn: TxFn, mid?: string, opts: { allowPaused?: boolean } = {}):
 
 // ——— Inicio ———
 
-export async function startLoveLetter(playerIds: string[], narratorId: string | null): Promise<void> {
+/** `track`: ¿la app marca lo que ya ha salido? Es ajuste de MESA (se recuerda en
+ *  `group.settings.llTrack`), pero la partida se queda con una FOTO: cambiarlo a
+ *  media partida no cambiaría las reglas con las que se empezó (B33). */
+export async function startLoveLetter(playerIds: string[], narratorId: string | null, track = true): Promise<void> {
   const slug = mySlug();
   const mid = newMatchId();
   if (playerIds.length < MIN_PLAYERS) throw new Error(`Love Letter necesita al menos ${MIN_PLAYERS} jugadores.`);
@@ -86,7 +89,7 @@ export async function startLoveLetter(playerIds: string[], narratorId: string | 
     t.set(mref(slug, mid), sanitize({
       gameId: 'love_letter', createdAt: now,
       members: [...new Set([...playerIds, speaker])],
-      masterId: speaker, lastNarratorId: speaker, settings: {}, extraRoles: [], game,
+      masterId: speaker, lastNarratorId: speaker, settings: { llTrack: track }, extraRoles: [], game,
     }));
   });
 }

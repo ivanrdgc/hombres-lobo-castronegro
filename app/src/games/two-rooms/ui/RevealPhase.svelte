@@ -1,6 +1,10 @@
 <script lang="ts">
   // Reparto: cada cual mira su carta (bando + rol) y su sala, y confirma. Cuando
   // todos han confirmado, cualquiera arranca la ronda 1.
+  //
+  // Es la ÚNICA fase con su propio botón «👁 Ver mi carta» (excepción de B34):
+  // aquí mirar la carta es el contenido de la pantalla, no un atajo. En cuanto
+  // arranca la ronda, la única puerta es la pastilla 🎴.
   import { app } from '../../../core/sync/store.svelte';
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
@@ -21,7 +25,7 @@
   {#if app.ui.revealOpen}
     <MyCard {game} pid={my.id} />
     <button class="primary block" data-a="tr-seen" onclick={() => guard(async () => { await A.confirmSeen(); app.ui.revealOpen = false; })}>✅ Lo tengo</button>
-    <p class="small-note" style="text-align:center">El botón 🎴 de abajo a la derecha te la devuelve en cualquier momento.</p>
+    <p class="small-note" style="text-align:center">Podrás volver a verla cuando quieras: «🎴 Mi carta», la pastilla de abajo a la derecha.</p>
   {:else}
     <button class="primary block" data-a="tr-reveal" onclick={() => (app.ui.revealOpen = true)}>👁 Ver mi carta y mi sala</button>
   {/if}

@@ -21,6 +21,10 @@
 // abierta del Insider y la de un común son indistinguibles de reojo —mismo
 // emoji, mismos bloques, mismo alto— y el botón de confirmar el voto no canta a
 // quién señalas.
+// De la pasada de UNA SOLA PUERTA (B34): repartidas las cartas, ninguna fase
+// tiene su propio «👁 Ver mi carta» en el cuerpo —la única puerta es la pastilla
+// 🎴, idéntica en todos los móviles—; el botón grande solo existe en el REPARTO,
+// que es la excepción del contrato.
 import { chromium } from 'playwright';
 const BASE = process.env.BASE; if (!BASE) { console.error('Define BASE=https://tu-sitio.web.app'); process.exit(1); }
 let fail = 0;
@@ -152,27 +156,32 @@ try {
   }
   await revealAndBegin(st);
 
-  // ——— No hay fuga: la palabra solo la ven Maestro e Insider… y sus cartas se
-  //     ven IGUAL que las de un común (postura de mesa: móviles planos) ———
+  // ——— UNA SOLA PUERTA (B34) y sin fuga: repartidas las cartas, en el cuerpo de
+  //     la pantalla no queda ningún «👁 Ver mi carta» —la carta se abre solo
+  //     desde la pastilla 🎴, idéntica en todos los móviles—, y abierta, la del
+  //     Insider y la de un común no se distinguen (postura de mesa) ———
   const common1 = st.playerIds.find((x) => x !== st.insiderId && x !== st.masterId);
   const shape = {};
   for (const [pid, sabe] of [[common1, false], [st.insiderId, true]]) {
     const p = pg(pid);
-    // Durante el interrogatorio TODOS ven la misma carta mini plegada: ni la
-    // palabra a la vista ni un aspecto distinto que delate al Insider.
-    check(await p.locator('[data-a=ins-word]').count() === 0, `la carta de ${NAMES[pid]} va plegada (nada de palabra a la vista)`);
+    // Durante el interrogatorio no hay carta en la pantalla: ni la palabra a la
+    // vista ni un botón propio que compita con la pastilla.
+    check(await p.locator('[data-a=ins-word]').count() === 0, `la palabra no está en la pantalla de ${NAMES[pid]}`);
+    check(await p.locator('[data-a=ins-togglecard]').count() === 0, `${NAMES[pid]}: la única puerta a la carta es la pastilla 🎴 (nada en el cuerpo)`);
     await p.setViewportSize({ width: 390, height: 844 }); // el MISMO móvil en los dos: comparamos forma
-    await p.click('[data-a=ins-togglecard]');
-    await p.waitForSelector('.rolecard[data-a=ins-togglecard]');
-    check(await p.locator('[data-a=ins-word]').count() === (sabe ? 1 : 0), `${NAMES[pid]} ${sabe ? 've' : 'NO ve'} la palabra al desplegar su carta`);
-    const card = p.locator('.rolecard[data-a=ins-togglecard]');
+    await p.click('[data-a=open-mycard]');
+    await p.waitForSelector('.modal [data-a=ins-togglecard]');
+    await p.click('.modal [data-a=ins-togglecard]');
+    await p.waitForSelector('.modal .rolecard');
+    check(await p.locator('.modal [data-a=ins-word]').count() === (sabe ? 1 : 0), `${NAMES[pid]} ${sabe ? 've' : 'NO ve'} la palabra al desplegar su carta`);
+    const card = p.locator('.modal .rolecard');
     shape[sabe ? 'ins' : 'com'] = {
       h: Math.round((await card.boundingBox()).height),
-      emoji: (await p.locator('.rolecard .remoji').innerText()).trim(),
-      kw: await p.locator('.rolecard .kwbox').count(),
-      blocks: await p.locator('.rolecard > *').count(),
+      emoji: (await p.locator('.modal .rolecard .remoji').innerText()).trim(),
+      kw: await p.locator('.modal .rolecard .kwbox').count(),
+      blocks: await p.locator('.modal .rolecard > *').count(),
     };
-    await p.click('.rolecard[data-a=ins-togglecard]'); // vuelve a plegarla
+    await p.click('.modal [data-a=close-modal]');
     await p.setViewportSize({ width: 1280, height: 720 });
   }
   // De reojo, sin leer: mismo emoji, mismos bloques, mismo alto. Cualquier
@@ -242,6 +251,7 @@ try {
     const dim = (await p.locator('.player.dim').allInnerTexts()).join(' ');
     check(dim.includes(NAMES[st.masterId]) && /no puede ser el Insider/i.test(dim), '…pero sale en la lista, apagado y con el motivo');
     check(/eres tú/i.test(dim), 'y tu propia ficha explica que no puedes votarte');
+    check(await p.locator('[data-a=ins-togglecard]').count() === 0, 'tampoco en la caza hay un segundo «ver mi carta» en el cuerpo (solo la pastilla 🎴)');
     // El botón de confirmar NO canta tu voto: era el texto más grande de la
     // pantalla y el vecino lo leía de reojo antes de que lo echaras.
     await p.click(`.player[data-a=ins-vote][data-p="${st.insiderId}"]`);

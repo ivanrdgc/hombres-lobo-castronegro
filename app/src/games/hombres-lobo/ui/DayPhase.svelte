@@ -11,7 +11,6 @@
   import { narr } from '../texts/corpus';
   import { cuervoMarkId } from './labels';
   import type { GroupDoc, PlayerDoc } from '../../../core/sync/schema';
-  import RoleCard from './RoleCard.svelte';
   import PlayersGrid from './PlayersGrid.svelte';
   import PendingPanel from './PendingPanel.svelte';
   import VotePanel from './VotePanel.svelte';
@@ -57,10 +56,11 @@
   <p class="small-note">🏘️ Quedan <b>{alive.length}</b> vivos de {players.length}.</p>
 </div>
 {#if mutedTontos.length}<div class="flash">🤪 {mutedTontos.map((p) => p.name).join(' y ')} {mutedTontos.length > 1 ? 'ya no votan' : 'ya no vota'} (Tonto del Pueblo al descubierto), aunque sigue{mutedTontos.length > 1 ? 'n' : ''} deliberando con el pueblo.</div>{/if}
-<!-- Las acciones secretas de día (Juez, Sirvienta) viven DENTRO de la carta
-     (👁 Ver mi carta): con los móviles desbloqueados sobre la mesa, todas
-     las pantallas deben verse iguales. -->
-<RoleCard player={my} {group} mini={true} />
+<!-- Las acciones secretas de día (Juez, Sirvienta) viven DENTRO de la carta, y
+     a la carta se entra por UN solo sitio (B34): la pastilla 🎴 de abajo, igual
+     en todos los móviles. Aquí no va ningún «ver mi carta» del cuerpo: con los
+     móviles desbloqueados sobre la mesa, todas las pantallas deben verse
+     iguales, tengas poder o no. -->
 {#if head}
   <PendingPanel {head} {group} {my} {players} />
 {:else if (game.votesLeft || 0) > 0 && !game.vote}
@@ -72,7 +72,7 @@
   <div class="card"><h3>🌆 El día ha terminado</h3>
     <p class="small-note">Comentad la jugada con calma. Cuando estéis listos, que alguien mande al pueblo a dormir.</p>
     {#if my.alive}<button class="primary block" data-a="begin-night" onclick={() => guard(A.startNextNight)}>🌙 Empezar la noche</button>
-    {:else}<p class="small-note">💀 Tú ya no puedes: lo hará cualquiera de los {alive.length} vivos ({alive.map((p) => p.name).join(', ')}). Mientras, puedes destapar cartas desde la lista de abajo.</p>{/if}</div>
+    {:else}<p class="small-note">💀 Tú ya no puedes: lo hará cualquiera de los {alive.length} vivos ({alive.map((p) => p.name).join(', ')}). Mientras, puedes destapar las cartas del pueblo desde la lista de abajo.</p>{/if}</div>
 {/if}
 {#if !actingHere}
   <PlayersGrid {players} title="🏘️ El pueblo" showAlguacil={game.alguacilId || null} {marked} viewer={my} />

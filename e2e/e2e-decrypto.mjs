@@ -4,6 +4,8 @@
 // intercepciones. Verifica la FUGA: cada equipo solo ve sus palabras.
 // Y la POSTURA (B28, juego 👥 equipo): aviso de quién puede mirar, nada secreto
 // en la franja de arriba, y misma silueta interceptando que descifrando.
+// Y la PUERTA ÚNICA (B34): las palabras viven en la pantalla, así que la
+// pastilla flotante abre solo las reglas y no las repite.
 import { chromium } from 'playwright';
 const BASE = process.env.BASE; if (!BASE) { console.error('Define BASE=https://tu-sitio.web.app'); process.exit(1); }
 let fail = 0;
@@ -121,6 +123,10 @@ async function transmit(s, { rivalIntercepts }) {
     const digit = await pg(decoder).locator('[data-a=de-digit][data-p="0-1"]').innerText();
     check(digit.trim().length > 1, 'quien descifra ve el nombre de la palabra en los botones 1-4');
     decodeShape = await pickerShape(pg(decoder));
+    // B29 (un dato, un sitio): las 3 pistas se leen UNA vez. Quien decide las
+    // lleva pegadas a cada fila del selector; quien solo mira tiene su tarjeta.
+    check(await pg(decoder).locator('.declues').count() === 0, 'quien decide no ve las pistas dos veces: solo en el selector');
+    check(await pg(enc).locator('.declues').count() === 1, 'quien no decide sí tiene las 3 pistas en su tarjeta');
   }
   await setCode(pg(decoder), code);
   if (firstUi) {
@@ -176,6 +182,19 @@ try {
   const bluWords = await pg(bluP).locator('.deword').allInnerTexts();
   check(redWords.length === 4 && bluWords.length === 4, 'cada jugador ve sus 4 palabras clave');
   check(!redWords.some((w) => bluWords.includes(w)), 'un equipo NO ve las palabras del rival (sin solapamiento)');
+
+  // ——— B34: UNA sola puerta a tus palabras ———
+  // En un juego de equipo las 4 palabras viven en la pantalla; la pastilla
+  // flotante es «📖 Reglas» y no repite ni las palabras ni el recuento de fichas.
+  check(await pg(redP).locator('[data-a=de-words]').count() === 1, 'las 4 palabras están en la pantalla y en un solo sitio');
+  await pg(redP).click('[data-a=open-mycard]');
+  await pg(redP).waitForSelector('.modal', { timeout: 15000 });
+  const rulesTxt = await pg(redP).locator('.modal').innerText();
+  check(/Reglas de Decrypto/i.test(rulesTxt), 'la pastilla flotante abre las REGLAS, no una segunda «mi carta»');
+  check(await pg(redP).locator('.modal .deword, .modal .mword').count() === 0, 'las reglas no repiten tus 4 palabras');
+  check(!/intercepciones ganan la partida/i.test(rulesTxt), 'las reglas no repiten el recuento de fichas del marcador');
+  await pg(redP).click('.modal button[data-a=close-modal]');
+  await pg(redP).waitForSelector('.modal', { state: 'detached', timeout: 15000 });
 
   // ——— U7: marcador público (fichas y quién juega en cada equipo, sin title=) ———
   check(await pg(redP).locator('[data-a=de-tokens]').count() === 2, 'el marcador enseña las fichas de los dos equipos');

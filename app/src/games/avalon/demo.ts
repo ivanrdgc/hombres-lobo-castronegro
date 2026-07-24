@@ -24,7 +24,7 @@ export const DEMO: DemoScript = {
       who: { actor: 'TODOS miráis vuestra carta a la vez y confirmáis', others: 'nadie enseña la pantalla: lo que sabes tú no lo sabe nadie más.' },
       text: [
         'A ti te toca 🧙 MERLÍN: sabes QUIÉNES son malvados, aunque no qué papel tiene cada uno (y a Mordred, si estuviera en juego, no lo verías). Los malvados se ven entre sí; los leales no saben nada.',
-        'En Ávalon nadie vuelve a repartir cartas: esto hay que MEMORIZARLO. Si se te va, el botón flotante de la carta 🎴, abajo a la derecha, te la reenseña cuando quieras… y solo a ti. Ahí está también la chuleta con los números de la partida.',
+        'En Ávalon nadie vuelve a repartir cartas: esto hay que MEMORIZARLO. Si se te va, la pastilla 🎴 «Mi carta», abajo a la derecha, te la reenseña cuando quieras… y solo a ti. Es el único sitio desde el que se abre, en todas las fases, y ahí están también las reglas con los números de la partida.',
       ],
       visual: {
         kind: 'screens',
@@ -77,7 +77,7 @@ export const DEMO: DemoScript = {
       who: { actor: 'Solo Bea y Eva (equipo aprobado) eligen carta en su móvil', others: 'el resto esperáis: la app solo anunciará CUÁNTOS sabotajes hubo, nunca de quién.' },
       text: [
         'Volvamos atrás: supón que la propuesta sí salió aprobada (3 a 2). Cada miembro juega ÉXITO o FRACASO en secreto, y las dos pantallas se ven idénticas: si eres del Bien y tocas el rojo, la app te lo impide en tu mano y nadie más se entera.',
-        'Resultado: «💥 Misión 1: FRACASO (1 sabotaje)». ¿Quién de las dos fue? Ese es el juego. Tras leerlo, cualquiera pulsa «▶️ Continuar».',
+        'Resultado: «💥 Misión 1: FRACASO (1 sabotaje)». ¿Quién de las dos fue? Ese es el juego. Tras leerlo, cualquiera pulsa el botón, que dice adónde lleva: «▶️ Seguir a la misión 2».',
       ],
       // B28: las dos pantallas del equipo son IDÉNTICAS (leal o malvado) para que
       // el vecino no deduzca tu bando mirando el móvil de reojo; la app le niega

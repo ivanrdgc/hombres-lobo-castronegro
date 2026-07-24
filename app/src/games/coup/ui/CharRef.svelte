@@ -1,13 +1,14 @@
 <script lang="ts">
-  // Chuleta de la corte, PLEGADA dentro del panel donde se decide (nadie debería
+  // Las reglas, PLEGADAS dentro del panel donde se decide (B25·4: nadie debería
   // salir de la pantalla en la que está decidiendo). Además del poder de cada
   // personaje muestra cuántas copias están ya boca arriba: dato público que es
   // justo el que dice si un farol es creíble.
+  // Se llaman «las reglas» aquí, en la pastilla flotante y en la ayuda: un solo
+  // nombre para una sola cosa (B34·3), y por eso el rótulo NO se personaliza.
   import { CHARACTERS, CHAR_ORDER, COPIES } from '../chars';
   import type { CoupState } from '../types';
 
-  const { game, label = '📖 Los 5 personajes: quién hace qué y quién bloquea qué' }:
-    { game: CoupState; label?: string } = $props();
+  const { game }: { game: CoupState } = $props();
 
   const shown = $derived.by(() => {
     const n = { duque: 0, asesino: 0, capitan: 0, embajador: 0, condesa: 0 };
@@ -19,7 +20,7 @@
 </script>
 
 <details class="cref">
-  <summary data-a="coup-ref">{label}</summary>
+  <summary data-a="coup-ref">📖 Las reglas: quién hace qué y quién bloquea qué</summary>
   {#each CHAR_ORDER as c (c)}
     <div class="settingrow">
       <div class="sinfo">

@@ -17,7 +17,7 @@ export const HOW_TO: HelpSection[] = [
     heading: '🎯 De qué va',
     items: [
       `De ${MIN_PLAYERS} a ${MAX_PLAYERS} jugadores en dos equipos, rojo y azul. La app los reparte AL AZAR; si sois impares, un equipo tendrá uno más (por ejemplo 3 contra 2), lo cual no da ventaja: quien descifra es el equipo entero.`,
-      'Cada equipo tiene 4 PALABRAS CLAVE numeradas del 1 al 4, que solo ven los de ese equipo (la app las custodia y las tienes siempre en el botón flotante de la carta).',
+      'Cada equipo tiene 4 PALABRAS CLAVE numeradas del 1 al 4 que solo ven los de ese equipo. No hay que memorizarlas: están siempre en vuestra pantalla, en la tarjeta «Vuestras 4 palabras», así que el móvil se sujeta hacia los vuestros y de espaldas al rival.',
       'El objetivo es transmitir códigos a los tuyos sin que el rival los descifre. Ganas si logras interceptar DOS códigos del rival; pierdes si tu propio equipo falla DOS veces al descifrar el suyo.',
     ],
   },

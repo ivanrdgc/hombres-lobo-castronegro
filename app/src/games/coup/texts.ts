@@ -21,16 +21,16 @@ export const HOW_TO: HelpSection[] = [
       'Cada jugador tiene 2 cartas de influencia SECRETAS y monedas. Perder una influencia es descubrir para siempre una de tus cartas; quien descubre las dos queda fuera. Gana el último que conserve alguna.',
       'La corte (el mazo) son 15 cartas: 5 personajes con 3 copias de cada uno. Ese dato es la clave de los faroles: si ya se han descubierto dos Duques, decir «soy Duque» es mucho más arriesgado.',
       'La gracia: las mejores jugadas pertenecen a personajes, y para usarlas basta con DECIR que tienes ese personaje… lo tengas o no. Los demás deciden si tragarse el farol o desafiarte.',
-      'La app custodia las cartas y la corte (el mazo), resuelve desafíos y bloqueos, mueve las monedas y va cantando cada jugada; tus cartas ocultas no las ve ni las dice nadie.',
+      'Tus dos cartas no las ve ni las dice nadie: la app solo canta en alto lo público, o sea lo que en una mesa de verdad se oiría igual.',
     ],
   },
   {
     heading: '🎴 El reparto',
     items: [
-      'Al empezar, tu móvil te enseña tus dos influencias: míralas sin que nadie vea la pantalla y pulsa «Lo tengo». Cuando todos confirman, cualquiera pulsa «Empezar la partida» y arranca el primer turno.',
-      'Tus dos cartas se quedan a la vista en tu pantalla el resto de la partida, con lo que hace cada una y tus monedas: sujeta el móvil mirando a ti, como una mano de cartas, y no lo dejes en la mesa.',
+      'Al empezar, tu móvil te enseña tus dos influencias: míralas sin que nadie vea la pantalla y pulsa «Lo tengo». Cuando todos confirman, cualquiera arranca el primer turno con el botón que nombra a quien abre.',
+      'Tus dos cartas se quedan a la vista en tu pantalla el resto de la partida, con lo que hace cada una y tus monedas: sujeta el móvil mirando a ti, como una mano de cartas, y no lo dejes en la mesa. No hay ningún botón de «ver mi carta» porque no hace falta.',
       'Empiezas con 2 monedas. En el tablero, las influencias perdidas se ven boca arriba; de las ocultas solo se ve el dorso: todos saben CUÁNTAS te quedan, nunca cuáles son.',
-      'Abajo a la derecha, el botón flotante de la carta abre la chuleta completa: los 5 personajes y las 7 jugadas, sin salir de la partida.',
+      'Abajo a la derecha, la pastilla «Reglas» abre la referencia completa: los 5 personajes y las 7 jugadas, sin salir de la partida. Esas mismas reglas están plegadas en cada panel donde decides.',
     ],
   },
   {
@@ -81,7 +81,7 @@ export const HOW_TO: HelpSection[] = [
     items: [
       'Cuando te toca perder una influencia y aún tienes las dos, tu móvil te pide elegir CUÁL descubres; si solo te queda una, cae sola. Lo descubierto queda a la vista de todos: esa información es oro.',
       'El último jugador con influencia gana la partida: suma 1 punto y el resto no suma nada. Al terminar se destapan todas las manos, así que por fin se ve quién faroleaba.',
-      'El marcador se guarda entre partidas: revancha con «🔁 Otra partida» (diario limpio y corte nueva).',
+      'El marcador se guarda entre partidas: revancha con «🔁 Repartir otra partida» (diario limpio y corte nueva).',
     ],
   },
 ];

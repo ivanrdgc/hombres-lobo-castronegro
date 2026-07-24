@@ -6,16 +6,19 @@
   //   2) Elegida una: «qué va a pasar», el objetivo, y —con el Guardia— la
   //      adivinanza; todo reversible con «↩️ Cambiar de carta».
   //   3) Plegada al fondo, la referencia de las 8 cartas con lo que ya ha salido.
+  // Con el MODO DIFÍCIL (`track = false`, B33) las cartas siguen diciendo cuántas
+  // copias trae el mazo, pero la app ya no cuenta cuáles han salido: ni en la
+  // mano, ni en las adivinanzas del Guardia, ni en la referencia.
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
   import { validTargets, playableIdx, countessForced, outCounts } from '../engine';
-  import { CARD_INFO, NEEDS_TARGET, VALUE, PLAN, ASK_TARGET, copiesNote } from '../cards';
+  import { CARD_INFO, NEEDS_TARGET, VALUE, PLAN, ASK_TARGET, copiesNote, deckNote } from '../cards';
   import type { Card } from '../cards';
   import type { PlayerDoc } from '../../../core/sync/schema';
   import type { LoveLetterState } from '../types';
   import CardFace from './CardFace.svelte';
 
-  const { game, my }: { game: LoveLetterState; my: PlayerDoc } = $props();
+  const { game, my, track = true }: { game: LoveLetterState; my: PlayerDoc; track?: boolean } = $props();
   const hand = $derived(game.hands[my.id] || []);
   const playable = $derived(playableIdx(game, my.id));
   const forced = $derived(countessForced(hand));
@@ -48,7 +51,7 @@
   const nmObj = (pid: string) => (pid === my.id ? 'ti mismo' : game.names[pid] || '¿?');
   // Quién NO aparece en la lista de objetivos, y por qué (nunca una ausencia muda).
   const shielded = $derived(game.playerIds.filter((p) => p !== my.id && game.alive[p] && game.protected[p]));
-  const copies = (c: Card) => copiesNote(c, out[c]);
+  const copies = (c: Card) => copiesNote(c, out[c], track);
   // Resumen de lo elegido, para leerlo antes de confirmar.
   const summary = $derived(!card ? '' : `${CARD_INFO[card].emoji} ${CARD_INFO[card].name}`
     + (tgt ? ` sobre ${nmObj(tgt)}` : '')
@@ -99,13 +102,16 @@
     {#if card === 'guard' && tgt}
       <p class="small-note" style="margin:10px 0 2px"><b>¿Qué carta crees que tiene {nm(tgt)}?</b> Si aciertas, queda fuera.</p>
       <!-- Dos columnas: las siete entran sin empujar el botón de confirmar fuera
-           de la pantalla, y cada una dice cuántas siguen sin verse. -->
+           de la pantalla, y cada una dice lo que la mesa deja saber — cuántas
+           siguen sin verse, o solo cuántas trae el mazo en modo difícil. -->
       <div class="llguess">
         {#each guessable as gc (gc)}
           {@const left = CARD_INFO[gc].count - out[gc]}
-          <button class="pick {gss === gc ? 'primary' : 'ghost'} {left ? '' : 'none'}" data-a="ll-guess" data-p={gc} onclick={() => (gss = gc)}>
+          <button class="pick {gss === gc ? 'primary' : 'ghost'} {track && !left ? 'none' : ''}" data-a="ll-guess" data-p={gc} onclick={() => (gss = gc)}>
             <span class="gname">{CARD_INFO[gc].emoji} {CARD_INFO[gc].name} ({VALUE[gc]})</span>
-            <span class="gleft">{left === 0 ? 'ya han salido todas' : left === 1 ? 'queda 1 sin salir' : `quedan ${left} sin salir`}</span>
+            <span class="gleft">
+              {#if !track}{deckNote(gc)}{:else if left === 0}ya han salido todas{:else if left === 1}queda 1 sin salir{:else}quedan {left} sin salir{/if}
+            </span>
           </button>
         {/each}
       </div>

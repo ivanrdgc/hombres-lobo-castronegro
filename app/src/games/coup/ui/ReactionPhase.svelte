@@ -8,7 +8,7 @@
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
   import { ACTIONS, charName, charLabel } from '../chars';
-  import { allowedReactions, reactorsOf } from '../engine';
+  import { allowedReactions, isAlive, reactorsOf } from '../engine';
   import CharRef from './CharRef.svelte';
   import type { PlayerDoc } from '../../../core/sync/schema';
   import type { CoupState, Character } from '../types';
@@ -83,6 +83,7 @@
   // Por qué esta ventana no me pide nada (nunca un panel mudo).
   const whyNot = $derived.by(() => {
     if (!p) return '';
+    if (!isAlive(game, my.id)) return 'Estás fuera de la corte: ya solo miras cómo se resuelve.';
     if (p.actor === my.id) return 'Es tu jugada la que está en el aire: ahora deciden los demás.';
     if (blockPhase && p.type !== 'ayuda') return `Solo la víctima puede bloquear: le toca a ${nm(p.target)}.`;
     if (challengingBlock && game.block?.by === my.id) return 'Has sido tú quien ha bloqueado: ahora deciden si te desafían.';
@@ -100,12 +101,20 @@
      cuenta entero (quién declara qué, qué se le puede desafiar y qué ocurre si
      nadie lo impide), así que arriba no se repite en cursiva. -->
 <div class="card recap">
-  <h3 style="margin-top:0">❗ Qué está pasando</h3>
+  <!-- El ❗ es SIEMPRE «desafiar» en esta pantalla: el recuadro que solo informa
+       no se lo queda. -->
+  <h3 style="margin-top:0">👀 Qué está pasando</h3>
   {#if challengingBlock && game.block}
     <p class="rline">🛡️ <b>{nm(game.block.by)}</b> dice ser <b>{charLabel(game.block.claim)}</b> para cortar la jugada de <b>{nm(p?.actor)}</b>.</p>
   {:else if p}
     <p class="rline">{ACTIONS[p.type].emoji} <b>{nm(p.actor)}</b> declara <b>{ACTIONS[p.type].name}</b>{p.target ? ` contra ${nm(p.target)}` : ''}{p.claim ? ` diciendo ser ${charLabel(p.claim)}` : ''}.</p>
-    <p class="rline">🗣️ {p.claim ? 'Eso —tener esa carta— es lo único que se le puede desafiar.' : 'No dice tener ningún personaje: no hay farol que desafiar, solo se puede bloquear.'}</p>
+    <!-- En la ventana de bloqueo el desafío YA no está sobre la mesa: decir aquí
+         «se le puede desafiar» era un resto de la ventana anterior. -->
+    {#if blockPhase}
+      <p class="rline">🛡️ {p.claim ? 'El desafío ya pasó y nadie lo cogió: en esta ventana solo cabe bloquear.' : 'No dice tener ningún personaje: no hay farol que desafiar, solo cabe bloquear.'}</p>
+    {:else}
+      <p class="rline">🗣️ Eso —tener esa carta— es lo único que se le puede desafiar.</p>
+    {/if}
   {/if}
   <p class="rline">➡️ Si nadie lo impide, {outcome}</p>
   {#if iAmTarget && !challengingBlock}
@@ -124,7 +133,9 @@
     {#if armed === null}
       <h3 style="margin-top:0">{question}</h3>
       {#if mine.challenge}
-        <button class="danger block" style="margin-top:0" data-a="coup-challenge-pick" onclick={() => (armed = 'challenge')}>❗ Desafiar el farol</button>
+        <!-- El botón dice lo mismo que la pregunta de arriba: en la ventana del
+             bloqueo lo que se desafía es el bloqueo, no «el farol» de la jugada. -->
+        <button class="danger block" style="margin-top:0" data-a="coup-challenge-pick" onclick={() => (armed = 'challenge')}>❗ Desafiar {challengingBlock ? 'el bloqueo' : 'el farol'}</button>
         <p class="orisk">{challengeRisk}</p>
       {/if}
       {#each mine.blockClaims as claim (claim)}
@@ -134,7 +145,7 @@
       <button class="ghost block" data-a="coup-pass" onclick={() => guard(A.pass)}>{passLabel}</button>
       <p class="orisk">{passRisk}</p>
     {:else if armed === 'challenge'}
-      <h3 style="margin-top:0">❗ Vas a desafiar</h3>
+      <h3 style="margin-top:0">❗ Vas a desafiar {challengingBlock ? 'el bloqueo' : 'el farol'}</h3>
       <p class="orisk big">{challengeRisk}</p>
       <button class="ghost block small" data-a="coup-react-back" onclick={() => (armed = null)}>↩️ Mejor no, volver</button>
       <button class="danger block" data-a="coup-challenge" onclick={() => guard(A.challenge)}>
@@ -148,18 +159,18 @@
       <button class="ghost block small" data-a="coup-react-back" onclick={() => (armed = null)}>↩️ Mejor no, volver</button>
       <button class="block" data-a="coup-block" data-p={claim} onclick={() => doBlock(claim)}>🛡️ Declarar {charLabel(claim)} y cortar la jugada</button>
     {/if}
-    <CharRef {game} label="📖 ¿Quién bloquea qué? · copias ya descubiertas" />
+    <CharRef {game} />
   </div>
 {:else if iReacted}
   <div class="card">
     <p class="hint">✅ Ya has contestado ({game.reactions[my.id] === 'pass' ? 'has pasado' : game.reactions[my.id] === 'challenge' ? 'has desafiado' : 'has bloqueado'}).
       {#if waiting.length}Esperando a <b>{waiting.join(', ')}</b>.{:else}La ventana se está cerrando…{/if}</p>
-    <CharRef {game} label="📖 Repasa la corte mientras esperas" />
+    <CharRef {game} />
   </div>
 {:else}
   <div class="card">
     <p class="hint">⏳ {whyNot} {#if waiting.length}Falta por contestar: <b>{waiting.join(', ')}</b>.{/if}</p>
-    <CharRef {game} label="📖 Repasa la corte mientras esperas" />
+    <CharRef {game} />
   </div>
 {/if}
 

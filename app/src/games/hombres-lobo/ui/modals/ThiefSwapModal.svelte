@@ -1,5 +1,5 @@
 <script lang="ts">
-  // El máster aplica el cambio del Ladrón: enseña las dos cartas del centro
+  // El narrador aplica el cambio del Ladrón: enseña las dos cartas del centro
   // (port de thiefSwapModal de la v1).
   import { app, viewGroup } from '../../../../core/sync/store.svelte';
   import { guard } from '../../../../core/sync/guard';

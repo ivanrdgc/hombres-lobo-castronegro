@@ -33,7 +33,8 @@ export const ROLE_HELP: Record<RoleId, RoleHelp> = {
     when: 'Bando del Mal · la última bala',
     steps: [
       'Cazas con el Mal: sabotea misiones y reconoce a tus compañeros (la app te los muestra, salvo Oberón).',
-      'Si el Bien completa tres misiones, tendrás una última oportunidad: la app te pedirá que señales a quien creas que es Merlín. Si aciertas, ¡gana el Mal!',
+      'Si el Bien completa tres misiones, tendrás una última bala: todos veréis el mismo botón «🗡️ Abrir la mira», pero solo a ti se te abre (a los demás les dice que no es su turno, así que coger el móvil no delata).',
+      'Con la mira abierta señalas a quien creas que es Merlín, con el historial de misiones y votos delante. Si aciertas, ¡gana el Mal!',
     ],
     tip: 'Durante la partida, fíjate en quién guía al Bien con demasiado acierto: ese suele ser Merlín.',
   },

@@ -11,7 +11,7 @@
   // tira de postura de arriba.
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
-  import { cluesForWord, encoderId, teamMembers, teamOf, other, TEAM_LABEL } from '../engine';
+  import { cluesForWord, encoderId, interceptorsCanPlay, teamMembers, teamOf, other, TEAM_LABEL } from '../engine';
   import type { PlayerDoc } from '../../../core/sync/schema';
   import type { DecryptoState } from '../types';
 
@@ -48,7 +48,7 @@
   <div class="actionpanel"><h3>🔐 Encriptas tú: una pista por cifra</h3>
     <p class="hint" style="margin:0 0 8px">En el orden de las cifras. Escríbelas aquí y dilas en voz alta: la pista no puede ser la palabra clave ni un derivado suyo.</p>
     <div class="decodebox" data-a="de-code">
-      <span class="dcblab">🙈 Tu código, solo tuyo</span>
+      <span class="dcblab">🙈 Tu código</span>
       <span class="dcbnums">{#each game.code as d, i (i)}<span class="dn">{d}</span>{/each}</span>
     </div>
     {#each rows as r (r.i)}
@@ -77,9 +77,9 @@
 {:else}
   <div class="narration">🔐 <b>{encName}</b> ({TEAM_LABEL[game.active]}) está preparando las pistas de su código…</div>
   <div class="card"><p class="hint" style="margin:0">
-    {#if myTeam === game.active}🤝 Es vuestro encriptador: cuando diga las 3 pistas tendréis que descifrar su código, sin él. Id repasando vuestras 4 palabras, al final de la pantalla.
-    {:else if myTeam === other(game.active)}🕵️ Sois el rival: en cuanto las diga intentaréis interceptar. Mientras, repasad en la hoja de pistas (al final de la pantalla) lo que el {TEAM_LABEL[game.active]} ya dijo para cada número.
-    {:else}👀 Espectador: verás las pistas en cuanto {encName} las dé (las palabras de los equipos siguen tapadas).{/if}
+    {#if myTeam === game.active}🤝 Es vuestro encriptador: cuando diga las 3 pistas tendréis que descifrar su código, sin él. Id repasando «🔑 Vuestras 4 palabras», más abajo.
+    {:else if myTeam === other(game.active)}{#if interceptorsCanPlay(game)}🕵️ Sois el rival: en cuanto las diga intentaréis interceptar. Mientras, mirad en la «📻 Hoja de pistas», más abajo, lo que el {TEAM_LABEL[game.active]} ya dijo para cada número.{:else}🕵️ Sois el rival, pero en la primera transmisión de cada equipo todavía no se puede interceptar: hoy solo escucháis. Todo lo que diga se apunta en la hoja de pistas y os servirá desde la ronda 2.{/if}
+    {:else}👀 Verás las pistas en cuanto {encName} las dé; las palabras de los dos equipos siguen tapadas hasta el final.{/if}
   </p>
   {#if canRelieve}
     <button class="ghost block" style="margin-top:10px" data-a="de-relieve" onclick={() => guard(A.relieveEncoder)}>🔄 {encName} no puede: que encripte otro</button>

@@ -27,8 +27,8 @@ export const DEMO: DemoScript = {
       visual: {
         kind: 'screens',
         panes: [
-          { title: 'Bea (Psíquica 🔮)', lines: ['Dial con la DIANA pintada:', 'Frío ———————▮▮🎯▮▮— Caliente', '«La diana está casi al tope del calor…»'], buttons: [{ label: '💬 Ya he dado la pista', kind: 'primary' }] },
-          { title: 'TÚ (equipo)', lines: ['Dial VACÍO, sin diana:', 'Frío ————————————— Caliente', '«🔮 Bea está pensando su pista…»'] },
+          { title: 'Bea (Psíquica 🔮)', lines: ['🎯 Su objetivo está en 85 de 100, del lado de «Caliente».', 'Mientras mantiene pulsado, el dial le pinta la diana:', 'Frío ———————▮▮🎯▮▮— Caliente'], buttons: [{ label: '🎯 Mantén pulsado para apuntar', kind: 'ghost' }, { label: '💬 Ya he dado la pista', kind: 'primary' }] },
+          { title: 'TÚ (equipo)', lines: ['Dial VACÍO, sin diana:', 'Frío ————————————— Caliente', '«👂 Escucha la pista de Bea: la dirá una sola vez.»'] },
         ],
       },
     },
@@ -67,8 +67,8 @@ export const DEMO: DemoScript = {
       visual: {
         kind: 'screens',
         panes: [
-          { title: 'TÚ (equipo)', lines: ['Arrastras el marcador hasta 82.', 'Carlos ve el 82 en su móvil.'], buttons: [{ label: '✅ Fijar la marca (82)', kind: 'primary' }] },
-          { title: 'Bea (Psíquica 🔮)', lines: ['«🎚️ Ya diste tu pista. El equipo está decidiendo…»', 'Ve su diana y espera el veredicto.'] },
+          { title: 'TÚ (equipo)', lines: ['Arrastras la marca hasta 82.', 'Carlos ve el 82 en su móvil.'], buttons: [{ label: '✅ Fijar la marca en 82', kind: 'primary' }] },
+          { title: 'Bea (Psíquica 🔮)', lines: ['«🙈 Sigues teniendo el objetivo en el móvil.»', '«Van por 82 (la movió Carlos). La fijan ellos.»'] },
         ],
       },
     },
@@ -80,7 +80,7 @@ export const DEMO: DemoScript = {
         'El objetivo estaba en 85 y marcasteis 82: ¡centro de la diana, 4 puntos! Los suma Bea (fue quien os sintonizó) y también el total del equipo.',
         'Puntos por cercanía: 4 el centro, 3 cerca, 2 rozando, 0 fuera. Nueva ronda: nuevo espectro, nuevo Psíquico. ¿Hasta dónde llega vuestra sintonía? 📡',
       ],
-      visual: { kind: 'log', lines: ['💬 Bea ya ha dado su pista. El equipo coloca el marcador.', '🎯 El objetivo estaba en 85, el equipo marcó 82. 🎯 ¡En el centro! (4) para Bea. Total del equipo: 4.', '📡 Ronda 2: nuevo espectro y nuevo Psíquico (TÚ).'] },
+      visual: { kind: 'log', lines: ['💬 Bea ya ha dado su pista. El equipo coloca la marca en el dial.', '🎯 El objetivo estaba en 85, el equipo marcó 82. 🎯 ¡En el centro! (4) para Bea. Total del equipo: 4.', '📡 Ronda 2: nuevo espectro y nuevo Psíquico (TÚ).'] },
     },
     {
       icon: '🔮',
@@ -94,8 +94,8 @@ export const DEMO: DemoScript = {
       visual: {
         kind: 'screens',
         panes: [
-          { title: 'TÚ (Psíquico 🔮)', lines: ['Nuevo espectro: Aburrido ↔ Emocionante', 'Tu dial con la diana en el 30.'], buttons: [{ label: '💬 Ya he dado la pista', kind: 'primary' }, { label: '🔀 Cambiar espectro', kind: 'ghost' }] },
-          { title: 'Bea y Carlos (equipo)', lines: ['Dial sin diana.', '«🔮 Está pensando su pista…»'] },
+          { title: 'TÚ (Psíquico 🔮)', lines: ['Nuevo espectro: Aburrido ↔ Emocionante', '🎯 Tu objetivo está en 30 de 100, del lado de «Aburrido».'], buttons: [{ label: '🎯 Mantén pulsado para apuntar', kind: 'ghost' }, { label: '💬 Ya he dado la pista', kind: 'primary' }, { label: '🔀 Cambiar espectro y objetivo', kind: 'ghost' }] },
+          { title: 'Bea y Carlos (equipo)', lines: ['Dial sin diana.', '«👂 Escuchan tu pista…»'] },
         ],
       },
     },

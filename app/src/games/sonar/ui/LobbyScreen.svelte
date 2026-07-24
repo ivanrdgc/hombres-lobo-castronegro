@@ -33,8 +33,12 @@
     {/if}
   </div>
   {#each INTRO_LOBBY as p, i (i)}<p style="margin:9px 0">{p}</p>{/each}
-  <p class="snposture">{POSTURE_HINT[meta.posture]}</p>
-  <p class="small-note" style="margin:6px 0 0">Sentaos en dos corros, uno por tripulación, lo más lejos que dé la sala: se habla en voz baja y la app canta en alto lo que oyen los dos.</p>
+  <!-- Cómo se coloca la mesa es UNA idea: cómo se sostiene el móvil y dónde os
+       sentáis van juntos, en el mismo recuadro (B29 · una tarjeta por idea). -->
+  <p class="snposture">
+    {POSTURE_HINT[meta.posture]}<br />
+    Sentaos en dos corros, uno por tripulación, lo más lejos que dé la sala: dentro del corro se habla en voz baja y la app canta en alto lo que oyen los dos.
+  </p>
 
   <button class="primary block" style="margin-top:14px" data-a="open-start" onclick={() => navigate(`/g/${group.id}/sonar/empezar`)}>⚓ Empezar partida</button>
   <div class="btnrow">

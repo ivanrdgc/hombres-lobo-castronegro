@@ -56,7 +56,7 @@
 
   <div class="btnrow">
     <button class="ghost" style="flex:1 1 46%" data-a="open-demo" onclick={() => (app.ui.modal = { type: 'ch-demo' })}>🎓 Tutorial (2 min)</button>
-    <button class="ghost" style="flex:1 1 46%" data-a="ch-open-help" onclick={() => (app.ui.modal = { type: 'ch-help' })}>📖 Cómo se juega</button>
+    <button class="ghost" style="flex:1 1 46%" data-a="ch-open-help" onclick={() => (app.ui.modal = { type: 'ch-help' })}>🎲 Cómo se juega</button>
   </div>
   <button class="primary block" data-a="open-start" onclick={() => navigate(`/g/${group.id}/chameleon/empezar`)}>🦎 Empezar partida</button>
 </div>

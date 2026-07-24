@@ -7,7 +7,6 @@
   import { narr } from '../texts/corpus';
   import type { GroupDoc, PlayerDoc } from '../../../core/sync/schema';
   import RevealGate from './RevealGate.svelte';
-  import RoleCard from './RoleCard.svelte';
 
   const { group, my }: { group: GroupDoc; my: PlayerDoc } = $props();
 
@@ -20,7 +19,10 @@
   <!-- Tras confirmar: carta oculta al instante y pantalla uniforme para todos. -->
   <RevealGate {group} {my} />
 {:else}
-  {#if my.inGame}<RoleCard player={my} {group} mini={true} />{/if}
+  <!-- Aquí y solo aquí se enseña dónde vive la carta a partir de ahora: es el
+       momento en que se guarda, y a partir de ahora la puerta es siempre la
+       misma pastilla (B34). Ninguna pantalla de partida repite el botón. -->
+  {#if my.inGame}<p class="small-note">✅ Carta guardada. Vuelve a mirarla cuando quieras en <b>🎴 Mi carta</b>, abajo a la derecha: ahí viven también tu palabra clave y las reglas.</p>{/if}
   {#if pend.length}
     <div class="waitlist">Esperando a que confirmen: {pend.map((p) => p.name).join(', ')}</div>
   {:else}

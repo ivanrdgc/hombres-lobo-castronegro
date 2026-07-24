@@ -116,19 +116,22 @@ try {
   if (sSpy !== sAgent) console.log('   espía:  ' + sSpy + '\n   agente: ' + sAgent);
   check(!sSpy.includes('espia-guess-open'), 'la jugada del espía no asoma en la pantalla en reposo');
   check(!sSpy.includes('espia-lugar'), 'los tachones de localizaciones no se quedan a la vista');
-  // Tras el gesto que usan TODOS (👁 Mi carta), cada cual encuentra lo suyo.
-  await pg(spy).click('[data-a=espia-togglecard]');
+  // UNA SOLA PUERTA a la carta (B34): la pastilla flotante 🎴, idéntica en
+  // todos los móviles. Ninguna pantalla trae su propio «ver mi carta».
+  check(!sSpy.includes('espia-togglecard'), 'la pantalla de la ronda no duplica la puerta a la carta');
+  await pg(spy).click('[data-a=open-mycard]');
   await pg(spy).waitForSelector('[data-a=espia-guess-open]');
-  await pg(spy).click('[data-a=espia-hidecard]');
-  await pg(agents[0]).click('[data-a=espia-togglecard]');
+  await pg(spy).click('button[data-a=close-modal]');
+  await pg(agents[0]).click('[data-a=open-mycard]');
   await pg(agents[0]).waitForSelector('[data-a=espia-card]');
   check(await pg(agents[0]).locator('[data-a=espia-guess-open]').count() === 0, 'el agente abre la misma carta y ahí NO hay jugada de espía');
-  await pg(agents[0]).click('[data-a=espia-hidecard]');
-  // La libreta de tachones es igual para todos y también vive tras un gesto.
+  await pg(agents[0]).click('button[data-a=close-modal]');
+  // La libreta es una herramienta (no tu carta): vive en la pantalla, con su
+  // propio verbo, y también es igual para todos.
   await pg(spy).click('[data-a=espia-notes]');
   await pg(spy).waitForSelector('[data-a=espia-lugar-tacha]');
-  await pg(spy).click('[data-a=espia-hidecard]');
-  ok('carta, jugada y libreta viven tras el mismo gesto en todos los móviles');
+  await pg(spy).click('[data-a=espia-notes-close]');
+  ok('la carta se abre solo por la pastilla 🎴 y la libreta solo desde la pantalla');
 
   // Pausa de mesa: congela el reloj sin gastar una acusación (⋯ → ⏸️).
   const dl0 = st.deadline;
@@ -152,12 +155,14 @@ try {
   // inocente (lo eres)» y, leída de reojo, señalaba al espía.
   const acusadoTxt = await pg(wrongTarget).innerText('body');
   check(!/lo eres/i.test(acusadoTxt), 'la pantalla del acusado no delata si es inocente');
-  // Con el reloj congelado no cuesta nada comprobar el auto-ocultado: la carta
-  // abierta se cierra sola y el móvil vuelve a la pantalla común.
-  await pg(spy).click('[data-a=espia-togglecard]');
+  // Con el reloj congelado no cuesta nada comprobar el auto-tapado: la carta
+  // destapada se tapa sola y deja a la vista solo el «👁 Ver mi carta otra vez».
+  await pg(spy).click('[data-a=open-mycard]');
   await pg(spy).waitForSelector('[data-a=espia-card]');
   await pg(spy).waitForSelector('[data-a=espia-togglecard]', { timeout: 20000 });
-  ok('la carta se oculta sola: un móvil olvidado boca arriba no cuenta nada');
+  check(await pg(spy).locator('[data-a=espia-guess-open]').count() === 0, 'al taparse la carta se va también la jugada del espía');
+  await pg(spy).click('button[data-a=close-modal]');
+  ok('la carta se tapa sola: un móvil olvidado boca arriba no cuenta nada');
   // El primer votante disponible vota NO → la acusación cae.
   const voter = st.playerIds.find((p) => p !== accuser1 && p !== wrongTarget);
   await pg(voter).waitForSelector('button[data-a=espia-vote][data-p=no]');
@@ -223,9 +228,9 @@ try {
   const spy2 = st.spyId;
   const prevScore = { ...st.scores };
   console.log('  espía R2:', spy2, '· lugar:', st.locationId);
-  // Su jugada vive dentro de la carta, tras el mismo 👁 que usan todos.
-  await pg(spy2).waitForSelector('[data-a=espia-togglecard]');
-  await pg(spy2).click('[data-a=espia-togglecard]');
+  // Su jugada vive dentro de la carta, tras la misma pastilla 🎴 que usan todos.
+  await pg(spy2).waitForSelector('[data-a=open-mycard]');
+  await pg(spy2).click('[data-a=open-mycard]');
   await pg(spy2).waitForSelector('[data-a=espia-guess-open]');
   await pg(spy2).click('[data-a=espia-guess-open]');
   await pg(spy2).waitForSelector(`button[data-a=espia-lugar][data-p=${st.locationId}]`);

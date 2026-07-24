@@ -81,7 +81,7 @@
           <button role="menuitem" data-a="skip-stuck-step" onclick={skipStep}>⏭️ Saltar paso</button>
         {/if}
         {#if narrator && game?.mode === 'guiado'}
-          <button role="menuitem" data-a="view-roles" onclick={viewRoles}>👁 Ver roles</button>
+          <button role="menuitem" data-a="view-roles" onclick={viewRoles}>👁 Ver los roles de todos</button>
         {/if}
         {#if spectator}
           <button role="menuitem" data-a="back-to-mesa" onclick={() => { close(); navigate(`/g/${group.id}`); }}>← Volver a la mesa</button>

@@ -1,6 +1,10 @@
 <script lang="ts">
-  // Menú ⋯ de Una Noche: voz, pausar/reanudar y repetir (narrador), dejar y
+  // Menú ⋯ de Una Noche: voz, pausar/reanudar y repetir (narrador), la mesa y
   // terminar. Es del GRUPO: cualquier dispositivo puede terminar.
+  //
+  // Aquí NO hay «abandonar»: en una partida de una sola noche irse es cerrarla
+  // (el reparto ya no vale), así que había dos entradas —«🚪 Dejar la partida» y
+  // «🏳️ Terminar»— que llamaban a la MISMA acción con dos nombres. Queda una.
   import { app, matchOf, navigate } from '../../../core/sync/store.svelte';
   import { guard } from '../../../core/sync/guard';
   import * as A from '../actions';
@@ -36,10 +40,7 @@
       {#if spectator}
         <button role="menuitem" data-a="back-to-mesa" onclick={() => { close(); navigate(`/g/${slug}`); }}>← Volver a la mesa</button>
       {/if}
-      {#if !spectator}
-        <button role="menuitem" class="danger-text" data-a="una-leave-open" onclick={() => { app.ui.modal = { type: 'una-leave' }; close(); }}>🚪 Dejar la partida</button>
-      {/if}
-      <button role="menuitem" class="danger-text" data-a="una-end-open" onclick={() => { app.ui.modal = { type: 'una-end' }; close(); }}>🏳️ Terminar</button>
+      <button role="menuitem" class="danger-text" data-a="una-end-open" onclick={() => { app.ui.modal = { type: 'una-end' }; close(); }}>🏳️ Terminar la partida</button>
     </div>
   {/if}
 </div>

@@ -1,13 +1,13 @@
 <script lang="ts">
-  // Chuleta del máster: los roles reales de toda la mesa (port de
-  // viewRolesModal de la v1). Solo se abre desde pantallas del máster.
+  // Los roles reales de toda la mesa, para quien narra en persona (port de
+  // viewRolesModal de la v1). Solo se abre desde el menú ⋯ del narrador.
   import { app } from '../../../../core/sync/store.svelte';
   import { ROLES } from '../../roles';
 
   const players = $derived(app.players.filter((p) => p.inGame));
 </script>
 
-<h3>👁 Roles de la mesa (solo máster)</h3>
+<h3>👁 Los roles de todos (solo tú, que narras)</h3>
 <div class="players">
   {#each players as p (p.id)}
     <div class="player {p.alive === false ? 'dead' : ''}">

@@ -36,7 +36,7 @@
   // El porqué, sin repetir los nombres que ya están en la línea de arriba.
   const reason = $derived(
     game.outcome === 'group'
-      ? 'Lo cazasteis por mayoría: +1 para el Maestro y para cada común (el Insider no puntúa).'
+      ? 'Lo cazasteis por mayoría: +1 para todo el equipo, Maestro incluido (el Insider no puntúa).'
       : game.outcome === 'insider'
         ? (game.accusedId
           ? 'Era inocente, así que el Insider se escapa: +2 para él.'

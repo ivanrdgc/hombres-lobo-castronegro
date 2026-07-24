@@ -6,8 +6,8 @@
   // 🍽️ MESA (B28): tu propia fila NO se destapa aquí. Antes salía con pastilla
   // azul y tu personaje escrito, así que el tablero era distinto en cada móvil
   // y bastaba mirar de reojo cuál era la fila con color para leer tu carta. Lo
-  // tuyo vive tras el 👁 (SecretPeek) y en el 🎴; el tablero sale igual en las
-  // ocho pantallas.
+  // tuyo vive en la pastilla 🎴 «Mi carta» y en ningún otro sitio (B34); el
+  // tablero sale igual en las ocho pantallas.
   import { CHARS, FACTION_SHORT, factionSummary } from '../chars';
   import type { PlayerDoc } from '../../../core/sync/schema';
   import type { ShadowHState } from '../types';
@@ -63,8 +63,9 @@
 </div>
 <!-- Los números que en la mesa real están a la vista no se memorizan: quién
      sigue en pie, cuántos se han destapado de cada bando y el reparto (público,
-     como en el juego de mesa). «Cómo se gana» ya no se repite aquí: vive en la
-     referencia plegada del panel de turno y en el 🎴 (un dato, un sitio). -->
+     como en el juego de mesa). Este es el ÚNICO sitio de la pantalla donde se
+     dice el reparto: «cómo se gana» vive en la referencia plegada del panel de
+     turno, y ninguno de los dos repite lo del otro (un dato, un sitio). -->
 <p class="small-note" style="margin:6px 0 0">🧍 En pie: {aliveN} de {game.playerIds.length} · 🎭 Destapados: {shownTxt || 'nadie todavía'}</p>
 <p class="small-note" style="margin:2px 0 0">{factionSummary(game.playerIds.length)}</p>
 {#if mineHidden}

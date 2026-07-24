@@ -21,24 +21,35 @@
   const iAmPsychic = $derived(psychicId(game) === my.id);
   // Progreso hacia la meta: sin esto, «Ronda 4» no dice si queda una o cinco.
   // Es también el ÚNICO sitio donde se dice la ronda (antes salía además en un
-  // chip de la cabecera, diciendo lo mismo dos veces).
+  // chip de la cabecera, diciendo lo mismo dos veces). Con meta por PUNTOS el
+  // texto no repite el total —que está dos dedos más arriba, en grande—: dice
+  // lo único que ahí no se ve, cuánto falta.
   const prog = $derived.by(() => {
     const g = game.goal;
     if (!g) return null;
     const done = g.kind === 'rounds' ? game.round : game.teamScore;
+    const left = Math.max(0, g.n - done);
     return { done, n: g.n, pct: Math.max(0, Math.min(100, Math.round((done / g.n) * 100))),
-      txt: g.kind === 'rounds' ? `Ronda ${Math.min(done, g.n)} de ${g.n}` : `${done} de ${g.n} puntos de equipo` };
+      txt: g.kind === 'rounds'
+        ? `Ronda ${Math.min(done, g.n)} de ${g.n}`
+        : left > 0 ? `Meta: ${g.n} · faltan ${left}` : `Meta de ${g.n} cumplida` };
   });
   // Qué se espera de MÍ, en una línea, en cualquier fase: es lo primero de la
-  // pantalla, antes que ningún dato.
+  // pantalla, antes que ningún dato. Aquí va TODO lo que hay que saber para
+  // esperar bien (por eso los paneles de abajo ya no repiten «escuchad» ni
+  // «el equipo está decidiendo»).
   const mine = $derived.by(() => {
     if (game.paused) return ''; // ya lo cuenta la tarjeta de pausa, justo encima
     const inGame = game.playerIds.includes(my.id);
-    if (game.phase === 'clue') return iAmPsychic ? '🔮 Te toca: da tu pista en voz alta.'
-      : inGame ? `👂 Escucha la pista de ${psychic} (aún no se toca el dial).` : `👀 Miras de espectador: ${psychic} está pensando su pista.`;
-    if (game.phase === 'guess') return iAmPsychic ? '🤐 Tu trabajo ya está hecho: ahora calla y disfruta.'
-      : inGame ? '🎚️ Te toca con el equipo: debatid y colocad el marcador.' : '👀 Miras de espectador: el equipo coloca el marcador.';
-    if (game.phase === 'result') return '🎯 Ronda resuelta: cualquiera puede lanzar la siguiente.';
+    // El móvil que pone la voz sin jugar no es «un espectador»: tiene un
+    // trabajo (y suele estar en el centro de la mesa). Que lo diga.
+    const off = isMaster() ? '🔊 Este móvil pone la voz' : '👀 Miras de espectador';
+    if (game.phase === 'clue') return iAmPsychic ? '🔮 Te toca: la mesa espera tu pista.'
+      : inGame ? `👂 Escucha la pista de ${psychic}: la dirá una sola vez (el dial aún no se toca).`
+        : `${off}: ${psychic} está pensando su pista.`;
+    if (game.phase === 'guess') return iAmPsychic ? '🤐 Tu trabajo ya está hecho: ahora calla y disfruta (ni gestos).'
+      : inGame ? '🎚️ Te toca con el equipo: debatid y colocad la marca.' : `${off}: el equipo coloca la marca.`;
+    if (game.phase === 'result') return '🎯 Ronda resuelta: ya podéis ver dónde estaba el objetivo.';
     return '';
   });
 
@@ -117,7 +128,7 @@
   .ctx { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
   .ctx .chip { flex: 1; min-width: 0; }
   .hdr .chip b { color: var(--text); font-weight: 700; }
-  /* El total del equipo es EL marcador de un juego cooperativo: número grande,
+  /* El total del equipo es EL resultado de un juego cooperativo: número grande,
      legible desde el otro lado de la mesa (es público: no delata nada). */
   .score { display: flex; align-items: center; gap: 7px; flex: 0 0 auto; }
   .score b { font-size: 2rem; font-weight: 800; color: var(--moon); line-height: 1; }

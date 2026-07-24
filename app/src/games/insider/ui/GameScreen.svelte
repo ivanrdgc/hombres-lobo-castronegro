@@ -74,7 +74,7 @@
 {:else if game.phase === 'reveal'}
   <RevealPhase {game} {my} />
 {:else if game.phase === 'question'}
-  <QuestionPhase {game} {my} spectator={!inRound} />
+  <QuestionPhase {game} {my} />
 {:else if game.phase === 'vote'}
   <VotePhase {game} {my} />
 {:else if game.phase === 'end'}

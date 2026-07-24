@@ -6,9 +6,10 @@ import { bandCountsLine } from './engine';
 import type { GoodCopState } from './types';
 
 /**
- * La chuleta del juego (fila «emoji · nombre · efecto»), compartida por el
- * desplegable 📖 del panel de acción y el modal 🎴: una sola redacción para las
- * dos, que antes se contradecían.
+ * «Las reglas» del juego (fila «emoji · nombre · efecto»), compartidas por el
+ * desplegable 📖 del panel de acción y «🎴 Mi carta»: una sola redacción para
+ * las dos, que antes se contradecían. Un nombre por cosa (B34): esto son «las
+ * reglas» — «la chuleta» no existe.
  */
 export function refRows(n: number): { emoji: string; name: string; desc: string }[] {
   return [
@@ -43,7 +44,7 @@ export const HOW_TO: HelpSection[] = [
     items: [
       'Los bandos van casi a la par, y cuántos hay de cada uno se sabe desde el minuto uno: con 4 jugadores, 2 honestos y 2 corruptos; con 5, 3 y 2; con 6, 3 y 3; con 7, 4 y 3; con 8, 4 y 4.',
       'El reparto es SIEMPRE 2 cartas de tu bando y 1 del contrario. Por eso ver dos 🦹 de alguien lo delata al 100 %, y una sola carta no prueba nada: todos tenemos una del bando rival.',
-      'Estos números están siempre en pantalla: en el tablero y en la chuleta del botón 🎴. No hay que memorizar nada.',
+      'Estos números están siempre en pantalla: en el tablero y en «las reglas», dentro del botón 🎴 Mi carta. No hay que memorizar nada.',
     ],
   },
   {
