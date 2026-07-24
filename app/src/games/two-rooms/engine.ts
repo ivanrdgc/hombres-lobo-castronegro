@@ -2,6 +2,7 @@
 // roles y salas; recuento del voto de rehén de cada sala; intercambio; y
 // dictamen final (¿acabó el Bombardero en la sala del Presidente?). Sin
 // navegador ni Firebase; determinista por semilla → probable entero.
+import { narratesIn } from '../../core/narrator/voice-mode';
 import type { TwoRoomsState, Team, Role } from './types';
 
 export const MIN_PLAYERS = 6;
@@ -211,18 +212,12 @@ export function leavePlayer(game: TwoRoomsState, pid: string): LeaveOutcome {
 
 export const teamLabel = (t: Team): string => (t === 'red' ? '🔴 Rojo' : '🔵 Azul');
 
-export const VOICE_MODES = ['single', 'perRoom', 'all'] as const;
+export { VOICE_MODES } from '../../core/narrator/voice-mode';
 
 /**
  * ¿Debe narrar este dispositivo? Depende del modo de voz (las dos salas están
- * separadas, así que a veces interesa más de un altavoz):
- * - `all`: narran todos los jugadores (y el anfitrión) → cada sala se oye sola.
- * - `perRoom`: narran los dos altavoces designados (uno por sala).
- * - `single`: narra solo el altavoz principal (el masterId de la partida).
+ * separadas): mecanismo compartido en core/narrator/voice-mode.
  */
 export function narrates(game: TwoRoomsState, pid: string, masterId: string | null): boolean {
-  if (!pid) return false;
-  if (game.voiceMode === 'all') return game.playerIds.includes(pid) || pid === masterId;
-  if (game.voiceMode === 'perRoom') return pid === game.roomSpeakers[0] || pid === game.roomSpeakers[1];
-  return pid === masterId;
+  return narratesIn(game.voiceMode, game.roomSpeakers, game.playerIds, pid, masterId);
 }
