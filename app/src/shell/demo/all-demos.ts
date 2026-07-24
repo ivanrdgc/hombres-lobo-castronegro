@@ -9,12 +9,16 @@ import { DEMO as chameleon } from '../../games/chameleon/demo';
 import { DEMO as insider } from '../../games/insider/demo';
 import { DEMO as coup } from '../../games/coup/demo';
 import { DEMO as twoRooms } from '../../games/two-rooms/demo';
+import { DEMO as wavelength } from '../../games/wavelength/demo';
+import { DEMO as codenames } from '../../games/codenames/demo';
+import { DEMO as skull } from '../../games/skull/demo';
+import { DEMO as loveLetter } from '../../games/love-letter/demo';
 import { DEMO as espia } from '../../games/espia/demo';
 import { demoSpeechPieces } from './types';
 import type { DemoScript } from './types';
 
 export const ALL_DEMOS: DemoScript[] = [
-  hombresLobo, unaNoche, avalon, secretHitler, chameleon, insider, coup, twoRooms, espia,
+  hombresLobo, unaNoche, avalon, secretHitler, chameleon, insider, coup, twoRooms, codenames, wavelength, skull, loveLetter, espia,
 ];
 
 /** Todas las piezas de voz de todos los tutoriales (pregenerables). */

@@ -20,6 +20,10 @@ import { allChameleonStaticPieces } from '../src/games/chameleon/texts';
 import { allInsiderStaticPieces } from '../src/games/insider/texts';
 import { allCoupStaticPieces } from '../src/games/coup/texts';
 import { allTwoRoomsStaticPieces } from '../src/games/two-rooms/texts';
+import { allWavelengthStaticPieces } from '../src/games/wavelength/texts';
+import { allCodenamesStaticPieces } from '../src/games/codenames/texts';
+import { allSkullStaticPieces } from '../src/games/skull/texts';
+import { allLoveLetterStaticPieces } from '../src/games/love-letter/texts';
 import { allDemoStaticPieces } from '../src/shell/demo/all-demos';
 import { buildSsml, ttsCacheKey } from '../src/core/audio/tts';
 
@@ -61,7 +65,7 @@ interface Manifest {
 
 async function main(): Promise<void> {
   const kwTexts = allKeywordCombos().flatMap((kw) => [kwClip(kw, true), kwClip(kw, false)]);
-  const texts = [...new Set([...allStaticPieces().map((p) => p.text), ...kwTexts, ...allExplainStaticPieces(), ...allEspiaStaticPieces(), ...allUnaNocheStaticPieces(), ...allAvalonStaticPieces(), ...allSecretHitlerStaticPieces(), ...allChameleonStaticPieces(), ...allInsiderStaticPieces(), ...allCoupStaticPieces(), ...allTwoRoomsStaticPieces(), ...allDemoStaticPieces()])];
+  const texts = [...new Set([...allStaticPieces().map((p) => p.text), ...kwTexts, ...allExplainStaticPieces(), ...allEspiaStaticPieces(), ...allUnaNocheStaticPieces(), ...allAvalonStaticPieces(), ...allSecretHitlerStaticPieces(), ...allChameleonStaticPieces(), ...allInsiderStaticPieces(), ...allCoupStaticPieces(), ...allTwoRoomsStaticPieces(), ...allWavelengthStaticPieces(), ...allCodenamesStaticPieces(), ...allSkullStaticPieces(), ...allLoveLetterStaticPieces(), ...allDemoStaticPieces()])];
   const outDir = join(APP, 'public', 'clips', VOICE);
   mkdirSync(outDir, { recursive: true });
 

@@ -27,6 +27,10 @@ const DEFAULT_SUITES = [
   // Dos salas, un Presidente y un Bombardero (24-07): Two Rooms and a Boom.
   'e2e-two-rooms.mjs',
   'e2e-two-rooms-leave.mjs',
+  'e2e-wavelength.mjs',
+  'e2e-codenames.mjs',
+  'e2e-skull.mjs',
+  'e2e-love-letter.mjs',
   'e2e-demos.mjs',
 ];
 const suites = process.argv.slice(2).length ? process.argv.slice(2) : DEFAULT_SUITES;

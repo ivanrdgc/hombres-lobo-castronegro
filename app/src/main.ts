@@ -19,6 +19,10 @@ import { installChameleonNarrator } from './games/chameleon/narrator/install';
 import { installInsiderNarrator } from './games/insider/narrator/install';
 import { installCoupNarrator } from './games/coup/narrator/install';
 import { installTwoRoomsNarrator } from './games/two-rooms/narrator/install';
+import { installWavelengthNarrator } from './games/wavelength/narrator/install';
+import { installCodenamesNarrator } from './games/codenames/narrator/install';
+import { installSkullNarrator } from './games/skull/narrator/install';
+import { installLoveLetterNarrator } from './games/love-letter/narrator/install';
 
 installUnlockGestures();
 // Refleja en el estado global si el audio SUENA ya (AudioContext 'running'):
@@ -42,6 +46,10 @@ installChameleonNarrator();
 installInsiderNarrator();
 installCoupNarrator();
 installTwoRoomsNarrator();
+installWavelengthNarrator();
+installCodenamesNarrator();
+installSkullNarrator();
+installLoveLetterNarrator();
 installPresence();
 
 window.addEventListener('popstate', applyRoute);
